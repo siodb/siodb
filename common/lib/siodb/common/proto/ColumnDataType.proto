@@ -1,0 +1,44 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
+syntax = "proto3";
+
+package siodb;
+
+option optimize_for=SPEED;
+
+/** Column data types. */
+enum ColumnDataType {
+    COLUMN_DATA_TYPE_BOOL = 0; /// SQL99 BOOLEAN
+    COLUMN_DATA_TYPE_INT8 = 1; /// SQL99 NUMERIC: 8-bit signed integer
+    COLUMN_DATA_TYPE_UINT8 = 2; /// SQL99 NUMERIC: 8-bit unsigned integer
+    COLUMN_DATA_TYPE_INT16 = 3; /// SQL99 NUMERIC: 16-bit signed integer
+    COLUMN_DATA_TYPE_UINT16 = 4; /// SQL99 NUMERIC: 16-bit unsigned integer
+    COLUMN_DATA_TYPE_INT32 = 5; /// SQL99 NUMERIC: 32-bit signed integer
+    COLUMN_DATA_TYPE_UINT32 = 6; /// SQL99 NUMERIC: 32-bit unsigned integer
+    COLUMN_DATA_TYPE_INT64 = 7; /// SQL99 NUMERIC: 64-bit signed integer
+    COLUMN_DATA_TYPE_UINT64 = 8; /// SQL99 NUMERIC: 64-bit unsigned integer
+    COLUMN_DATA_TYPE_FLOAT = 9; /// SQL99 FLOAT: 32-bit IEEE-754 floating-point number
+    COLUMN_DATA_TYPE_DOUBLE = 10; /// SQL99 REAL/DOUBLE PRECISION:
+                                  /// 64-bit IEEE-754 floating-point number
+    COLUMN_DATA_TYPE_TEXT = 11; /// SQL99 CHAR, VARCHAR, CLOB: Textual data with UTF-8 encoding
+    COLUMN_DATA_TYPE_NTEXT = 12; /// [NOT SUPPORTED YET] SQL99 NCHAR, NVARCHAR, NCLOB:
+                                 /// Textual data with altertnative encoding
+    COLUMN_DATA_TYPE_BINARY = 13; /// SQL99 BLOB: Binary data of unlimited length
+    COLUMN_DATA_TYPE_DATE = 14; /// [NOT SUPPORTED YET] SQL99 DATE: Date only
+    COLUMN_DATA_TYPE_TIME = 15; /// [NOT SUPPORTED YET] SQL99 TIME: Time only
+    COLUMN_DATA_TYPE_TIME_WITH_TZ = 16; /// [NOT SUPPORTED YET] SQL99 TIME WITH TIME ZONE:
+                                        /// Time with time zone
+    COLUMN_DATA_TYPE_TIMESTAMP = 17; /// [NOT SUPPORTED YET] SQL99 TIMESTAMP: Data and time
+    COLUMN_DATA_TYPE_TIMESTAMP_WITH_TZ = 18; /// [NOT SUPPORTED YET] SQL99 TIMESTAMP WITH TIME ZONE:
+                                             /// Date and time with time zone
+    COLUMN_DATA_TYPE_DATE_INTERVAL = 19; /// [NOT SUPPORTED YET] SQL99 INTERVAL of years/months/days
+    COLUMN_DATA_TYPE_TIME_INTERVAL = 20; /// [NOT SUPPORTED YET] SQL99 INTERVAL hours/days
+    COLUMN_DATA_TYPE_STRUCT = 21; /// [NOT SUPPORTED YET] SQL99 Structured data type
+    COLUMN_DATA_TYPE_XML = 22; /// [NOT SUPPORTED YET] SQL99 XML
+    COLUMN_DATA_TYPE_JSON = 23; /// [NOT SUPPORTED YET] Additional data type: JSON
+    COLUMN_DATA_TYPE_UUID = 24; /// [NOT SUPPORTED YET] Additional data type: UUID (128 bits)
+    COLUMN_DATA_TYPE_MAX = 25; /// Upper bound of data type number
+    COLUMN_DATA_TYPE_UNKNOWN = 127; /// Data type is not known
+}

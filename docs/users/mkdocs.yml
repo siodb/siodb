@@ -1,0 +1,51 @@
+site_name: Siodb
+site_url: https://siodb.io
+site_description: User documentation for Siodb
+site_author: Siodb team
+
+repo_url: https://github.com/siodb/siodb
+edit_uri: ""
+
+# Themes available here: https://mkdocs.github.io/mkdocs-bootswatch/
+theme:
+    name: mkdocs
+    logo: siodb_theme/img/favicon.png
+    custom_dir: siodb_theme
+    highlightjs: true
+    hljs_style: xt256
+    hljs_languages:
+        - sql
+        - bash
+
+extra_css:
+    - css/extra.css
+
+nav:
+    - Home: index.md
+    - Quick start: quick_start.md
+    - Developer's Guide: development.md
+    - Concepts: concepts.md
+    - Installation: installation.md
+    - Administration:
+        - General: administration.md
+        - User management: users.md
+        - Encryption: encryption.md
+        - System tables: system_tables.md
+
+markdown_extensions:
+    - toc:
+        permalink:
+    - admonition
+    - def_list
+
+copyright: >
+    Copyright &copy; 2018-2020, Siodb GmbH and/or its affiliates.
+    All Rights Reserved.
+    <br/>
+    <a href="https://siodb.io/privacy-policy-en/">Privacy Policy</a>
+    |
+    <a href="https://siodb.io/terms-of-service/">Terms of Service</a>
+google_analytics: ['UA-139212753-1', 'docs.siodb.io']
+
+plugins:
+    - search

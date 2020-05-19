@@ -1,0 +1,2 @@
+Sample access keys are provided solely for a testing purposes.
+DO NOT USE THEM IN YOUR PRODUCTION OR ANY OTHER SENSITIVE ENVIRONMENT!

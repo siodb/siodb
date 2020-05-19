@@ -1,0 +1,85 @@
+html {
+  font-family: sans-serif;
+}
+
+body::before {
+  background: none;
+}
+
+.navbar {
+  background-color: #0ebabc;
+  background-image: none;
+  border: 0;
+}
+
+.bs-sidebar {
+  background-color: #0ebabc;
+  border-color: #0ebabc;
+}
+
+a {
+    color: #0ebabc;
+    text-decoration: none;
+}
+
+.bs-sidebar a {
+  color: #fff;
+}
+
+.nav>li>a:hover, .nav>li>a:focus {
+  text-decoration: none;
+  background-color: #58585a;
+}
+
+.bs-sidebar .nav > .active > a,
+.bs-sidebar .nav > .active:hover > a,
+.bs-sidebar .nav > .active:focus > a {
+  border-right: 5px solid;
+}
+
+.navbar-default .navbar-nav>.active>a,
+.navbar-default .navbar-nav>.active>a:hover,
+.navbar-default .navbar-nav>.active>a:focus {
+  color: #fff;
+  background-color: #58585a;
+}
+
+.navbar-default .navbar-nav>li>a:hover,
+.navbar-default .navbar-nav>li>a:focus {
+  color: #fff;
+  background-color: #58585a;
+}
+
+.navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.open>a:hover, .navbar-default .navbar-nav>.open>a:focus {
+  color: #fff;
+  background-color: #58585a;
+}
+
+.dropdown-menu{
+  background-color: #0ebabc;
+}
+
+.dropdown-menu>li>a {
+  color: #fff;
+}
+
+.dropdown-menu>li>a:hover {
+  background-color: #58585a;
+}
+
+pre {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-color: #000;
+}
+
+code.hljs {
+  margin: 20px;
+}
+
+#logo {
+  width: 46.5px;
+}
+
+

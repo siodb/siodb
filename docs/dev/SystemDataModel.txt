@@ -1,0 +1,155 @@
+SYSTEM DATA MODEL
+===================
+
+1. Table SYS_USERS
+
+TRID       UINT64 NOT NULL  Record ID
+NAME       TEXT   NOT NULL  User name
+REAL_NAME  TEXT   NULL      User real name
+STATE      UINT8  NOT NULL  User state
+
+
+2. Table SYS_USER_ACCESS_KEYS
+
+TRID       UINT64 NOT NULL  Record ID
+NAME       TEXT   NOT NULL  Key name
+TEXT       TEXT   NOT NULL  Key text
+STATE      UINT8  NOT NULL  Key state
+
+
+3. SYS_USER_PERMISSIONS
+
+TRID           UINT64  NOT NULL  Record ID
+USER_ID        UINT64  NOT NULL  User ID
+DATABASE_ID    UINT64  NOT NULL  Database ID
+OBJECT_TYPE    UINT8   NOT NULL  Object type
+OBJECT_ID      UINT64  NOT NULL  Object ID
+PERMISSIONS    UINT64  NOT NULL  Permission bitmask
+GRANT_OPTIONS  UINT64  NOT NULL  Grant option bitmask.
+
+
+4. Table SYS_DATABASES
+
+TRID  UINT64 NOT NULL  Record ID
+NAME  TEXT   NOT NULL  Database name
+UUID  TEXT   NOT NULL  Database UUID
+
+
+5. Table SYS_TABLES
+
+TRID                   UINT64 NOT NULL  Record ID
+TYPE                   INT8   NOT NULL  Table type
+NAME                   TEXT   NOT NULL  Table name
+FIRST_USER_TRID        UINT64 NOT NULL  First user-range TRID.
+CURRENT_COLUMN_SET_ID  UINT64 NOT NULL  Current column set ID.
+
+
+6. Table SYS_COLUMN_SETS
+
+TRID          UINT64 NOT NULL  Record ID
+TABLE_ID      UINT64 NOT NULL  Table ID to which this column set applies.
+COLUMN_COUNT  UINT32 NOT NULL  Expected column count in this column set.
+
+
+7. Table SYS_COLUMNS
+
+TRID                  UINT64 NOT NULL  Record ID
+TABLE_ID              UINT64 NOT NULL  Table ID to which this column belongs
+DATA_TYPE             UINT16 NOT NULL  Data type
+NAME                  TEXT   NOT NULL  Column name
+STATE                 UINT8  NOT NULL  Indicates column state (Creating/Active/Deleted)
+BLOCK_DATA_AREA_SIZE  UINT32  NOT NULL  Block file data area size
+
+
+8. Table SYS_COLUMN_DEFS
+
+TRID              UINT64 NOT NULL  Record ID
+COLUMN_ID         UINT64 NOT NULL  Column ID
+CONSTRAINT_COUNT  UINT32 NOT NULL  Expected constraint count in this column definition.
+
+
+9. Table SYS_COLUMN_SET_COLUMNS
+(Columns here are enumerated in the orders as they appear in table,
+so no POSITION column needed, increasing TRID defined order of columns
+in the particular column set)
+
+TRID           UINT64 NOT NULL  Record ID
+COLUMN_SET_ID  UINT64 NOT NULL  Column set ID to which this column record belongs.
+COLUMN_DEF_ID  UINT64 NOT NULL  Column definition ID.
+COLUMN_ID      UINT64 NOT NULL  Column ID.
+
+
+10. Table SYS_CONSTRAINT_DEFS
+
+TRID  UINT64 NOT NULL  Record identifier
+TYPE  UINT8  NOT NULL  Constraint type
+EXPR  BINARY NULL      Constraint type specific expression in the binary form
+
+
+11. Table SYS_CONSTRAINTS
+
+TRID               UINT64 NOT NULL   Record identifier
+NAME               TEXT   NOT NULL   Constraint name
+STATE              UINT8  NOT NULL   Constraint state (Creating/Active/Deleted)
+TABLE_ID           UINT64 NOT NULL   Table to which this constraint is applicable.
+CONSTRAINT_DEF_ID  UINT64 NOT NULL   Constraint definition ID
+
+
+9. Table SYS_COLUMN_DEF_CONSTRAINTS
+
+TRID           UINT64 NOT NULL  Record ID
+COLUMN_DEF_ID  UINT64 NOT NULL  Column definition ID
+CONSTRAINT_ID  UINT64 NOT NULL  Constraint ID
+
+
+12. Table SYS_INDICES
+
+TRID            UINT64 NOT NULL  Record ID
+TYPE            UINT8  NOT NULL  Index type
+UNIQUE          INT8   NOT NULL  Indication that index is unique
+NAME            TEXT   NOT NULL  Index name
+TABLE_ID        UINT64 NOT NULL  Table ID to which this index belongs
+DATA_FILE_SIZE  UINT32 NOT NULL  Max. size of a single data file
+
+
+13. Table SYS_INDEX_COLUMNS
+
+TRID           UINT64 NOT NULL  Record ID
+INDEX_ID       UINT64 NOT NULL  Index ID to which this index column belongs
+COLUMN_DEF_ID  UINT64 NOT NULL  Column definition ID.
+SORT_DESC      BOOL   NOT NULL  Indicates that sort by this column is in the descending order
+
+
+14. Master Column Record
+
+struct RecordAddress {
+    varuint64  BlockId;
+    varuint32  Offset;
+}
+
+Special values used in the MCR:
+(0, 0) - Indication of the NULL value
+(0, 1) - Indication of a default value
+
+struct ColumnDataRecord {
+    RecordAddress  Addr;
+    varuint64      CreateTimestamp;
+    varuint64      UpdateTimestamp;
+}
+
+struct MasterColumnRecord {
+    varuint16        RecordLength;
+    varuint64        TransactionId;
+    varuint64        CreateTimestamp;
+    varuint64        UpdateTimestamp;
+    varuint64        AtomicOperationId;
+    uint8            AtomicOperationType;
+    varuint32        UserId;
+    varuint64        TableRowId;
+    varuint64        ColumnSetId;
+    varuint64        PrivateDataExpirationTimestamp;
+    ColumnDataRecord[]  Columns;
+    RecordAddress    PreviousVersionAddress;
+}
+
+*** END OF DOCUMENT ***

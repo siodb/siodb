@@ -1,0 +1,84 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
+// @file Contains protobuf data types relative to database.
+
+syntax = "proto3";
+
+import "ColumnDataType.proto";
+
+package siodb;
+
+option optimize_for=SPEED;
+
+/** Single message from server or IO manager. */
+message StatusMessage {
+
+    /** Message status code. */
+    int32 status_code = 1;
+
+    /** Message text. */
+    string text = 2;
+}
+
+/** Structured column data type attribute description */
+message AttributeDescription {
+    /** Column name.*/
+    string name = 1;
+
+    /** Column type. */
+    ColumnDataType type = 2;
+
+    /** Column can have null values. */
+    bool is_null = 3;
+
+    /** Attributes of a structured data type */
+    repeated AttributeDescription attribute = 4;
+};
+
+/** Describes column returned by server */
+message ColumnDescription {
+
+    /** Column name.*/
+    string name = 1;
+
+    /** Column type. */
+    ColumnDataType type = 2;
+
+    /** Column can have null values. */
+    bool is_null = 3;
+
+    /** Attributes of a structured data type */
+    repeated AttributeDescription attribute = 4;
+}
+
+// After protobuf messages there may be additional raw encoded data.
+// This dat is transmitted row by row. Each row contains following parts:
+// - Length : VarUInt64. Value 0 indicates end of data.
+// - NullBitmask : 0...N bytes. Appears only when some column can have null value.
+// Null bitmask has length of minimal number of bytes enough to represent
+// (number of resulting columns) bits.
+// Bits are filled from 0 to 7, i.e. use bit OR masks 0x1, 0x2, ..., 0x80
+// for columns with indexes 0, 1, ..., N. If column index >=8 go to next byte and so on.
+// If bit is set, a column has null value, and no additional data transmitted for it.
+// Otherwise column has non-null value, which is transmitted then.
+// Data set rows are sent as series of column, each of the respective size:
+//    - boolean: 1 byte, effective values 0 (false), 1 (true), 2 (unknown)
+//    - int8, uint8: 1 byte
+//    - int16, uint16: 2 bytes
+//    - int32, uint32: VarInt32/VarUIn32 (max 5 bytes)
+//    - int64, uint64: VarInt64/VarUInt64 (max 9 bytes)
+//    - float: 4 bytes
+//    - double: 8 bytes
+//    - text and binary: Varint32 encoded length and length bytes with data
+//    - timestamp: VarUInt64 + VarUIint32
+// NOT IMLEMENTED YET:
+//    - timestamp with time zone: VarUInt64 + VarUInt32 + VarInt32
+//    - time: VarUInt64
+//    - time with time zone: VarUInt64 + Varint32
+//    - date: VarUInt64
+//    - YM interval: VarUInt32 (interval length in months)
+//    - DHMS interval: VarUInt64 (interval length in nanoseconds)
+//    - uuid: 16 bytes
+//    - ntext: same as text, but length tells number of encoded characters.

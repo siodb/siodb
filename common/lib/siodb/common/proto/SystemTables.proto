@@ -1,0 +1,95 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
+syntax = "proto3";
+
+import "ColumnDataType.proto";
+
+package siodb.database_info;
+
+option optimize_for=SPEED;
+
+/** List of system tables. */
+message SystemObjectList {
+    /** Constraint definitions */
+    repeated SystemTableColumnConstraintDefinition constraint_definition = 1;
+
+    /** Tables */
+    repeated SystemTable table = 2;
+}
+
+/** System table constraint definition */
+message SystemTableColumnConstraintDefinition {
+    /** Constraint definition ID */
+    uint64 id = 1;
+
+    /** Constraint type */
+    int32 type = 2;
+
+    /** Constraint expression */
+    bytes expr = 3;
+}
+
+/** System table information. */
+message SystemTable {
+    /** Table ID */
+    uint32 id = 1;
+
+    /** Table name */
+    string name = 2;
+
+    /** Active column set */
+    SystemTableColumnSet column_set = 3;
+}
+
+/** System table column set information. */
+message SystemTableColumnSet {
+    /** Column set ID */
+    uint64 id = 1;
+
+    /** Columns */
+    repeated SystemTableColumnSetColumn column = 2;
+}
+
+/** System table column set information. */
+message SystemTableColumnSetColumn {
+    /** Column set column record ID */
+    uint64 id = 1;
+
+    /** Column information */
+    repeated SystemTableColumn column = 2;
+}
+
+/** System table column information */
+message SystemTableColumn {
+    /** Column ID */
+    uint64 id = 1;
+
+    /** Column definition ID */
+    uint64 definition_id = 2;
+
+    /** Column data type */
+    ColumnDataType data_type = 3;
+
+    /** Column name */
+    string name = 4;
+
+    /** Column constraints */
+    repeated SystemTableColumnConstraint constraint = 5;
+}
+
+/** System table column constraint information */
+message SystemTableColumnConstraint {
+    /** Constraint association ID */
+    uint64 association_id = 1;
+
+    /** Constraint ID */
+    uint64 id = 2;
+
+    /** Constraint name */
+    string name = 3;
+
+    /** Constraint definition ID */
+    uint64 definition_id = 4;
+}

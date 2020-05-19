@@ -1,0 +1,94 @@
+SECURE COMMUNICATION PROTOCOL BETWEEN SIODB SERVER AND CLIENT
+===============================================================
+
+SECTION 1. Secure Connection
+
+Secure connection is estabslihed using TLS. We use OpenSSL to implement TLS
+on the both server and client sides.
+
+To enable secure connections, following additonal configuration parameters
+will be introduced on the server side:
+- client.enable_encryption - indicates that client connection encryption must be
+  enabled, values are: true/yes, false/no. Default value: yes.
+- client.tls_certificate - certificate files to use.
+- client.tls_certificate_chain - certificate chain files to use.
+- client.tls_private_key - private key files.
+- admin_client.enable_encryption - indicates that admin client connection
+  encryption (via UNIX socket) must be enabled, values are: true/yes, false/no.
+  Default value: no.
+- admin_client.tls_certificate - certificate file to use.
+- admin_client.tls_certificate_chain - certificate chain file to use.
+- admin_client.tls_private_key - private key file.
+if both tls_certificate and tls_certificate_chain are set, tls_certificate_chain is used.
+
+File names in the above parameters are separates by system-specific path
+separator.
+
+File types, required by OpenSSL APIs, must be deduced in the following way:
+- if file name ends with ".der" or ".crt" - assume ASN1 format
+- otherwise assume PEM format. 
+
+Please note following:
+- Incoming connection acceptance happens in the siodb process.
+- TLS negotiation and client authentication happens in the conn_worker process.
+
+SECTION 2. Authentication Protocol
+
+Authentication must be executed over established secure connection.
+
+Authentication works in the following way:
+
+1. After secure connection is established, server sends to client random
+   sequence of bytes of length at least 128 bytes (say up to 1 KB),
+   called "challenge".
+   Format: 2 bytes - uint16_t - challenge length, next bytes - challenge bytes.
+
+2. Client receives challenge.
+
+3. Client uses its private key to create digital signature of the challenge.
+   Digital signature scheme must be SHA512-XXX, where XXX depends on user's
+   private key type. At least following must be supported:
+   - RSA 2048 bit and higher
+   - DH 2048 bit and higher
+   - ECDH
+   - ED25519
+
+4. Client sends authentication request as protobuf message:
+
+message ClientAuthenticationRequest {
+        string user_name = 1;
+        bytes signature = 2;
+}
+
+5. conn_worker receives AuthRequest and passes it to iomgr as protobuf message:
+
+message AuthenticateUserRequest {
+        string user_name = 1;
+        bytes challenge = 2;
+        bytes signature = 3;
+}
+
+6. iomgr looks up user name. If user doesn't exists, appropriate error
+   is returned ("user xxxx doesn't exists").
+
+7. iomgr checks that user is allowed to log in. If user is blocked,
+   appropriate error is returned ("access denied").
+
+8. iomgr attempts to verify signature using all active access keys.
+
+9. If signature was verified with some key, successful respnse is sent
+back to conn_worker.
+
+10. conn_worker sends successful reponse to client and start accepting
+and processing commands.
+
+11. If signature could not be verified, iomgr returns appropriate error
+    ("access denied").
+
+12. If conn_worker encounters error response from iomgr, it sends error
+    response to client, closes connection and exits.
+
+APPENDIX A. Recommended Materials
+
+1. SSL_CTX_use_certificate man page. https://www.openssl.org/docs/man1.0.2/man3/SSL_CTX_use_certificate_file.html
+2. Simple TLS Server example. https://wiki.openssl.org/index.php/Simple_TLS_Server

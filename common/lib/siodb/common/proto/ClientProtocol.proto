@@ -1,0 +1,95 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
+// @file Contains protobuf messages used to communicate between client and server.
+
+syntax = "proto3";
+
+import "CommonTypes.proto";
+
+package siodb.client_protocol;
+
+option optimize_for=SPEED;
+
+/** Command from client to server. */
+message Command {
+
+    /** Request ID */
+    uint64 request_id = 1;
+
+    /** Command text */
+    string text = 2;
+} 
+
+/** Response from server. */
+message ServerResponse {
+
+    /** Corresponding request ID. */
+    uint64 request_id = 1; 
+
+    /** Messages from server. */
+    repeated StatusMessage message = 2;
+
+    /** Description of columns in this data set. */
+    repeated ColumnDescription column_description = 3;
+
+    /** Free text messages without status code. */
+    repeated string freetext_message = 4;
+
+    /** Number of this response in series of responses. Starts with 0. */
+    uint32 response_id = 5;
+
+    /**
+     * Number of reponses in series.
+     * May be sent only in first response.
+     * Zero value means single response.
+     */
+    uint32 response_count = 6;
+
+    /** Indicates that affected row count is presents. */
+    bool has_affected_row_count = 7;
+
+    /** Affected row count. */
+    uint64 affected_row_count = 8;
+}
+
+/** Begin session request */
+message BeginSessionRequest {
+
+    /** User name */
+    string user_name = 1;
+}
+
+/** Begin session response. */
+message BeginSessionResponse {
+
+    /** Indication that session is started. */
+    bool session_started = 1;
+
+    /** Message from IO manager. Set in case of error(session_started = false). */
+    StatusMessage message = 2;
+
+    /** Challenge. Sent only in case if session is started. */
+    bytes challenge = 3;
+}
+
+/** User authentication request. */
+message ClientAuthenticationRequest {
+
+    /** User message signature. */
+    bytes signature = 1;
+}
+
+/** User authentication response. */
+message ClientAuthenticationResponse {
+
+    /** Indication that user is authenticated. */
+    bool authenticated = 1;
+
+    /** Message from IO manager. Set in case of error. */
+    StatusMessage message = 2;
+
+    /** ID of started session. */
+    string session_id = 3;
+}

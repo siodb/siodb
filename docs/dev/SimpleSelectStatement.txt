@@ -1,0 +1,78 @@
+SIMPLE SELECT STATEMENT
+=========================
+
+##1. OVERVIEW
+
+Simple select statement retrieves data from a single database table, at this
+moment w/o WHERE conditions and sorting with ORDER BY.
+
+Here we describe algorithm that is used by Siodb to implement it.
+
+
+##2. CONFIGURATION PARAMETERS
+
+Table lock timeout - timeout in which table lock must be obtained.
+
+
+##3. ALGORITHM
+
+1. If database name is not empty, validate it, indicate error if it is invalid.
+
+2. Validate table name, indicate error if table name is invalid.
+
+3. Validate column names, indicate error if at least column name is invalid.
+   Generate separate error message for each invalid column name.
+
+4. Get designated database and obtain read lock for it. If database name
+   is empty, use database SYS. Indicate error of database cannot be immediately
+   read-locked.
+
+This step requires changes to class Instance. It must store RW locks for each
+database. When database is read locked in the instance, other connections
+can't drop it. To drop database you need write lock on it. Read/write lock here
+however doesn't mean database content cannot be changed. This lock is only
+intended to save database from destruction when it is used. Lock itself must be
+somehow independent from database, because when database is being dropped, lock
+object must survive, because it is in the write-locked state, and only when drop
+database completed, it can be unlocked and removed. This requires protecting
+database lock manipulation operations by global internal mutex of the Instance.
+
+Of course, lock guard must be used to manage this and all other locks, so that
+when error is indicated, automatic unlocking happens.
+
+5. Obtain table from database and read-lock it. 
+
+Similar to database lock in the instance, described above, here, table RW-lock
+aims to protect table from being dropped while used. Indicate error, if read
+lock cannot be obtained immediately.
+
+6. Lock table itself.
+
+This must protect table structure from being altered (add/remove columns). Here
+parameter "Table lock timeout" is used. Indicate error, if table could not be
+locked by during specified timeout. This lock can use internal global mutex of
+the table object.
+
+7. Obtain master column object.
+
+8. Resolve column objects for each column in the select request. If some column 
+   cannot be resolved, indicate error. Generate separate error message for
+   each unresolved column. Build list of column objects as result of this step.
+
+9. Fill response header with column names and data types.
+
+10. Read master column sequentially from first to last record. Skip required
+    number of rows, then read required number of rows, if row limit is set.
+    Otherwise read all rows.
+
+See example of similar code in the Database::readAllTables().
+Limit std::numeric_limits<std::uint64_t>::max() can be used when explicit row
+limit is not set.
+
+11. For each row that should be outputted, read column according to column list,
+    using position information in master column record.
+
+12. Output data to stream. If CLOB or BLOB, write entire content according to
+    protocol data format.
+
+13. Output end of stream indicator (0 row length).

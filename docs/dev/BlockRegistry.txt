@@ -1,0 +1,42 @@
+BLOCK REGISTRY
+=================
+
+1. OVERVIEW
+
+Block registry consists of data set of data files, that contains header and
+data records.
+
+
+2. BLOCK LIST DATA FILE
+
+Header (12 bytes):
+uint64_t fileId              // Data file ID (starts from 1)
+uint32_t nextDataPosition    // File position for a next new data
+
+Data record (29 bytes):
+uint8_t  blockState                     // State of the block
+uint64_t prevBlockId                    // Previous block, 0 means no previous block
+uint64_t nextBlockId                    // First "next" block file ID,
+                                        // 0 means no next block
+uint64_t nextNextBlockListFileId        // Next "next" block file ID location:
+                                        // data file ID, 0 means no next record
+uint32_t nextNextBlockListFileOffset    // Next "next" block file ID location
+                                        // data offset ID
+
+Single block list data file size is 10M, which stores up to 361577 records.
+
+
+3. NEXT BLOCK LIST DATA FILE
+
+Header (12 bytes used):
+uint64_t fileID            // File identifier
+uint32_t nextDataOffset    // File position for a next new data
+
+Data record (20 bytes):
+uint64_t nextBlockId                    // First "next" block file ID
+uint64_t nextNextBlockListFileId        // Next "next" block file ID location:
+                                        // data file ID, 0 means no next record
+uint32_t nextNextBlockListFileOffset    // Next "next" block file ID location
+                                        // data offset ID
+
+Single next block list data file size is 10M, which stores up to 524287 records.

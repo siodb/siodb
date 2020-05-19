@@ -1,0 +1,15 @@
+{
+    "git.autorefresh": false,
+    "workbench.iconTheme": "vscode-icons",
+    "vsicons.dontShowNewVersionMessage": true,
+    "C_Cpp.clang_format_path": "/usr/bin/clang-format",
+    "terminal.integrated.rendererType": "canvas",
+    "editor.minimap.enabled": false,
+    "workbench.startupEditor": "newUntitledFile",
+    "extensions.ignoreRecommendations": true,
+    "C_Cpp.default.cppStandard": "c++14",
+    "C_Cpp.default.cStandard": "c99",
+    "workbench.enableExperiments": false,
+    "extensions.showRecommendationsOnlyOnDemand": true,
+    "telemetry.enableTelemetry": false
+}

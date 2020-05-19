@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+      {%- block htmltitle %}
+        <title>{% if page and page.title and not page.is_homepage %}{% endif %}{{ config.site_name }} documentation | {{ page.title }}</title>
+      {%- endblock %}
+
+                  {%- block site_name %}
+		    <img id="logo" src="../img/siodb_logo_50px.jpg">
+                  {%- endblock %}
+
+                {%- block content %}
+                    <div class="col-md-3">{% include "toc.html" %}</div>
+                    <div class="col-md-9" role="main">{% include "content.html" %}</div>
+                {%- endblock %}
+
+          {%- block footer %}
+            <hr>
+            {%- if config.copyright %}
+                <p>{{ config.copyright }}</p>
+            {%- endif %}
+          {%- endblock %}

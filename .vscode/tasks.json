@@ -1,0 +1,49 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Debug build",
+            "command": "make",
+            "type": "process",
+            "args": [
+                "-j4",
+                "DEBUG=1"
+            ],
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Release build",
+            "command": "make",
+            "type": "process",
+            "args": [
+                "-j4"
+            ],
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Clean Debug Build",
+            "command": "make",
+            "type": "process",
+            "args": [
+                "-j4",
+                "clean"
+            ],
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Clean Release Build",
+            "command": "make",
+            "type": "process",
+            "args": [
+                "-j4",
+                "clean",
+                "DEBUG=0"
+            ],
+            "problemMatcher": "$gcc"
+        }
+    ]
+}

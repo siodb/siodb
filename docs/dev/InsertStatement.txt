@@ -1,0 +1,71 @@
+INSERT STATEMENT
+=========================
+
+##1. OVERVIEW
+
+Insert statement adds new data row to a table.
+Here we describe algorithm that is used by Siodb to implement it.
+
+
+##2. CONFIGURATION PARAMETERS
+
+Table lock timeout - timeout in which table lock must be obtained.
+
+
+##3. ALGORITHM
+
+1. If database name is not empty, validate it, indicate error if it is invalid.
+
+2. Validate table name, indicate error if table name is invalid.
+
+3. Check for system table name, if it is detected, report error - can't insert
+into system table.
+
+Hint: class Database has set of system table names. We may need to add new
+public static method to make this check using it.
+
+4. Validate column names, indicate error if at least column name is invalid.
+   Generate separate error message for each invalid column name.
+
+5. Check that all column names are unique. Report separate error message for
+each duplicate column.
+
+6. Get designated database and obtain read lock for it. If database name
+   is empty, use database SYS. Indicate error of database cannot be immediately
+   read-locked.
+
+See document about SELECT statement for details.
+
+7. Obtain table from database and read-lock it. 
+
+See document about SELECT statement for details.
+
+8. Lock table itself.
+
+See document about SELECT statement for details.
+
+9. Obtain master column object.
+
+See document about SELECT statement for details.
+
+10. Resolve column objects for each column in the insert request. If some column
+   cannot be resolved, indicate error. Generate separate error message for
+   each unresolved column. Build list of column objects as result of this step.
+
+12. Initialize MasterColumnRecord data structure with new TRID.
+
+13. Save current "next data position" of master column.
+
+14. For each table column:
+  - If value specified, convert it to siodb::iomgr::dbengine::Variant.
+  - Save current "next data position" of the column
+  - Write value into column, add returned data position to master column record.
+
+15. Write master column record.
+
+16. Repeat steps 13-15 for until provided data ends. 
+
+17. If error (std::exception) happens during this process (steps 13 - 15),
+    rollback columns where data already written to a last saved point.
+
+See example of something similar in method Database::recordTable()

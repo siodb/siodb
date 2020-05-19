@@ -1,0 +1,10 @@
+_exp/
+build/
+.vscode/
+iomgr/lib/dbengine/parser/.antlr/
+*.o
+*.a
+*.so
+*.d
+.*.swp
+*.log

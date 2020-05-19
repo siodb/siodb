@@ -1,0 +1,19 @@
+Siodb (TM)
+
+Copyright (c) 2019-2020  Siodb Inc. All Rights Reserved.
+
+Source code in this repository is licensed under the AGPL v3 License.
+
+* For a copy of the AGPL v3 License, please see LICENSE
+  as included in this repository's top-level directory.
+
+* Copy of all other licenses for bundled dependencies in this code base:
+
+ - ANTLR4: thirdparty/antlr4/LICENSE-4.8.txt
+ - Antlr4-cpp-runtime: thirdparty/antlr4-cpp-runtime/LICENSE-4.8.txt
+ - Date Library: thirdparty/date/LICENSE-20190911.txt
+ - Google test: thirdparty/googletest/LICENSE-1.8.1
+ - Protobuf Library: thirdparty/protobuf/LICENSE-3.10.0
+ - Utf8cpp Library: thirdparty/utf8cpp/LICENSE-3.1
+ - XxHash Library: thirdparty/xxHash/LICENSE-0.7.2
+

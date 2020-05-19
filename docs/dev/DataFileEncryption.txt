@@ -1,0 +1,100 @@
+SIODB DATA FILE ENCRYPTION
+=============================
+
+1. Below stated requirements for Siodb encryption apply to Siodb data files.
+   Following data files will be encrypted:
+   - Data block files
+   - Index files
+   - System table information data files
+
+2. These requirements are NOT about securing traffic between Siodb client and server and between
+   Siodb processes. These things are subject to separate specification.
+
+3. We identify "cipher" with a CIPHER_ID which is a single string that includes:
+     - Encryption algorithm name
+     - Key size
+     - Block size, if mutiple block sizes allowed.
+   Examples:
+     - "aes128" - AES with key size 128 bits.
+     - "aes256" - AES with key size 256 bits.
+     - "rijndael128_256" - Rijndael with key size 128 bits and block size 256 bits.
+   Note: AES uses algorithm called Rijndael, but AES standartizes block size 128 bits.
+   On its own, Rijndael algorithm allows more block sizes.
+
+4. Per-database cipher parameters are stored in separate columns in the SYS_DATABASES table:
+     - CIPHER_ID - stores cipher identification string, as described above
+     - CIPHER_KEY - store encryption key
+
+5. We can specify the cipher parameters in the CREATE DATABASE statement as follows:
+     - CREATE DATABASE abcd WITH
+            CIPHER_ID='aes128',
+            CIPHER_KEY_SEED = 'fksgksgjrekgjerkglerjg';
+   If we skip such specification, default cipher and other default parameters are used.
+
+6. Default cipher can be specified in the Siodb instance config file with following parameter:
+     - encryption.default_cipher_id
+   If this parameter is not explicitly specified, effective default cipher must be 'aes128'.
+
+7. Default seed string will be "siodb" (all lowercase ASCII letters).
+
+8. Encyption algorithm used to encrypt system database is specified by the following
+   configuration parameter:
+     - encryption.system_db_cipher_id
+   If it is not specified explicitly, effective default cipher is used.
+
+9. Encryption key for the new database is generated through cyclic hashing of entropy data pool,
+   which includes following elements:
+      - CIPHER_KEY_SEED
+      - Current system time
+      - at least 32 bytes from the system random number source (/dev/urandom).
+   Number of hashing cycles is determined randomly based on the additional 2 bytes,
+   read from the /dev/urandom, which are treated as little endian unsigned integer. That integer
+   is added 32768, and result will be a number of hasing cycles to derive encryption key.
+   Hash algorithm:
+      - SHA-256 for generation of keys up to 256 bits
+      - SHA-512 for generation of keys up to 512 bits
+   If required key size X is shorter than outcome of hash function, first X bits are taken as a key.
+
+10. Siodb internal architecture must permit us to use virtually any block cipher.
+
+11. Siodb must provide set of built-in AES and Camellia variations to target US and EU users OOB.
+   Siodb will also provide built-in cipher called 'none' which means no encryption.
+
+12. Siodb must use OpenSSL implementations of the AES and Camellia ciphers, SHA-256 and SHA-512 hash
+   functions and will not contain any own code that implements cryptographic primitives.
+
+13. We will change Siodb configuration storage to 
+    /etc/siodb/instances/<instance name>/, which will currently contain following files:
+      - config - Siodb configuration file
+      - system_db_key - encryption key for the system database as a signle-line hex format string 
+
+14. Siodb must check at startup that all known configuration files, located in the current instance
+    configuration folder, meet following conditions:
+      - They are owned by the user "siodb" and group "siodb".
+      - Noone has execute access to those files.
+      - Owner user has read access to those files.
+      - Other users and groups don't have any access to those files.
+      - (RELEASE build only) Owner group members don't have any access to those files.
+
+15. (NOT FOR RELEASE 1). Siodb must allow third-party cipher implementations to be used for
+    encryption of databases. To do this, Siodb will allow loading of plugin modules with
+    cipher implementations. Following confihuration parameters will apply:
+      - encryption.plugins - comma-separated list of encryption plugin codenames
+      - encryption.plugin.<plugin name>.path - path to plugin shared library
+      - encryption.plugin.<plugin_name>.enrty_point - name of the entry point function that
+        can be located with dladdr(3).
+      - encryption.plugin.<plugin_name>.config.* - configuration entries for the plugin.
+   Exact API for entry point function to be specified later.
+
+Implementation Notes
+=======================
+
+1. Encryption and decryption is implemented must be implemented trasparently on the
+   file descriptor I/O level. Sequnce of actions in the business logic code must not be changed.
+
+2. To achieve item #10 we will keep list of known built-in ciphers with implementation of the single
+   and multiple block encryption and decryption operations. Later on (but not in the "Release 1"
+   demo version), we may decide to introduce encryption plugins that provide one or more
+   additional ciphers (see item #15).
+
+*---------*---------*---------*---------*---------*---------*---------*---------*---------*--------+

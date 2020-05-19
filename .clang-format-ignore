@@ -1,0 +1,10 @@
+# Any hidden files
+.*/\..*
+
+# Ignore makefiles
+.*/Makefile
+.*/.*.mk
+
+# Ignore message files
+.*/.*.msg
+iomgr/app/iomgr_messages.txt
