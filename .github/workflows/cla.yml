@@ -9,14 +9,12 @@ jobs:
     steps:
       - name: "CLA Assistant"
         if: (github.event.comment.body == 'recheckcla' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request'
-        # Alpha Release
         uses: cla-assistant/github-action@v1.3.0-alpha
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with: 
           path-to-signatures: 'signatures/version1/cla.json'
-          path-To-cladocument: 'https://cla-assistant.io/siodb/siodb'
-          # branch should not be protected
+          path-To-cladocument: 'https://github.com/siodb/siodb/blob/d9fee44d0e1de784dde2ab4bb5f4526955fe7d13/cla.md'
           branch: 'master'
           whitelist: cxxman,niolap
           empty-commit-flag: false
