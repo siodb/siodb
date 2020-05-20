@@ -4,10 +4,14 @@
 
 Here is the list of currently supported drivers:
 
-| Language      | Link  |
-| ------------- |:--------------|
-| Golang        | [Github](https://github.com/siodb/siodb-go-driver)   |
-| Rust          | [Github](https://github.com/siodb/siodb-rust-driver) |
+| Language | Link                                                 |
+| -------- | :--------------------------------------------------- |
+| Golang   | [Github](https://github.com/siodb/siodb-go-driver)   |
+| Rust     | [Github](https://github.com/siodb/siodb-rust-driver) |
+| Java     | [Github](https://github.com/siodb/siodb-java-driver) |
+| Python   | [Github](https://github.com/siodb/siodb-python-driver) |
+| C++      | [Github](https://github.com/siodb/siodb-cxx-driver) |
+| .NET     | [Github](https://github.com/siodb/Siodb.EntityFrameworkCore.Siodb) |
 
 ## Supported data types
 
