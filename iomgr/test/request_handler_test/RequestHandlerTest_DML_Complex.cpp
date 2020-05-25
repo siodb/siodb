@@ -39,7 +39,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
     };
 
     instance->getDatabase("SYS")->createUserTable("COMPLEX_TEST_1", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -206,7 +206,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
     };
 
     instance->getDatabase("SYS")->createUserTable("COMPLEX_TEST_2", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- Update -----------
     {
@@ -414,7 +414,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
     };
 
     instance->getDatabase("SYS")->createUserTable("COMPLEX_TEST_3", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {

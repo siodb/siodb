@@ -22,10 +22,11 @@
 
 namespace siodb::iomgr::dbengine {
 
-Table::Table(
-        Database& database, TableType type, const std::string& name, std::uint64_t firstUserTrid)
+Table::Table(Database& database, TableType type, std::string&& name, std::uint64_t firstUserTrid,
+        std::optional<std::string>&& description)
     : m_database(database)
-    , m_name(validateTableName(name))
+    , m_name(validateTableName(std::move(name)))
+    , m_description(std::move(description))
     , m_isSystemTable(Database::isSystemTable(m_name))
     , m_id(database.generateNextTableId(m_isSystemTable))
     , m_type(type)
@@ -42,7 +43,8 @@ Table::Table(
 
 Table::Table(Database& database, const TableRecord& tableRecord)
     : m_database(database)
-    , m_name(validateTableName(tableRecord.m_name))
+    , m_name(validateTableName(std::string(tableRecord.m_name)))
+    , m_description(tableRecord.m_description)
     , m_isSystemTable(Database::isSystemTable(m_name))
     , m_id(tableRecord.m_id)
     , m_type(tableRecord.m_type)
@@ -112,7 +114,7 @@ void Table::closeCurrentColumnSet()
     m_database.updateColumnSetRegistration(*m_currentColumnSet);
 }
 
-ColumnPtr Table::createColumn(const ColumnSpecification& columnSpec, std::uint64_t firstUserTrid)
+ColumnPtr Table::createColumn(ColumnSpecification&& columnSpec, std::uint64_t firstUserTrid)
 {
     std::lock_guard lock(m_mutex);
 
@@ -123,7 +125,7 @@ ColumnPtr Table::createColumn(const ColumnSpecification& columnSpec, std::uint64
     }
 
     // Create column
-    const auto column = std::make_shared<Column>(*this, columnSpec, firstUserTrid);
+    const auto column = std::make_shared<Column>(*this, std::move(columnSpec), firstUserTrid);
 
     // Create column set column record
     const auto columnSetColumnId =
@@ -151,11 +153,13 @@ void Table::checkColumnBelongsToTable(const Column& column, const char* operatio
     }
 }
 
-ConstraintPtr Table::createConstraint(const std::string& name,
-        const ConstConstraintDefinitionPtr& constraintDefinition, Column* column)
+ConstraintPtr Table::createConstraint(std::string&& name,
+        const ConstConstraintDefinitionPtr& constraintDefinition, Column* column,
+        std::optional<std::string>&& description)
 {
     std::lock_guard lock(m_mutex);
-    auto constraint = m_database.createConstraint(*this, column, name, constraintDefinition);
+    auto constraint = m_database.createConstraint(
+            *this, column, std::move(name), constraintDefinition, std::move(description));
     m_constraintCache.emplace(constraint->getId(), constraint);
     return constraint;
 }
@@ -457,17 +461,19 @@ ColumnDefinitionPtr Table::getColumnDefinitionChecked(std::uint64_t columnDefini
 
 // --- internals ---
 
-const std::string& Table::validateTableName(const std::string& tableName)
+std::string&& Table::validateTableName(std::string&& tableName)
 {
-    if (isValidDatabaseObjectName(tableName)) return tableName;
+    if (isValidDatabaseObjectName(tableName)) return std::move(tableName);
     throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, tableName);
 }
 
 void Table::createMasterColumn(std::uint64_t firstUserTrid)
 {
-    const ColumnSpecification columnSpec(Database::kMasterColumnName, Column::kMasterColumnDataType,
-            isSystemTable() ? kSystemTableDataFileDataAreaSize : kDefaultDataFileDataAreaSize);
-    m_masterColumn = createColumn(columnSpec, firstUserTrid);
+    m_masterColumn = createColumn(
+            ColumnSpecification(Database::kMasterColumnName, Column::kMasterColumnDataType,
+                    isSystemTable() ? kSystemTableDataFileDataAreaSize
+                                    : kDefaultDataFileDataAreaSize),
+            firstUserTrid);
 }
 
 void Table::loadColumnsUnlocked()
@@ -508,10 +514,12 @@ ColumnSetPtr Table::createColumnSetUnlocked(const ColumnSetRecord& columnSetReco
     return columnSet;
 }
 
-ConstraintPtr Table::createConstraintUnlocked(Column* column, const std::string& name,
-        const ConstConstraintDefinitionPtr& constraintDefinition)
+ConstraintPtr Table::createConstraintUnlocked(Column* column, std::string&& name,
+        const ConstConstraintDefinitionPtr& constraintDefinition,
+        std::optional<std::string>&& description)
 {
-    auto constraint = m_database.createConstraint(*this, column, name, constraintDefinition);
+    auto constraint = m_database.createConstraint(
+            *this, column, std::move(name), constraintDefinition, std::move(description));
     m_constraintCache.emplace(constraint->getId(), constraint);
     m_database.registerConstraint(*constraint);
     return constraint;

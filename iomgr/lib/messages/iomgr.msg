@@ -137,11 +137,12 @@ MSG Error CannotDeleteFromSystemTable  Deleting from system table '%1%'.'%2%' is
 MSG Error CannotDropSuperUser  Can't drop superuser
 
 # ALTER USER
-MSG Error CannotChangeSuperUserState                Can't change superuser state
-MSG Error UserAccessKeyIsInvalid                    User access key '%1%'.'%2%' is invalid
-MSG Error UserAccessKeyIsLargerThanMax              User access key '%1%'.'%2%' length %3% is larger than maximum %4%
-MSG Error CannotDeleteLastSuperUserAccessKey        Can't delete last superuser access key '%1%'
-MSG Error CannotDeactivateLastSuperUserAccessKey    Can't deactivate last superuser access key '%1%'
+MSG Error CannotChangeSuperUserState              Can't change superuser state
+MSG Error UserAccessKeyIsInvalid                  User access key '%1%'.'%2%' is invalid
+MSG Error UserAccessKeyIsLargerThanMax            User access key '%1%'.'%2%' length %3% is larger than maximum %4%
+MSG Error CannotDeleteLastSuperUserAccessKey      Can't delete last superuser access key '%1%'
+MSG Error CannotDeactivateLastSuperUserAccessKey  Can't deactivate last superuser access key '%1%'
+MSG Error AlterUserAccessKeyFailed                Alter user access key '%1%'.'%2%' failed
 
 # CREATE DATABASE
 MSG Error CannotCreateTemporaryDatabase  Temporary databases are not supported yet

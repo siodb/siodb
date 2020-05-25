@@ -429,7 +429,7 @@ void RequestHandler::writeVariant(
                 throw std::runtime_error("Could not clone CLOB stream");
             }
             auto size = clob->getRemainingSize();
-            BinaryValue buffer(std::min(size, kLobChunkSize));
+            utils::MemoryBuffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             codedOutput.WriteVarint32(size);
             while (size > 0) {
                 auto curChunkSize = std::min(size, kLobChunkSize);
@@ -445,7 +445,7 @@ void RequestHandler::writeVariant(
                 throw std::runtime_error("Could not clone BLOB stream");
             }
             auto size = blob->getRemainingSize();
-            BinaryValue buffer(std::min(size, kLobChunkSize));
+            utils::MemoryBuffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             codedOutput.WriteVarint32(size);
             while (size > 0) {
                 auto curChunkSize = std::min(size, kLobChunkSize);
@@ -471,14 +471,15 @@ ColumnSpecification RequestHandler::convertTableColumnDefinition(
             case ConstraintType::kNotNull: {
                 const auto& src = dynamic_cast<const requests::NotNullConstraint&>(*constraint);
                 constraintSpecs.emplace_back(std::string(src.m_name), ConstraintType::kNotNull,
-                        std::make_unique<requests::ConstantExpression>(Variant(src.m_notNull)));
+                        std::make_unique<requests::ConstantExpression>(Variant(src.m_notNull)),
+                        std::nullopt);
                 break;
             }
             case ConstraintType::kDefaultValue: {
                 const auto& src =
                         dynamic_cast<const requests::DefaultValueConstraint&>(*constraint);
                 constraintSpecs.emplace_back(std::string(src.m_name), ConstraintType::kNotNull,
-                        requests::ExpressionPtr(src.m_value->clone()));
+                        requests::ExpressionPtr(src.m_value->clone()), std::nullopt);
                 break;
             }
             default: {

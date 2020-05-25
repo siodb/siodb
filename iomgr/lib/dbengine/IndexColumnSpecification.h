@@ -21,7 +21,7 @@ struct IndexColumnSpecification {
      */
     IndexColumnSpecification(const ColumnDefinitionPtr& columnDefinition, bool sortDescending)
         : m_columnDefinition(columnDefinition)
-        , m_isSortDescending(sortDescending)
+        , m_sortDescending(sortDescending)
     {
     }
 
@@ -29,7 +29,7 @@ struct IndexColumnSpecification {
     ColumnDefinitionPtr m_columnDefinition;
 
     /** Descesing sort order indication */
-    bool m_isSortDescending;
+    bool m_sortDescending;
 };
 
 /** Index column specification list */

@@ -15,44 +15,23 @@ namespace siodb::iomgr::dbengine {
 
 /** Column specification */
 struct ColumnSpecification {
-    /** Initializes new object of class ColumnSpecification. */
-    ColumnSpecification() noexcept
-        : m_dataType(COLUMN_DATA_TYPE_UNKNOWN)
-        , m_dataBlockDataAreaSize(kDefaultDataFileDataAreaSize)
-    {
-    }
-
     /**
      * Initializes new object of class ColumnSpecification.
      * @param name Column name.
      * @param dataType Column data type.
      * @param dataBlockDataAreaSize Data block data area size.
      * @param constraints Column constraints
-     */
-    ColumnSpecification(const std::string& name, ColumnDataType dataType,
-            std::uint32_t dataBlockDataAreaSize,
-            const ColumnConstraintSpecificationList& constraints = {}) noexcept
-        : m_name(name)
-        , m_dataType(dataType)
-        , m_dataBlockDataAreaSize(dataBlockDataAreaSize)
-        , m_constraints(constraints)
-    {
-    }
-
-    /**
-     * Initializes new object of class ColumnSpecification.
-     * @param name Column name.
-     * @param dataType Column data type.
-     * @param dataBlockDataAreaSize Data block data area size.
-     * @param constraints Column constraints
+     * @param description Column description.
      */
     ColumnSpecification(std::string&& name, ColumnDataType dataType,
             std::uint32_t dataBlockDataAreaSize,
-            ColumnConstraintSpecificationList&& constraints = {}) noexcept
+            ColumnConstraintSpecificationList&& constraints = {},
+            std::optional<std::string>&& description = {}) noexcept
         : m_name(std::move(name))
         , m_dataType(dataType)
         , m_dataBlockDataAreaSize(dataBlockDataAreaSize)
         , m_constraints(std::move(constraints))
+        , m_description(std::move(description))
     {
     }
 
@@ -73,6 +52,9 @@ struct ColumnSpecification {
 
     /** Column constraints */
     ColumnConstraintSpecificationList m_constraints;
+
+    /** Column descritpion */
+    std::optional<std::string> m_description;
 };
 
 }  // namespace siodb::iomgr::dbengine

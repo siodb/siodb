@@ -6,6 +6,7 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
+#include "DatabaseObjectName.h"
 #include "IndexColumn.h"
 #include "ThrowDatabaseError.h"
 
@@ -17,12 +18,13 @@
 
 namespace siodb::iomgr::dbengine {
 
-Index::Index(Table& table, IndexType type, const std::string& name, const IndexKeyTraits& keyTraits,
+Index::Index(Table& table, IndexType type, std::string&& name, const IndexKeyTraits& keyTraits,
         std::size_t valueSize, KeyCompareFunction keyCompare, bool unique,
-        const IndexColumnSpecificationList& columns)
+        const IndexColumnSpecificationList& columns, std::optional<std::string>&& description)
     : m_table(table)
     , m_type(type)
-    , m_name(name)
+    , m_name(validateIndexName(std::move(name)))
+    , m_description(std::move(description))
     , m_id(m_table.getDatabase().generateNextIndexId(m_table.isSystemTable()))
     , m_dataDir(ensureDataDir(
               utils::constructPath(table.getDataDir(), kIndexDataDirPrefix, m_id), true))
@@ -39,7 +41,8 @@ Index::Index(Table& table, const IndexRecord& indexRecord, const IndexKeyTraits&
         std::size_t valueSize, KeyCompareFunction keyCompare)
     : m_table(validateTable(table, indexRecord))
     , m_type(indexRecord.m_type)
-    , m_name(indexRecord.m_name)
+    , m_name(validateIndexName(std::string(indexRecord.m_name)))
+    , m_description(indexRecord.m_description)
     , m_id(indexRecord.m_id)
     , m_dataDir(ensureDataDir(
               utils::constructPath(table.getDataDir(), kIndexDataDirPrefix, m_id), false))
@@ -73,6 +76,12 @@ std::string Index::makeIndexFilePath(std::uint64_t fileId) const
 }
 
 // --------- internal -----------
+
+std::string&& Index::validateIndexName(std::string&& indexName)
+{
+    if (isValidDatabaseObjectName(indexName)) return std::move(indexName);
+    throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, indexName);
+}
 
 void Index::createInitializationFlagFile() const
 {
@@ -138,7 +147,7 @@ Index::IndexColumnCollection Index::makeIndexColumns(
     result.reserve(indexColumnSpecs.size());
     for (const auto& indexColumnSpec : indexColumnSpecs) {
         result.push_back(std::make_shared<IndexColumn>(stdext::as_mutable(*this),
-                indexColumnSpec.m_columnDefinition, indexColumnSpec.m_isSortDescending));
+                indexColumnSpec.m_columnDefinition, indexColumnSpec.m_sortDescending));
     }
     return result;
 }

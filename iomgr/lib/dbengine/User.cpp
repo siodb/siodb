@@ -16,18 +16,21 @@
 
 namespace siodb::iomgr::dbengine {
 
-User::User(UserIdGenerator& userIdGenerator, const std::string& name, const std::string& realName,
+User::User(UserIdGenerator& userIdGenerator, std::string&& name,
+        std::optional<std::string>&& realName, std::optional<std::string>&& description,
         bool active)
-    : m_name(validateUserName(name))
-    , m_realName(realName)
+    : m_name(validateUserName(std::move(name)))
+    , m_realName(std::move(realName))
+    , m_description(std::move(description))
     , m_active(active)
     , m_id(userIdGenerator.generateNextUserId())
 {
 }
 
 User::User(const UserRecord& userRecord)
-    : m_name(validateUserName(userRecord.m_name))
+    : m_name(validateUserName(std::string(userRecord.m_name)))
     , m_realName(userRecord.m_realName)
+    , m_description(userRecord.m_description)
     , m_active(userRecord.m_active)
     , m_id(userRecord.m_id)
 {
@@ -37,15 +40,13 @@ User::User(const UserRecord& userRecord)
 
 UserAccessKeyPtr User::getUserAccessKeyChecked(const std::string& name) const
 {
-    std::lock_guard lock(m_mutex);
     if (auto userAccessKey = getUserAccessKeyUnlocked(name)) return userAccessKey;
     throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, m_name, name);
 }
 
-UserAccessKeyPtr User::addUserAccessKey(
-        std::uint64_t id, const std::string& name, const std::string& text, bool active)
+UserAccessKeyPtr User::addUserAccessKey(std::uint64_t id, std::string&& name, std::string&& text,
+        std::optional<std::string>&& description, bool active)
 {
-    std::lock_guard lock(m_mutex);
     auto it = std::find_if(
             m_accessKeys.begin(), m_accessKeys.end(), [id, &name](const auto& accessKey) noexcept {
                 return accessKey->getId() == id || accessKey->getName() == name;
@@ -53,9 +54,10 @@ UserAccessKeyPtr User::addUserAccessKey(
     if (it != m_accessKeys.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyAlreadyExists, m_name, name);
 
-    if (text.size() > siodb::kMaxAccessKeySize)
+    if (text.size() > siodb::kMaxAccessKeySize) {
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIsLargerThanMax, m_name, name,
                 text.size(), siodb::kMaxAccessKeySize);
+    }
 
     try {
         siodb::crypto::DigitalSignatureKey key;
@@ -64,18 +66,16 @@ UserAccessKeyPtr User::addUserAccessKey(
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIsInvalid, m_name, name);
     }
 
-    auto accessKey = std::make_shared<UserAccessKey>(*this, id, name, text, active);
+    auto accessKey = std::make_shared<UserAccessKey>(
+            *this, id, std::move(name), std::move(text), std::move(description), active);
     m_accessKeys.push_back(accessKey);
     return accessKey;
 }
 
 void User::deleteUserAccessKey(const std::string& name)
 {
-    std::lock_guard lock(m_mutex);
-    auto it = std::find_if(
-            m_accessKeys.begin(), m_accessKeys.end(), [&name](const auto& accessKey) noexcept {
-                return accessKey->getName() == name;
-            });
+    auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
+            [&name](const auto& accessKey) noexcept { return accessKey->getName() == name; });
     if (it == m_accessKeys.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, m_name, name);
 
@@ -87,25 +87,22 @@ void User::deleteUserAccessKey(const std::string& name)
 
 std::size_t User::getActiveKeyCount() const noexcept
 {
-    return std::count_if(
-            m_accessKeys.begin(), m_accessKeys.end(),
+    return std::count_if(m_accessKeys.begin(), m_accessKeys.end(),
             [](const auto& key) noexcept { return key->isActive(); });
 }
 
 // ----- internals -----
 
-const std::string& User::validateUserName(const std::string& userName)
+std::string&& User::validateUserName(std::string&& userName)
 {
-    if (isValidDatabaseObjectName(userName)) return userName;
+    if (isValidDatabaseObjectName(userName)) return std::move(userName);
     throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, userName);
 }
 
 UserAccessKeyPtr User::getUserAccessKeyUnlocked(const std::string& name) const noexcept
 {
-    auto it = std::find_if(
-            m_accessKeys.begin(), m_accessKeys.end(), [&name](const auto& accessKey) noexcept {
-                return accessKey->getName() == name;
-            });
+    auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
+            [&name](const auto& accessKey) noexcept { return accessKey->getName() == name; });
     return (it == m_accessKeys.end()) ? nullptr : *it;
 }
 

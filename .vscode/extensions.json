@@ -5,6 +5,7 @@
     "recommendations": [
         "davidanson.vscode-markdownlint",
         "ms-vscode.cpptools",
-        "kangping.protobuf"
+        "kangping.protobuf",
+        "mike-lischke.vscode-antlr4"
     ]
 }

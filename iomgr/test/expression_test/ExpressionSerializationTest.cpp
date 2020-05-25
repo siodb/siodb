@@ -18,7 +18,8 @@ void testExpressionSerialization(
     const auto serializedSize = expr.getSerializedSize();
     ASSERT_EQ(serializedSize, expectedSerializedSize);
 
-    siodb::BinaryValue buffer(expectedSerializedSize + kExtraBufferSize, 0xCD);
+    siodb::utils::MemoryBuffer<std::uint8_t> buffer(
+            expectedSerializedSize + kExtraBufferSize, 0xCD);
     const auto end = expr.serializeUnchecked(buffer.data());
     const auto actualSize = static_cast<std::size_t>(end - buffer.data());
     ASSERT_EQ(actualSize, expectedSerializedSize);

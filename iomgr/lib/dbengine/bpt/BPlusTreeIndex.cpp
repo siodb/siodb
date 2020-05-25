@@ -32,11 +32,12 @@ namespace siodb::iomgr::dbengine {
 
 ///////////////////// class BPlusTreeIndex /////////////////////////////////////////////////////////
 
-BPlusTreeIndex::BPlusTreeIndex(Table& table, const std::string& name,
-        const IndexKeyTraits& keyTraits, std::size_t valueSize, KeyCompareFunction keyCompare,
-        bool unique, const IndexColumnSpecificationList& columns, std::uint32_t dataFileSize)
-    : Index(table, IndexType::kBPlusTreeIndex, name, keyTraits, valueSize, keyCompare, unique,
-            columns)
+BPlusTreeIndex::BPlusTreeIndex(Table& table, std::string&& name, const IndexKeyTraits& keyTraits,
+        std::size_t valueSize, KeyCompareFunction keyCompare, bool unique,
+        const IndexColumnSpecificationList& columns, std::uint32_t dataFileSize,
+        std::optional<std::string>&& description)
+    : Index(table, IndexType::kBPlusTreeIndex, std::move(name), keyTraits, valueSize, keyCompare,
+            unique, columns, std::move(description))
     , m_dataFileSize(dataFileSize)
     , m_internalKvPairSize(m_keySize + sizeof(std::uint64_t))
     , m_branchingFactor(
@@ -232,7 +233,7 @@ io::FilePtr BPlusTreeIndex::createIndexFile() const
                 m_table.getId(), m_id, ex.code().value(), std::strerror(ex.code().value()));
     }
 
-    BinaryValue buffer(Node::kSize, 0);
+    utils::MemoryBuffer<std::uint8_t> buffer(Node::kSize, 0);
 
     // Write index header
     IndexFileHeader indexFileHeader;

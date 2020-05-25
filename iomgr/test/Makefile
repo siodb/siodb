@@ -17,6 +17,7 @@ SUBDIRS:= \
 	encrypted_file_test  \
 	expression_test  \
 	key_generator_test  \
+	registry_test  \
 	request_handler_test  \
 	sql_parser_test  \
 	variant_test

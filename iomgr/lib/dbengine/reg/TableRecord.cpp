@@ -8,7 +8,13 @@
 #include "Helpers.h"
 #include "../Table.h"
 
+// Boost headers
+#include <boost/lexical_cast.hpp>
+
 namespace siodb::iomgr::dbengine {
+
+const Uuid TableRecord::kClassUuid =
+        boost::lexical_cast<Uuid>("be67ce29-0485-4d3c-885d-fd2fe799eb1b");
 
 TableRecord::TableRecord(const Table& table)
     : m_id(table.getId())
@@ -16,37 +22,58 @@ TableRecord::TableRecord(const Table& table)
     , m_name(table.getName())
     , m_firstUserTrid(table.getFirstUserTrid())
     , m_currentColumnSetId(table.getCurrentColumnSetId())
+    , m_description(table.getDescription())
 {
 }
 
-std::size_t TableRecord::getSerializedSize() const noexcept
+std::size_t TableRecord::getSerializedSize(unsigned version) const noexcept
 {
-    return ::getVarIntSize(m_id) + getVarIntSize(static_cast<std::uint32_t>(m_type))
-           + ::getSerializedSize(m_name) + ::getVarIntSize(m_firstUserTrid)
-           + ::getVarIntSize(m_currentColumnSetId);
+    return Uuid::static_size() + ::getVarIntSize(version) + ::getVarIntSize(m_id)
+           + ::getVarIntSize(static_cast<std::uint32_t>(m_type)) + ::getSerializedSize(m_name)
+           + ::getVarIntSize(m_firstUserTrid) + ::getVarIntSize(m_currentColumnSetId)
+           + ::getSerializedSize(m_description);
 }
 
-std::uint8_t* TableRecord::serializeUnchecked(std::uint8_t* buffer) const noexcept
+std::uint8_t* TableRecord::serializeUnchecked(std::uint8_t* buffer, unsigned version) const noexcept
 {
+    std::memcpy(buffer, kClassUuid.data, Uuid::static_size());
+    buffer += Uuid::static_size();
+    buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
     buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_type), buffer);
     buffer = ::serializeUnchecked(m_name, buffer);
     buffer = ::encodeVarInt(m_firstUserTrid, buffer);
     buffer = ::encodeVarInt(m_currentColumnSetId, buffer);
+    buffer = ::serializeUnchecked(m_description, buffer);
     return buffer;
 }
 
 std::size_t TableRecord::deserialize(const std::uint8_t* buffer, std::size_t length)
 {
-    int consumed = ::decodeVarInt(buffer, length, m_id);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "id", consumed);
-    std::size_t totalConsumed = consumed;
+    if (length < Uuid::static_size())
+        helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
+    if (std::memcmp(kClassUuid.data, buffer, Uuid::static_size()) != 0)
+        helpers::reportClassUuidMismatch(kClassName, buffer, kClassUuid.data);
 
-    std::uint32_t uv32 = 0;
-    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, uv32);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "type", consumed);
+    std::size_t totalConsumed = Uuid::static_size();
+
+    std::uint32_t classVersion = 0;
+    int consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, classVersion);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "$classVersion", consumed);
     totalConsumed += consumed;
-    m_type = static_cast<TableType>(uv32);
+
+    if (classVersion > kClassVersion)
+        helpers::reportClassVersionMismatch(kClassName, classVersion, kClassVersion);
+
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_id);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "id", consumed);
+    totalConsumed += consumed;
+
+    std::uint32_t type = 0;
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, type);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "type", consumed);
+    totalConsumed += consumed;
+    m_type = static_cast<TableType>(type);
 
     try {
         totalConsumed +=
@@ -56,13 +83,20 @@ std::size_t TableRecord::deserialize(const std::uint8_t* buffer, std::size_t len
     }
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_firstUserTrid);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "firstUserTrid", consumed);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "firstUserTrid", consumed);
     totalConsumed += consumed;
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_currentColumnSetId);
     if (consumed < 1)
-        helpers::reportDeserializationFailure(kClassName, "currentColumnSetId", consumed);
+        helpers::reportInvalidOrNotEnoughData(kClassName, "currentColumnSetId", consumed);
     totalConsumed += consumed;
+
+    try {
+        totalConsumed +=
+                ::deserializeObject(buffer + totalConsumed, length - totalConsumed, m_description);
+    } catch (std::exception& ex) {
+        helpers::reportDeserializationFailure(kClassName, "description", ex.what());
+    }
 
     return totalConsumed;
 }

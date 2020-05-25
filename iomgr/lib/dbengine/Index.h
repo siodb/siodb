@@ -44,10 +44,11 @@ protected:
      * @param keyCompare Key comparison function.
      * @param unique Index uniqueness flag.
      * @param columns Indexed column list.
+     * @param description Index description.
      */
-    Index(Table& table, IndexType type, const std::string& name, const IndexKeyTraits& keyTraits,
+    Index(Table& table, IndexType type, std::string&& name, const IndexKeyTraits& keyTraits,
             std::size_t valueSize, KeyCompareFunction keyCompare, bool unique,
-            const IndexColumnSpecificationList& columns);
+            const IndexColumnSpecificationList& columns, std::optional<std::string>&& description);
 
     /**
      * Initializes object of class Index for an existing index.
@@ -88,9 +89,18 @@ public:
      * Returns index name.
      * @return Index name.
      */
-    const std::string& getName() const noexcept
+    const auto& getName() const noexcept
     {
         return m_name;
+    }
+
+    /**
+     * Returns index description.
+     * @return Index description.
+     */
+    const auto& getDescription() const noexcept
+    {
+        return m_description;
     }
 
     /**
@@ -307,6 +317,14 @@ private:
 
 private:
     /**
+     * Validates index name.
+     * @param indexName Index name.
+     * @return The same inex name.
+     * @throw DatabaseError if inex name is invalid.
+     */
+    static std::string&& validateIndexName(std::string&& indexName);
+
+    /**
      * Validates table.
      * @param table Table to which this index is supposed to belong to.
      * @param indexRecord registry record.
@@ -347,6 +365,9 @@ protected:
 
     /** Index name */
     const std::string m_name;
+
+    /** Index name */
+    std::optional<std::string> m_description;
 
     /** Index ID */
     const std::uint64_t m_id;

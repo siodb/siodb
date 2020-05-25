@@ -7,6 +7,8 @@
 // Project headers
 #include "DatabaseCache.h"
 #include "InstancePtr.h"
+#include "UpdateUserAccessKeyParameters.h"
+#include "UpdateUserParameters.h"
 #include "UserCache.h"
 #include "reg/DatabaseRegistry.h"
 #include "reg/UserRegistry.h"
@@ -146,11 +148,13 @@ public:
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
      * @param currentUserId Current user ID.
+     * @param description Database description.
      * @return New database object.
      * @throw DatabaseError if some error has occurrred.
      */
-    DatabasePtr createDatabase(const std::string& name, const std::string& cipherId,
-            const BinaryValue& cipherKey, std::uint32_t currentUserId);
+    DatabasePtr createDatabase(std::string&& name, const std::string& cipherId,
+            BinaryValue&& cipherKey, std::uint32_t currentUserId,
+            std::optional<std::string>&& description);
 
     /**
      * Deletes existing database.
@@ -183,12 +187,14 @@ public:
      * Creates new user.
      * @param name User name.
      * @param realName Real name.
+     * @param description User description.
      * @param active Initial state of user.
      * @param currentUserId Current user ID.
      * @return User ID.
      * @throw DatabaseError if some error has occurrred.
      */
-    std::uint32_t createUser(const std::string& name, const std::string& realName, bool activ,
+    std::uint32_t createUser(const std::string& name, const std::optional<std::string>& realName,
+            const std::optional<std::string>& description, bool active,
             std::uint32_t currentUserId);
 
     /**
@@ -203,26 +209,27 @@ public:
     /**
      * Updates existing user.
      * @param name User name.
-     * @param active New user state.
-     * @param realName New user real name.
+     * @param params Update parameters.
      * @param currentUserId Current user ID.
      * @throw DatabaseError if some error has occurrred.
      */
-    void updateUser(const std::string& name, const std::optional<bool>& active,
-            const std::optional<std::string>& realName, std::uint32_t currentUserId);
+    void updateUser(const std::string& name, const UpdateUserParameters& params,
+            std::uint32_t currentUserId);
 
     /**
      * Creates new user access key.
      * @param userName User name.
-     * @param name User access key name.
+     * @param keyName User access key name.
      * @param text User access key text.
+     * @param description User access key description.
      * @param active Initial state
      * @param currentUserId Current user ID.
      * @return User access key ID.
      * @throw DatabaseError if some error has occurrred.
      */
-    std::uint64_t createUserAccessKey(const std::string& userName, const std::string& name,
-            const std::string& text, bool active, std::uint32_t currentUserId);
+    std::uint64_t createUserAccessKey(const std::string& userName, const std::string& keyName,
+            const std::string& text, const std::optional<std::string>& description, bool active,
+            std::uint32_t currentUserId);
 
     /**
      * Deletes existing user access key.
@@ -238,13 +245,13 @@ public:
     /**
      * Updates user access key.
      * @param userName User name.
-     * @param name Access key name.
-     * @param active New key state.
+     * @param keyName Access key name.
+     * @param params Update parameters.
      * @param currentUserId Current user ID.
      * @throw DatabaseError if some error has occurrred.
      */
-    void updateUserAccessKey(const std::string& userName, const std::string& name,
-            const std::optional<bool>& active, std::uint32_t currentUserId);
+    void updateUserAccessKey(const std::string& userName, const std::string& keyName,
+            const UpdateUserAccessKeyParameters& params, std::uint32_t currentUserId);
 
     /**
      * Begins user Authentication.

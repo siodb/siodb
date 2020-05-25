@@ -251,17 +251,19 @@ public:
     /**
      * Initializes object of class Variant.
      * @param value A value.
-     * @throw std::invalid_argument if @ref value is nullptr.
+     * @param allowNull Indication that null value is allowed.
+     * @throw std::invalid_argument if @ref value is nullptr and allowNull is false.
      */
-    Variant(const char* value);
+    Variant(const char* value, bool allowNull = false);
 
     /**
      * Initializes object of class Variant.
      * @param value A value.
      */
     Variant(const std::string& value)
-        : Variant(std::string(value))
+        : m_valueType(VariantType::kString)
     {
+        m_value.m_string = new std::string(value);
     }
 
     /**
@@ -277,25 +279,49 @@ public:
     /**
      * Initializes object of class Variant.
      * @param value A value.
-     * @throw std::invalid_argument if @ref value is nullptr.
+     * @param allowNull Indication that null value is allowed.
+     * @throw std::invalid_argument if @ref value is nullptr and allowNull is false.
      */
-    Variant(std::string* value);
+    Variant(std::string* value, bool allowNull = false);
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     */
+    Variant(const std::optional<std::string>& value)
+        : m_valueType(value ? VariantType::kString : VariantType::kNull)
+    {
+        if (value) m_value.m_string = new std::string(*value);
+    }
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     */
+    Variant(std::optional<std::string>&& value)
+        : m_valueType(value ? VariantType::kString : VariantType::kNull)
+    {
+        if (value) m_value.m_string = new std::string(std::move(*value));
+    }
 
     /**
      * Initializes object of class Variant.
      * @param buffer Data buffer.
      * @param size Buffer size.
-     * @throw std::invalid_argument if @ref value is nullptr.
+     * @param allowNull Indication that null value is allowed.
+     * @throw std::invalid_argument if @ref value is nullptr and allowNull is false
+     *        or size is nonzero and value is nullptr.
      */
-    Variant(const void* value, std::size_t size);
+    Variant(const void* value, std::size_t size, bool allowNull = false);
 
     /**
      * Initializes object of class Variant.
      * @param value A value.
      */
     Variant(const BinaryValue& value)
-        : Variant(BinaryValue(value))
+        : m_valueType(VariantType::kBinary)
     {
+        m_value.m_binary = new BinaryValue(value);
     }
 
     /**
@@ -311,23 +337,46 @@ public:
     /**
      * Initializes object of class Variant.
      * @param value A value.
-     * @throw std::invalid_argument if @ref value is nullptr.
+     * @param allowNull Indication that null value is allowed.
+     * @throw std::invalid_argument if @ref value is nullptr and allowNull is false.
      */
-    Variant(BinaryValue* value);
+    Variant(BinaryValue* value, bool allowNull = false);
 
     /**
      * Initializes object of class Variant.
      * @param value A value.
-     * @throw std::invalid_argument if @ref value is nullptr.
      */
-    Variant(ClobStream* value);
+    Variant(const std::optional<BinaryValue>& value)
+        : m_valueType(value ? VariantType::kBinary : VariantType::kNull)
+    {
+        if (value) m_value.m_binary = new BinaryValue(*value);
+    }
 
     /**
      * Initializes object of class Variant.
      * @param value A value.
-     * @throw std::invalid_argument if @ref value is nullptr.
      */
-    Variant(BlobStream* value);
+    Variant(std::optional<BinaryValue>&& value)
+        : m_valueType(value ? VariantType::kBinary : VariantType::kNull)
+    {
+        if (value) m_value.m_binary = new BinaryValue(std::move(*value));
+    }
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     * @param allowNull Indication that null value is allowed.
+     * @throw std::invalid_argument if @ref value is nullptr and allowNull is false.
+     */
+    Variant(ClobStream* value, bool allowNull = false);
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     * @param allowNull Indication that null value is allowed.
+     * @throw std::invalid_argument if @ref value is nullptr and allowNull is false.
+     */
+    Variant(BlobStream* value, bool allowNull = false);
 
     /** De-initializes object of class Variant */
     ~Variant()
@@ -746,6 +795,23 @@ public:
      * Returns string value. Attempts to cast current value type into required value type.
      * @param format Format to be used for conversion to string is some cases. If not specified
      *               or nullptr, default format will be used.
+     * @return Optional string object.
+     * @throw VariantTypeCastError if value type cast is not possible.
+     */
+    std::optional<std::string> asOptionalString(const char* format = nullptr)
+    {
+        if (isNull()) return std::nullopt;
+        const auto p = asString(format);
+        if (p.get_deleter().isOwner())
+            return std::move(*p);  // This is copy of string
+        else
+            return *p;  // This is string itself.
+    }
+
+    /**
+     * Returns string value. Attempts to cast current value type into required value type.
+     * @param format Format to be used for conversion to string is some cases. If not specified
+     *               or nullptr, default format will be used.
      * @return String object.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
@@ -1112,6 +1178,34 @@ public:
      * @param value A value.
      * @return Reference to this object.
      */
+    Variant& operator=(const std::optional<std::string>& value)
+    {
+        if (value)
+            *this = *value;
+        else
+            clear();
+        return *this;
+    }
+
+    /**
+     * Assignment operator.
+     * @param value A value.
+     * @return Reference to this object.
+     */
+    Variant& operator=(std::optional<std::string>&& value) noexcept
+    {
+        if (value)
+            *this = std::move(*value);
+        else
+            clear();
+        return *this;
+    }
+
+    /**
+     * Assignment operator.
+     * @param value A value.
+     * @return Reference to this object.
+     */
     Variant& operator=(const BinaryValue& value)
     {
         Variant tmp(value);
@@ -1138,6 +1232,34 @@ public:
     {
         Variant tmp(value);
         return *this = std::move(tmp);
+    }
+
+    /**
+     * Assignment operator.
+     * @param value A value.
+     * @return Reference to this object.
+     */
+    Variant& operator=(const std::optional<BinaryValue>& value)
+    {
+        if (value)
+            *this = *value;
+        else
+            clear();
+        return *this;
+    }
+
+    /**
+     * Assignment operator.
+     * @param value A value.
+     * @return Reference to this object.
+     */
+    Variant& operator=(std::optional<BinaryValue>&& value) noexcept
+    {
+        if (value)
+            *this = std::move(*value);
+        else
+            clear();
+        return *this;
     }
 
     /**

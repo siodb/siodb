@@ -28,15 +28,16 @@
 
 namespace siodb::iomgr::dbengine {
 
-UniqueLinearIndex::UniqueLinearIndex(Table& table, IndexType type, const std::string& name,
+UniqueLinearIndex::UniqueLinearIndex(Table& table, IndexType type, std::string&& name,
         const IndexKeyTraits& keyTraits, std::size_t valueSize, KeyCompareFunction keyCompare,
-        const IndexColumnSpecification& columnSpec, std::uint32_t dataFileSize)
-    : Index(table, type, name, keyTraits, valueSize, keyCompare, true,
-            IndexColumnSpecificationList {columnSpec})
+        const IndexColumnSpecification& columnSpec, std::uint32_t dataFileSize,
+        std::optional<std::string>&& description)
+    : Index(table, type, std::move(name), keyTraits, valueSize, keyCompare, true,
+            IndexColumnSpecificationList {columnSpec}, std::move(description))
     , m_dataFileSize(dataFileSize)
     , m_validatedKeySize(validateKeySize())
     , m_isSignedKey(validateKeyType(keyTraits))
-    , m_isSortDescending(columnSpec.m_isSortDescending)
+    , m_sortDescending(columnSpec.m_sortDescending)
     , m_recordSize(m_valueSize + 1)
     , m_numberOfRecordsPerNode(uli::Node::kSize / m_recordSize)
     , m_numberOfNodesPerFile(m_dataFileSize / uli::Node::kSize - 1)
@@ -62,7 +63,7 @@ UniqueLinearIndex::UniqueLinearIndex(Table& table, const IndexRecord& indexRecor
     , m_dataFileSize(indexRecord.m_dataFileSize)
     , m_validatedKeySize(validateKeySize())
     , m_isSignedKey(validateKeyType(keyTraits))
-    , m_isSortDescending(m_columns.at(0)->isDescendingSortOrder())
+    , m_sortDescending(m_columns.at(0)->isDescendingSortOrder())
     , m_recordSize(m_valueSize + 1)
     , m_numberOfRecordsPerNode(uli::Node::kSize / m_recordSize)
     , m_numberOfNodesPerFile(m_dataFileSize / uli::Node::kSize - 1)
@@ -255,22 +256,22 @@ bool UniqueLinearIndex::getMaxKey(void* key)
 
 bool UniqueLinearIndex::getFirstKey(void* key)
 {
-    return m_isSortDescending ? getTrailingKey(key) : getLeadingKey(key);
+    return m_sortDescending ? getTrailingKey(key) : getLeadingKey(key);
 }
 
 bool UniqueLinearIndex::getLastKey(void* key)
 {
-    return m_isSortDescending ? getLeadingKey(key) : getTrailingKey(key);
+    return m_sortDescending ? getLeadingKey(key) : getTrailingKey(key);
 }
 
 bool UniqueLinearIndex::getPrevKey(const void* key, void* prevKey)
 {
-    return m_isSortDescending ? getKeyAfter(key, prevKey) : getKeyBefore(key, prevKey);
+    return m_sortDescending ? getKeyAfter(key, prevKey) : getKeyBefore(key, prevKey);
 }
 
 bool UniqueLinearIndex::getNextKey(const void* key, void* nextKey)
 {
-    return m_isSortDescending ? getKeyBefore(key, nextKey) : getKeyAfter(key, nextKey);
+    return m_sortDescending ? getKeyBefore(key, nextKey) : getKeyAfter(key, nextKey);
 }
 
 io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
@@ -298,7 +299,7 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
                 m_id, ex.code().value(), std::strerror(ex.code().value()));
     }
 
-    BinaryValue buffer(uli::Node::kSize, 0);
+    utils::MemoryBuffer<std::uint8_t> buffer(uli::Node::kSize, 0);
 
     // Write header
     IndexFileHeader indexFileHeader;
@@ -820,14 +821,14 @@ void UniqueLinearIndex::updateMinMaxKeysAfterRemoval(const void* key)
 
             if (isMinKey) {
                 lessKey.resize(m_keySize);
-                if (m_isSortDescending ? getNextKey(key, lessKey.data())
-                                       : getPrevKey(key, lessKey.data())) {
+                if (m_sortDescending ? getNextKey(key, lessKey.data())
+                                     : getPrevKey(key, lessKey.data())) {
                     newMinKey = lessKey;
                 } else {
                     lessKey.clear();
                     greaterKey.resize(m_keySize);
-                    if (m_isSortDescending ? getPrevKey(key, greaterKey.data())
-                                           : getNextKey(key, greaterKey.data()))
+                    if (m_sortDescending ? getPrevKey(key, greaterKey.data())
+                                         : getNextKey(key, greaterKey.data()))
                         newMinKey = greaterKey;
                     else {
                         throwDatabaseError(
@@ -841,15 +842,15 @@ void UniqueLinearIndex::updateMinMaxKeysAfterRemoval(const void* key)
             if (isMaxKey) {
                 if (greaterKey.empty()) {
                     greaterKey.resize(m_keySize);
-                    if (!(m_isSortDescending ? getNextKey(key, greaterKey.data())
-                                             : getPrevKey(key, greaterKey.data()))) {
+                    if (!(m_sortDescending ? getNextKey(key, greaterKey.data())
+                                           : getPrevKey(key, greaterKey.data()))) {
                         greaterKey.clear();
                     }
                 }
                 if (greaterKey.empty()) {
                     lessKey.resize(m_keySize);
-                    if (m_isSortDescending ? getNextKey(key, lessKey.data())
-                                           : getPrevKey(key, lessKey.data()))
+                    if (m_sortDescending ? getNextKey(key, lessKey.data())
+                                         : getPrevKey(key, lessKey.data()))
                         newMaxKey = lessKey;
                     else {
                         throwDatabaseError(

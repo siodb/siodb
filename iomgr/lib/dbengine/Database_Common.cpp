@@ -113,8 +113,9 @@ ConstraintDefinitionPtr Database::getConstraintDefinitionChecked(
             constraintDefinitionId);
 }
 
-ConstraintPtr Database::createConstraint(Table& table, Column* column, const std::string& name,
-        const ConstConstraintDefinitionPtr& constraintDefinition)
+ConstraintPtr Database::createConstraint(Table& table, Column* column, std::string&& name,
+        const ConstConstraintDefinitionPtr& constraintDefinition,
+        std::optional<std::string>&& description)
 {
     // Validate table and column
     checkTableBelongsToThisDatabase(table, __func__);
@@ -129,12 +130,13 @@ ConstraintPtr Database::createConstraint(Table& table, Column* column, const std
     ConstraintPtr constraint;
     switch (constraintDefinition->getType()) {
         case ConstraintType::kNotNull: {
-            constraint = std::make_shared<NotNullConstraint>(*column, name, constraintDefinition);
+            constraint = std::make_shared<NotNullConstraint>(
+                    *column, std::move(name), constraintDefinition, std::move(description));
             break;
         }
         case ConstraintType::kDefaultValue: {
-            constraint =
-                    std::make_shared<DefaultValueConstraint>(*column, name, constraintDefinition);
+            constraint = std::make_shared<DefaultValueConstraint>(
+                    *column, std::move(name), constraintDefinition, std::move(description));
             break;
         }
         default: {
@@ -443,8 +445,9 @@ void Database::registerIndex(const Index& index)
     m_indexRegistry.emplace(index);
 }
 
-TablePtr Database::createUserTable(const std::string& name, TableType type,
-        const std::vector<SimpleColumnSpecification>& columnSpecs, std::uint32_t currentUserId)
+TablePtr Database::createUserTable(std::string&& name, TableType type,
+        const std::vector<SimpleColumnSpecification>& columnSpecs, std::uint32_t currentUserId,
+        std::optional<std::string>&& description)
 {
     std::vector<ColumnSpecification> columnSpecs2;
     if (!columnSpecs.empty()) {
@@ -452,11 +455,13 @@ TablePtr Database::createUserTable(const std::string& name, TableType type,
         for (const auto& columnInfo : columnSpecs)
             columnSpecs2.emplace_back(columnInfo);
     }
-    return createUserTable(name, type, columnSpecs2, currentUserId);
+    return createUserTable(
+            std::move(name), type, columnSpecs2, currentUserId, std::move(description));
 }
 
-TablePtr Database::createUserTable(const std::string& name, TableType type,
-        const std::vector<ColumnSpecification>& columnSpecs, std::uint32_t currentUserId)
+TablePtr Database::createUserTable(std::string&& name, TableType type,
+        const std::vector<ColumnSpecification>& columnSpecs, std::uint32_t currentUserId,
+        std::optional<std::string>&& description)
 {
     if (type != TableType::kDisk)
         throwDatabaseError(IOManagerMessageId::kErrorTableTypeNotSupported, static_cast<int>(type));
@@ -536,7 +541,7 @@ TablePtr Database::createUserTable(const std::string& name, TableType type,
         throw CompoundDatabaseError(std::move(errors));
     }
 
-    const auto table = createTable(name, type, 0);
+    const auto table = createTable(std::move(name), type, 0, std::move(description));
 
     std::vector<ColumnPtr> columns;
     columns.reserve(columnSpecs.size() + 1);
@@ -545,7 +550,7 @@ TablePtr Database::createUserTable(const std::string& name, TableType type,
     columns.push_back(masterColumn);
 
     for (const auto& columnSpec : columnSpecs)
-        columns.push_back(table->createColumn(columnSpec));
+        columns.push_back(table->createColumn(ColumnSpecification(columnSpec)));
 
     table->closeCurrentColumnSet();
 
@@ -585,15 +590,16 @@ void Database::checkTableBelongsToThisDatabase(const Table& table, const char* o
     }
 }
 
-TablePtr Database::createTableUnlocked(
-        const std::string& name, TableType type, std::uint64_t firstUserTrid)
+TablePtr Database::createTableUnlocked(std::string&& name, TableType type,
+        std::uint64_t firstUserTrid, std::optional<std::string>&& description)
 {
     std::lock_guard lock(m_mutex);
     if (m_tableRegistry.byName().count(name) > 0)
         throwDatabaseError(IOManagerMessageId::kErrorTableAlreadyExists, m_name, name);
 
     // Create table
-    auto table = std::make_shared<Table>(*this, type, name, firstUserTrid);
+    auto table = std::make_shared<Table>(
+            *this, type, std::move(name), firstUserTrid, std::move(description));
 
     // Register table
     registerTable(*table);
@@ -701,20 +707,18 @@ std::string Database::getSystemObjectsFilePath() const
     return utils::constructPath(m_dataDir, kSystemObjectsFileName);
 }
 
-const std::string& Database::validateDatabaseName(const std::string& databaseName)
+std::string&& Database::validateDatabaseName(std::string&& databaseName)
 {
-    if (!isValidDatabaseObjectName(databaseName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
-    return databaseName;
+    if (isValidDatabaseObjectName(databaseName)) return std::move(databaseName);
+    throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 }
 
 std::string Database::getTableNameUnlocked(std::uint32_t tableId) const
 {
     const auto& index = m_tableRegistry.byId();
     const auto it = index.find(tableId);
-    if (it == index.cend())
-        throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, m_name, tableId);
-    return it->m_name;
+    if (it != index.cend()) return it->m_name;
+    throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, m_name, tableId);
 }
 
 TablePtr Database::getTableUnlocked(const std::string& tableName)

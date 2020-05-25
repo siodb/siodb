@@ -38,9 +38,11 @@ struct IndexRecord {
      * @param name Index name.
      * @param columns Indexed columns.
      * @param dataFileSize Data file size.
+     * @param description Index description.
      */
     IndexRecord(std::uint64_t id, IndexType type, std::uint64_t tableId, bool unique,
-            std::string&& name, IndexColumnRegistry&& columns, std::uint32_t dataFileSize) noexcept
+            std::string&& name, IndexColumnRegistry&& columns, std::uint32_t dataFileSize,
+            std::optional<std::string>&& description) noexcept
         : m_id(id)
         , m_type(type)
         , m_tableId(tableId)
@@ -48,6 +50,7 @@ struct IndexRecord {
         , m_name(std::move(name))
         , m_columns(std::move(columns))
         , m_dataFileSize(dataFileSize)
+        , m_description(std::move(description))
     {
     }
 
@@ -58,17 +61,33 @@ struct IndexRecord {
     IndexRecord(const Index& index);
 
     /**
+     * Equality comparison operator.
+     * @param other Other object.
+     * @return true if this and other objects are equal, false otherwise.
+     */
+    bool operator==(const IndexRecord& other) const noexcept
+    {
+        return m_id == other.m_id && m_type == other.m_type && m_tableId == other.m_tableId
+               && m_unique == other.m_unique && m_name == other.m_name
+               && m_columns == other.m_columns && m_dataFileSize == other.m_dataFileSize
+               && m_description == other.m_description;
+    }
+
+    /**
      * Returns buffer size required to serialize this object.
+     * @param version Target version.
      * @return Number of bytes.
      */
-    std::size_t getSerializedSize() const noexcept;
+    std::size_t getSerializedSize(unsigned version = kClassVersion) const noexcept;
 
     /**
      * Serializes object into buffer. Assumes buffer is big enough.
      * @param buffer Output buffer.
+     * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer) const noexcept;
+    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
+            noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -99,8 +118,17 @@ struct IndexRecord {
     /** Data file size */
     std::uint32_t m_dataFileSize;
 
+    /** Index description */
+    std::optional<std::string> m_description;
+
+    /** Structure UUID */
+    static const Uuid kClassUuid;
+
     /** Structure name */
     static constexpr const char* kClassName = "IndexRecord";
+
+    /** Structure version */
+    static constexpr std::uint32_t kClassVersion = 0;
 };
 
 }  // namespace siodb::iomgr::dbengine

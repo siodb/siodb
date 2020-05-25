@@ -8,6 +8,8 @@
 #include "DBEngineRequestType.h"
 #include "expr/Expression.h"
 #include "../ConstraintType.h"
+#include "../UpdateUserAccessKeyParameters.h"
+#include "../UpdateUserParameters.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -585,7 +587,7 @@ struct NotNullConstraint : public Constraint {
 /** DEFAULT value constraint */
 struct DefaultValueConstraint : public Constraint {
     /**
-     * Initializes object of class LegacyDefaultValueConstraint.
+     * Initializes object of class DefaultValueConstraint.
      * @param name Constraint name.
      * @param expression Default value expression.
      */
@@ -1016,12 +1018,15 @@ struct CreateUserRequest : public DBEngineRequest {
      * Initializes object of class CreateUserRequest.
      * @param name User account name.
      * @param realName User real name.
+     * @param description User description.
      * @param active Indication that user is active.
      */
-    CreateUserRequest(std::string&& name, std::string&& realName, bool active) noexcept
+    CreateUserRequest(std::string&& name, std::optional<std::string>&& realName,
+            std::optional<std::string>&& description, bool active) noexcept
         : DBEngineRequest(DBEngineRequestType::kCreateUser)
         , m_name(std::move(name))
         , m_realName(std::move(realName))
+        , m_description(std::move(description))
         , m_active(active)
     {
     }
@@ -1030,7 +1035,10 @@ struct CreateUserRequest : public DBEngineRequest {
     const std::string m_name;
 
     /** User real name */
-    const std::string m_realName;
+    const std::optional<std::string> m_realName;
+
+    /** User description */
+    const std::optional<std::string> m_description;
 
     /** Indication that user is active */
     const bool m_active;
@@ -1061,27 +1069,25 @@ struct DropUserRequest : public DBEngineRequest {
 struct AlterUserRequest : public DBEngineRequest {
     /** 
      * Initializes object of class AlterUserRequest.
-     * @param name User name.
-     * @param realName New real name,
+     * @param userName User name.
+     * @param realName New real name.
+     * @param description New description.
      * @param active New state.
      */
-    AlterUserRequest(std::string&& name, std::optional<std::string>&& realName,
+    AlterUserRequest(std::string&& userName, std::optional<std::optional<std::string>>&& realName,
+            std::optional<std::optional<std::string>>&& description,
             std::optional<bool>&& active) noexcept
         : DBEngineRequest(DBEngineRequestType::kAlterUser)
-        , m_name(std::move(name))
-        , m_realName(std::move(realName))
-        , m_active(std::move(active))
+        , m_userName(std::move(userName))
+        , m_params(std::move(realName), std::move(description), std::move(active))
     {
     }
 
     /** User account name */
-    const std::string m_name;
+    const std::string m_userName;
 
-    /** User real name */
-    const std::optional<std::string> m_realName;
-
-    /** Indication that user is active */
-    const std::optional<bool> m_active;
+    /** Update parameters */
+    const UpdateUserParameters m_params;
 };
 
 /** ALTER USER ADD ACCESS KEY request */
@@ -1090,15 +1096,16 @@ struct AddUserAccessKeyRequest : public DBEngineRequest {
      * Initializes object of class AddUserAccessKeyRequest.
      * @param userName User account name.
      * @param keyName Key name.
-     * @param keyText Key text. 
+     * @param text Key text. 
      * @param active Indication that key is active.
      */
-    AddUserAccessKeyRequest(std::string&& userName, std::string&& keyName, std::string&& keyText,
-            bool active) noexcept
+    AddUserAccessKeyRequest(std::string&& userName, std::string&& keyName, std::string&& text,
+            std::optional<std::string>&& description, bool active) noexcept
         : DBEngineRequest(DBEngineRequestType::kAddUserAccessKey)
         , m_userName(std::move(userName))
         , m_keyName(std::move(keyName))
-        , m_keyText(std::move(keyText))
+        , m_text(std::move(text))
+        , m_description(description)
         , m_active(active)
     {
     }
@@ -1110,7 +1117,10 @@ struct AddUserAccessKeyRequest : public DBEngineRequest {
     const std::string m_keyName;
 
     /** Key text */
-    const std::string m_keyText;
+    const std::string m_text;
+
+    /** Key description */
+    const std::optional<std::string> m_description;
 
     /** Indication that key is active */
     const bool m_active;
@@ -1150,12 +1160,13 @@ struct AlterUserAccessKey : public DBEngineRequest {
      * @param keyName Key name.
      * @param active Key state.
      */
-    AlterUserAccessKey(
-            std::string&& userName, std::string&& keyName, std::optional<bool>&& active) noexcept
+    AlterUserAccessKey(std::string&& userName, std::string&& keyName,
+            std::optional<std::optional<std::string>>&& description,
+            std::optional<bool>&& active) noexcept
         : DBEngineRequest(DBEngineRequestType::kAlterUserAccessKey)
         , m_userName(std::move(userName))
         , m_keyName(std::move(keyName))
-        , m_active(std::move(active))
+        , m_params(std::move(description), std::move(active))
     {
     }
 
@@ -1165,8 +1176,8 @@ struct AlterUserAccessKey : public DBEngineRequest {
     /** Key name */
     const std::string m_keyName;
 
-    /** Indication that key is active */
-    const std::optional<bool> m_active;
+    /** Update parameters */
+    const UpdateUserAccessKeyParameters m_params;
 };
 
 /** SHOW DATABASES request */

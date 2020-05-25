@@ -8,7 +8,13 @@
 #include "Helpers.h"
 #include "../IndexColumn.h"
 
+// Boost headers
+#include <boost/lexical_cast.hpp>
+
 namespace siodb::iomgr::dbengine {
+
+const Uuid IndexRecord::kClassUuid =
+        boost::lexical_cast<Uuid>("f6c807ee-f24a-4398-ae44-d189036c7842");
 
 IndexRecord::IndexRecord(const Index& index)
     : m_id(index.getId())
@@ -17,23 +23,29 @@ IndexRecord::IndexRecord(const Index& index)
     , m_unique(index.isUnique())
     , m_name(index.getName())
     , m_dataFileSize(index.getDataFileSize())
+    , m_description(index.getDescription())
 {
     for (const auto& indexColumn : index.getColumns())
         m_columns.emplace(*indexColumn);
 }
 
-std::size_t IndexRecord::getSerializedSize() const noexcept
+std::size_t IndexRecord::getSerializedSize(unsigned version) const noexcept
 {
-    std::size_t result = ::getVarIntSize(m_id) + getVarIntSize(static_cast<std::uint32_t>(m_type))
-                         + ::getVarIntSize(m_tableId) + 1 + ::getSerializedSize(m_name)
-                         + ::getVarIntSize(m_columns.size()) + ::getVarIntSize(m_dataFileSize);
+    std::size_t result = Uuid::static_size() + ::getVarIntSize(version) + ::getVarIntSize(m_id)
+                         + ::getVarIntSize(static_cast<std::uint32_t>(m_type))
+                         + ::getVarIntSize(m_tableId) + 1U + ::getSerializedSize(m_name)
+                         + ::getVarIntSize(static_cast<std::uint32_t>(m_columns.size()))
+                         + ::getVarIntSize(m_dataFileSize) + ::getSerializedSize(m_description);
     for (const auto& column : m_columns.byId())
         result += column.getSerializedSize();
     return result;
 }
 
-std::uint8_t* IndexRecord::serializeUnchecked(std::uint8_t* buffer) const noexcept
+std::uint8_t* IndexRecord::serializeUnchecked(std::uint8_t* buffer, unsigned version) const noexcept
 {
+    std::memcpy(buffer, kClassUuid.data, Uuid::static_size());
+    buffer += Uuid::static_size();
+    buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
     buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_type), buffer);
     buffer = ::encodeVarInt(m_tableId, buffer);
@@ -43,28 +55,44 @@ std::uint8_t* IndexRecord::serializeUnchecked(std::uint8_t* buffer) const noexce
     for (const auto& column : m_columns.byId())
         buffer = column.serializeUnchecked(buffer);
     buffer = ::encodeVarInt(m_dataFileSize, buffer);
+    buffer = ::serializeUnchecked(m_description, buffer);
     return buffer;
 }
 
 std::size_t IndexRecord::deserialize(const std::uint8_t* buffer, std::size_t length)
 {
-    int consumed = ::decodeVarInt(buffer, length, m_id);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "id", consumed);
-    std::size_t totalConsumed = consumed;
+    if (length < Uuid::static_size())
+        helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
+    if (std::memcmp(kClassUuid.data, buffer, Uuid::static_size()) != 0)
+        helpers::reportClassUuidMismatch(kClassName, buffer, kClassUuid.data);
 
-    std::uint32_t uv32 = 0;
-    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, uv32);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "type", consumed);
+    std::size_t totalConsumed = Uuid::static_size();
+
+    std::uint32_t classVersion = 0;
+    int consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, classVersion);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "$classVersion", consumed);
     totalConsumed += consumed;
-    m_type = static_cast<IndexType>(uv32);
+
+    if (classVersion > kClassVersion)
+        helpers::reportClassVersionMismatch(kClassName, classVersion, kClassVersion);
+
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_id);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "id", consumed);
+    totalConsumed += consumed;
+
+    std::uint32_t indexType = 0;
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, indexType);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "type", consumed);
+    totalConsumed += consumed;
+    m_type = static_cast<IndexType>(indexType);
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_tableId);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "tableId", consumed);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "tableId", consumed);
     totalConsumed += consumed;
 
     if (length - 1 < totalConsumed)
-        helpers::reportDeserializationFailure(kClassName, "unique", consumed);
-    m_unique = static_cast<bool>(buffer[totalConsumed++]);
+        helpers::reportInvalidOrNotEnoughData(kClassName, "unique", consumed);
+    m_unique = buffer[totalConsumed++] != 0;
 
     try {
         totalConsumed +=
@@ -75,7 +103,7 @@ std::size_t IndexRecord::deserialize(const std::uint8_t* buffer, std::size_t len
 
     std::uint32_t columnCount = 0;
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, columnCount);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "column.size", columnCount);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "column.size", columnCount);
     totalConsumed += consumed;
 
     std::uint32_t index = 0;
@@ -93,8 +121,15 @@ std::size_t IndexRecord::deserialize(const std::uint8_t* buffer, std::size_t len
     }
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_dataFileSize);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "dataFileSize", consumed);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "dataFileSize", consumed);
     totalConsumed += consumed;
+
+    try {
+        totalConsumed +=
+                ::deserializeObject(buffer + totalConsumed, length - totalConsumed, m_description);
+    } catch (std::exception& ex) {
+        helpers::reportDeserializationFailure(kClassName, "description", ex.what());
+    }
 
     return totalConsumed;
 }

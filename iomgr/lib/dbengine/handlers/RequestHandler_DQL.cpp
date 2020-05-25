@@ -105,7 +105,7 @@ void RequestHandler::executeSelectRequest(
 
     std::unordered_set<std::string> knownAliases;
 
-    bool notNull = true;
+    bool hasNullableColumns = false;
     for (const auto& resultExpr : request.m_resultExpressions) {
         const auto resultExprType = resultExpr.m_expression->getType();
 
@@ -143,7 +143,7 @@ void RequestHandler::executeSelectRequest(
                 addColumnToResponse(response, *tableColumn.m_column);
                 dataSets[tableIndex]->emplaceColumnInfo(tableColumn.m_position,
                         tableColumn.m_column->getName(), utils::g_emptyString);
-                notNull &= tableColumn.m_column->isNotNull();
+                hasNullableColumns |= !tableColumn.m_column->isNotNull();
             }
 
             columnCountToSend += tableColumnRecordLists[tableIndex].size();
@@ -199,9 +199,8 @@ void RequestHandler::executeSelectRequest(
 
             // Search for columns
             const auto& tableColumnRecords = tableColumnRecordLists[tableIndex];
-            const auto it = std::find_if(
-                    tableColumnRecords.begin(),
-                    tableColumnRecords.end(), [&columnName](const auto& tableColumn) noexcept {
+            const auto it = std::find_if(tableColumnRecords.begin(), tableColumnRecords.end(),
+                    [&columnName](const auto& tableColumn) noexcept {
                         return tableColumn.m_column->getName() == columnName;
                     });
             if (it == tableColumnRecords.end()) {
@@ -213,7 +212,7 @@ void RequestHandler::executeSelectRequest(
                 columnExpression->setDatasetColumnIndex(dataSets[tableIndex]->getColumnCount());
                 dataSets[tableIndex]->emplaceColumnInfo(
                         it->m_position, it->m_column->getName(), resultExpr.m_alias);
-                notNull &= it->m_column->isNotNull();
+                hasNullableColumns |= !it->m_column->isNotNull();
                 ++columnCountToSend;
             }
         } else {
@@ -227,7 +226,7 @@ void RequestHandler::executeSelectRequest(
 
             columnDescription->set_is_null(true);
             columnDescription->set_type(dataType);
-            notNull = false;
+            hasNullableColumns = true;
             ++columnCountToSend;
         }
     }
@@ -236,8 +235,6 @@ void RequestHandler::executeSelectRequest(
     if (request.m_where != nullptr) updateColumnsFromExpression(dataSets, request.m_where, errors);
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
-    utils::Bitmask nullMask;
-    if (!notNull) nullMask.resize(columnCountToSend, false);
 
     for (auto& tableDataSet : dataSets)
         tableDataSet->resetCursor();
@@ -279,16 +276,22 @@ void RequestHandler::executeSelectRequest(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
     google::protobuf::io::CodedOutputStream codedOutput(&rawOutput);
+
     try {
         bool rowDataAvailable = true;
         for (auto& tableDataSet : dataSets) {
             rowDataAvailable &= tableDataSet->hasCurrentRow();
             if (!rowDataAvailable) break;
         }
+
+        utils::Bitmask nullMask;
+        if (hasNullableColumns) nullMask.resize(columnCountToSend);
+
         std::vector<Variant> values(columnCountToSend);
 
+        //std::uint64_t rowNumber = 0;
         while (rowDataAvailable && (!limit.has_value() || *limit > 0)) {
-            std::size_t rowSize = 0;
+            std::size_t rowLength = 0;
             if (request.m_where) {
                 try {
                     if (isNullType(request.m_where->getResultValueType(*dbContext))) {
@@ -316,36 +319,38 @@ void RequestHandler::executeSelectRequest(
                 continue;
             }
 
-            std::size_t valueIdx = 0;
+            std::size_t valueIndex = 0;
             for (const auto& expr : request.m_resultExpressions) {
                 const auto exprType = expr.m_expression->getType();
                 if (exprType == requests::ExpressionType::kAllColumnsReference) {
                     const auto allColumnsExpression =
                             dynamic_cast<const requests::AllColumnsExpression*>(
                                     expr.m_expression.get());
-                    const auto tableIdx = *allColumnsExpression->getDatasetTableIndex();
-                    for (const auto& rowValue : dataSets[tableIdx]->getCurrentRow()) {
-                        values[valueIdx] = rowValue;
-                        const auto valueSize = getVariantSize(values[valueIdx]);
-                        rowSize += valueSize;
-                        if (!notNull) nullMask.setBit(valueIdx, valueSize == 0);
-                        ++valueIdx;
+                    const auto tableIndex = *allColumnsExpression->getDatasetTableIndex();
+                    for (const auto& rowValue : dataSets[tableIndex]->getCurrentRow()) {
+                        auto& value = values[valueIndex];
+                        value = rowValue;
+                        rowLength += getVariantSize(value);
+                        if (hasNullableColumns) nullMask.setBit(valueIndex, value.isNull());
+                        ++valueIndex;
                     }
                 } else {
-                    values[valueIdx] = expr.m_expression->evaluate(*dbContext);
-                    const auto valueSize = getVariantSize(values[valueIdx]);
-                    rowSize += valueSize;
-                    if (!notNull) nullMask.setBit(valueIdx, valueSize == 0);
-                    ++valueIdx;
+                    auto& value = values[valueIndex];
+                    value = expr.m_expression->evaluate(*dbContext);
+                    rowLength += getVariantSize(value);
+                    if (hasNullableColumns) nullMask.setBit(valueIndex, value.isNull());
+                    ++valueIndex;
                 }
             }
 
-            rowSize += nullMask.getByteSize();
+            rowLength += nullMask.size();
 
-            codedOutput.WriteVarint64(rowSize);
+            codedOutput.WriteVarint64(rowLength);
             protobuf::checkOutputStreamError(rawOutput);
 
-            if (!notNull) {
+            //DBG_LOG_DEBUG(">>> OUTPUT: Row# " << rowNumber << ": Length=" << rowLength);
+
+            if (hasNullableColumns) {
                 codedOutput.WriteRaw(nullMask.getData(), nullMask.getByteSize());
                 protobuf::checkOutputStreamError(rawOutput);
             }
@@ -357,17 +362,17 @@ void RequestHandler::executeSelectRequest(
 
             if (limit) --(*limit);
             rowDataAvailable = moveToNextRow(dataSets);
+            //++rowNumber;
         }
-    } catch (DatabaseError& dberror) {
-        LOG_ERROR << kLogContext << dberror.what();
+    } catch (DatabaseError& ex) {
+        LOG_ERROR << kLogContext << ex.what();
         // DatabaseError exception is only possible before data serialization and writing,
-        // Data shouldn't be sent to the server at this moment.
-        // all other exceptions are caught on upper level.
+        // so data shouldn't be sent to the server at that moment.
+        // All other exceptions are caught on the upper level.
         codedOutput.WriteVarint64(kNoMoreRows);
         protobuf::checkOutputStreamError(rawOutput);
 
-        // NOTE: Do not throw here, to prevent double response
-        // throw;
+        // NOTE: Do not re-throw here to prevent double response.
     }
 
     codedOutput.WriteVarint64(kNoMoreRows);
@@ -381,10 +386,10 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     response.set_affected_row_count(0);
 
     const auto sysDb = m_instance.getDatabaseChecked(Database::kSystemDatabaseName);
-    const auto sysDbTable = sysDb->getTableChecked(Database::kSysDatabasesTable);
+    const auto sysDbTable = sysDb->getTableChecked(Database::kSysDatabasesTableName);
 
-    const auto nameColumn = sysDbTable->getColumnChecked(Database::kSysDatabases_Name_Column);
-    const auto uuidColumn = sysDbTable->getColumnChecked(Database::kSysDatabases_Uuid_Column);
+    const auto nameColumn = sysDbTable->getColumnChecked(Database::kSysDatabases_Name_ColumnName);
+    const auto uuidColumn = sysDbTable->getColumnChecked(Database::kSysDatabases_Uuid_ColumnName);
 
     addColumnToResponse(response, *nameColumn, "");
     addColumnToResponse(response, *uuidColumn, "");

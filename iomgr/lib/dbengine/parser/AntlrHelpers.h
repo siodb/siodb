@@ -15,6 +15,22 @@ constexpr std::size_t kInvalidNodeType = std::numeric_limits<std::size_t>::max()
 namespace helpers {
 
 /**
+ * Removes leading and trailing quotes from string.
+ * NOTE: String must be quoted.
+ * @param s A string.
+ * @return Same string.
+ */
+std::string& unquoteString(std::string& s);
+
+/**
+ * Removes leading and trailing quotes from string.
+ * NOTE: String must be quoted.
+ * @param s A string.
+ * @return Same string.
+ */
+std::string&& unquoteString(std::string&& s);
+
+/**
  * The recursive part of the numberOfStatements() method.
  * @param tree The part of the tree to check.
  * @return A number of statements under this part of tree.

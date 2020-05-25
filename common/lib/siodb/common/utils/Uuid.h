@@ -6,13 +6,11 @@
 
 // Boost headers
 #include <boost/uuid/uuid.hpp>
-
 // Make GCC happy on the CentOS/RHEL
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <boost/uuid/uuid_generators.hpp>
 #pragma GCC diagnostic pop
-
 #include <boost/uuid/uuid_io.hpp>
 
 namespace siodb {

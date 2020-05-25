@@ -8,7 +8,13 @@
 #include "Helpers.h"
 #include "../ColumnDefinitionConstraintList.h"
 
+// Boost headers
+#include <boost/lexical_cast.hpp>
+
 namespace siodb::iomgr::dbengine {
+
+const Uuid ColumnDefinitionRecord::kClassUuid =
+        boost::lexical_cast<Uuid>("4f3b6d57-cbcd-4df0-8efd-5910c5392ade");
 
 ColumnDefinitionRecord::ColumnDefinitionRecord(const ColumnDefinition& columnDefinition)
     : m_id(columnDefinition.getId())
@@ -20,17 +26,22 @@ ColumnDefinitionRecord::ColumnDefinitionRecord(const ColumnDefinition& columnDef
     }
 }
 
-std::size_t ColumnDefinitionRecord::getSerializedSize() const noexcept
+std::size_t ColumnDefinitionRecord::getSerializedSize(unsigned version) const noexcept
 {
-    auto result = ::getVarIntSize(m_id) + ::getVarIntSize(m_columnId)
-                  + ::getVarIntSize(m_constraints.size());
+    auto result = Uuid::static_size() + ::getVarIntSize(version) + ::getVarIntSize(m_id)
+                  + ::getVarIntSize(m_columnId)
+                  + ::getVarIntSize(static_cast<std::uint32_t>(m_constraints.size()));
     for (const auto& constraint : m_constraints.byId())
         result += constraint.getSerializedSize();
     return result;
 }
 
-std::uint8_t* ColumnDefinitionRecord::serializeUnchecked(std::uint8_t* buffer) const noexcept
+std::uint8_t* ColumnDefinitionRecord::serializeUnchecked(
+        std::uint8_t* buffer, unsigned version) const noexcept
 {
+    std::memcpy(buffer, kClassUuid.data, Uuid::static_size());
+    buffer += Uuid::static_size();
+    buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
     buffer = ::encodeVarInt(m_columnId, buffer);
     buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_constraints.size()), buffer);
@@ -41,21 +52,34 @@ std::uint8_t* ColumnDefinitionRecord::serializeUnchecked(std::uint8_t* buffer) c
 
 std::size_t ColumnDefinitionRecord::deserialize(const std::uint8_t* buffer, std::size_t length)
 {
-    std::size_t totalConsumed = 0;
+    if (length < Uuid::static_size())
+        helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
+    if (std::memcmp(kClassUuid.data, buffer, Uuid::static_size()) != 0)
+        helpers::reportClassUuidMismatch(kClassName, buffer, kClassUuid.data);
 
-    int consumed = ::decodeVarInt(buffer, length, m_id);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "id", consumed);
+    std::size_t totalConsumed = Uuid::static_size();
+
+    std::uint32_t classVersion = 0;
+    int consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, classVersion);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "$classVersion", consumed);
+    totalConsumed += consumed;
+
+    if (classVersion > kClassVersion)
+        helpers::reportClassVersionMismatch(kClassName, classVersion, kClassVersion);
+
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_id);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "id", consumed);
     totalConsumed += consumed;
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_columnId);
     if (consumed < 1)
-        helpers::reportDeserializationFailure(kClassName, "columnDefinitionId", consumed);
+        helpers::reportInvalidOrNotEnoughData(kClassName, "columnDefinitionId", consumed);
     totalConsumed += consumed;
 
     std::uint32_t constraintCount = 0;
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, constraintCount);
     if (consumed < 1)
-        helpers::reportDeserializationFailure(kClassName, "constraints.size", consumed);
+        helpers::reportInvalidOrNotEnoughData(kClassName, "constraints.size", consumed);
     totalConsumed += consumed;
 
     std::uint32_t index = 0;

@@ -57,9 +57,9 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
     // nullptr is possible in case of 'none' cipher
     const auto cipher = crypto::getCipher(cipherId);
     const auto keyLength = cipher ? crypto::getCipher(cipherId)->getKeySize() : 0;
-    const auto cipherKey =
-            cipher ? crypto::generateCipherKey(keyLength, cipherKeySeed) : BinaryValue();
-    m_instance.createDatabase(request.m_database, cipherId, cipherKey, m_userId);
+    auto cipherKey = cipher ? crypto::generateCipherKey(keyLength, cipherKeySeed) : BinaryValue();
+    m_instance.createDatabase(
+            std::string(request.m_database), cipherId, std::move(cipherKey), m_userId, {});
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
@@ -92,7 +92,7 @@ void RequestHandler::executeCreateTableRequest(iomgr_protocol::DatabaseEngineRes
 
     // NOTE: Duplicate columns and columns with invalid names
     // are checked inside the createUserTable().
-    db->createUserTable(request.m_table, TableType::kDisk, tableColumns, m_userId);
+    db->createUserTable(std::string(request.m_table), TableType::kDisk, tableColumns, m_userId, {});
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);

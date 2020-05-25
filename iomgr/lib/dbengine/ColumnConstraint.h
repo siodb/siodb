@@ -19,11 +19,14 @@ protected:
      * @param name Constraint name.
      * @param constraintDefinition Constraint definition.
      * @param expectedType Expected constaint type.
+     * @param description Constraint description.
      */
-    ColumnConstraint(Column& column, const std::string& name,
-            const ConstConstraintDefinitionPtr& constraintDefinition, ConstraintType expectedType)
-        : Constraint(column.getTable(), name,
-                checkConstraintType(column, name, constraintDefinition, expectedType))
+    ColumnConstraint(Column& column, std::string&& name,
+            const ConstConstraintDefinitionPtr& constraintDefinition, ConstraintType expectedType,
+            std::optional<std::string>&& description)
+        : Constraint(column.getTable(), std::move(name),
+                checkConstraintType(column, name, constraintDefinition, expectedType),
+                std::move(description))
         , m_column(column)
     {
     }

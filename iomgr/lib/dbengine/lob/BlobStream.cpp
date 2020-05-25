@@ -23,8 +23,8 @@ BinaryValue BlobStream::readAsBinary(std::uint32_t length)
 {
     auto available = std::min(length, getRemainingSize());
     if (available == 0) return BinaryValue();
-    BinaryValue buffer(available);
-    auto data = buffer.data();
+    BinaryValue bv(available);
+    auto data = bv.data();
     std::uint64_t pos = 0;
     while (pos < available) {
         const auto n = read(data + pos, available - pos);
@@ -32,7 +32,7 @@ BinaryValue BlobStream::readAsBinary(std::uint32_t length)
         if (n == 0) break;
         pos += n;
     }
-    return (pos < available) ? BinaryValue(data, data + pos) : buffer;
+    return (pos < available) ? BinaryValue(data, data + pos) : bv;
 }
 
 }  // namespace siodb::iomgr::dbengine

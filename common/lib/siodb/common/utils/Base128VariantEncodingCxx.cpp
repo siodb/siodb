@@ -4,9 +4,6 @@
 
 #include "Base128VariantEncoding.h"
 
-// Project headers
-#include "DeserializationError.h"
-
 // CRT headers
 #include <cstring>
 

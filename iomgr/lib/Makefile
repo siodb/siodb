@@ -420,6 +420,8 @@ CXX_HDR:= \
 	dbengine/TableType.h  \
 	dbengine/ThrowDatabaseError.h  \
 	dbengine/TransactionParameters.h  \
+	dbengine/UpdateUserAccessKeyParameters.h  \
+	dbengine/UpdateUserParameters.h  \
 	dbengine/User.h  \
 	dbengine/UserAccessKey.h  \
 	dbengine/UserAccessKeyPtr.h  \

@@ -9,11 +9,12 @@
 
 namespace siodb::iomgr::dbengine {
 
-UInt32UniqueLinearIndex::UInt32UniqueLinearIndex(Table& table, const std::string& name,
+UInt32UniqueLinearIndex::UInt32UniqueLinearIndex(Table& table, std::string&& name,
         std::size_t valueSize, const IndexColumnSpecification& columnSpec,
-        std::uint32_t dataFileSize)
-    : UniqueLinearIndex(table, IndexType::kLinearIndexU32, name, UInt32IndexKeyTraits(), valueSize,
-            &UInt32IndexKeyTraits::compareKeys, columnSpec, dataFileSize)
+        std::uint32_t dataFileSize, std::optional<std::string>&& description)
+    : UniqueLinearIndex(table, IndexType::kLinearIndexU32, std::move(name), UInt32IndexKeyTraits(),
+            valueSize, &UInt32IndexKeyTraits::compareKeys, columnSpec, dataFileSize,
+            std::move(description))
 {
 }
 

@@ -33,7 +33,8 @@ public:
      * @param name Table name.
      * @param firstUserTrid First user range TRID.
      */
-    Table(Database& database, TableType type, const std::string& name, std::uint64_t firstUserTrid);
+    Table(Database& database, TableType type, std::string&& name, std::uint64_t firstUserTrid,
+            std::optional<std::string>&& description);
 
     /**
      * Initializes object of class Table for the existing table.
@@ -93,9 +94,18 @@ public:
      * Returns table name.
      * @return Table name.
      */
-    const std::string& getName() const noexcept
+    const auto& getName() const noexcept
     {
         return m_name;
+    }
+
+    /**
+     * Returns table description.
+     * @return Table description.
+     */
+    const auto& getDescription() const noexcept
+    {
+        return m_description;
     }
 
     /**
@@ -239,7 +249,7 @@ public:
      * @param firstUserTrid First user range TRID (effective only for the master column).
      * @return New column object.
      */
-    ColumnPtr createColumn(const ColumnSpecification& columnSpec, std::uint64_t firstUserTrid = 1);
+    ColumnPtr createColumn(ColumnSpecification&& columnSpec, std::uint64_t firstUserTrid = 1);
 
     /**
      * Returns existing master column object.
@@ -336,11 +346,13 @@ public:
      * @param name Constraint name.
      * @param constraintDefintion Constraint definition.
      * @param column A column to which constraint brlongs, or nullptr if this is table constraint.
+     * @param description Constraint description.
      * @return Constraint object.
      * @throw DatabaseError if costraint already exists.
      */
-    ConstraintPtr createConstraint(const std::string& name,
-            const ConstConstraintDefinitionPtr& constraintDefinition, Column* column);
+    ConstraintPtr createConstraint(std::string&& name,
+            const ConstConstraintDefinitionPtr& constraintDefinition, Column* column,
+            std::optional<std::string>&& description);
 
     /**
      * Returns existing constraint object.
@@ -484,7 +496,7 @@ private:
      * @return The same table name.
      * @throw DatabaseError if table name is invalid.
      */
-    static const std::string& validateTableName(const std::string& tableName);
+    static std::string&& validateTableName(std::string&& tableName);
 
     /**
      * Creates new master column object and writes all necessary on-disk data structures.
@@ -516,10 +528,12 @@ private:
      * @param column Column to which constraint belongs. nullptr indicates table constraint.
      * @param name Constraint name.
      * @param constraintDefinition Constraint definition.
+     * @param description Constraint description.
      * @return New column set object.
      */
-    ConstraintPtr createConstraintUnlocked(Column* column, const std::string& name,
-            const ConstConstraintDefinitionPtr& constraintDefinition);
+    ConstraintPtr createConstraintUnlocked(Column* column, std::string&& name,
+            const ConstConstraintDefinitionPtr& constraintDefinition,
+            std::optional<std::string>&& description);
 
     /**
      * Creates constraint from a given constraint registry record. Doesn't acquire access
@@ -636,6 +650,9 @@ private:
 
     /** Table name */
     std::string m_name;
+
+    /** Table name */
+    std::optional<std::string> m_description;
 
     /** System table flag */
     const bool m_isSystemTable;

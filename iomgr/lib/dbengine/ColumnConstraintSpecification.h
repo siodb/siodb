@@ -12,23 +12,19 @@ namespace siodb::iomgr::dbengine {
 
 /** Specification of the constraint that should be applied to a column. */
 struct ColumnConstraintSpecification {
-    /** Initializes object of class ColumnConstraintSpecification. */
-    ColumnConstraintSpecification() noexcept
-        : m_type(ConstraintType::kMax)
-    {
-    }
-
     /**
      * Initializes object of class ColumnConstraintSpecification.
      * @param name Constraint name.
      * @param type Constraint type.
      * @param expression Constraint expression.
+     * @param description Constraint description.
      */
-    ColumnConstraintSpecification(
-            std::string&& name, ConstraintType type, requests::ExpressionPtr&& expression)
+    ColumnConstraintSpecification(std::string&& name, ConstraintType type,
+            requests::ExpressionPtr&& expression, std::optional<std::string>&& description)
         : m_name(std::move(name))
         , m_type(type)
         , m_expression(std::move(expression))
+        , m_description(std::move(description))
     {
     }
 
@@ -40,6 +36,7 @@ struct ColumnConstraintSpecification {
         : m_name(src.m_name)
         , m_type(src.m_type)
         , m_expression(src.m_expression->clone())
+        , m_description(src.m_description)
     {
     }
 
@@ -51,6 +48,9 @@ struct ColumnConstraintSpecification {
 
     /** Constraint expression */
     requests::ExpressionPtr m_expression;
+
+    /** Constraint description */
+    std::optional<std::string> m_description;
 };
 
 /** Column constraint specification list */

@@ -49,48 +49,72 @@ Variant::Variant(const Variant& src)
     throw std::invalid_argument(err.str());
 }
 
-Variant::Variant(const char* value)
+Variant::Variant(const char* value, bool allowNull)
     : m_valueType(VariantType::kString)
 {
-    if (SIODB_UNLIKELY(value == nullptr)) throw std::invalid_argument("null c-string value");
-    m_value.m_string = new std::string(value);
+    if (SIODB_LIKELY(value != nullptr))
+        m_value.m_string = new std::string(value);
+    else if (allowNull)
+        m_valueType = VariantType::kNull;
+    else
+        throw std::invalid_argument("null c-string value");
 }
 
-Variant::Variant(std::string* value)
+Variant::Variant(std::string* value, bool allowNull)
     : m_valueType(VariantType::kString)
 {
-    if (SIODB_UNLIKELY(value == nullptr)) throw std::invalid_argument("null string value");
-    m_value.m_string = value;
+    if (SIODB_LIKELY(value != nullptr))
+        m_value.m_string = value;
+    else if (allowNull)
+        m_valueType = VariantType::kNull;
+    else
+        throw std::invalid_argument("null string value");
 }
 
-Variant::Variant(const void* value, std::size_t size)
+Variant::Variant(const void* value, std::size_t size, bool allowNull)
     : m_valueType(VariantType::kBinary)
 {
-    if (SIODB_UNLIKELY(value == nullptr)) throw std::invalid_argument("null binary value");
-    auto v = std::make_unique<BinaryValue>(size);
-    if (size > 0) std::memcpy(v->data(), value, size);
-    m_value.m_binary = v.release();
+    if (SIODB_LIKELY(value != nullptr)) {
+        auto v = std::make_unique<BinaryValue>(size);
+        if (size > 0) std::memcpy(v->data(), value, size);
+        m_value.m_binary = v.release();
+    } else if (allowNull)
+        m_valueType = VariantType::kNull;
+    else
+        throw std::invalid_argument("null binary value");
 }
 
-Variant::Variant(BinaryValue* value)
+Variant::Variant(BinaryValue* value, bool allowNull)
     : m_valueType(VariantType::kBinary)
 {
-    if (SIODB_UNLIKELY(value == nullptr)) throw std::invalid_argument("null binary value");
-    m_value.m_binary = value;
+    if (SIODB_LIKELY(value != nullptr))
+        m_value.m_binary = value;
+    else if (allowNull)
+        m_valueType = VariantType::kNull;
+    else
+        throw std::invalid_argument("null binary value");
 }
 
-Variant::Variant(ClobStream* value)
+Variant::Variant(ClobStream* value, bool allowNull)
     : m_valueType(VariantType::kClob)
 {
-    if (SIODB_UNLIKELY(value == nullptr)) throw std::invalid_argument("null clob stream");
-    m_value.m_clob = value;
+    if (SIODB_LIKELY(value != nullptr))
+        m_value.m_clob = value;
+    else if (allowNull)
+        m_valueType = VariantType::kNull;
+    else
+        throw std::invalid_argument("null clob stream");
 }
 
-Variant::Variant(BlobStream* value)
+Variant::Variant(BlobStream* value, bool allowNull)
     : m_valueType(VariantType::kBlob)
 {
-    if (SIODB_UNLIKELY(value == nullptr)) throw std::invalid_argument("null blob stream");
-    m_value.m_blob = value;
+    if (SIODB_LIKELY(value != nullptr))
+        m_value.m_blob = value;
+    else if (allowNull)
+        m_valueType = VariantType::kNull;
+    else
+        throw std::invalid_argument("null blob stream");
 }
 
 }  // namespace siodb::iomgr::dbengine

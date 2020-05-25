@@ -331,18 +331,21 @@ ifdef TARGET_EXE
 $(MAIN_TARGET): $(OBJ) $(OWN_LIBS_DEP) $(COMMON_LIBS_DEP) | $(BIN_DIR)
 	@echo LD $@
 	$(NOECHO)$(LD) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
+	@echo DONE $@
 endif
 
 ifdef TARGET_SO
 $(MAIN_TARGET): $(OBJ) $(OWN_LIBS_DEP) $(COMMON_LIBS_DEP) | $(BIN_DIR)
 	@echo LD $@
 	$(NOECHO)$(LD) -o $@ -shared $(LDFLAGS) $(OBJ) $(LIBS)
+	@echo DONE $@
 endif
 
 ifdef TARGET_LIB
 $(MAIN_TARGET): $(OBJ) | $(LIB_DIR)
 	@echo AR $@
 	$(NOECHO)$(AR) rcs $@ $^
+	@echo DONE $@
 endif
 
 # For debug purposes

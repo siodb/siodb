@@ -36,10 +36,12 @@ protected:
      * @param keyCompare Key comparison function.
      * @param columnSpec Indexed column specification.
      * @param dataFileSize Data file size.
+     * @param description Index description.
      */
-    UniqueLinearIndex(Table& table, IndexType type, const std::string& name,
+    UniqueLinearIndex(Table& table, IndexType type, std::string&& name,
             const IndexKeyTraits& keyTraits, std::size_t valueSize, KeyCompareFunction keyCompare,
-            const IndexColumnSpecification& column, std::uint32_t dataFileSize);
+            const IndexColumnSpecification& column, std::uint32_t dataFileSize,
+            std::optional<std::string>&& description);
 
     /**
      * Initializes object of class Index for an existing index.
@@ -455,7 +457,7 @@ private:
     const bool m_isSignedKey;
 
     /** Indicates descending sort direction */
-    const bool m_isSortDescending;
+    const bool m_sortDescending;
 
     /** Value record size */
     const std::size_t m_recordSize;

@@ -1,4 +1,7 @@
 {
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -6,7 +9,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/dbengine_startup_test",
-            "args": [],
+            "args": [
+                "--gtest_filter=*"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
             "environment": [],
@@ -25,27 +30,8 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/debug/bin",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "request_handler_test_1",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=UM.CreateUser"
+                "--gtest_filter=*"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
@@ -65,7 +51,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/sql_parser_test",
-            "args": [],
+            "args": [
+                "--gtest_filter=UM.CreateUserWithNullRealNameAndDescription"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
             "environment": [],
@@ -84,27 +72,8 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/expression_test",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/debug/bin",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "expression_test_1",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/debug/bin/expression_test",
             "args": [
-                "--gtest_filter=Serialization_Other.AllColumnsExpression"
+                "--gtest_filter=*"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
@@ -120,75 +89,17 @@
             ]
         },
         {
-            "name": "encrypted_file_test",
+            "name": "registry_test",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/debug/bin/encrypted_file_test",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/debug/bin",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "digital_signature_key_test",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/debug/bin/digital_signature_key_test",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/debug/bin",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "string_scanner_test",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/debug/bin/string_scanner_test",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/debug/bin",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "siodb-1",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/debug/bin/siodb",
+            "program": "${workspaceFolder}/build/debug/bin/registry_test",
             "args": [
-                "--instance",
-                "ivan-db1"
+                "--gtest_filter=Serialization.DatabaseRecord_Empty"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
                 {
@@ -199,29 +110,7 @@
             ]
         },
         {
-            "name": "siocli-1",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/debug/bin/siocli",
-            "args": [
-                "-a",
-                "ivan-db1"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/debug/bin",
-            "environment": [],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "siocli-2",
+            "name": "siocli",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/siocli",

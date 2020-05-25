@@ -30,10 +30,12 @@ public:
      * @param unique Index uniqueness flag.
      * @param columns Indexed column list.
      * @param dataFileSize Data file size.
+     * @param description Index description.
      */
-    BPlusTreeIndex(Table& table, const std::string& name, const IndexKeyTraits& keyTraits,
+    BPlusTreeIndex(Table& table, std::string&& name, const IndexKeyTraits& keyTraits,
             std::size_t valueSize, KeyCompareFunction keyCompare, bool unique,
-            const IndexColumnSpecificationList& columns, std::uint32_t dataFileSize);
+            const IndexColumnSpecificationList& columns, std::uint32_t dataFileSize,
+            std::optional<std::string>&& description);
 
     /**
      * Initializes object of class BPlusTreeIndex for an existing index.

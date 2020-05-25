@@ -65,9 +65,10 @@ const std::unordered_set<std::string> Column::m_wellKnownIgnorableFiles {
         Column::kTridCounterFile,
 };
 
-Column::Column(Table& table, const ColumnSpecification& spec, std::uint64_t firstUserTrid)
+Column::Column(Table& table, ColumnSpecification&& spec, std::uint64_t firstUserTrid)
     : m_table(table)
-    , m_name(validateColumnName(spec.m_name))
+    , m_name(validateColumnName(std::move(spec.m_name)))
+    , m_description(std::move(spec.m_description))
     , m_dataType(validateColumnDataType(spec.m_dataType))
     , m_id(getDatabase().generateNextColumnId(m_table.isSystemTable()))
     , m_dataBlockDataAreaSize(spec.m_dataBlockDataAreaSize)
@@ -94,7 +95,7 @@ Column::Column(Table& table, const ColumnSpecification& spec, std::uint64_t firs
         createMasterColumnMainIndex();
         getDatabase().registerIndex(*m_masterColumnData->m_mainIndex);
     } else {
-        for (const auto& constraintSpec : spec.m_constraints) {
+        for (auto& constraintSpec : spec.m_constraints) {
             BinaryValue serializedConstraintExpression;
             if (constraintSpec.m_expression) {
                 serializedConstraintExpression.resize(
@@ -105,7 +106,8 @@ Column::Column(Table& table, const ColumnSpecification& spec, std::uint64_t firs
             const auto constraintDefinition = getDatabase().findOrCreateConstraintDefinition(
                     m_table.isSystemTable(), constraintSpec.m_type, serializedConstraintExpression);
             m_currentColumnDefinition->addConstraint(
-                    m_table.createConstraint(constraintSpec.m_name, constraintDefinition, this));
+                    m_table.createConstraint(std::move(constraintSpec.m_name), constraintDefinition,
+                            this, std::move(constraintSpec.m_description)));
         }
         m_currentColumnDefinition->markClosedForModification();
     }
@@ -117,7 +119,8 @@ Column::Column(Table& table, const ColumnSpecification& spec, std::uint64_t firs
 
 Column::Column(Table& table, const ColumnRecord& columnRecord, std::uint64_t firstUserTrid)
     : m_table(validateTable(table, columnRecord))
-    , m_name(validateColumnName(columnRecord.m_name))
+    , m_name(validateColumnName(std::string(columnRecord.m_name)))
+    , m_description(columnRecord.m_description)
     , m_dataType(validateColumnDataType(columnRecord.m_dataType))
     , m_id(columnRecord.m_id)
     , m_dataBlockDataAreaSize(columnRecord.m_dataBlockDataAreaSize)
@@ -942,9 +945,9 @@ Table& Column::validateTable(Table& table, const ColumnRecord& columnRecord)
             table.getDatabaseUuid(), table.getId());
 }
 
-const std::string& Column::validateColumnName(const std::string& columnName) const
+std::string&& Column::validateColumnName(std::string&& columnName) const
 {
-    if (isValidDatabaseObjectName(columnName)) return columnName;
+    if (isValidDatabaseObjectName(columnName)) return std::move(columnName);
     throwDatabaseError(IOManagerMessageId::kErrorInvalidColumnNameInTableColumn, getDatabaseName(),
             m_table.getName(), columnName);
 }
@@ -1386,12 +1389,11 @@ void Column::loadBinary(
         // Empty binary
         value = BinaryValue();
     } else if (chunkHeader.m_remainingLobLength < kSmallLobSizeLimit) {
-        // Small binary, load into vector
-        // Maybe do something like this https://stackoverflow.com/a/42510583/1540501
-        BinaryValue buffer(chunkHeader.m_remainingLobLength);
+        // Small binary, load into buffer
+        BinaryValue bv(chunkHeader.m_remainingLobLength);
         ColumnBlobStream stream(*this, addr, lobStreamsMustHoldSource);
-        stream.read(buffer.data(), buffer.size());
-        value = std::move(buffer);
+        stream.read(bv.data(), bv.size());
+        value = std::move(bv);
     } else {
         // Big binary, need BLOB stream
         auto stream = std::make_unique<ColumnBlobStream>(*this, addr, lobStreamsMustHoldSource);
@@ -1443,15 +1445,15 @@ std::uint32_t Column::loadLobChunkHeaderUnlocked(
 void Column::createMasterColumnMainIndex()
 {
     // Create index
-    const auto indexName = composeMasterColumnMainIndexName();
+    auto indexName = composeMasterColumnMainIndexName();
     // NOTE: We specify here index ID = 0, and this will be replaced by actual index ID,
     // when index object is created.
     const IndexColumnSpecification indexColumnSpec(m_currentColumnDefinition, false);
-    auto index = std::make_shared<UInt64UniqueLinearIndex>(m_table, indexName,
-            kMasterColumnNameMainIndexValueSize, indexColumnSpec,
+    m_masterColumnData->m_mainIndex = std::make_shared<UInt64UniqueLinearIndex>(m_table,
+            std::move(indexName), kMasterColumnNameMainIndexValueSize, indexColumnSpec,
             m_table.isSystemTable() ? kSystemTableDataFileDataAreaSize
-                                    : kDefaultDataFileDataAreaSize);
-    m_masterColumnData->m_mainIndex = index;
+                                    : kDefaultDataFileDataAreaSize,
+            kMasterColumnMainIndexDescription);
 
     // Prepare index ID file content
     std::uint64_t indexId = 0;
@@ -1478,8 +1480,9 @@ void Column::createMasterColumnMainIndex()
 
 void Column::createMasterColumnConstraints()
 {
-    m_currentColumnDefinition->addConstraint(m_table.createConstraint(
-            std::string(), m_table.getSystemNotNullConstraintDefinition(), this));
+    m_currentColumnDefinition->addConstraint(
+            m_table.createConstraint(std::string(), m_table.getSystemNotNullConstraintDefinition(),
+                    this, kMasterColumnNotNullConstraintDescription));
 }
 
 void Column::writeFullTridCounters(int fd, const TridCounters& data)

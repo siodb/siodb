@@ -23,6 +23,7 @@
 #ifdef __cplusplus
 
 // STL headers
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -234,6 +235,8 @@ static inline int decodeVarInt64(const uint8_t* src, size_t size, int64_t* value
 
 // Project headers (C++)
 #include "BinaryValue.h"
+#include "DeserializationError.h"
+#include "Uuid.h"
 
 /**
  * Encodes 16-bit signed integer as Base128 variant.
@@ -489,7 +492,7 @@ SIODB_ALWAYS_INLINE inline std::uint8_t* serializeUnchecked(
 }
 
 /**
- * Derializes string into a buffer, doesn't check buffer size.
+ * Deserializes string from a buffer.
  * @param buffer Source buffer.
  * @param length Data length in the buffer.
  * @param[out] s Destination string object.
@@ -530,7 +533,7 @@ SIODB_ALWAYS_INLINE inline std::uint8_t* serializeUnchecked(
 }
 
 /**
- * Derializes string into a buffer, doesn't check buffer size.
+ * Deserializes binary value from a buffer.
  * @param buffer Source buffer.
  * @param length Data length in the buffer.
  * @param[out] bv Destination binary value object.
@@ -539,5 +542,64 @@ SIODB_ALWAYS_INLINE inline std::uint8_t* serializeUnchecked(
  */
 std::size_t deserializeObject(
         const std::uint8_t* buffer, std::size_t length, siodb::BinaryValue& bv);
+
+/**
+ * Returns memory size in bytes required to serialize given optional object.
+ * @param opt An optional object to serialize.
+ * @return Memory size in bytes.
+ */
+template<class T>
+inline std::size_t getSerializedSize(const std::optional<T>& opt) noexcept
+{
+    return opt ? ::getSerializedSize(*opt) + 1U : 1U;
+}
+
+/**
+ * Serializes optional object into a buffer, doesn't check buffer size.
+ * @param opt An optional object to serialize.
+ * @param buffer Destination buffer.
+ */
+template<class T>
+std::uint8_t* serializeUnchecked(const std::optional<T>& opt, std::uint8_t* buffer) noexcept
+{
+    *buffer++ = opt ? 1 : 0;
+    if (opt) {
+        const auto& obj = *opt;
+        buffer = serializeUnchecked(obj, buffer);
+    }
+    return buffer;
+}
+
+/**
+ * Deserializes optional object from a buffer, doesn't check buffer size.
+ * @tparam Object type.
+ * @param buffer Source buffer.
+ * @param length Data length in the buffer.
+ * @param[out] o Destination object.
+ * @return Number of consumed bytes.
+ * @throw VariantDeserializationError if deserialization failed.
+ */
+template<class T>
+std::size_t deserializeObject(const std::uint8_t* buffer, std::size_t length, std::optional<T>& opt)
+{
+    if (SIODB_UNLIKELY(length < 1))
+        throw siodb::utils::DeserializationError("Not enough data for the optional object");
+
+    if (*buffer > 1) throw siodb::utils::DeserializationError("Invalid optional value flag");
+
+    if (!*buffer++) {
+        opt.reset();
+        return 1;
+    }
+
+    if (opt)
+        return deserializeObject(buffer, length - 1, *opt) + 1;
+    else {
+        T tmp;
+        const auto consumed = deserializeObject(buffer, length - 1, tmp);
+        opt = std::move(tmp);
+        return consumed + 1;
+    }
+}
 
 #endif  // __cplusplus

@@ -11,7 +11,13 @@
 // Common project headers
 #include <siodb/common/utils/Base128VariantEncoding.h>
 
+// Boost headers
+#include <boost/lexical_cast.hpp>
+
 namespace siodb::iomgr::dbengine {
+
+const Uuid UserPermissionRecord::kClassUuid =
+        boost::lexical_cast<Uuid>("560ff756-a68d-4e8b-a3b9-213e4e80f808");
 
 UserPermissionRecord::UserPermissionRecord(const UserPermission& userPermission)
     : m_id(userPermission.getId())
@@ -24,17 +30,23 @@ UserPermissionRecord::UserPermissionRecord(const UserPermission& userPermission)
 {
 }
 
-std::size_t UserPermissionRecord::getSerializedSize() const noexcept
+std::size_t UserPermissionRecord::getSerializedSize(unsigned version) const noexcept
 {
-    return ::getVarIntSize(m_id) + ::getVarIntSize(m_userId) + ::getVarIntSize(m_databaseId)
+    return Uuid::static_size() + ::getVarIntSize(version) + ::getVarIntSize(m_id)
+           + ::getVarIntSize(m_userId) + ::getVarIntSize(m_databaseId)
            + ::getVarIntSize(static_cast<std::uint32_t>(m_objectType)) + ::getVarIntSize(m_objectId)
            + ::getVarIntSize(m_permissions) + ::getVarIntSize(m_grantOptions);
 }
 
-std::uint8_t* UserPermissionRecord::serializeUnchecked(std::uint8_t* buffer) const noexcept
+std::uint8_t* UserPermissionRecord::serializeUnchecked(std::uint8_t* buffer, unsigned version) const
+        noexcept
 {
+    std::memcpy(buffer, kClassUuid.data, Uuid::static_size());
+    buffer += Uuid::static_size();
+    buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
     buffer = ::encodeVarInt(m_userId, buffer);
+    buffer = ::encodeVarInt(m_databaseId, buffer);
     buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_objectType), buffer);
     buffer = ::encodeVarInt(m_objectId, buffer);
     buffer = ::encodeVarInt(m_permissions, buffer);
@@ -44,32 +56,49 @@ std::uint8_t* UserPermissionRecord::serializeUnchecked(std::uint8_t* buffer) con
 
 std::size_t UserPermissionRecord::deserialize(const std::uint8_t* buffer, std::size_t length)
 {
-    std::size_t totalConsumed = 0;
+    if (length < Uuid::static_size())
+        helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
+    if (std::memcmp(kClassUuid.data, buffer, Uuid::static_size()) != 0)
+        helpers::reportClassUuidMismatch(kClassName, buffer, kClassUuid.data);
 
-    int consumed = ::decodeVarInt(buffer, length, m_id);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "id", consumed);
+    std::size_t totalConsumed = Uuid::static_size();
+
+    std::uint32_t classVersion = 0;
+    int consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, classVersion);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "$classVersion", consumed);
+    totalConsumed += consumed;
+
+    if (classVersion > kClassVersion)
+        helpers::reportClassVersionMismatch(kClassName, classVersion, kClassVersion);
+
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_id);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "id", consumed);
     totalConsumed += consumed;
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_userId);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "userId", consumed);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "userId", consumed);
     totalConsumed += consumed;
 
-    std::uint32_t uv32 = 0;
-    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, uv32);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "objectType", consumed);
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_databaseId);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "databaseId", consumed);
     totalConsumed += consumed;
-    m_objectType = static_cast<DatabaseObjectType>(uv32);
+
+    std::uint32_t objectType = 0;
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, objectType);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "objectType", consumed);
+    totalConsumed += consumed;
+    m_objectType = static_cast<DatabaseObjectType>(objectType);
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_objectId);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "objectId", consumed);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "objectId", consumed);
     totalConsumed += consumed;
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_permissions);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "permissions", consumed);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "permissions", consumed);
     totalConsumed += consumed;
 
     consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_grantOptions);
-    if (consumed < 1) helpers::reportDeserializationFailure(kClassName, "grantOptions", consumed);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "grantOptions", consumed);
     totalConsumed += consumed;
 
     return totalConsumed;

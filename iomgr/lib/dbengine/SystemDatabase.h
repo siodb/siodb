@@ -22,7 +22,7 @@ public:
      * @param cipherKey Key used for encryption of this database.
      * @param superUserInitialAccessKey Initial access key for the superuser.
      */
-    SystemDatabase(Instance& instance, const std::string& cipherId, const BinaryValue& cipherKey,
+    SystemDatabase(Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey,
             const std::string& superUserInitialAccessKey);
 
     /**
@@ -31,7 +31,7 @@ public:
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
      */
-    SystemDatabase(Instance& instance, const std::string& cipherId, const BinaryValue& cipherKey);
+    SystemDatabase(Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey);
 
     /**
      * Gives indication that this is system database.
@@ -128,21 +128,20 @@ public:
     /**
      * Updates existing user.
      * @param userId User ID.
-     * @param active New state.
-     * @param realName New real name of the user.
+     * @param params Update parameters.
      * @param currentUserId Current user ID.
      * @throw DatabaseError if some error has occurrred.
      */
-    void updateUser(std::uint32_t userId, const std::optional<bool>& active,
-            const std::optional<std::string>& realName, std::uint32_t currentUserId);
+    void updateUser(
+            std::uint32_t userId, const UpdateUserParameters& params, std::uint32_t currentUserId);
 
     /**
      * Updates user access key.
      * @param accessKeyId User access key ID.
-     * @param active New state.
+     * @param params Update parameters.
      * @param currentUserId Current user ID.
      */
-    void updateUserAccessKey(std::uint64_t accessKeyId, const std::optional<bool>& active,
+    void updateUserAccessKey(std::uint64_t accessKeyId, const UpdateUserAccessKeyParameters& params,
             std::uint32_t currentUserId);
 
     /**

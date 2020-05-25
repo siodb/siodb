@@ -11,12 +11,13 @@
 
 namespace siodb::iomgr::dbengine {
 
-UserAccessKey::UserAccessKey(
-        User& user, std::uint64_t id, const std::string& name, const std::string& text, bool active)
+UserAccessKey::UserAccessKey(User& user, std::uint64_t id, std::string&& name, std::string&& text,
+        std::optional<std::string>&& description, bool active)
     : m_user(user)
     , m_id(id)
-    , m_name(validateUserAccessKeyName(name))
-    , m_text(text)
+    , m_name(validateUserAccessKeyName(std::move(name)))
+    , m_text(std::move(text))
+    , m_description(std::move(description))
     , m_active(active)
 {
 }
@@ -24,8 +25,9 @@ UserAccessKey::UserAccessKey(
 UserAccessKey::UserAccessKey(User& user, const UserAccessKeyRecord& accessKeyRecord)
     : m_user(validateUser(user, accessKeyRecord))
     , m_id(accessKeyRecord.m_id)
-    , m_name(validateUserAccessKeyName(accessKeyRecord.m_name))
+    , m_name(validateUserAccessKeyName(std::string(accessKeyRecord.m_name)))
     , m_text(accessKeyRecord.m_text)
+    , m_description(accessKeyRecord.m_description)
     , m_active(accessKeyRecord.m_active)
 {
 }
@@ -39,9 +41,9 @@ User& UserAccessKey::validateUser(User& user, const UserAccessKeyRecord& accessK
             accessKeyRecord.m_userId);
 }
 
-const std::string& UserAccessKey::validateUserAccessKeyName(const std::string& accessKeyName)
+std::string&& UserAccessKey::validateUserAccessKeyName(std::string&& accessKeyName)
 {
-    if (isValidDatabaseObjectName(accessKeyName)) return accessKeyName;
+    if (isValidDatabaseObjectName(accessKeyName)) return std::move(accessKeyName);
     throwDatabaseError(IOManagerMessageId::kErrorInvalidUserAccessKeyName, accessKeyName);
 }
 

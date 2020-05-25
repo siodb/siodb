@@ -9,9 +9,11 @@
 
 namespace siodb::iomgr::dbengine {
 
-NotNullConstraint::NotNullConstraint(Column& column, const std::string& name,
-        const ConstConstraintDefinitionPtr& constraintDefinition)
-    : ColumnConstraint(column, name, constraintDefinition, ConstraintType::kNotNull)
+NotNullConstraint::NotNullConstraint(Column& column, std::string&& name,
+        const ConstConstraintDefinitionPtr& constraintDefinition,
+        std::optional<std::string>&& description)
+    : ColumnConstraint(column, std::move(name), constraintDefinition, ConstraintType::kNotNull,
+            std::move(description))
     , m_notNull(dynamic_cast<const requests::ConstantExpression&>(
               m_constraintDefinition->getExpression())
                         .getValue()

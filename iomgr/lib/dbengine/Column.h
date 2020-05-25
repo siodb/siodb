@@ -32,6 +32,14 @@ public:
     /** Master column data type */
     static constexpr const auto kMasterColumnDataType = COLUMN_DATA_TYPE_UINT64;
 
+    /** Master column index description */
+    static constexpr const char* kMasterColumnMainIndexDescription =
+            "Indexes row identifiers contained in the master column";
+
+    /** Master column NOT NULL constraint description */
+    static constexpr const char* kMasterColumnNotNullConstraintDescription =
+            "Restricts master column to non-null values";
+
 public:
     /**
      * Initializes object of class Column for a new column.
@@ -39,7 +47,7 @@ public:
      * @param spec Column specification.
      * @param firstUserTrid First user range TRID (effective only for the master columns).
      */
-    Column(Table& table, const ColumnSpecification& spec, std::uint64_t firstUserTrid);
+    Column(Table& table, ColumnSpecification&& spec, std::uint64_t firstUserTrid);
 
     /**
      * Initializes object of class Column for an existing column.
@@ -127,9 +135,18 @@ public:
      * Returns column name.
      * @return Column name.
      */
-    const std::string& getName() const noexcept
+    const auto& getName() const noexcept
     {
         return m_name;
+    }
+
+    /**
+     * Returns column description.
+     * @return Column description.
+     */
+    const auto& getDescription() const noexcept
+    {
+        return m_description;
     }
 
     /**
@@ -247,16 +264,6 @@ public:
         // NOTE: This is cached value.
         return m_notNull;
     }
-
-    /**
-     * Creates new constraint object.
-     * @param name Constraint name.
-     * @param constraintDefintion Constraint definition.
-     * @return Constraint object.
-     * @throw DatabaseError if costraint already exists.
-     */
-    ConstraintPtr createConstraint(
-            const std::string& name, const ConstConstraintDefinitionPtr& constraintDefinition);
 
     /**
      * Creates new column data block.
@@ -493,7 +500,7 @@ private:
      * @return The same column name.
      * @throw DatabaseError if column name is invalid.
      */
-    const std::string& validateColumnName(const std::string& columnName) const;
+    std::string&& validateColumnName(std::string&& columnName) const;
 
     /**
      * Validates column data type. Requires table name initialized.
@@ -708,6 +715,9 @@ private:
 
     /** Column name */
     std::string m_name;
+
+    /** Column name */
+    std::optional<std::string> m_description;
 
     /** Data type */
     const ColumnDataType m_dataType;

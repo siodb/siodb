@@ -20,6 +20,7 @@ struct DatabaseRecord {
     /** Initializes object of class DatabaseRecord */
     DatabaseRecord() noexcept
         : m_id(0)
+        , m_uuid(utils::getZeroUuid())
     {
     }
 
@@ -30,14 +31,16 @@ struct DatabaseRecord {
      * @param name Database name.
      * @param cipherId Cipher identifier.
      * @param cipherKey Cipher key.
+     * @param description Database description.
      */
     DatabaseRecord(std::uint32_t id, const Uuid& uuid, std::string&& name, std::string&& cipherId,
-            BinaryValue&& cipherKey)
+            BinaryValue&& cipherKey, std::optional<std::string>&& description)
         : m_id(id)
         , m_uuid(uuid)
         , m_name(std::move(name))
         , m_cipherId(std::move(cipherId))
         , m_cipherKey(std::move(cipherKey))
+        , m_description(std::move(description))
     {
     }
 
@@ -48,17 +51,32 @@ struct DatabaseRecord {
     DatabaseRecord(const Database& database);
 
     /**
+     * Equality comparison operator.
+     * @param other Other object.
+     * @return true if this and other objects are equal, false otherwise.
+     */
+    bool operator==(const DatabaseRecord& other) const noexcept
+    {
+        return m_id == other.m_id && m_uuid == other.m_uuid && m_name == other.m_name
+               && m_cipherId == other.m_cipherId && m_cipherKey == other.m_cipherKey
+               && m_description == other.m_description;
+    }
+
+    /**
      * Returns buffer size required to serialize this object.
+     * @param version Target version.
      * @return Number of bytes.
      */
-    std::size_t getSerializedSize() const noexcept;
+    std::size_t getSerializedSize(unsigned version = kClassVersion) const noexcept;
 
     /**
      * Serializes object into buffer. Assumes buffer is big enough.
      * @param buffer Output buffer.
+     * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer) const noexcept;
+    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
+            noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -83,8 +101,17 @@ struct DatabaseRecord {
     /** Cipher key */
     BinaryValue m_cipherKey;
 
+    /** Database description */
+    std::optional<std::string> m_description;
+
+    /** Structure UUID */
+    static const Uuid kClassUuid;
+
     /** Structure name */
     static constexpr const char* kClassName = "DatabaseRecord";
+
+    /** Structure version */
+    static constexpr std::uint32_t kClassVersion = 0;
 };
 
 }  // namespace siodb::iomgr::dbengine

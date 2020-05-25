@@ -14,24 +14,27 @@
 
 namespace siodb::iomgr::dbengine {
 
-Constraint::Constraint(Table& table, const std::string& name,
-        const ConstConstraintDefinitionPtr& constraintDefinition)
+Constraint::Constraint(Table& table, std::string&& name,
+        const ConstConstraintDefinitionPtr& constraintDefinition,
+        std::optional<std::string>&& description)
     : m_table(table)
-    , m_name(name.empty() ? name : validateConstraintName(name))
+    , m_name(name.empty() ? std::move(name) : validateConstraintName(std::move(name)))
     , m_id(m_table.getDatabase().generateNextConstraintId(m_table.isSystemTable()))
     , m_state(ConstraintState::kCreating)
     , m_constraintDefinition(constraintDefinition)
+    , m_description(std::move(description))
 {
     if (m_name.empty()) m_name = generateConstraintName();
 }
 
 Constraint::Constraint(Table& table, const ConstraintRecord& constraintRecord)
     : m_table(validateTable(table, constraintRecord))
-    , m_name(validateConstraintName(constraintRecord.m_name))
+    , m_name(validateConstraintName(std::string(constraintRecord.m_name)))
     , m_id(constraintRecord.m_id)
     , m_state(constraintRecord.m_state)
     , m_constraintDefinition(
               table.getConstraintDefinitionChecked(constraintRecord.m_constraintDefinitionId))
+    , m_description(constraintRecord.m_description)
 {
 }
 
@@ -66,9 +69,9 @@ Table& Constraint::validateTable(Table& table, const ConstraintRecord& constrain
             table.getDatabaseUuid(), table.getId());
 }
 
-const std::string& Constraint::validateConstraintName(const std::string& constraintName) const
+std::string&& Constraint::validateConstraintName(std::string&& constraintName) const
 {
-    if (isValidDatabaseObjectName(constraintName)) return constraintName;
+    if (isValidDatabaseObjectName(constraintName)) return std::move(constraintName);
     throwDatabaseError(IOManagerMessageId::kErrorInvalidConstraintNameInTable,
             m_table.getDatabaseName(), m_table.getName(), constraintName);
 }

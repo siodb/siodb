@@ -45,6 +45,16 @@ private:
 
 public:
     /**
+     * Equality comparison operator.
+     * @param other Other object.
+     * @return true if this and other objects are equal, false otherwise.
+     */
+    bool operator==(const UserRegistry& other) const noexcept
+    {
+        return m_container == other.m_container;
+    }
+
+    /**
      * Returns read-only index by user ID.
      * @return Registry index object.
      */

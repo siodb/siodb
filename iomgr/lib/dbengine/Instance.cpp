@@ -91,9 +91,9 @@ std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName() const no
     std::lock_guard lock(m_mutex);
     const auto& index = m_databaseRegistry.byName();
     std::vector<DatabaseRecord> dbRecords(index.begin(), index.end());
-    std::sort(
-            dbRecords.begin(), dbRecords.end(), [
-            ](const auto& left, const auto& right) noexcept { return left.m_name < right.m_name; });
+    std::sort(dbRecords.begin(), dbRecords.end(), [](const auto& left, const auto& right) noexcept {
+        return left.m_name < right.m_name;
+    });
     return dbRecords;
 }
 
@@ -118,8 +118,9 @@ DatabasePtr Instance::getDatabase(const std::string& databaseName)
     return database;
 }
 
-DatabasePtr Instance::createDatabase(const std::string& name, const std::string& cipherId,
-        const BinaryValue& cipherKey, std::uint32_t currentUserId)
+DatabasePtr Instance::createDatabase(std::string&& name, const std::string& cipherId,
+        BinaryValue&& cipherKey, std::uint32_t currentUserId,
+        std::optional<std::string>&& description)
 {
     std::lock_guard lock(m_cacheMutex);
 
@@ -128,8 +129,8 @@ DatabasePtr Instance::createDatabase(const std::string& name, const std::string&
         throwDatabaseError(IOManagerMessageId::kErrorDatabaseAlreadyExists, name);
 
     // Create and register database
-    auto database =
-            std::make_shared<UserDatabase>(*this, name, cipherId, cipherKey, m_tableCacheCapacity);
+    auto database = std::make_shared<UserDatabase>(*this, std::move(name), cipherId,
+            std::move(cipherKey), m_tableCacheCapacity, std::move(description));
     m_databaseRegistry.emplace(*database);
     const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
     m_systemDatabase->recordDatabase(*database, tp);
@@ -185,7 +186,8 @@ UserPtr Instance::getUserChecked(std::uint32_t userId)
     throwDatabaseError(IOManagerMessageId::kErrorUserIdDoesNotExist, userId);
 }
 
-std::uint32_t Instance::createUser(const std::string& name, const std::string& realName,
+std::uint32_t Instance::createUser(const std::string& name,
+        const std::optional<std::string>& realName, const std::optional<std::string>& description,
         bool active, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
@@ -195,7 +197,8 @@ std::uint32_t Instance::createUser(const std::string& name, const std::string& r
         throwDatabaseError(IOManagerMessageId::kErrorUserAlreadyExists, name);
 
     // Create and register user
-    auto user = std::make_shared<User>(*m_systemDatabase, name, realName, active);
+    auto user = std::make_shared<User>(*m_systemDatabase, std::string(name), stdext::copy(realName),
+            stdext::copy(description), active);
     m_userRegistry.emplace(*user);
     const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
     m_systemDatabase->recordUser(*user, tp);
@@ -228,8 +231,8 @@ void Instance::dropUser(const std::string& name, bool userMustExist, std::uint32
     m_systemDatabase->deleteUser(id, currentUserId);
 }
 
-void Instance::updateUser(const std::string& name, const std::optional<bool>& active,
-        const std::optional<std::string>& realName, std::uint32_t currentUserId)
+void Instance::updateUser(
+        const std::string& name, const UpdateUserParameters& params, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
     const auto& index = m_userRegistry.byName();
@@ -240,32 +243,42 @@ void Instance::updateUser(const std::string& name, const std::optional<bool>& ac
     const auto user = getUserUnlocked(*it);
     const auto id = user->getId();
 
-    const bool needUpdateState = active && *active != it->m_active;
-    const bool needUpdateRealName = realName && *realName != it->m_realName;
-    if (!needUpdateState && !needUpdateRealName) return;
-
-    if (needUpdateState) {
-        if (id == User::kSuperUserId)
-            throwDatabaseError(IOManagerMessageId::kErrorCannotChangeSuperUserState);
-        user->setActive(*active);
-        // NOTE: The following one still correct only because we do not index
-        // by UserRecord::m_active.
-        mutableUserRecord.m_active = *active;
-    }
+    const bool needUpdateRealName = params.m_realName && *params.m_realName != it->m_realName;
+    const bool needUpdateDescription =
+            params.m_description && *params.m_description != it->m_description;
+    const bool needUpdateState = params.m_active && *params.m_active != it->m_active;
+    if (!needUpdateRealName && !needUpdateDescription && !needUpdateState) return;
 
     if (needUpdateRealName) {
-        // It's allowed to change real name of a super user
-        user->setRealName(*realName);
-        // NOTE: The following one still correct only because we do not index
+        user->setRealName(stdext::copy(*params.m_realName));
+        // NOTE: The following one still correct only because we don't index
         // by UserRecord::m_realName.
-        mutableUserRecord.m_realName = *realName;
+        mutableUserRecord.m_realName = *params.m_realName;
     }
 
-    m_systemDatabase->updateUser(id, active, realName, currentUserId);
+    if (needUpdateDescription) {
+        user->setDescription(stdext::copy(*params.m_description));
+        // NOTE: The following one still correct only because we don't index
+        // by UserRecord::m_description.
+        mutableUserRecord.m_description = *params.m_description;
+    }
+
+    if (needUpdateState) {
+        // Super user cannot be blocked
+        if (id == User::kSuperUserId && !*params.m_active)
+            throwDatabaseError(IOManagerMessageId::kErrorCannotChangeSuperUserState);
+        user->setActive(*params.m_active);
+        // NOTE: The following one still correct only because we don't index
+        // by UserRecord::m_active.
+        mutableUserRecord.m_active = *params.m_active;
+    }
+
+    m_systemDatabase->updateUser(id, params, currentUserId);
 }
 
-std::uint64_t Instance::createUserAccessKey(const std::string& userName, const std::string& name,
-        const std::string& text, bool active, std::uint32_t currentUserId)
+std::uint64_t Instance::createUserAccessKey(const std::string& userName, const std::string& keyName,
+        const std::string& text, const std::optional<std::string>& description, bool active,
+        std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
 
@@ -280,7 +293,8 @@ std::uint64_t Instance::createUserAccessKey(const std::string& userName, const s
     const auto user = getUserUnlocked(*it);
 
     const auto id = m_systemDatabase->generateNextUserAccessKeyId();
-    const auto accessKey = user->addUserAccessKey(id, name, text, active);
+    const auto accessKey = user->addUserAccessKey(id, std::string(keyName), std::string(text),
+            std::optional<std::string>(description), active);
 
     // NOTE: We don't index by UserRecord::m_accessKeys.
     mutableUserRecord.m_accessKeys.emplace(*accessKey);
@@ -317,8 +331,8 @@ void Instance::dropUserAccessKey(const std::string& userName, const std::string&
     m_systemDatabase->deleteUserAccessKey(accessKeyId, currentUserId);
 }
 
-void Instance::updateUserAccessKey(const std::string& userName, const std::string& name,
-        const std::optional<bool>& active, std::uint32_t currentUserId)
+void Instance::updateUserAccessKey(const std::string& userName, const std::string& keyName,
+        const UpdateUserAccessKeyParameters& params, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
 
@@ -327,32 +341,50 @@ void Instance::updateUserAccessKey(const std::string& userName, const std::strin
     if (itUser == userIndex.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
 
-    // NOTE: We don't index by UserRecord::m_accessKeys.
     auto& accessKeyIndex = stdext::as_mutable(*itUser).m_accessKeys.byName();
-    const auto itKey = accessKeyIndex.find(name);
+    const auto itKey = accessKeyIndex.find(keyName);
     if (itKey == accessKeyIndex.end())
-        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, name);
+        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, keyName);
 
     const auto user = getUserUnlocked(*itUser);
-    const auto userAccessKey = user->getUserAccessKeyChecked(name);
+    const auto userAccessKey = user->getUserAccessKeyChecked(keyName);
 
-    if (!active) return;
+    const bool needUpdateDescription =
+            params.m_description && *params.m_description != itKey->m_description;
+    const bool needUpdateState = params.m_active && *params.m_active != itKey->m_active;
+    if (!needUpdateDescription && !needUpdateState) return;
 
-    const bool activeNow = userAccessKey->isActive();
-    if (activeNow == active) return;
-
-    if (user->isSuperUser() && !active && user->getActiveKeyCount() == 1)
-        throwDatabaseError(IOManagerMessageId::kErrorCannotDeactivateLastSuperUserAccessKey, name);
-
-    // NOTE: We do index by UserAccessKeyRecord::m_active, so modify it in a special way.
-    if (accessKeyIndex.modify(
-                itKey,
-                [&active](UserAccessKeyRecord & record) noexcept { record.m_active = *active; },
-                [activeNow](
-                        UserAccessKeyRecord & record) noexcept { record.m_active = activeNow; })) {
-        userAccessKey->setActive(*active);
-        m_systemDatabase->updateUserAccessKey(userAccessKey->getId(), *active, currentUserId);
+    if (needUpdateDescription) {
+        user->setDescription(stdext::copy(*params.m_description));
+        // NOTE: The following one still correct only because we don't index
+        // by UserAccessKeyRecord::m_description.
+        stdext::as_mutable(*itKey).m_description = *params.m_description;
     }
+
+    if (needUpdateState) {
+        if (user->isSuperUser() && !*params.m_active && user->getActiveKeyCount() == 1) {
+            throwDatabaseError(
+                    IOManagerMessageId::kErrorCannotDeactivateLastSuperUserAccessKey, keyName);
+        }
+
+        // NOTE: We do index by UserAccessKeyRecord::m_active, so modify it in a special way.
+        const bool activeNow = userAccessKey->isActive();
+        if (accessKeyIndex.modify(
+                    itKey,
+                    [&params](UserAccessKeyRecord& record) noexcept {
+                        record.m_active = *params.m_active;
+                    },
+                    [activeNow](UserAccessKeyRecord& record) noexcept {
+                        record.m_active = activeNow;
+                    })) {
+            userAccessKey->setActive(*params.m_active);
+        } else {
+            throwDatabaseError(
+                    IOManagerMessageId::kErrorAlterUserAccessKeyFailed, userName, keyName);
+        }
+    }
+
+    m_systemDatabase->updateUserAccessKey(userAccessKey->getId(), params, currentUserId);
 }
 
 void Instance::beginUserAuthentication(const std::string& userName)
@@ -452,7 +484,7 @@ void Instance::createSystemDatabase()
 {
     LOG_DEBUG << "Instance: Creating system database.";
     m_systemDatabase = std::make_shared<SystemDatabase>(*this, m_systemDatabaseCipherId,
-            m_systemDatabaseCipherKey, m_superUserInitialAccessKey);
+            BinaryValue(m_systemDatabaseCipherKey), m_superUserInitialAccessKey);
     m_databaseRegistry.emplace(*m_systemDatabase);
     m_databaseCache.emplace(m_systemDatabase->getId(), m_systemDatabase);
 }
@@ -461,7 +493,7 @@ void Instance::loadSystemDatabase()
 {
     LOG_DEBUG << "Instance: Loading system database.";
     m_systemDatabase = std::make_shared<SystemDatabase>(
-            *this, m_systemDatabaseCipherId, m_systemDatabaseCipherKey);
+            *this, m_systemDatabaseCipherId, BinaryValue(m_systemDatabaseCipherKey));
     m_databaseRegistry.emplace(*m_systemDatabase);
     m_databaseCache.emplace(m_systemDatabase->getId(), m_systemDatabase);
 }
@@ -470,10 +502,12 @@ void Instance::createSuperUser()
 {
     LOG_DEBUG << "Instance: Creating super user.";
     m_superUser = std::make_shared<User>(UserRecord(User::kSuperUserId, User::kSuperUserName,
-            std::string(), true, UserAccessKeyRegistry()));
+            std::string(), User::kSuperUserDescription, true, UserAccessKeyRegistry()));
     if (!m_superUserInitialAccessKey.empty()) {
         m_superUser->addUserAccessKey(UserAccessKey::kSuperUserInitialAccessKeyId,
-                UserAccessKey::kSuperUserInitialAccessKeyName, m_superUserInitialAccessKey, true);
+                UserAccessKey::kSuperUserInitialAccessKeyName,
+                std::string(m_superUserInitialAccessKey),
+                UserAccessKey::kSuperUserInitialAccessKeyDescription, true);
     }
     m_userRegistry.emplace(*m_superUser);
     m_userCache.emplace(m_superUser->getId(), m_superUser);
@@ -573,8 +607,8 @@ void Instance::checkDataConsistency()
     m_systemDatabase->readAllDatabases(m_databaseRegistry);
 
     const auto& index = m_databaseRegistry.byUuid();
-    const auto itSystemDatabase = std::find_if(
-            index.cbegin(), index.cend(), [](const auto& record) noexcept {
+    const auto itSystemDatabase =
+            std::find_if(index.cbegin(), index.cend(), [](const auto& record) noexcept {
                 return record.m_uuid == Database::kSystemDatabaseUuid;
             });
     if (itSystemDatabase == index.cend())

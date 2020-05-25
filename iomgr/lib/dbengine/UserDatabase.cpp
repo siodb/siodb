@@ -6,9 +6,11 @@
 
 namespace siodb::iomgr::dbengine {
 
-UserDatabase::UserDatabase(Instance& instance, const std::string& name, const std::string& cipherId,
-        const BinaryValue& cipherKey, std::size_t tableCacheCapacity)
-    : Database(instance, name, cipherId, cipherKey, tableCacheCapacity)
+UserDatabase::UserDatabase(Instance& instance, std::string&& name, const std::string& cipherId,
+        BinaryValue&& cipherKey, std::size_t tableCacheCapacity,
+        std::optional<std::string>&& description)
+    : Database(instance, std::move(name), cipherId, std::move(cipherKey), tableCacheCapacity,
+            std::move(description))
 {
     // Indicate that database is initialized
     createInitializationFlagFile();

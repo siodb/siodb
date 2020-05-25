@@ -272,7 +272,7 @@ TEST(Serialization_Constant, Clob)
         const auto serializedSize = src->getSerializedSize();
         ASSERT_EQ(serializedSize, vsp.second);
 
-        siodb::BinaryValue buffer(serializedSize + kExtraBufferSize, 0xCD);
+        siodb::utils::MemoryBuffer<std::uint8_t> buffer(serializedSize + kExtraBufferSize, 0xCD);
         const auto end = src->serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, serializedSize);
@@ -298,7 +298,7 @@ TEST(Serialization_Constant, TooLargeClob)
     const auto serializedSize = src->getSerializedSize();
     ASSERT_EQ(serializedSize, 3U);
 
-    siodb::BinaryValue buffer(serializedSize + kExtraBufferSize, 0xCD);
+    siodb::utils::MemoryBuffer<std::uint8_t> buffer(serializedSize + kExtraBufferSize, 0xCD);
     EXPECT_THROW(src->serializeUnchecked(buffer.data()), dbengine::VariantSerializationError);
 }
 
@@ -319,7 +319,7 @@ TEST(Serialization_Constant, Blob)
         const auto serializedSize = src->getSerializedSize();
         ASSERT_EQ(serializedSize, vsp.second);
 
-        siodb::BinaryValue buffer(serializedSize + kExtraBufferSize, 0xCD);
+        siodb::utils::MemoryBuffer<std::uint8_t> buffer(serializedSize + kExtraBufferSize, 0xCD);
         const auto end = src->serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, serializedSize);
@@ -345,6 +345,6 @@ TEST(Serialization_Constant, TooLargeBlob)
     const auto serializedSize = src->getSerializedSize();
     ASSERT_EQ(serializedSize, 3U);
 
-    siodb::BinaryValue buffer(serializedSize + kExtraBufferSize, 0xCD);
+    siodb::utils::MemoryBuffer<std::uint8_t> buffer(serializedSize + kExtraBufferSize, 0xCD);
     EXPECT_THROW(src->serializeUnchecked(buffer.data()), dbengine::VariantSerializationError);
 }

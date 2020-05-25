@@ -18,7 +18,8 @@ void RequestHandler::executeCreateUserRequest(iomgr_protocol::DatabaseEngineResp
         const requests::CreateUserRequest& request)
 {
     response.set_has_affected_row_count(false);
-    m_instance.createUser(request.m_name, request.m_realName, request.m_active, m_userId);
+    m_instance.createUser(
+            request.m_name, request.m_realName, request.m_description, request.m_active, m_userId);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
@@ -36,7 +37,7 @@ void RequestHandler::executeAlterUserRequest(
         iomgr_protocol::DatabaseEngineResponse& response, const requests::AlterUserRequest& request)
 {
     response.set_has_affected_row_count(false);
-    m_instance.updateUser(request.m_name, request.m_active, request.m_realName, m_userId);
+    m_instance.updateUser(request.m_userName, request.m_params, m_userId);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
@@ -46,8 +47,8 @@ void RequestHandler::executeAddUserAccessKeyRequest(
         const requests::AddUserAccessKeyRequest& request)
 {
     response.set_has_affected_row_count(false);
-    m_instance.createUserAccessKey(
-            request.m_userName, request.m_keyName, request.m_keyText, request.m_active, m_userId);
+    m_instance.createUserAccessKey(request.m_userName, request.m_keyName, request.m_text,
+            request.m_description, request.m_active, m_userId);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
@@ -69,7 +70,7 @@ void RequestHandler::executeAlterUserAccessKeyRequest(
 {
     response.set_has_affected_row_count(false);
     m_instance.updateUserAccessKey(
-            request.m_userName, request.m_keyName, request.m_active, m_userId);
+            request.m_userName, request.m_keyName, request.m_params, m_userId);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }

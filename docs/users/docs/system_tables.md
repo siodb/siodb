@@ -3,7 +3,7 @@
 This page reference the tables that Siodb manages to function.
 Siodb adds an internal column `TRID`. Siodb uses that column as a primary key for all
 rows in a table. Siodb increment the `TRID` at each `INSERT` operation.
-The number is unsigned INT that can grow up to 18446744073709551615.
+The number is 64-bit unsigned integer that can grow up to 18446744073709551615.
 
 ## sys_tables
 
@@ -12,6 +12,7 @@ The number is unsigned INT that can grow up to 18446744073709551615.
 - name
 - first_user_trid
 - current_column_set_id
+- description
 
 ## sys_dummy
 
@@ -30,6 +31,7 @@ The number is unsigned INT that can grow up to 18446744073709551615.
 - name
 - state
 - block_data_area_size
+- description
 
 ## sys_column_defs
 
@@ -56,6 +58,7 @@ The number is unsigned INT that can grow up to 18446744073709551615.
 - state
 - column_id
 - def_id
+- description
 
 ## sys_column_def_constraints
 
@@ -70,6 +73,7 @@ The number is unsigned INT that can grow up to 18446744073709551615.
 - unique
 - name
 - data_file_size
+- description
 
 ## sys_index_columns
 
@@ -84,6 +88,7 @@ The number is unsigned INT that can grow up to 18446744073709551615.
 - name
 - real_name
 - state
+- description
 
 ## sys_user_access_keys
 
@@ -92,6 +97,7 @@ The number is unsigned INT that can grow up to 18446744073709551615.
 - name
 - text
 - state
+- description
 
 ## sys_databases
 
@@ -100,6 +106,7 @@ The number is unsigned INT that can grow up to 18446744073709551615.
 - name
 - cipher_id
 - cipher_key
+- description
 
 ## sys_user_permissions
 
@@ -110,4 +117,3 @@ The number is unsigned INT that can grow up to 18446744073709551615.
 - object_id
 - permissions
 - grant_options
-

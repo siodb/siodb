@@ -116,7 +116,7 @@ compound_select_stmt: (
 	)? select_core (
 		(K_UNION K_ALL? | K_INTERSECT | K_EXCEPT) select_core
 	)+ (K_ORDER K_BY ordering_term ( ',' ordering_term)*)? (
-		K_LIMIT simple_expr ( ( K_OFFSET | ',') simple_expr)?
+		K_LIMIT simple_expr (( K_OFFSET | ',') simple_expr)?
 	)?;
 
 create_database_option:
@@ -292,7 +292,6 @@ select_or_values:
 		',' '(' expr ( ',' expr)* ')'
 	)*;
 
-
 show_databases_stmt: K_SHOW K_DATABASES;
 
 update_stmt:
@@ -327,14 +326,17 @@ vacuum_stmt: K_VACUUM;
 
 column_def: column_name type_name? column_constraint*;
 
-user_access_key_option: K_STATE '=' (K_ACTIVE | K_INACTIVE);
+user_access_key_option:
+	K_STATE '=' (K_ACTIVE | K_INACTIVE)
+	| K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
 
 user_access_key_option_list:
 	user_access_key_option (',' user_access_key_option)*;
 
 user_option:
 	K_STATE '=' (K_ACTIVE | K_INACTIVE)
-	| K_REAL_NAME '=' STRING_LITERAL;
+	| K_REAL_NAME '=' (STRING_LITERAL | K_NULL)
+	| K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
 
 user_option_list: user_option (',' user_option)*;
 
@@ -800,6 +802,7 @@ K_DEFERRABLE: D E F E R R A B L E;
 K_DEFERRED: D E F E R R E D;
 K_DELETE: D E L E T E;
 K_DESC: D E S C;
+K_DESCRIPTION: D E S C R I P T I O N;
 K_DETACH: D E T A C H;
 K_DISTINCT: D I S T I N C T;
 K_DROP: D R O P;
@@ -817,7 +820,6 @@ K_FOR: F O R;
 K_FOREIGN: F O R E I G N;
 K_FROM: F R O M;
 K_FULL: F U L L;
-K_REAL_NAME: R E A L '_' N A M E;
 K_GLOB: G L O B;
 K_GROUP: G R O U P;
 K_HAVING: H A V I N G;
@@ -858,6 +860,7 @@ K_PRAGMA: P R A G M A;
 K_PRIMARY: P R I M A R Y;
 K_QUERY: Q U E R Y;
 K_RAISE: R A I S E;
+K_REAL_NAME: R E A L '_' N A M E;
 K_RECURSIVE: R E C U R S I V E;
 K_REFERENCES: R E F E R E N C E S;
 K_REGEXP: R E G E X P;

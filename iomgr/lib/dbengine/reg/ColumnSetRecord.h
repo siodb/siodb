@@ -33,22 +33,49 @@ struct ColumnSetRecord {
 
     /**
      * Initializes object of class ColumnSetRecord.
+     * @param id Column set ID.
+     * @param tableId Table ID.
+     * @param column List of columns.
+     */
+    ColumnSetRecord(
+            std::uint64_t id, std::uint32_t tableId, ColumnSetColumnRegistry&& columns) noexcept
+        : m_id(id)
+        , m_tableId(tableId)
+        , m_columns(std::move(columns))
+    {
+    }
+
+    /**
+     * Initializes object of class ColumnSetRecord.
      * @param columnSetColumn Column set object.
      */
     explicit ColumnSetRecord(const ColumnSet& columnSet);
 
     /**
+     * Equality comparison operator.
+     * @param other Other object.
+     * @return true if this and other objects are equal, false otherwise.
+     */
+    bool operator==(const ColumnSetRecord& other) const noexcept
+    {
+        return m_id == other.m_id && m_tableId == other.m_tableId && m_columns == other.m_columns;
+    }
+
+    /**
      * Returns buffer size required to serialize this object.
+     * @param version Target version.
      * @return Number of bytes.
      */
-    std::size_t getSerializedSize() const noexcept;
+    std::size_t getSerializedSize(unsigned version = kClassVersion) const noexcept;
 
     /**
      * Serializes object into buffer. Assumes buffer is big enough.
      * @param buffer Output buffer.
+     * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer) const noexcept;
+    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
+            noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -67,8 +94,14 @@ struct ColumnSetRecord {
     /** Column set columns */
     ColumnSetColumnRegistry m_columns;
 
+    /** Structure UUID */
+    static const Uuid kClassUuid;
+
     /** Structure name */
     static constexpr const char* kClassName = "ColumnSetRecord";
+
+    /** Structure version */
+    static constexpr std::uint32_t kClassVersion = 0;
 };
 
 }  // namespace siodb::iomgr::dbengine

@@ -5,11 +5,17 @@
 #pragma once
 
 // Project headers
-#include <siodb-generated/common/lib/siodb/common/proto/ColumnDataType.pb.h>
 #include "../ColumnState.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
+#include <siodb/common/utils/Uuid.h>
+
+// STL headers
+#include <optional>
+
+// Protobuf generated headers
+#include <siodb-generated/common/lib/siodb/common/proto/ColumnDataType.pb.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -35,15 +41,18 @@ struct ColumnRecord {
      * @param tableId Table ID.
      * @param state Column state.
      * @param dataBlockDataAreaSize Column data file data area size.
+     * @param description Column description.
      */
     ColumnRecord(std::uint64_t id, std::string&& name, ColumnDataType dataType,
-            std::uint32_t tableId, ColumnState state, std::uint32_t dataBlockDataAreaSize) noexcept
+            std::uint32_t tableId, ColumnState state, std::uint32_t dataBlockDataAreaSize,
+            std::optional<std::string>&& description) noexcept
         : m_id(id)
         , m_name(std::move(name))
         , m_dataType(dataType)
         , m_tableId(tableId)
         , m_state(state)
         , m_dataBlockDataAreaSize(dataBlockDataAreaSize)
+        , m_description(std::move(description))
     {
     }
 
@@ -54,17 +63,33 @@ struct ColumnRecord {
     explicit ColumnRecord(const Column& column);
 
     /**
+     * Equality comparison operator.
+     * @param other Other object.
+     * @return true if this and other objects are equal, false otherwise.
+     */
+    bool operator==(const ColumnRecord& other) const noexcept
+    {
+        return m_id == other.m_id && m_name == other.m_name && m_dataType == other.m_dataType
+               && m_tableId == other.m_tableId && m_state == other.m_state
+               && m_dataBlockDataAreaSize == other.m_dataBlockDataAreaSize
+               && m_description == other.m_description;
+    }
+
+    /**
      * Returns buffer size required to serialize this object.
+     * @param version Target version.
      * @return Number of bytes.
      */
-    std::size_t getSerializedSize() const noexcept;
+    std::size_t getSerializedSize(unsigned version = kClassVersion) const noexcept;
 
     /**
      * Serializes object into buffer. Assumes buffer is big enough.
      * @param buffer Output buffer.
+     * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer) const noexcept;
+    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
+            noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -92,8 +117,17 @@ struct ColumnRecord {
     /** Column data file data area size */
     std::uint32_t m_dataBlockDataAreaSize;
 
+    /** Column description */
+    std::optional<std::string> m_description;
+
+    /** Structure UUID */
+    static const Uuid kClassUuid;
+
     /** Structure name */
     static constexpr const char* kClassName = "ColumnRecord";
+
+    /** Structure version */
+    static constexpr std::uint32_t kClassVersion = 0;
 };
 
 }  // namespace siodb::iomgr::dbengine

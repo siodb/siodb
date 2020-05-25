@@ -580,11 +580,8 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAttachDatabaseRequest
     const auto uuidNode =
             helpers::findTerminal(node, SiodbParser::RuleExpr, SiodbParser::STRING_LITERAL);
     if (uuidNode) {
-        auto s = uuidNode->getText();
-        // Remove quotes
-        s.pop_back();
-        s.erase(0, 1);
-        databaseUuid = boost::uuids::string_generator()(s);
+        databaseUuid =
+                boost::uuids::string_generator()(helpers::unquoteString(uuidNode->getText()));
     } else
         throw std::invalid_argument("ATTACH DATABASE missing database UUID");
 
@@ -1085,7 +1082,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateUserRequest(
 
     // Get node text as is without 'GetAnyText' call.
     auto name = boost::to_upper_copy(node->children[2]->getText());
-    std::string realName;
+    std::optional<std::string> realName, description;
     bool active = true;
 
     //  <name> + WITH + <List of options>
@@ -1098,16 +1095,25 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateUserRequest(
         for (std::size_t i = 0; i < optionsListNode->children.size(); i += 2) {
             const auto optionNode = optionsListNode->children[i];
             switch (helpers::getTerminalType(optionNode->children.at(0))) {
+                case SiodbParser::K_REAL_NAME: {
+                    const auto valueNode = optionNode->children.at(2);
+                    if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                        realName.reset();
+                    else
+                        realName = helpers::unquoteString(valueNode->getText());
+                    break;
+                }
+                case SiodbParser::K_DESCRIPTION: {
+                    const auto valueNode = optionNode->children.at(2);
+                    if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                        description.reset();
+                    else
+                        description = helpers::unquoteString(optionNode->children.at(2)->getText());
+                    break;
+                }
                 case SiodbParser::K_STATE: {
                     active = parseStateNode(
                             optionNode->children.at(2), "CREATE USER invalid user state");
-                    break;
-                }
-                case SiodbParser::K_REAL_NAME: {
-                    realName = optionNode->children.at(2)->getText();
-                    // Remove quotes
-                    realName.pop_back();
-                    realName.erase(0, 1);
                     break;
                 }
                 default: throw std::invalid_argument("CREATE USER invalid option");
@@ -1116,7 +1122,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateUserRequest(
     }
 
     return std::make_unique<requests::CreateUserRequest>(
-            std::move(name), std::move(realName), active);
+            std::move(name), std::move(realName), std::move(description), active);
 }
 
 requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserRequest(
@@ -1140,7 +1146,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAlterUserRequest(
     // Get node text as is without 'GetAnyText' call.
     auto name = boost::to_upper_copy(node->children[2]->getText());
 
-    std::optional<std::string> realName;
+    std::optional<std::optional<std::string>> realName, description;
     std::optional<bool> active;
 
     const auto optionsListNode = node->children[4];
@@ -1149,11 +1155,25 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAlterUserRequest(
         const auto optionNode = optionsListNode->children[i];
         switch (helpers::getTerminalType(optionNode->children.at(0))) {
             case SiodbParser::K_REAL_NAME: {
-                auto s = optionNode->children.at(2)->getText();
-                // Remove quotes
-                s.pop_back();
-                s.erase(0, 1);
-                realName = std::move(s);
+                const auto valueNode = optionNode->children.at(2);
+                if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL) {
+                    // It is optional optional, just reset() doesn't work here.
+                    realName = std::optional<std::string>();
+                } else {
+                    realName = std::optional<std::string>(
+                            helpers::unquoteString(valueNode->getText()));
+                }
+                break;
+            }
+            case SiodbParser::K_DESCRIPTION: {
+                const auto valueNode = optionNode->children.at(2);
+                if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL) {
+                    // It is optional optional, just reset() doesn't work here.
+                    description = std::optional<std::string>();
+                } else {
+                    description = std::optional<std::string>(
+                            helpers::unquoteString(optionNode->children.at(2)->getText()));
+                }
                 break;
             }
             case SiodbParser::K_STATE: {
@@ -1166,7 +1186,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAlterUserRequest(
     }
 
     return std::make_unique<requests::AlterUserRequest>(
-            std::move(name), std::move(realName), std::move(active));
+            std::move(name), std::move(realName), std::move(description), std::move(active));
 }
 
 requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserAccessKeyRequest(
@@ -1175,11 +1195,8 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserAccessKeyReque
     // Get node text as is without 'GetAnyText' call.
     auto userName = boost::to_upper_copy(node->children.at(2)->getText());
     auto keyName = boost::to_upper_copy(node->children.at(6)->getText());
-    auto keyText = node->children.at(7)->getText();
-    // Remove quotes
-    keyText.pop_back();
-    keyText.erase(0, 1);
-
+    auto keyText = helpers::unquoteString(node->children.at(7)->getText());
+    std::optional<std::string> description;
     bool active = true;
 
     if (node->children.size() > 8) {
@@ -1187,6 +1204,14 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserAccessKeyReque
         for (std::size_t i = 0; i < optionsListNode->children.size(); i += 2) {
             const auto optionNode = optionsListNode->children[i];
             switch (helpers::getTerminalType(optionNode->children.at(0))) {
+                case SiodbParser::K_DESCRIPTION: {
+                    const auto valueNode = optionNode->children.at(2);
+                    if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                        description.reset();
+                    else
+                        description = helpers::unquoteString(optionNode->children.at(2)->getText());
+                    break;
+                }
                 case SiodbParser::K_STATE: {
                     active = parseStateNode(
                             optionNode->children.at(2), "ALTER USER ADD KEY: invalid key state");
@@ -1197,8 +1222,8 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserAccessKeyReque
         }
     }
 
-    return std::make_unique<requests::AddUserAccessKeyRequest>(
-            std::move(userName), std::move(keyName), std::move(keyText), active);
+    return std::make_unique<requests::AddUserAccessKeyRequest>(std::move(userName),
+            std::move(keyName), std::move(keyText), std::move(description), active);
 }
 
 requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserAccessKeyRequest(
@@ -1217,12 +1242,23 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAlterUserAccessKeyReq
     // Get node text as is without 'GetAnyText' call.
     auto userName = boost::to_upper_copy(node->children.at(2)->getText());
     auto keyName = boost::to_upper_copy(node->children.at(6)->getText());
+    std::optional<std::optional<std::string>> description;
     std::optional<bool> active;
 
     auto optionsListNode = node->children.at(8);
     for (std::size_t i = 0; i < optionsListNode->children.size(); i += 2) {
         const auto optionNode = optionsListNode->children[i];
         switch (helpers::getTerminalType(optionNode->children.at(0))) {
+            case SiodbParser::K_DESCRIPTION: {
+                const auto valueNode = optionNode->children.at(2);
+                if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                    description = std::optional<std::string>();
+                else {
+                    description = std::optional<std::string>(
+                            helpers::unquoteString(optionNode->children.at(2)->getText()));
+                }
+                break;
+            }
             case SiodbParser::K_STATE: {
                 active = parseStateNode(
                         optionNode->children.at(2), "ALTER USER ALTER KEY: invalid key state");
@@ -1233,7 +1269,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAlterUserAccessKeyReq
     }
 
     return std::make_unique<requests::AlterUserAccessKey>(
-            std::move(userName), std::move(keyName), std::move(active));
+            std::move(userName), std::move(keyName), std::move(description), std::move(active));
 }
 
 siodb::ColumnDataType DBEngineRequestFactory::getColumnDataType(const std::string& typeName)

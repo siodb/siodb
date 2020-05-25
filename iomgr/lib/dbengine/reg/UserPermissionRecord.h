@@ -4,6 +4,9 @@
 
 #pragma once
 
+// Common project headers
+#include <siodb/common/utils/Uuid.h>
+
 // CRT headers
 #include <cstdint>
 
@@ -59,17 +62,33 @@ struct UserPermissionRecord {
     explicit UserPermissionRecord(const UserPermission& userPermission);
 
     /**
+     * Equality comparison operator.
+     * @param other Other object.
+     * @return true if this and other objects are equal, false otherwise.
+     */
+    bool operator==(const UserPermissionRecord& other) const noexcept
+    {
+        return m_id == other.m_id && m_userId == other.m_userId
+               && m_databaseId == other.m_databaseId && m_objectType == other.m_objectType
+               && m_objectId == other.m_objectId && m_permissions == other.m_permissions
+               && m_grantOptions == other.m_grantOptions;
+    }
+
+    /**
      * Returns buffer size required to serialize this object.
+     * @param version Target version.
      * @return Number of bytes.
      */
-    std::size_t getSerializedSize() const noexcept;
+    std::size_t getSerializedSize(unsigned version = kClassVersion) const noexcept;
 
     /**
      * Serializes object into buffer. Assumes buffer is big enough.
      * @param buffer Output buffer.
+     * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer) const noexcept;
+    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
+            noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -100,8 +119,14 @@ struct UserPermissionRecord {
     /** Grant options */
     std::uint64_t m_grantOptions;
 
+    /** Structure UUID */
+    static const Uuid kClassUuid;
+
     /** Structure name */
     static constexpr const char* kClassName = "UserPermissionRecord";
+
+    /** Structure version */
+    static constexpr std::uint32_t kClassVersion = 0;
 };
 
 }  // namespace siodb::iomgr::dbengine

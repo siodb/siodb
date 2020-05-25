@@ -27,7 +27,7 @@ public:
         , m_id(index.getTable().getDatabase().generateNextIndexColumnId(
                   index.getTable().isSystemTable()))
         , m_columnDefinition(columnDefinition)
-        , m_isSortDescending(sortDescending)
+        , m_sortDescending(sortDescending)
     {
     }
 
@@ -41,7 +41,7 @@ public:
         , m_id(indexColumnRecord.m_id)
         , m_columnDefinition(m_index.getTable().getColumnDefinitionChecked(
                   indexColumnRecord.m_columnDefinitionId))
-        , m_isSortDescending(indexColumnRecord.m_isSortDescending)
+        , m_sortDescending(indexColumnRecord.m_sortDescending)
     {
     }
 
@@ -78,7 +78,7 @@ public:
      */
     bool isDescendingSortOrder() const noexcept
     {
-        return m_isSortDescending;
+        return m_sortDescending;
     }
 
 private:
@@ -102,7 +102,7 @@ private:
     ColumnDefinitionPtr m_columnDefinition;
 
     /** Descending sorting order flag. */
-    const bool m_isSortDescending;
+    const bool m_sortDescending;
 
     friend std::ostream& operator<<(std::ostream& os, const IndexColumn& indexColumn);
 };
@@ -115,7 +115,7 @@ private:
 inline std::ostream& operator<<(std::ostream& os, const IndexColumn& indexColumn)
 {
     os << '(' << indexColumn.m_columnDefinition->getId() << ", "
-       << (indexColumn.m_isSortDescending ? "Desc" : "Asc") << ')';
+       << (indexColumn.m_sortDescending ? "Desc" : "Asc") << ')';
     return os;
 }
 

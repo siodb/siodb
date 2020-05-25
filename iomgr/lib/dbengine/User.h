@@ -32,10 +32,14 @@ public:
 /** Database user */
 class User {
 public:
-    /** Superuser name, must be in the upper-case. */
+    /** Super user name, must be in the upper-case. */
     static constexpr const char* kSuperUserName = "ROOT";
 
-    /** Superuser ID */
+    /** Super user description. */
+    static constexpr const char* kSuperUserDescription =
+            "Super user. Has full access to the instance.";
+
+    /** Super user ID */
     static constexpr std::uint32_t kSuperUserId = 1;
 
 public:
@@ -46,7 +50,8 @@ public:
      * @param realName Real name.
      * @param active Initial state.
      */
-    User(UserIdGenerator& userIdGenerator, const std::string& name, const std::string& realName,
+    User(UserIdGenerator& userIdGenerator, std::string&& name,
+            std::optional<std::string>&& realName, std::optional<std::string>&& description,
             bool active);
 
     /**
@@ -83,12 +88,39 @@ public:
     }
 
     /**
-     * Returns real name.
-     * @return Real name.
+     * Returns user real name.
+     * @return User real name.
      */
-    const auto& getRealName() const noexcept
+    const auto& getRealName() const
     {
         return m_realName;
+    }
+
+    /**
+     * Sets real name of this user.
+     * @param realName New real name.
+     */
+    void setRealName(std::optional<std::string>&& realName)
+    {
+        m_realName = std::move(realName);
+    }
+
+    /**
+     * Returns user description.
+     * @return User description.
+     */
+    const auto& getDescription() const
+    {
+        return m_description;
+    }
+
+    /**
+     * Sets description of this user.
+     * @param description New description.
+     */
+    void setDescription(std::optional<std::string>&& description)
+    {
+        m_description = std::move(description);
     }
 
     /**
@@ -97,7 +129,6 @@ public:
      */
     bool isActive() const
     {
-        std::lock_guard lock(m_mutex);
         return m_active;
     }
 
@@ -107,18 +138,7 @@ public:
      */
     void setActive(bool active)
     {
-        std::lock_guard lock(m_mutex);
         m_active = active;
-    }
-
-    /**
-     * Sets real name of this user.
-     * @param realName New real name.
-     */
-    void setRealName(const std::string& realName)
-    {
-        std::lock_guard lock(m_mutex);
-        m_realName = realName;
     }
 
     /**
@@ -156,8 +176,8 @@ public:
      * @return Created user access key.
      * @throw DatabaseError if some error has occurrred.
      */
-    UserAccessKeyPtr addUserAccessKey(
-            std::uint64_t id, const std::string& name, const std::string& text, bool active);
+    UserAccessKeyPtr addUserAccessKey(std::uint64_t id, std::string&& name, std::string&& text,
+            std::optional<std::string>&& description, bool active);
 
     /**
      * Deletes existing user access key.
@@ -179,7 +199,7 @@ private:
      * @return Same user name, if it is valid.
      * @throw DatabaseError if user name is invalid.
      */
-    static const std::string& validateUserName(const std::string& userName);
+    static std::string&& validateUserName(std::string&& userName);
 
     /**
      * Returns existing user access key.
@@ -193,13 +213,13 @@ private:
     const std::string m_name;
 
     /** Real name */
-    std::string m_realName;
+    std::optional<std::string> m_realName;
+
+    /** User description */
+    std::optional<std::string> m_description;
 
     /** User state */
     bool m_active;
-
-    /** Access keys access synchronization object. */
-    mutable std::mutex m_mutex;
 
     /** Access keys */
     std::vector<UserAccessKeyPtr> m_accessKeys;

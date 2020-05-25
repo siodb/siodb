@@ -18,6 +18,7 @@
 
 // Common project headers
 #include <siodb/common/log/Log.h>
+#include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
@@ -32,8 +33,9 @@
 namespace siodb::iomgr::dbengine {
 
 SystemDatabase::SystemDatabase(Instance& instance, const std::string& cipherId,
-        const BinaryValue& cipherKey, [[maybe_unused]] const std::string& superUserInitialAccessKey)
-    : Database(instance, kSystemDatabaseName, cipherId, cipherKey, m_allSystemTables.size() * 2)
+        BinaryValue&& cipherKey, [[maybe_unused]] const std::string& superUserInitialAccessKey)
+    : Database(instance, kSystemDatabaseName, cipherId, std::move(cipherKey),
+            m_allSystemTables.size() * 2, kSystemDatabaseDescription)
 {
     // Initialize buffers
     std::vector<TablePtr> allTables;
@@ -68,105 +70,141 @@ SystemDatabase::SystemDatabase(Instance& instance, const std::string& cipherId,
     const ColumnConstraintSpecificationList notNullConstraintSpec {
             ColumnConstraintSpecification(std::string(), ConstraintType::kNotNull,
                     requests::ExpressionPtr(
-                            m_systemNotNullConstraintDefinition->getExpression().clone())),
+                            m_systemNotNullConstraintDefinition->getExpression().clone()),
+                    kSystemNotNullConstraintDescription),
     };
 
     // Create table SYS_USERS
-    m_sysUsersTable = createTableUnlocked(kSysUsersTable, TableType::kDisk, kFirstUserUserId);
+    m_sysUsersTable = createTableUnlocked(
+            kSysUsersTableName, TableType::kDisk, kFirstUserUserId, kSysUsersTableDescription);
     allTables.push_back(m_sysUsersTable);
 
     // Create table SYS_USER_ACCESS_KEYS
-    m_sysUserAccessKeysTable = createTableUnlocked(kSysUserAccessKeysTable, TableType::kDisk, 0);
+    m_sysUserAccessKeysTable = createTableUnlocked(
+            kSysUserAccessKeysTableName, TableType::kDisk, 0, kSysUserAccessKeysTableDescription);
     allTables.push_back(m_sysUserAccessKeysTable);
 
     // Create table SYS_DATABASES
-    m_sysDatabasesTable =
-            createTableUnlocked(kSysDatabasesTable, TableType::kDisk, kFirstUserDatabaseId);
+    m_sysDatabasesTable = createTableUnlocked(kSysDatabasesTableName, TableType::kDisk,
+            kFirstUserDatabaseId, kSysDatabasesTableDescription);
     allTables.push_back(m_sysDatabasesTable);
     m_sysDatabasesTable->setLastSystemTrid(m_id);
 
     // Create table SYS_USER_PERMISSIONS
-    m_sysUserPermissionsTable = createTable(kSysUserPermissionsTable, TableType::kDisk, 0);
+    m_sysUserPermissionsTable = createTableUnlocked(
+            kSysUserPermissionsTableName, TableType::kDisk, 0, kSysUserPermissionsTableDescription);
     allTables.push_back(m_sysUserPermissionsTable);
 
     // Create columns of the table SYS_USER_ACCESS_KEYS
     allColumns.push_back(m_sysUsersTable->getMasterColumn());
     masterColumns.push_back(allColumns.back());
-    allColumns.push_back(m_sysUsersTable->createColumn(ColumnSpecification(kSysUsers_Name_Column,
-            COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+
+    allColumns.push_back(m_sysUsersTable->createColumn(ColumnSpecification(
+            kSysUsers_Name_ColumnName, COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize,
+            stdext::copy(notNullConstraintSpec), kSysUsers_Name_ColumnDescription)));
+
+    allColumns.push_back(m_sysUsersTable->createColumn(ColumnSpecification(
+            kSysUsers_RealName_ColumnName, COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize,
+            stdext::copy(noConstraintsSpec), kSysUsers_RealName_ColumnDescription)));
+
+    allColumns.push_back(m_sysUsersTable->createColumn(ColumnSpecification(
+            kSysUsers_State_ColumnName, COLUMN_DATA_TYPE_UINT8, kSystemTableDataFileDataAreaSize,
+            stdext::copy(notNullConstraintSpec), kSysUsers_State_ColumnDescription)));
+
     allColumns.push_back(
-            m_sysUsersTable->createColumn(ColumnSpecification(kSysUsers_RealName_Column,
-                    COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize, noConstraintsSpec)));
-    allColumns.push_back(m_sysUsersTable->createColumn(ColumnSpecification(kSysUsers_State_Column,
-            COLUMN_DATA_TYPE_UINT8, kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+            m_sysUsersTable->createColumn(ColumnSpecification(kSysUsers_Description_ColumnName,
+                    COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize,
+                    stdext::copy(noConstraintsSpec), kSysUsers_Description_ColumnDescription)));
 
     // Create columns of the table SYS_USER_ACCESS_KEYS
     allColumns.push_back(m_sysUserAccessKeysTable->getMasterColumn());
     masterColumns.push_back(allColumns.back());
 
     allColumns.push_back(m_sysUserAccessKeysTable->createColumn(
-            ColumnSpecification(kSysUserAccessKeys_UserId_Column, Column::kMasterColumnDataType,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+            ColumnSpecification(kSysUserAccessKeys_UserId_ColumnName, Column::kMasterColumnDataType,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysUserAccessKeys_UserId_ColumnDescription)));
 
     allColumns.push_back(m_sysUserAccessKeysTable->createColumn(
-            ColumnSpecification(kSysUserAccessKeys_Name_Column, COLUMN_DATA_TYPE_TEXT,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+            ColumnSpecification(kSysUserAccessKeys_Name_ColumnName, COLUMN_DATA_TYPE_TEXT,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysUserAccessKeys_Name_ColumnDescription)));
 
     allColumns.push_back(m_sysUserAccessKeysTable->createColumn(
-            ColumnSpecification(kSysUserAccessKeys_Text_Column, COLUMN_DATA_TYPE_TEXT,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+            ColumnSpecification(kSysUserAccessKeys_Text_ColumnName, COLUMN_DATA_TYPE_TEXT,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysUserAccessKeys_Text_ColumnDescription)));
 
     allColumns.push_back(m_sysUserAccessKeysTable->createColumn(
-            ColumnSpecification(kSysUserAccessKeys_State_Column, COLUMN_DATA_TYPE_UINT8,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+            ColumnSpecification(kSysUserAccessKeys_State_ColumnName, COLUMN_DATA_TYPE_UINT8,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysUserAccessKeys_State_ColumnDescription)));
+
+    allColumns.push_back(m_sysUserAccessKeysTable->createColumn(
+            ColumnSpecification(kSysUserAccessKeys_Description_ColumnName, COLUMN_DATA_TYPE_TEXT,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(noConstraintsSpec),
+                    kSysUserAccessKeys_Description_ColumnDescription)));
 
     // Create columns of the table SYS_DATABASES
     allColumns.push_back(m_sysDatabasesTable->getMasterColumn());
     masterColumns.push_back(allColumns.back());
 
-    auto column = m_sysDatabasesTable->createColumn(ColumnSpecification(kSysDatabases_Uuid_Column,
-            COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize, notNullConstraintSpec));
-    allColumns.push_back(column);
+    allColumns.push_back(m_sysDatabasesTable->createColumn(ColumnSpecification(
+            kSysDatabases_Uuid_ColumnName, COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize,
+            stdext::copy(notNullConstraintSpec), kSysDatabases_Uuid_ColumnDescription)));
 
-    column = m_sysDatabasesTable->createColumn(ColumnSpecification(kSysDatabases_Name_Column,
-            COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize, notNullConstraintSpec));
-    allColumns.push_back(column);
+    allColumns.push_back(m_sysDatabasesTable->createColumn(ColumnSpecification(
+            kSysDatabases_Name_ColumnName, COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize,
+            stdext::copy(notNullConstraintSpec), kSysDatabases_Name_ColumnDescription)));
 
-    column = m_sysDatabasesTable->createColumn(ColumnSpecification(kSysDatabases_CipherId_Column,
-            COLUMN_DATA_TYPE_TEXT, kSystemTableDataFileDataAreaSize, notNullConstraintSpec));
-    allColumns.push_back(column);
+    allColumns.push_back(m_sysDatabasesTable->createColumn(
+            ColumnSpecification(kSysDatabases_CipherId_ColumnName, COLUMN_DATA_TYPE_TEXT,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysDatabases_CipherId_ColumnDescription)));
 
-    column = m_sysDatabasesTable->createColumn(ColumnSpecification(kSysDatabases_CipherKey_Column,
-            COLUMN_DATA_TYPE_BINARY, kSystemTableDataFileDataAreaSize, notNullConstraintSpec));
-    allColumns.push_back(column);
+    allColumns.push_back(m_sysDatabasesTable->createColumn(
+            ColumnSpecification(kSysDatabases_CipherKey_ColumnName, COLUMN_DATA_TYPE_BINARY,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysDatabases_CipherKey_ColumnDescription)));
+
+    allColumns.push_back(m_sysDatabasesTable->createColumn(
+            ColumnSpecification(kSysDatabases_Description_ColumnName, COLUMN_DATA_TYPE_TEXT,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(noConstraintsSpec),
+                    kSysDatabases_Description_ColumnDescription)));
 
     // Table columns of the table SYS_USER_PERMISSIONS
     allColumns.push_back(m_sysUserPermissionsTable->getMasterColumn());
     masterColumns.push_back(allColumns.back());
 
-    allColumns.push_back(m_sysUserPermissionsTable->createColumn(
-            ColumnSpecification(kSysUserPermissions_UserId_Column, Column::kMasterColumnDataType,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+    allColumns.push_back(m_sysUserPermissionsTable->createColumn(ColumnSpecification(
+            kSysUserPermissions_UserId_ColumnName, Column::kMasterColumnDataType,
+            kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+            kSysUserPermissions_UserId_ColumnDescription)));
 
     allColumns.push_back(m_sysUserPermissionsTable->createColumn(ColumnSpecification(
-            kSysUserPermissions_DatabaseId_Column, Column::kMasterColumnDataType,
-            kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+            kSysUserPermissions_DatabaseId_ColumnName, Column::kMasterColumnDataType,
+            kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+            kSysUserPermissions_DatabaseId_ColumnDescription)));
 
     allColumns.push_back(m_sysUserPermissionsTable->createColumn(
-            ColumnSpecification(kSysUserPermissions_ObjectType_Column, COLUMN_DATA_TYPE_UINT8,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+            ColumnSpecification(kSysUserPermissions_ObjectType_ColumnName, COLUMN_DATA_TYPE_UINT8,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysUserPermissions_ObjectType_ColumnDescription)));
+
+    allColumns.push_back(m_sysUserPermissionsTable->createColumn(ColumnSpecification(
+            kSysUserPermissions_ObjectId_ColumnName, Column::kMasterColumnDataType,
+            kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+            kSysUserPermissions_ObjectId_ColumnDescription)));
 
     allColumns.push_back(m_sysUserPermissionsTable->createColumn(
-            ColumnSpecification(kSysUserPermissions_ObjectId_Column, Column::kMasterColumnDataType,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+            ColumnSpecification(kSysUserPermissions_Permissions_ColumnName, COLUMN_DATA_TYPE_UINT64,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysUserPermissions_Permissions_ColumnDescription)));
 
-    allColumns.push_back(m_sysUserPermissionsTable->createColumn(
-            ColumnSpecification(kSysUserPermissions_Permissions_Column, COLUMN_DATA_TYPE_UINT64,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
-
-    allColumns.push_back(m_sysUserPermissionsTable->createColumn(
-            ColumnSpecification(kSysUserPermissions_GrantOptions_Column, COLUMN_DATA_TYPE_UINT64,
-                    kSystemTableDataFileDataAreaSize, notNullConstraintSpec)));
+    allColumns.push_back(m_sysUserPermissionsTable->createColumn(ColumnSpecification(
+            kSysUserPermissions_GrantOptions_ColumnName, COLUMN_DATA_TYPE_UINT64,
+            kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+            kSysUserPermissions_GrantOptions_ColumnDescription)));
 
     // Close column sets
     for (const auto& table : allTables)
@@ -200,15 +238,15 @@ SystemDatabase::SystemDatabase(Instance& instance, const std::string& cipherId,
 }
 
 SystemDatabase::SystemDatabase(
-        Instance& instance, const std::string& cipherId, const BinaryValue& cipherKey)
+        Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey)
     : Database(instance,
             DatabaseRecord(kSystemDatabaseId, kSystemDatabaseUuid, kSystemDatabaseName,
-                    std::string(cipherId), BinaryValue(cipherKey)),
+                    std::string(cipherId), std::move(cipherKey), kSystemDatabaseDescription),
             m_allSystemTables.size() * 2)
-    , m_sysUsersTable(loadSystemTable(kSysUsersTable))
-    , m_sysUserAccessKeysTable(loadSystemTable(kSysUserAccessKeysTable))
-    , m_sysDatabasesTable(loadSystemTable(kSysDatabasesTable))
-    , m_sysUserPermissionsTable(loadSystemTable(kSysUserPermissionsTable))
+    , m_sysUsersTable(loadSystemTable(kSysUsersTableName))
+    , m_sysUserAccessKeysTable(loadSystemTable(kSysUserAccessKeysTableName))
+    , m_sysDatabasesTable(loadSystemTable(kSysDatabasesTableName))
+    , m_sysUserPermissionsTable(loadSystemTable(kSysUserPermissionsTableName))
 {
 }
 
@@ -226,9 +264,11 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
 
     // Obtain columns
     const auto masterColumn = m_sysUsersTable->getMasterColumn();
-    const auto nameColumn = m_sysUsersTable->getColumnChecked(kSysUsers_Name_Column);
-    const auto realNameColumn = m_sysUsersTable->getColumnChecked(kSysUsers_RealName_Column);
-    const auto stateColumn = m_sysUsersTable->getColumnChecked(kSysUsers_State_Column);
+    const auto nameColumn = m_sysUsersTable->getColumnChecked(kSysUsers_Name_ColumnName);
+    const auto realNameColumn = m_sysUsersTable->getColumnChecked(kSysUsers_RealName_ColumnName);
+    const auto stateColumn = m_sysUsersTable->getColumnChecked(kSysUsers_State_ColumnName);
+    const auto descriptionColumn =
+            m_sysUsersTable->getColumnChecked(kSysUsers_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -281,18 +321,20 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant nameValue, realNameValue, stateValue;
+        Variant nameValue, realNameValue, stateValue, descriptionValue;
         std::size_t colIndex = 0;
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue, false);
         realNameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), realNameValue, false);
         stateColumn->readRecord(columnRecords.at(colIndex++).getAddress(), stateValue, false);
+        descriptionColumn->readRecord(
+                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
         const auto userId = static_cast<std::uint32_t>(mcr.getTableRowId());
         UserAccessKeyRegistry accessKeys;
         const auto it = userAccessKeyRegistries.find(userId);
         if (it != userAccessKeyRegistries.end()) accessKeys.swap(it->second);
         UserRecord userRecord(userId, std::move(*nameValue.asString()),
-                std::move(*realNameValue.asString()), stateValue.asUInt8() != 0,
-                std::move(accessKeys));
+                realNameValue.asOptionalString(), descriptionValue.asOptionalString(),
+                stateValue.asUInt8() != 0, std::move(accessKeys));
         LOG_DEBUG << "Database " << m_name << ": readAllUsers: User #" << trid << " '"
                   << userRecord.m_name << '\'';
         reg.insert(std::move(userRecord));
@@ -309,12 +351,14 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
 
     // Obtain columns
     const auto masterColumn = m_sysDatabasesTable->getMasterColumn();
-    const auto uuidColumn = m_sysDatabasesTable->getColumnChecked(kSysDatabases_Uuid_Column);
-    const auto nameColumn = m_sysDatabasesTable->getColumnChecked(kSysDatabases_Name_Column);
+    const auto uuidColumn = m_sysDatabasesTable->getColumnChecked(kSysDatabases_Uuid_ColumnName);
+    const auto nameColumn = m_sysDatabasesTable->getColumnChecked(kSysDatabases_Name_ColumnName);
     const auto cipherIdColumn =
-            m_sysDatabasesTable->getColumnChecked(kSysDatabases_CipherId_Column);
+            m_sysDatabasesTable->getColumnChecked(kSysDatabases_CipherId_ColumnName);
     const auto cipherKeyColumn =
-            m_sysDatabasesTable->getColumnChecked(kSysDatabases_CipherKey_Column);
+            m_sysDatabasesTable->getColumnChecked(kSysDatabases_CipherKey_ColumnName);
+    const auto descriptionColumn =
+            m_sysDatabasesTable->getColumnChecked(kSysDatabases_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -368,16 +412,19 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant uuidValue, nameValue, cipherIdValue, cipherKeyValue;
+        Variant uuidValue, nameValue, cipherIdValue, cipherKeyValue, descriptionValue;
         std::size_t colIndex = 0;
         uuidColumn->readRecord(columnRecords.at(colIndex++).getAddress(), uuidValue, false);
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue, false);
         cipherIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), cipherIdValue, false);
         cipherKeyColumn->readRecord(
                 columnRecords.at(colIndex++).getAddress(), cipherKeyValue, false);
+        descriptionColumn->readRecord(
+                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
         DatabaseRecord databaseRecord(static_cast<std::uint32_t>(mcr.getTableRowId()),
                 boost::lexical_cast<Uuid>(*uuidValue.asString()), std::move(*nameValue.asString()),
-                std::move(*cipherIdValue.asString()), std::move(*cipherKeyValue.asBinary()));
+                std::move(*cipherIdValue.asString()), std::move(*cipherKeyValue.asBinary()),
+                descriptionValue.asOptionalString());
         LOG_DEBUG << "Database " << m_name << ": readAllDatabases: Database #" << trid << " '"
                   << databaseRecord.m_name << '\'';
         reg.insert(std::move(databaseRecord));
@@ -423,6 +470,7 @@ void SystemDatabase::recordUser(const User& user, const TransactionParameters& t
     values.at(i++) = user.getName();
     values.at(i++) = user.getRealName();
     values.at(i++) = static_cast<std::uint8_t>(user.isActive() ? 1 : 0);
+    values.at(i++) = user.getDescription();
     m_sysUsersTable->insertRow(values, tp, user.getId());
 }
 
@@ -439,6 +487,7 @@ void SystemDatabase::recordUserAccessKey(
     values.at(i++) = accessKey.getName();
     values.at(i++) = accessKey.getText();
     values.at(i++) = (std::uint8_t(accessKey.isActive() ? 1 : 0));
+    values.at(i++) = accessKey.getDescription();
     m_sysUserAccessKeysTable->insertRow(values, tp, accessKey.getId());
 }
 
@@ -452,6 +501,7 @@ void SystemDatabase::recordDatabase(const Database& database, const TransactionP
     values.at(i++) = database.getName();
     values.at(i++) = database.getCipherId();
     values.at(i++) = database.getCipherKey();
+    values.at(i++) = database.getDescription();
     m_sysDatabasesTable->insertRow(values, tp, database.getId());
 }
 
@@ -489,25 +539,34 @@ void SystemDatabase::deleteUserAccessKey(std::uint64_t accessKeyId, std::uint32_
     m_sysUserAccessKeysTable->deleteRow(accessKeyId, tp);
 }
 
-void SystemDatabase::updateUser(std::uint32_t userId, const std::optional<bool>& active,
-        const std::optional<std::string>& realName, std::uint32_t currentUserId)
+void SystemDatabase::updateUser(
+        std::uint32_t userId, const UpdateUserParameters& params, std::uint32_t currentUserId)
 {
     const TransactionParameters tp(currentUserId, generateNextTransactionId());
     std::vector<Variant> columnValues;
     std::vector<std::size_t> columnPositions;
-    columnValues.reserve(2);
-    columnPositions.reserve(2);
 
-    if (active.has_value()) {
-        columnValues.push_back(std::uint8_t(*active ? 1 : 0));
-        columnPositions.push_back(
-                m_sysUsersTable->getColumnChecked(kSysUsers_State_Column)->getCurrentPosition());
+    constexpr std::size_t kMaxNumberOfUpdatedColumns = 3;
+    columnValues.reserve(kMaxNumberOfUpdatedColumns);
+    columnPositions.reserve(kMaxNumberOfUpdatedColumns);
+
+    if (params.m_realName) {
+        columnValues.emplace_back(*params.m_realName);
+        columnPositions.push_back(m_sysUsersTable->getColumnChecked(kSysUsers_RealName_ColumnName)
+                                          ->getCurrentPosition());
     }
 
-    if (realName.has_value()) {
-        columnValues.push_back(realName.value());
+    if (params.m_description) {
+        columnValues.emplace_back(*params.m_description);
         columnPositions.push_back(
-                m_sysUsersTable->getColumnChecked(kSysUsers_RealName_Column)->getCurrentPosition());
+                m_sysUsersTable->getColumnChecked(kSysUsers_Description_ColumnName)
+                        ->getCurrentPosition());
+    }
+
+    if (params.m_active) {
+        columnValues.emplace_back(std::uint8_t(*params.m_active ? 1 : 0));
+        columnPositions.push_back(m_sysUsersTable->getColumnChecked(kSysUsers_State_ColumnName)
+                                          ->getCurrentPosition());
     }
 
     if (columnValues.empty()) return;
@@ -516,18 +575,32 @@ void SystemDatabase::updateUser(std::uint32_t userId, const std::optional<bool>&
         throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userId);
 }
 
-void SystemDatabase::updateUserAccessKey(
-        std::uint64_t accessKeyId, const std::optional<bool>& active, std::uint32_t currentUserId)
+void SystemDatabase::updateUserAccessKey(std::uint64_t accessKeyId,
+        const UpdateUserAccessKeyParameters& params, std::uint32_t currentUserId)
 {
     const TransactionParameters tp(currentUserId, generateNextTransactionId());
     std::vector<Variant> columnValues;
     std::vector<std::size_t> columnPositions;
-    if (active) {
-        columnValues.push_back(std::uint8_t(*active ? 1 : 0));
+
+    constexpr std::size_t kMaxNumberOfUpdatedColumns = 2;
+    columnValues.reserve(kMaxNumberOfUpdatedColumns);
+    columnPositions.reserve(kMaxNumberOfUpdatedColumns);
+
+    if (params.m_description) {
+        columnValues.emplace_back(*params.m_description);
         columnPositions.push_back(
-                m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_State_Column)
+                m_sysUserAccessKeysTable
+                        ->getColumnChecked(kSysUserAccessKeys_Description_ColumnName)
                         ->getCurrentPosition());
     }
+
+    if (params.m_active) {
+        columnValues.emplace_back(std::uint8_t(*params.m_active ? 1 : 0));
+        columnPositions.push_back(
+                m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_State_ColumnName)
+                        ->getCurrentPosition());
+    }
+
     if (columnValues.empty()) return;
     if (!m_sysUserAccessKeysTable->updateRow(
                 accessKeyId, std::move(columnValues), columnPositions, tp)) {
@@ -574,12 +647,12 @@ void SystemDatabase::createDemoTables([[maybe_unused]] std::uint32_t currentUser
             {"FINISH_DATE", COLUMN_DATA_TYPE_TIMESTAMP, false},
     };
 
-    createUserTable("CUSTOMERS", TableType::kDisk, customersTableColumnDefs, currentUserId);
-    createUserTable("ITEMS", TableType::kDisk, itemsTableColumnDefs, currentUserId);
-    createUserTable("ORDERS", TableType::kDisk, ordersTableColumnDefs, currentUserId);
-    createUserTable("ORDER_ITEMS", TableType::kDisk, orderItemsTableColumnDefs, currentUserId);
-    createUserTable("DIGITAL_BOOKS", TableType::kDisk, digitalBooksColumnDefs, currentUserId);
-    createUserTable("CONTRACTS", TableType::kDisk, contractsColumnDefs, currentUserId);
+    createUserTable("CUSTOMERS", TableType::kDisk, customersTableColumnDefs, currentUserId, {});
+    createUserTable("ITEMS", TableType::kDisk, itemsTableColumnDefs, currentUserId, {});
+    createUserTable("ORDERS", TableType::kDisk, ordersTableColumnDefs, currentUserId, {});
+    createUserTable("ORDER_ITEMS", TableType::kDisk, orderItemsTableColumnDefs, currentUserId, {});
+    createUserTable("DIGITAL_BOOKS", TableType::kDisk, digitalBooksColumnDefs, currentUserId, {});
+    createUserTable("CONTRACTS", TableType::kDisk, contractsColumnDefs, currentUserId, {});
 #endif
 }
 
@@ -592,13 +665,15 @@ std::size_t SystemDatabase::readAllUserAccessKeys(UserAccessKeyRegistries& userA
     // Obtain columns
     const auto masterColumn = m_sysUserAccessKeysTable->getMasterColumn();
     const auto userIdColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_UserId_Column);
+            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_UserId_ColumnName);
     const auto nameColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_Name_Column);
-    const auto stateColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_State_Column);
+            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_Name_ColumnName);
     const auto textColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_Text_Column);
+            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_Text_ColumnName);
+    const auto stateColumn =
+            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_State_ColumnName);
+    const auto descriptionColumn =
+            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -652,16 +727,18 @@ std::size_t SystemDatabase::readAllUserAccessKeys(UserAccessKeyRegistries& userA
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant userIdValue, nameValue, stateValue, textValue;
+        Variant userIdValue, nameValue, stateValue, textValue, descriptionValue;
         std::size_t colIndex = 0;
         // Column order: Id, name, text, state
         userIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), userIdValue, false);
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue, false);
         textColumn->readRecord(columnRecords.at(colIndex++).getAddress(), textValue, false);
         stateColumn->readRecord(columnRecords.at(colIndex++).getAddress(), stateValue, false);
+        descriptionColumn->readRecord(
+                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
         UserAccessKeyRecord accessKeyRecord(mcr.getTableRowId(), userIdValue.asUInt32(),
                 std::move(*nameValue.asString()), std::move(*textValue.asString()),
-                stateValue.asUInt8() != 0);
+                descriptionValue.asOptionalString(), stateValue.asUInt8() != 0);
         LOG_DEBUG << "Database " << m_name << ": readAllUserAccessKeys: User access key #" << trid
                   << " '" << accessKeyRecord.m_name << '\'';
         regs[accessKeyRecord.m_userId].insert(std::move(accessKeyRecord));
@@ -671,8 +748,8 @@ std::size_t SystemDatabase::readAllUserAccessKeys(UserAccessKeyRegistries& userA
     userAccessKeyRegistries.swap(regs);
 
     // Count keys
-    const auto keyCount = std::accumulate(
-            userAccessKeyRegistries.begin(), userAccessKeyRegistries.end(), std::size_t(0),
+    const auto keyCount = std::accumulate(userAccessKeyRegistries.begin(),
+            userAccessKeyRegistries.end(), std::size_t(0),
             [](std::size_t a, const UserAccessKeyRegistries::value_type& b) noexcept {
                 return a + b.second.size();
             });

@@ -19,9 +19,11 @@ public:
      * @param valueSize Value size.
      * @param columnSpec Indexed column specification.
      * @param dataFileSize Data file size.
+     * @param description Index description.
      */
-    Int16UniqueLinearIndex(Table& table, const std::string& name, std::size_t valueSize,
-            const IndexColumnSpecification& columnSpec, std::uint32_t dataFileSize);
+    Int16UniqueLinearIndex(Table& table, std::string&& name, std::size_t valueSize,
+            const IndexColumnSpecification& columnSpec, std::uint32_t dataFileSize,
+            std::optional<std::string>&& description);
 
     /**
      * Initializes object of class Index for an existing index.

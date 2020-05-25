@@ -4,6 +4,9 @@
 
 #pragma once
 
+// Common project headers
+#include <siodb/common/utils/Uuid.h>
+
 // CRT headers
 #include <cstdint>
 
@@ -45,17 +48,32 @@ struct ColumnSetColumnRecord {
     explicit ColumnSetColumnRecord(const ColumnSetColumn& columnSetColumn) noexcept;
 
     /**
+     * Equality comparison operator.
+     * @param other Other object.
+     * @return true if this and other objects are equal, false otherwise.
+     */
+    bool operator==(const ColumnSetColumnRecord& other) const noexcept
+    {
+        return m_id == other.m_id && m_columnSetId == other.m_columnSetId
+               && m_columnDefinitionId == other.m_columnDefinitionId
+               && m_columnId == other.m_columnId;
+    }
+
+    /**
      * Returns buffer size required to serialize this object.
+     * @param version Target version.
      * @return Number of bytes.
      */
-    std::size_t getSerializedSize() const noexcept;
+    std::size_t getSerializedSize(unsigned version = kClassVersion) const noexcept;
 
     /**
      * Serializes object into buffer. Assumes buffer is big enough.
      * @param buffer Output buffer.
+     * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer) const noexcept;
+    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
+            noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -77,8 +95,14 @@ struct ColumnSetColumnRecord {
     /** Column ID (cached from column definition) */
     std::uint64_t m_columnId;
 
+    /** Structure UUID */
+    static const Uuid kClassUuid;
+
     /** Structure name */
     static constexpr const char* kClassName = "ColumnSetColumnRecord";
+
+    /** Structure version */
+    static constexpr std::uint32_t kClassVersion = 0;
 };
 
 }  // namespace siodb::iomgr::dbengine

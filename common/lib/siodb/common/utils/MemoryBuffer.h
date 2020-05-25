@@ -91,11 +91,7 @@ public:
         , m_data(m_size > 0 ? new T[m_size] : nullptr)
         , m_end(m_data.get() + m_size)
     {
-        if (m_data) {
-            auto p = m_data.get();
-            for (const auto& v : list)
-                *p++ = v;
-        }
+        if (m_data) std::uninitialized_copy(list.begin(), list.end(), m_data.get());
     }
 
     /**
@@ -165,10 +161,12 @@ public:
      */
     bool operator==(const MemoryBuffer& other) const noexcept
     {
-        if (SIODB_UNLIKELY(&other == this)) return true;
-        if (m_size != other.m_size) return false;
-        if (!m_data) return true;
-        return std::memcmp(m_data.get(), other.m_data.get(), sizeof(T) * m_size) == 0;
+        if (SIODB_LIKELY(&other != this)) {
+            if (m_size != other.m_size) return false;
+            if (!m_data) return true;
+            return std::memcmp(m_data.get(), other.m_data.get(), sizeof(T) * m_size) == 0;
+        }
+        return true;
     }
 
     /**
@@ -188,12 +186,15 @@ public:
      */
     bool operator<(const MemoryBuffer& other) const noexcept
     {
-        if (SIODB_UNLIKELY(&other == this)) return false;
-        if (m_size == other.m_size) {
-            return m_data ? std::memcmp(m_data.get(), other.m_data.get(), sizeof(T) * m_size) < 0
-                          : false;
+        if (SIODB_LIKELY(&other != this)) {
+            if (m_size == other.m_size) {
+                return m_data ? std::memcmp(m_data.get(), other.m_data.get(), sizeof(T) * m_size)
+                                        < 0
+                              : false;
+            } else
+                return m_size < other.m_size;
         }
-        return m_size < other.m_size;
+        return false;
     }
 
     /**
@@ -203,12 +204,7 @@ public:
      */
     bool operator>(const MemoryBuffer& other) const noexcept
     {
-        if (SIODB_UNLIKELY(&other == this)) return false;
-        if (m_size == other.m_size) {
-            return m_data ? std::memcmp(m_data.get(), other.m_data.get(), sizeof(T) * m_size) > 0
-                          : false;
-        }
-        return m_size > other.m_size;
+        return other < *this;
     }
 
     /**
@@ -218,7 +214,7 @@ public:
      */
     bool operator<=(const MemoryBuffer& other) const noexcept
     {
-        return !(*this > other);
+        return !(other < *this);
     }
 
     /**
@@ -417,21 +413,19 @@ public:
         if (newSize == m_size) return;
         if (newSize > 0) {
             T* newData = new T[newSize];
-            const auto end1 = newData + newSize;
+            const auto newEnd = newData + newSize;
             if (m_data) {
                 std::memcpy(
                         newData, m_data.get(), sizeof(T) * (newSize < m_size ? newSize : m_size));
                 if (newSize > m_size) {
                     if constexpr (sizeof(T) == 1)
                         std::memset(newData + m_size, value, newSize - m_size);
-                    else {
-                        for (auto p = newData + m_size; p != end1; ++p)
-                            *p = value;
-                    }
+                    else
+                        std::uninitialized_fill(newData + m_size, newEnd, value);
                 }
             }
             m_data.reset(newData);
-            m_end = end1;
+            m_end = newEnd;
         } else {
             m_data.reset();
             m_end = nullptr;
@@ -448,10 +442,8 @@ public:
         if (m_data) {
             if constexpr (sizeof(T) == 1)
                 std::memset(m_data.get(), value, m_size);
-            else {
-                for (auto p = m_data.get(); p != m_end; ++p)
-                    *p = value;
-            }
+            else
+                std::uninitialized_fill(m_data.get(), end, value);
         }
     }
 

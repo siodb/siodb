@@ -71,18 +71,18 @@ from sys_tables, sys_columns
 where sys_tables.trid = sys_columns.table_id
 and sys_tables.trid < 4096 ;
 
-select tab.trid, tab.name, col.name
+select tab.trid, tab.name, col.name, col.description
 from sys_tables tab, sys_columns col
 where tab.trid = col.table_id
 and tab.trid < 4096 ;
 
-select tab.trid, tab.name, col.name
+select tab.trid, tab.name, col.name, col.description
 from sys_tables tab, sys_columns col
 where tab.trid = col.table_id
 and tab.trid < 4096
 limit 7 offset 3 ;
 
-select tab.trid, tab.name, col.name
+select tab.trid, tab.name, col.name, col.description
 from sys_tables tab, sys_columns col
 where tab.trid = col.table_id
 and tab.trid < 4096

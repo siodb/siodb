@@ -135,11 +135,8 @@ requests::ExpressionPtr ExpressionFactory::createNumericConstant(const antlr4::T
 
 requests::ExpressionPtr ExpressionFactory::createStringConstant(const antlr4::Token* token) const
 {
-    auto s = token->getText();
-    // Remove quotes
-    s.pop_back();
-    s.erase(0, 1);
-    return std::make_unique<requests::ConstantExpression>(Variant(std::move(s)));
+    return std::make_unique<requests::ConstantExpression>(
+            Variant(helpers::unquoteString(token->getText())));
 }
 
 requests::ExpressionPtr ExpressionFactory::createBinaryConstant(const antlr4::Token* token) const

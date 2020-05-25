@@ -16,11 +16,13 @@ ColumnSpecification::ColumnSpecification(const SimpleColumnSpecification& src)
 {
     if (src.m_notNull) {
         auto expr = std::make_unique<requests::ConstantExpression>(Variant(*src.m_notNull));
-        m_constraints.emplace_back(std::string(), ConstraintType::kNotNull, std::move(expr));
+        m_constraints.emplace_back(
+                std::string(), ConstraintType::kNotNull, std::move(expr), std::nullopt);
     }
     if (!src.m_defaultValue.isNull()) {
         auto expr = std::make_unique<requests::ConstantExpression>(Variant(src.m_defaultValue));
-        m_constraints.emplace_back(std::string(), ConstraintType::kDefaultValue, std::move(expr));
+        m_constraints.emplace_back(
+                std::string(), ConstraintType::kDefaultValue, std::move(expr), std::nullopt);
     }
 }
 

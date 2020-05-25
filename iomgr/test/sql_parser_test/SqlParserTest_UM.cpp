@@ -29,7 +29,8 @@ TEST(UM, CreateUser)
             dynamic_cast<const siodb::iomgr::dbengine::requests::CreateUserRequest&>(*dbeRequest);
 
     EXPECT_EQ(createUserRequest.m_name, "USER_NAME");
-    EXPECT_EQ(createUserRequest.m_realName, "");
+    EXPECT_FALSE(createUserRequest.m_realName.has_value());
+    EXPECT_FALSE(createUserRequest.m_description.has_value());
     EXPECT_EQ(createUserRequest.m_active, true);
 }
 
@@ -50,7 +51,8 @@ TEST(UM, CreateActiveUser)
             dynamic_cast<const siodb::iomgr::dbengine::requests::CreateUserRequest&>(*dbeRequest);
 
     EXPECT_EQ(createUserRequest.m_name, "USER_NAME");
-    EXPECT_EQ(createUserRequest.m_realName, "");
+    EXPECT_FALSE(createUserRequest.m_realName.has_value());
+    EXPECT_FALSE(createUserRequest.m_description.has_value());
     EXPECT_EQ(createUserRequest.m_active, true);
 }
 
@@ -71,14 +73,16 @@ TEST(UM, CreateInactiveUser)
             dynamic_cast<const siodb::iomgr::dbengine::requests::CreateUserRequest&>(*dbeRequest);
 
     EXPECT_EQ(createUserRequest.m_name, "USER_NAME");
-    EXPECT_EQ(createUserRequest.m_realName, "");
+    EXPECT_FALSE(createUserRequest.m_realName.has_value());
+    EXPECT_FALSE(createUserRequest.m_description.has_value());
     EXPECT_EQ(createUserRequest.m_active, false);
 }
 
-TEST(UM, CreateUserWithRealName)
+TEST(UM, CreateUserWithRealNameAndDescription)
 {
     // Parse statement
-    const std::string statement = "CREATE USER user_name WITH REAL_NAME='real name'";
+    const std::string statement =
+            "CREATE USER user_name WITH REAL_NAME='real name', DESCRIPTION='description'";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
     parser.parse();
 
@@ -92,7 +96,32 @@ TEST(UM, CreateUserWithRealName)
             dynamic_cast<const siodb::iomgr::dbengine::requests::CreateUserRequest&>(*dbeRequest);
 
     EXPECT_EQ(createUserRequest.m_name, "USER_NAME");
-    EXPECT_EQ(createUserRequest.m_realName, "real name");
+    EXPECT_TRUE(createUserRequest.m_realName.has_value());
+    EXPECT_EQ(createUserRequest.m_realName.value(), "real name");
+    EXPECT_TRUE(createUserRequest.m_description.has_value());
+    EXPECT_EQ(createUserRequest.m_description.value(), "description");
+    EXPECT_EQ(createUserRequest.m_active, true);
+}
+
+TEST(UM, CreateUserWithNullRealNameAndDescription)
+{
+    // Parse statement
+    const std::string statement = "CREATE USER user_name WITH REAL_NAME=NULL, DESCRIPTION=NULL";
+    siodb::iomgr::dbengine::parser::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest = siodb::iomgr::dbengine::parser::DBEngineRequestFactory::createRequest(
+            parser.findStatement(0));
+
+    ASSERT_EQ(dbeRequest->m_requestType,
+            siodb::iomgr::dbengine::requests::DBEngineRequestType::kCreateUser);
+
+    const auto& createUserRequest =
+            dynamic_cast<const siodb::iomgr::dbengine::requests::CreateUserRequest&>(*dbeRequest);
+
+    EXPECT_EQ(createUserRequest.m_name, "USER_NAME");
+    EXPECT_FALSE(createUserRequest.m_realName.has_value());
+    EXPECT_FALSE(createUserRequest.m_description.has_value());
     EXPECT_EQ(createUserRequest.m_active, true);
 }
 
@@ -128,13 +157,14 @@ TEST(UM, AlterUserSetRealName)
     ASSERT_EQ(dbeRequest->m_requestType,
             siodb::iomgr::dbengine::requests::DBEngineRequestType::kAlterUser);
 
-    const auto& setUserRealNameRequest =
+    const auto& updateUserRequest =
             dynamic_cast<const siodb::iomgr::dbengine::requests::AlterUserRequest&>(*dbeRequest);
 
-    EXPECT_EQ(setUserRealNameRequest.m_name, "USER_NAME");
-    ASSERT_TRUE(setUserRealNameRequest.m_realName.has_value());
-    EXPECT_EQ(setUserRealNameRequest.m_realName, "new real name");
-    EXPECT_FALSE(setUserRealNameRequest.m_active.has_value());
+    EXPECT_EQ(updateUserRequest.m_userName, "USER_NAME");
+    ASSERT_TRUE(updateUserRequest.m_params.m_realName.has_value());
+    ASSERT_TRUE(updateUserRequest.m_params.m_realName.value().has_value());
+    EXPECT_EQ(updateUserRequest.m_params.m_realName.value().value(), "new real name");
+    EXPECT_FALSE(updateUserRequest.m_params.m_active.has_value());
 }
 
 TEST(UM, AlterUserSetState)
@@ -150,13 +180,13 @@ TEST(UM, AlterUserSetState)
     ASSERT_EQ(dbeRequest->m_requestType,
             siodb::iomgr::dbengine::requests::DBEngineRequestType::kAlterUser);
 
-    const auto& setUserStateRequest =
+    const auto& updateUserRequest =
             dynamic_cast<const siodb::iomgr::dbengine::requests::AlterUserRequest&>(*dbeRequest);
 
-    EXPECT_EQ(setUserStateRequest.m_name, "USER_NAME");
-    ASSERT_TRUE(setUserStateRequest.m_active.has_value());
-    EXPECT_TRUE(setUserStateRequest.m_active.value());
-    EXPECT_FALSE(setUserStateRequest.m_realName.has_value());
+    EXPECT_EQ(updateUserRequest.m_userName, "USER_NAME");
+    ASSERT_TRUE(updateUserRequest.m_params.m_active.has_value());
+    EXPECT_TRUE(updateUserRequest.m_params.m_active.value());
+    EXPECT_FALSE(updateUserRequest.m_params.m_realName.has_value());
 }
 
 TEST(UM, AlterUserSetStateAndRealName)
@@ -176,11 +206,12 @@ TEST(UM, AlterUserSetStateAndRealName)
     const auto& alterUserRequest =
             dynamic_cast<const siodb::iomgr::dbengine::requests::AlterUserRequest&>(*dbeRequest);
 
-    EXPECT_EQ(alterUserRequest.m_name, "USER_NAME");
-    ASSERT_TRUE(alterUserRequest.m_realName.has_value());
-    ASSERT_TRUE(alterUserRequest.m_active.has_value());
-    EXPECT_TRUE(!alterUserRequest.m_active.value());
-    EXPECT_EQ(alterUserRequest.m_realName, "newRealName");
+    EXPECT_EQ(alterUserRequest.m_userName, "USER_NAME");
+    EXPECT_TRUE(alterUserRequest.m_params.m_realName.has_value());
+    EXPECT_TRUE(alterUserRequest.m_params.m_realName.value().has_value());
+    EXPECT_EQ(alterUserRequest.m_params.m_realName.value().value(), "newRealName");
+    EXPECT_TRUE(alterUserRequest.m_params.m_active.has_value());
+    EXPECT_FALSE(alterUserRequest.m_params.m_active.value());
 }
 
 TEST(UM, AlterUserAddAccessKey)
@@ -203,7 +234,7 @@ TEST(UM, AlterUserAddAccessKey)
 
     EXPECT_EQ(addUserAccessKeyRequest.m_userName, "USER_NAME");
     EXPECT_EQ(addUserAccessKeyRequest.m_keyName, "KEYNAME");
-    EXPECT_EQ(addUserAccessKeyRequest.m_keyText, "KeyText");
+    EXPECT_EQ(addUserAccessKeyRequest.m_text, "KeyText");
     EXPECT_FALSE(addUserAccessKeyRequest.m_active);
 }
 
@@ -247,6 +278,6 @@ TEST(UM, AlterUserAlterAccessKey)
 
     EXPECT_EQ(alterUserAccessKeyRequest.m_userName, "USER_NAME");
     EXPECT_EQ(alterUserAccessKeyRequest.m_keyName, "KEYNAME");
-    ASSERT_TRUE(alterUserAccessKeyRequest.m_active);
-    EXPECT_FALSE(*alterUserAccessKeyRequest.m_active);
+    ASSERT_TRUE(alterUserAccessKeyRequest.m_params.m_active.has_value());
+    EXPECT_FALSE(alterUserAccessKeyRequest.m_params.m_active.value());
 }

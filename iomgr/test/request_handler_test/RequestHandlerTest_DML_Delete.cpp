@@ -32,7 +32,7 @@ TEST(DML_Delete, DeleteAllRows)
     };
 
     instance->getDatabase("SYS")->createUserTable("DELETE_TEST_1", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -124,7 +124,7 @@ TEST(DML_Delete, DeleteByTrid)
     };
 
     instance->getDatabase("SYS")->createUserTable("DELETE_TEST_2", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -232,7 +232,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
     };
 
     instance->getDatabase("SYS")->createUserTable("DELETE_TEST_3", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -340,7 +340,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
     };
 
     instance->getDatabase("SYS")->createUserTable("DELETE_TEST_4", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -451,7 +451,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
     };
 
     instance->getDatabase("SYS")->createUserTable("DELETE_TEST_5", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {

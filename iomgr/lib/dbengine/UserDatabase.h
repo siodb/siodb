@@ -19,9 +19,11 @@ public:
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
      * @param tableCacheCapacity Table cache capacity.
+     * @param description Database description.
      */
-    UserDatabase(Instance& instance, const std::string& name, const std::string& cipherId,
-            const BinaryValue& cipherKey, std::size_t tableCacheCapacity);
+    UserDatabase(Instance& instance, std::string&& name, const std::string& cipherId,
+            BinaryValue&& cipherKey, std::size_t tableCacheCapacity,
+            std::optional<std::string>&& description);
 
     /**
      * Initializes object of class UserDatabase for existing database.

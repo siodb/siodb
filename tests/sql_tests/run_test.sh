@@ -120,6 +120,8 @@ _log "INFO" "Tests start"
 _prepare
 _StartSiodb
 _CheckLogFileError
+_CallUnitTests ${SCRIPTPATH}/query_sys_tables.sql
+_CheckLogFileError
 _CallUnitTests ${SCRIPTPATH}/ddl_database.sql
 _CheckLogFileError
 _CallUnitTests ${SCRIPTPATH}/ddl_user.sql

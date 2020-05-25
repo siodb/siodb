@@ -4,6 +4,9 @@
 
 #pragma once
 
+// Common project headers
+#include <siodb/common/utils/Uuid.h>
+
 // CRT headers
 #include <cstdint>
 
@@ -18,7 +21,7 @@ struct IndexColumnRecord {
         : m_id(0)
         , m_indexId(0)
         , m_columnDefinitionId(0)
-        , m_isSortDescending(false)
+        , m_sortDescending(false)
     {
     }
 
@@ -34,7 +37,7 @@ struct IndexColumnRecord {
         : m_id(id)
         , m_indexId(indexId)
         , m_columnDefinitionId(columnDefinitionId)
-        , m_isSortDescending(sortDescending)
+        , m_sortDescending(sortDescending)
     {
     }
 
@@ -45,17 +48,32 @@ struct IndexColumnRecord {
     explicit IndexColumnRecord(const IndexColumn& indexColumn) noexcept;
 
     /**
+     * Equality comparison operator.
+     * @param other Other object.
+     * @return true if this and other objects are equal, false otherwise.
+     */
+    bool operator==(const IndexColumnRecord& other) const noexcept
+    {
+        return m_id == other.m_id && m_indexId == other.m_indexId
+               && m_columnDefinitionId == other.m_columnDefinitionId
+               && m_sortDescending == other.m_sortDescending;
+    }
+
+    /**
      * Returns buffer size required to serialize this object.
+     * @param version Target version.
      * @return Number of bytes.
      */
-    std::size_t getSerializedSize() const noexcept;
+    std::size_t getSerializedSize(unsigned version = kClassVersion) const noexcept;
 
     /**
      * Serializes object into buffer. Assumes buffer is big enough.
      * @param buffer Output buffer.
+     * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer) const noexcept;
+    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
+            noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -75,10 +93,16 @@ struct IndexColumnRecord {
     std::uint64_t m_columnDefinitionId;
 
     /** Indication of the descending sorting order */
-    bool m_isSortDescending;
+    bool m_sortDescending;
+
+    /** Structure UUID */
+    static const Uuid kClassUuid;
 
     /** Structure name */
     static constexpr const char* kClassName = "IndexColumnRecord";
+
+    /** Structure version */
+    static constexpr std::uint32_t kClassVersion = 0;
 };
 
 }  // namespace siodb::iomgr::dbengine

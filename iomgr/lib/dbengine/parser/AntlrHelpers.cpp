@@ -9,6 +9,20 @@
 
 namespace siodb::iomgr::dbengine::parser::helpers {
 
+std::string& unquoteString(std::string& s)
+{
+    s.pop_back();
+    s.erase(0, 1);
+    return s;
+}
+
+std::string&& unquoteString(std::string&& s)
+{
+    s.pop_back();
+    s.erase(0, 1);
+    return std::move(s);
+}
+
 std::size_t getStatementCount(const antlr4::tree::ParseTree* tree) noexcept
 {
     const auto context = dynamic_cast<const antlr4::RuleContext*>(tree);
@@ -105,13 +119,7 @@ std::string getAnyNameText(antlr4::tree::ParseTree* node)
     const auto nodeTerminalType = helpers::getTerminalType(node->children.at(0));
     if (nodeTerminalType == SiodbParser::IDENTIFIER) return node->getText();
 
-    if (nodeTerminalType == SiodbParser::STRING_LITERAL) {
-        auto s = node->getText();
-        // Remove quotes
-        s.pop_back();
-        s.erase(0, 1);
-        return s;
-    }
+    if (nodeTerminalType == SiodbParser::STRING_LITERAL) return unquoteString(node->getText());
 
     const auto nodeNonTerminalType = helpers::getNonTerminalType(node->children.at(0));
     if (nodeNonTerminalType == SiodbParser::RuleKeyword) return node->getText();

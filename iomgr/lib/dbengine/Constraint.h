@@ -22,9 +22,11 @@ protected:
      * @param table Table to which this constraint belongs to.
      * @param name Constraint name.
      * @param constraintDefinition Constraint definition.
+     * @param description Constraint description.
      */
-    Constraint(Table& table, const std::string& name,
-            const ConstConstraintDefinitionPtr& constraintDefinition);
+    Constraint(Table& table, std::string&& name,
+            const ConstConstraintDefinitionPtr& constraintDefinition,
+            std::optional<std::string>&& description);
 
     /**
      * Initializes object of class Constraint for the existing constraint.
@@ -119,9 +121,18 @@ public:
      * Returns constraint name.
      * @return Constraint name.
      */
-    const std::string& getName() const noexcept
+    const auto& getName() const noexcept
     {
         return m_name;
+    }
+
+    /**
+     * Returns constraint description.
+     * @return Constraint description.
+     */
+    const auto& getDescription() const noexcept
+    {
+        return m_description;
     }
 
     /**
@@ -229,7 +240,7 @@ private:
      * @return The same constraint name, if it is valid.
      * @throw DatabaseError if constraint name is invalid.
      */
-    const std::string& validateConstraintName(const std::string& constraintName) const;
+    std::string&& validateConstraintName(std::string&& constraintName) const;
 
     /** 
      * Generates new supposedly unique constraint name.
@@ -252,6 +263,9 @@ protected:
 
     /** Constraint definition */
     ConstConstraintDefinitionPtr m_constraintDefinition;
+
+    /** Constraint description */
+    std::optional<std::string> m_description;
 };
 
 }  // namespace siodb::iomgr::dbengine

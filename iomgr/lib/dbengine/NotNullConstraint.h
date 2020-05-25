@@ -17,9 +17,11 @@ public:
      * @param column Column to which this constaint applies.
      * @param name Constraint name.
      * @param constraintDefinition Constraint definition.
+     * @param description Constraint description.
      */
-    NotNullConstraint(Column& column, const std::string& name,
-            const ConstConstraintDefinitionPtr& constraintDefinition);
+    NotNullConstraint(Column& column, std::string&& name,
+            const ConstConstraintDefinitionPtr& constraintDefinition,
+            std::optional<std::string>&& description);
 
     /**
      * Initializes object of class NotNullConstraint for existing constraint.

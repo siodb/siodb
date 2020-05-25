@@ -17,23 +17,28 @@ namespace siodb::iomgr::dbengine {
 /** User access key */
 class UserAccessKey {
 public:
-    /** Superuser initial access key ID */
+    /** Super user initial access key ID */
     static constexpr std::uint64_t kSuperUserInitialAccessKeyId = 1;
 
-    /** Superuser initial access key name */
-    static constexpr const char* kSuperUserInitialAccessKeyName = "initial_access_key";
+    /** Super user initial access key name */
+    static constexpr const char* kSuperUserInitialAccessKeyName = "super_user_initial_access_key";
+
+    /** Super user initial access key description */
+    static constexpr const char* kSuperUserInitialAccessKeyDescription =
+            "Initial access key of the seper user";
 
 public:
     /**
      * Initializes object of class UserAccessKey for the new access key.
      * @param user User object.
      * @param id Access key ID.
-     * @param name User name.
-     * @param text Key text.
-     * @param active Indication that key is active.
+     * @param name Access key name.
+     * @param text Access key text.
+     * @param description Access key description.
+     * @param active Indication that access key is active.
      */
-    UserAccessKey(User& user, std::uint64_t id, const std::string& name, const std::string& text,
-            bool active);
+    UserAccessKey(User& user, std::uint64_t id, std::string&& name, std::string&& text,
+            std::optional<std::string>&& description, bool active);
 
     /**
      * Initializes object of class UserAccessKey for an existing access key.
@@ -96,6 +101,15 @@ public:
     }
 
     /**
+     * Returns access key decription.
+     * @return Access key description.
+     */
+    const auto& getDescription() const noexcept
+    {
+        return m_description;
+    }
+
+    /**
      * Returns indication that access key is active.
      * @return true if this access key is active, false otherwise.
      */
@@ -129,10 +143,10 @@ private:
      * @return Same user access key name, if it is valid.
      * @throw DatabaseError if user access key name is invalid.
      */
-    static const std::string& validateUserAccessKeyName(const std::string& accessKeyName);
+    static std::string&& validateUserAccessKeyName(std::string&& accessKeyName);
 
 private:
-    /** User ID */
+    /** User object */
     User& m_user;
 
     /** Access key ID */
@@ -144,7 +158,10 @@ private:
     /** Access key text */
     const std::string m_text;
 
-    /** State of the key */
+    /** Access key description */
+    std::optional<std::string> m_description;
+
+    /** State of the access key */
     std::atomic<bool> m_active;
 };
 

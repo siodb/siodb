@@ -31,7 +31,7 @@ TEST(DML_Update, UpdateAllValues)
     };
 
     instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_1", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -138,7 +138,7 @@ TEST(DML_Update, UpdateWhereByTRID)
     };
 
     instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_2", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -262,7 +262,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
     };
 
     instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_3", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -396,7 +396,7 @@ TEST(DML_Update, UpdateSeveralColumns)
     };
 
     instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_4", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -520,7 +520,7 @@ TEST(DML_Update, UpdateConcatString)
     };
 
     instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_5", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId);
+            tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {

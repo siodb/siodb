@@ -27,12 +27,14 @@ void Database::readAllTables()
 
     // Obtain columns
     const auto masterColumn = m_sysTablesTable->getMasterColumn();
-    const auto typeColumn = m_sysTablesTable->getColumnChecked(kSysTables_Type_Column);
-    const auto nameColumn = m_sysTablesTable->getColumnChecked(kSysTables_Name_Column);
+    const auto typeColumn = m_sysTablesTable->getColumnChecked(kSysTables_Type_ColumnName);
+    const auto nameColumn = m_sysTablesTable->getColumnChecked(kSysTables_Name_ColumnName);
     const auto firstUserTridColumn =
-            m_sysTablesTable->getColumnChecked(kSysTables_FirstUserTrid_Column);
+            m_sysTablesTable->getColumnChecked(kSysTables_FirstUserTrid_ColumnName);
     const auto currentColumnSetIdColumn =
-            m_sysTablesTable->getColumnChecked(kSysTables_CurrentColumnSetId_Column);
+            m_sysTablesTable->getColumnChecked(kSysTables_CurrentColumnSetId_ColumnName);
+    const auto descriptionColumn =
+            m_sysTablesTable->getColumnChecked(kSysTables_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -87,7 +89,7 @@ void Database::readAllTables()
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant typeValue, nameValue, firstUserTridValue, currentColumnSetIdValue;
+        Variant typeValue, nameValue, firstUserTridValue, currentColumnSetIdValue, descriptionValue;
         std::size_t colIndex = 0;
         typeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), typeValue, false);
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue, false);
@@ -95,6 +97,8 @@ void Database::readAllTables()
                 columnRecords.at(colIndex++).getAddress(), firstUserTridValue, false);
         currentColumnSetIdColumn->readRecord(
                 columnRecords.at(colIndex++).getAddress(), currentColumnSetIdValue, false);
+        descriptionColumn->readRecord(
+                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
 
         const auto tableId = static_cast<std::uint32_t>(mcr.getTableRowId());
         const auto tableType = typeValue.asInt32();
@@ -121,7 +125,7 @@ void Database::readAllTables()
 
         // Add table record
         TableRecord tableRecord(tableId, static_cast<TableType>(tableType), std::move(*name),
-                firstUserTrid, currentColumnSetId);
+                firstUserTrid, currentColumnSetId, descriptionValue.asOptionalString());
         LOG_DEBUG << "Database " << m_name << ": readAllTables: Table #" << tableRecord.m_id << " '"
                   << tableRecord.m_name << '\'';
         reg.insert(std::move(tableRecord));
@@ -140,9 +144,9 @@ void Database::readAllColumnSets()
     // Obtain columns
     const auto masterColumn = m_sysColumnSetsTable->getMasterColumn();
     const auto tableIdColumn =
-            m_sysColumnSetsTable->getColumnChecked(kSysColumnSets_TableId_Column);
+            m_sysColumnSetsTable->getColumnChecked(kSysColumnSets_TableId_ColumnName);
     const auto columnCountColumn =
-            m_sysColumnSetsTable->getColumnChecked(kSysColumnSets_ColumnCount_Column);
+            m_sysColumnSetsTable->getColumnChecked(kSysColumnSets_ColumnCount_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -233,12 +237,15 @@ void Database::readAllColumns()
 
     // Obtain columns
     const auto masterColumn = m_sysColumnsTable->getMasterColumn();
-    const auto tableIdColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_TableId_Column);
-    const auto dataTypeColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_DataType_Column);
-    const auto nameColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_Name_Column);
-    const auto stateColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_State_Column);
+    const auto tableIdColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_TableId_ColumnName);
+    const auto dataTypeColumn =
+            m_sysColumnsTable->getColumnChecked(kSysColumns_DataType_ColumnName);
+    const auto nameColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_Name_ColumnName);
+    const auto stateColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_State_ColumnName);
     const auto blockDataAreaSizeColumn =
-            m_sysColumnsTable->getColumnChecked(kSysColumns_BlockDataAreaSize_Column);
+            m_sysColumnsTable->getColumnChecked(kSysColumns_BlockDataAreaSize_ColumnName);
+    const auto descriptionColumn =
+            m_sysColumnsTable->getColumnChecked(kSysColumns_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -298,7 +305,8 @@ void Database::readAllColumns()
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant tableIdValue, dataTypeValue, nameValue, stateValue, blockDataAreaSizeValue;
+        Variant tableIdValue, dataTypeValue, nameValue, stateValue, blockDataAreaSizeValue,
+                descriptionValue;
         std::size_t colIndex = 0;
         tableIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), tableIdValue, false);
         dataTypeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), dataTypeValue, false);
@@ -306,13 +314,16 @@ void Database::readAllColumns()
         stateColumn->readRecord(columnRecords.at(colIndex++).getAddress(), stateValue, false);
         blockDataAreaSizeColumn->readRecord(
                 columnRecords.at(colIndex++).getAddress(), blockDataAreaSizeValue, false);
+        descriptionColumn->readRecord(
+                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
 
         // Record column into the temporary map
         const auto columnId = mcr.getTableRowId();
         const auto tableId = tableIdValue.asUInt32();
         ColumnRecord columnRecord(columnId, std::move(*nameValue.asString()),
                 static_cast<ColumnDataType>(dataTypeValue.asInt32()), tableId,
-                static_cast<ColumnState>(stateValue.asInt32()), blockDataAreaSizeValue.asUInt32());
+                static_cast<ColumnState>(stateValue.asInt32()), blockDataAreaSizeValue.asUInt32(),
+                std::move(descriptionValue.asOptionalString()));
         auto& tableColumns = columnsByTable[tableId];
         ++tableColumns.m_columnNames[columnRecord.m_name];
         tableColumns.m_columns.push_back(std::move(columnRecord));
@@ -443,9 +454,9 @@ void Database::readAllColumnDefs()
     // Obtain columns
     const auto masterColumn = m_sysColumnDefsTable->getMasterColumn();
     const auto columnIdColumn =
-            m_sysColumnDefsTable->getColumnChecked(kSysColumnDefs_ColumnId_Column);
+            m_sysColumnDefsTable->getColumnChecked(kSysColumnDefs_ColumnId_ColumnName);
     const auto constraintCountColumn =
-            m_sysColumnDefsTable->getColumnChecked(kSysColumnDefs_ConstraintCount_Column);
+            m_sysColumnDefsTable->getColumnChecked(kSysColumnDefs_ConstraintCount_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -536,10 +547,10 @@ void Database::readAllColumnSetColumns()
 
     // Obtain columns
     const auto masterColumn = m_sysColumnSetColumnsTable->getMasterColumn();
-    const auto columnSetIdColumn =
-            m_sysColumnSetColumnsTable->getColumnChecked(kSysColumnSetColumns_ColumnSetId_Column);
+    const auto columnSetIdColumn = m_sysColumnSetColumnsTable->getColumnChecked(
+            kSysColumnSetColumns_ColumnSetId_ColumnName);
     const auto columnDefinitionIdColumn = m_sysColumnSetColumnsTable->getColumnChecked(
-            kSysColumnSetColumns_ColumnDefinitionId_Column);
+            kSysColumnSetColumns_ColumnDefinitionId_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -665,9 +676,10 @@ void Database::readAllColumnSetColumns()
         throw std::runtime_error("There are invalid column set columns");
 
     const auto& columnSetsById2 = reg.byId();
-    const auto totalCount = std::accumulate(
-            columnSetsById2.cbegin(), columnSetsById2.cend(), std::size_t(0), [
-            ](std::size_t v, const ColumnSetRecord& r) noexcept { return v + r.m_columns.size(); });
+    const auto totalCount = std::accumulate(columnSetsById2.cbegin(), columnSetsById2.cend(),
+            std::size_t(0), [](std::size_t v, const ColumnSetRecord& r) noexcept {
+                return v + r.m_columns.size();
+            });
 
     m_columnSetRegistry.swap(reg);
 
@@ -681,9 +693,9 @@ void Database::readAllConstraintDefs()
     // Obtain columns
     const auto masterColumn = m_sysConstraintDefsTable->getMasterColumn();
     const auto typeColumn =
-            m_sysConstraintDefsTable->getColumnChecked(kSysConstraintDefs_Type_Column);
+            m_sysConstraintDefsTable->getColumnChecked(kSysConstraintDefs_Type_ColumnName);
     const auto exprColumn =
-            m_sysConstraintDefsTable->getColumnChecked(kSysConstraintDefs_Expr_Column);
+            m_sysConstraintDefsTable->getColumnChecked(kSysConstraintDefs_Expr_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -782,14 +794,18 @@ void Database::readAllConstraints()
 
     // Obtain columns
     const auto masterColumn = m_sysConstraintsTable->getMasterColumn();
-    const auto nameColumn = m_sysConstraintsTable->getColumnChecked(kSysConstraints_Name_Column);
-    const auto stateColumn = m_sysConstraintsTable->getColumnChecked(kSysConstraints_State_Column);
+    const auto nameColumn =
+            m_sysConstraintsTable->getColumnChecked(kSysConstraints_Name_ColumnName);
+    const auto stateColumn =
+            m_sysConstraintsTable->getColumnChecked(kSysConstraints_State_ColumnName);
     const auto tableIdColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_TableId_Column);
+            m_sysConstraintsTable->getColumnChecked(kSysConstraints_TableId_ColumnName);
     const auto columnIdColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_ColumnId_Column);
+            m_sysConstraintsTable->getColumnChecked(kSysConstraints_ColumnId_ColumnName);
     const auto defIdColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_DefinitionId_Column);
+            m_sysConstraintsTable->getColumnChecked(kSysConstraints_DefinitionId_ColumnName);
+    const auto descriptionColumn =
+            m_sysConstraintsTable->getColumnChecked(kSysConstraints_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -845,13 +861,15 @@ void Database::readAllConstraints()
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant nameValue, stateValue, tableIdValue, columnIdValue, defIdValue;
+        Variant nameValue, stateValue, tableIdValue, columnIdValue, defIdValue, descriptionValue;
         std::size_t colIndex = 0;
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue, false);
         stateColumn->readRecord(columnRecords.at(colIndex++).getAddress(), stateValue, false);
         tableIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), tableIdValue, false);
         columnIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), columnIdValue, false);
         defIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), defIdValue, false);
+        descriptionColumn->readRecord(
+                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
         const auto constraintId = mcr.getTableRowId();
         const auto name = nameValue.asString();
         const auto constraintState = stateValue.asInt32();
@@ -888,7 +906,7 @@ void Database::readAllConstraints()
         // Add constraint record
         ConstraintRecord constraintRecord(constraintId, std::move(*name),
                 static_cast<ConstraintState>(constraintState), tableId, columnId,
-                constraintDefinitionId);
+                constraintDefinitionId, descriptionValue.asOptionalString());
         reg.insert(std::move(constraintRecord));
         LOG_DEBUG << "Database " << m_name << ": readAllConstraints: Constraint #" << trid << " '"
                   << constraintRecord.m_name << '\'';
@@ -908,9 +926,9 @@ void Database::readAllColumnDefConstraints()
     // Obtain columns
     const auto masterColumn = m_sysColumnDefConstraintsTable->getMasterColumn();
     const auto columnDefinitionIdColumn = m_sysColumnDefConstraintsTable->getColumnChecked(
-            kSysColumnDefinitionConstraintList_ColumnDefinitionId_Column);
+            kSysColumnDefinitionConstraintList_ColumnDefinitionId_ColumnName);
     const auto constraintIdColumn = m_sysColumnDefConstraintsTable->getColumnChecked(
-            kSysColumnDefinitionConstraintList_ConstraintId_Column);
+            kSysColumnDefinitionConstraintList_ConstraintId_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -1028,11 +1046,11 @@ void Database::readAllColumnDefConstraints()
 
     m_columnDefinitionRegistry.swap(reg);
     const auto& columnDefinitionsById = m_columnDefinitionRegistry.byId();
-    const auto totalCount = std::accumulate(
-            columnDefinitionsById.cbegin(), columnDefinitionsById.cend(), std::size_t(0),
-            [](std::size_t v, const ColumnDefinitionRecord& r) noexcept {
-                return v + r.m_constraints.size();
-            });
+    const auto totalCount =
+            std::accumulate(columnDefinitionsById.cbegin(), columnDefinitionsById.cend(),
+                    std::size_t(0), [](std::size_t v, const ColumnDefinitionRecord& r) noexcept {
+                        return v + r.m_constraints.size();
+                    });
 
     LOG_DEBUG << "Database " << m_name << ": Read " << totalCount
               << " column definition constraints.";
@@ -1044,23 +1062,27 @@ void Database::readAllIndices()
 
     // Obtain columns of the SYS_INDICES table
     const auto sysIndicesMasterColumn = m_sysIndicesTable->getMasterColumn();
-    const auto sysIndicesTypeColumn = m_sysIndicesTable->getColumnChecked(kSysIndices_Type_Column);
+    const auto sysIndicesTypeColumn =
+            m_sysIndicesTable->getColumnChecked(kSysIndices_Type_ColumnName);
     const auto sysIndicesIsUniqueColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_Unique_Column);
-    const auto sysIndicesNameColumn = m_sysIndicesTable->getColumnChecked(kSysIndices_Name_Column);
+            m_sysIndicesTable->getColumnChecked(kSysIndices_Unique_ColumnName);
+    const auto sysIndicesNameColumn =
+            m_sysIndicesTable->getColumnChecked(kSysIndices_Name_ColumnName);
     const auto sysIndicesTableIdColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_TableId_Column);
+            m_sysIndicesTable->getColumnChecked(kSysIndices_TableId_ColumnName);
     const auto sysIndicesDataFileSizeColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_DataFileSize_Column);
+            m_sysIndicesTable->getColumnChecked(kSysIndices_DataFileSize_ColumnName);
+    const auto descriptionColumn =
+            m_sysIndicesTable->getColumnChecked(kSysIndices_Description_ColumnName);
 
     // Obtain columns of the SYS_INDEX_COLUMNS table
     const auto sysIndexColumnsMasterColumn = m_sysIndexColumnsTable->getMasterColumn();
     const auto sysIndexColumnsIndexIdColumn =
-            m_sysIndexColumnsTable->getColumnChecked(kSysIndexColumns_IndexId_Column);
-    const auto sysIndexColumnsColumnDefinitionIdColumn =
-            m_sysIndexColumnsTable->getColumnChecked(kSysIndexColumns_ColumnDefinitionId_Column);
+            m_sysIndexColumnsTable->getColumnChecked(kSysIndexColumns_IndexId_ColumnName);
+    const auto sysIndexColumnsColumnDefinitionIdColumn = m_sysIndexColumnsTable->getColumnChecked(
+            kSysIndexColumns_ColumnDefinitionId_ColumnName);
     const auto sysIndexColumnsSortDescColumn =
-            m_sysIndexColumnsTable->getColumnChecked(kSysIndexColumns_SortDesc_Column);
+            m_sysIndexColumnsTable->getColumnChecked(kSysIndexColumns_SortDesc_ColumnName);
 
     // Obtain min and max TRID
     const auto sysIndexColumnsIndex = sysIndexColumnsMasterColumn->getMasterColumnMainIndex();
@@ -1204,7 +1226,8 @@ void Database::readAllIndices()
 
             // Read data from columns
             const auto& columnRecords = mcr.getColumnRecords();
-            Variant typeValue, uniqueValue, nameValue, tableIdValue, dataFileSizeValue;
+            Variant typeValue, uniqueValue, nameValue, tableIdValue, dataFileSizeValue,
+                    descriptionValue;
             std::size_t colIndex = 0;
             sysIndicesTypeColumn->readRecord(
                     columnRecords.at(colIndex++).getAddress(), typeValue, false);
@@ -1216,6 +1239,8 @@ void Database::readAllIndices()
                     columnRecords.at(colIndex++).getAddress(), tableIdValue, false);
             sysIndicesDataFileSizeColumn->readRecord(
                     columnRecords.at(colIndex++).getAddress(), dataFileSizeValue, false);
+            descriptionColumn->readRecord(
+                    columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
 
             const auto indexId = mcr.getTableRowId();
             const auto tableId = tableIdValue.asUInt32();
@@ -1331,7 +1356,7 @@ void Database::readAllIndices()
                 indexColumns.emplace(column);
 
             IndexRecord indexRecord(indexId, indexType, tableId, unique, std::move(indexName),
-                    std::move(indexColumns), dataFileSize);
+                    std::move(indexColumns), dataFileSize, descriptionValue.asOptionalString());
             LOG_DEBUG << "Database " << m_name << ": readAllIndices: Index #" << trid << " '"
                       << indexRecord.m_name << '\'';
             reg.insert(std::move(indexRecord));
