@@ -25,8 +25,7 @@ A relational SQL database that secures your data, manages personal data life-cyc
 ## Quick start (Docker)
 
 ```bash
-docker pull siodb/siodb
-docker run siodb/siodb
+docker run -p 127.0.0.1:50000:50000/tcp --name siodb siodb/siodb
 ```
 
 ### Connect to the instance in the container
