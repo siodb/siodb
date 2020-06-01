@@ -11,6 +11,8 @@ include ../../../mk/Prolog.mk
 include $(MK)/MainTargets.mk
 
 # List of all subdirs to recurse into
-SUBDIRS:= lru_cache_test plain_binary_encoding_test string_scanner_test
+SUBDIRS:= \
+	plain_binary_encoding_test  \
+	string_scanner_test
 
 include $(MK)/ParallelRecurse.mk

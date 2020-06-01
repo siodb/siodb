@@ -7,9 +7,9 @@
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/log/Log.h>
+#include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/SystemError.h>
 #include <siodb/iomgr/shared/IOManagerExitCode.h>
 
 // System headers
@@ -70,8 +70,7 @@ void IOMgrMonitor::startIOManager()
         };
 
         std::vector<char*> execArgs(args.size() + 1);
-        std::transform(
-                args.cbegin(), args.cend(), execArgs.begin(),
+        std::transform(args.cbegin(), args.cend(), execArgs.begin(),
                 [](const auto& s) noexcept { return stdext::as_mutable_ptr(s.c_str()); });
         char* envp[] = {nullptr};
 
@@ -81,7 +80,7 @@ void IOMgrMonitor::startIOManager()
         _exit(-1);
 
     } else if (m_iomgrPid < 0) {
-        utils::throwSystemError(errno, "Can't fork for IO Manager process");
+        stdext::throw_system_error(errno, "Can't fork for IO Manager process");
     } else {
         m_startsHistory.push_back(std::chrono::steady_clock::now());
         LOG_INFO << kLogPrefix << "Started IO Manager";
@@ -119,7 +118,7 @@ void IOMgrMonitor::stopIOManager()
             LOG_INFO << kLogPrefix
                      << "IO Manager process could not be stopped with SIGTERM. Killing it.";
             if (::kill(m_iomgrPid, SIGKILL) < 0)
-                utils::throwSystemError(errno, "Sending SIGKILL to IO Manager failed");
+                stdext::throw_system_error(errno, "Sending SIGKILL to IO Manager failed");
         }
     }
 }

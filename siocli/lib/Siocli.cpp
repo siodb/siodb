@@ -19,13 +19,13 @@
 #include <siodb/common/options/DatabaseInstanceSocket.h>
 #include <siodb/common/options/InstanceOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
+#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/sys/Syscalls.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
 #include <siodb/common/utils/FileDescriptorGuard.h>
 #include <siodb/common/utils/StartupActions.h>
-#include <siodb/common/utils/StringBuilder.h>
-#include <siodb/common/utils/SystemError.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/ClientProtocol.pb.h>
@@ -154,21 +154,20 @@ std::string loadUserIdentityKey(const char* path)
 {
     std::string key;
     siodb::FileDescriptorGuard fd(::open(path, O_RDONLY));
-    if (!fd.isValidFd()) siodb::utils::throwSystemError("Can't open user identity key");
+    if (!fd.isValidFd()) stdext::throw_system_error("Can't open user identity key");
 
     struct stat st;
-    if (::fstat(fd.getFd(), &st) < 0)
-        siodb::utils::throwSystemError("Can't stat user identity key");
+    if (::fstat(fd.getFd(), &st) < 0) stdext::throw_system_error("Can't stat user identity key");
 
     if (static_cast<std::size_t>(st.st_size) > siodb::kMaxAccessKeySize) {
-        throw std::runtime_error(siodb::utils::StringBuilder()
+        throw std::runtime_error(stdext::string_builder()
                                  << "User identity key is larger than " << siodb::kMaxAccessKeySize
                                  << " bytes got " << st.st_size);
     }
 
     key.resize(st.st_size);
     if (::readExact(fd.getFd(), key.data(), key.size(), kIgnoreSignals) != key.size())
-        siodb::utils::throwSystemError("Can't read user identity key");
+        stdext::throw_system_error("Can't read user identity key");
 
     return key;
 }

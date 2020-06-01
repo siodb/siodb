@@ -14,10 +14,10 @@
 #include <siodb/common/io/StreamFormatGuard.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
+#include <siodb/common/stl_ext/bitmask.h>
+#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_ext/utility_ext.h>
-#include <siodb/common/utils/Bitmask.h>
-#include <siodb/common/utils/StringBuilder.h>
-#include <siodb/common/utils/SystemError.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/ClientProtocol.pb.h>
@@ -191,11 +191,11 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                 }
                 if (rowLength == 0) break;
 
-                siodb::utils::Bitmask nullBitmask;
+                stdext::bitmask nullBitmask;
                 // Server is going to provide next row, read it.
                 if (nullAllowed) {
                     nullBitmask.resize(columnCount, false);
-                    if (!codedInput.ReadRaw(nullBitmask.getData(), nullBitmask.getByteSize())) {
+                    if (!codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size())) {
                         std::ostringstream err;
                         err << "Can't read from server: " << std::strerror(input.GetErrno());
                         throw std::system_error(
@@ -209,7 +209,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                     }
 
                     auto columnType = columnPrintInfo[col].type;
-                    if (nullAllowed && nullBitmask.getBit(col)) {
+                    if (nullAllowed && nullBitmask.get(col)) {
                         columnType = siodb::COLUMN_DATA_TYPE_UNKNOWN;
                         columnPrintInfo[col].width = kNullDataWidth;
                     }
@@ -261,7 +261,7 @@ void authenticate(const std::string& identityKey, const std::string& userName,
     if (!beginSessionResponse.session_started()) {
         if (beginSessionResponse.has_message()) {
             throw std::runtime_error(
-                    siodb::utils::StringBuilder()
+                    stdext::string_builder()
                     << "Begin session error: " << beginSessionResponse.message().status_code()
                     << " " << beginSessionResponse.message().text());
         }

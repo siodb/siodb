@@ -5,8 +5,8 @@
 #include "CheckOSUser.h"
 
 // Project headers
-#include "SystemError.h"
 #include "../config/SiodbDefs.h"
+#include "../stl_ext/system_error_ext.h"
 
 // STL headers
 #include <algorithm>
@@ -39,7 +39,7 @@ bool getPwd(uid_t uid, struct passwd& pwd, std::vector<char>& buffer)
         }
         std::ostringstream err;
         err << "Can't get user information for the UID " << uid;
-        throwSystemError(errorCode, err.str());
+        stdext::throw_system_error(errorCode, err.str());
     }
     return (ppwd != nullptr);
 }
@@ -62,7 +62,7 @@ uid_t getOsUserId(const char* name)
         }
         std::ostringstream err;
         err << "Can't get ID of the user " << name;
-        throwSystemError(errorCode, err.str().c_str());
+        stdext::throw_system_error(errorCode, err.str().c_str());
     }
     if (ppwd != nullptr) return pwd.pw_uid;
     std::ostringstream err;
@@ -98,7 +98,7 @@ gid_t getOsGroupId(const char* name)
         }
         std::ostringstream err;
         err << "Can't get ID of the group " << name;
-        throwSystemError(errorCode, err.str().c_str());
+        stdext::throw_system_error(errorCode, err.str().c_str());
     }
     if (pgrp != nullptr) return grp.gr_gid;
     std::ostringstream err;
@@ -122,7 +122,7 @@ std::string getOsGroupName(gid_t gid)
         }
         std::ostringstream err;
         err << "Can't get group information for the GID " << gid;
-        throwSystemError(errorCode, err.str());
+        stdext::throw_system_error(errorCode, err.str());
     }
     if (pgrp != nullptr) return grp.gr_name;
     std::ostringstream err;
@@ -168,7 +168,7 @@ std::string getHomeDir()
         if (getPwd(uid, pwd, buffer))
             return pwd.pw_dir;
         else
-            throwSystemError("Can't get home directory");
+            stdext::throw_system_error("Can't get home directory");
     }
 
     return homeEnv;

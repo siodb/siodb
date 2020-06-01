@@ -32,7 +32,7 @@ void checkRecord(
     const auto size = src.getSerializedSize(version);
     ASSERT_EQ(size, expectedSize);
 
-    siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+    stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
     const auto end = src.serializeUnchecked(buffer.data(), version);
     const auto actualSize = static_cast<std::size_t>(end - buffer.data());
     ASSERT_EQ(actualSize, size);

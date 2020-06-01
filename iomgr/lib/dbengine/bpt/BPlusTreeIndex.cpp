@@ -233,7 +233,7 @@ io::FilePtr BPlusTreeIndex::createIndexFile() const
                 m_table.getId(), m_id, ex.code().value(), std::strerror(ex.code().value()));
     }
 
-    utils::MemoryBuffer<std::uint8_t> buffer(Node::kSize, 0);
+    stdext::buffer<std::uint8_t> buffer(Node::kSize, 0);
 
     // Write index header
     IndexFileHeader indexFileHeader;

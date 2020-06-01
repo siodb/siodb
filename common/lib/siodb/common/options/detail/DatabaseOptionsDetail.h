@@ -10,7 +10,7 @@
 // Boost headers
 #include <boost/property_tree/ini_parser.hpp>
 namespace siodb::config {
-namespace {
+namespace detail {
 
 /**
  * Reads instance configuration into property tree data sructure.

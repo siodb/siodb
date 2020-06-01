@@ -9,16 +9,16 @@
 #include "../DebugDbEngine.h"
 
 // Common project headers
-#include <siodb/common/utils/UnorderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 namespace siodb::iomgr::dbengine::uli {
 
 struct FileData;
 
 /** Regular cache of recently used nodes */
-class NodeCache final : public utils::unordered_lru_cache<std::uint64_t, NodePtr> {
+class NodeCache final : public stdext::unordered_lru_cache<std::uint64_t, NodePtr> {
 private:
-    using Base = utils::unordered_lru_cache<std::uint64_t, NodePtr>;
+    using Base = stdext::unordered_lru_cache<std::uint64_t, NodePtr>;
 
 public:
     /**

@@ -1370,7 +1370,7 @@ void Database::readAllIndices()
     }
 
     if (hasInvalidIndices) {
-        throw std::runtime_error(utils::StringBuilder()
+        throw std::runtime_error(stdext::string_builder()
                                  << "Database " << m_uuid
                                  << " readAllIndices: There are invalid indices");
     }

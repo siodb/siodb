@@ -9,7 +9,7 @@
 #include "../DebugDbEngine.h"
 
 // Common project headers
-#include <siodb/common/utils/UnorderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -20,9 +20,9 @@ class UniqueLinearIndex;
 namespace siodb::iomgr::dbengine::uli {
 
 /** Regular cache of recently used files. */
-class FileCache final : public utils::unordered_lru_cache<std::uint64_t, FileDataPtr> {
+class FileCache final : public stdext::unordered_lru_cache<std::uint64_t, FileDataPtr> {
 private:
-    using Base = utils::unordered_lru_cache<std::uint64_t, FileDataPtr>;
+    using Base = stdext::unordered_lru_cache<std::uint64_t, FileDataPtr>;
 
 public:
     /**

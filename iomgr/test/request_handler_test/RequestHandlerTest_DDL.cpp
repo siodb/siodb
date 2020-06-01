@@ -16,7 +16,7 @@
 #include <siodb/common/options/DatabaseInstance.h>
 #include <siodb/common/options/InstanceOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/utils/StringBuilder.h>
+#include <siodb/common/stl_ext/string_builder.h>
 
 // Boost headers
 #include <boost/algorithm/string/case_conv.hpp>
@@ -234,7 +234,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    const std::string tableName = siodb::utils::StringBuilder()
+    const std::string tableName = stdext::string_builder()
                                   << "TABLE_" << std::time(nullptr) << '_' << ::getpid();
     {
         /// ----------- CREATE TABLE -----------

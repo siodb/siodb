@@ -8,7 +8,7 @@
 #include "DatabasePtr.h"
 
 // Common project headers
-#include <siodb/common/utils/UnorderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 // CRT headers
 #include <cstdint>
@@ -16,9 +16,9 @@
 namespace siodb::iomgr::dbengine {
 
 /** Database LRU cache */
-class DatabaseCache : public utils::unordered_lru_cache<std::uint32_t, DatabasePtr> {
+class DatabaseCache : public stdext::unordered_lru_cache<std::uint32_t, DatabasePtr> {
 private:
-    using Base = utils::unordered_lru_cache<std::uint32_t, DatabasePtr>;
+    using Base = stdext::unordered_lru_cache<std::uint32_t, DatabasePtr>;
 
 public:
     /**

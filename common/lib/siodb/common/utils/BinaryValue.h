@@ -4,16 +4,14 @@
 
 #pragma once
 
-//#define SIODB_BINARY_VALUE_AS_VECTOR
-
 // Project headers
-#include "MemoryBuffer.h"
+#include "../stl_ext/buffer.h"
 
 // CRT headers
 #include <cstdint>
 
 namespace siodb {
 
-using BinaryValue = utils::MemoryBuffer<std::uint8_t>;
+using BinaryValue = stdext::buffer<std::uint8_t>;
 
 }  // namespace siodb

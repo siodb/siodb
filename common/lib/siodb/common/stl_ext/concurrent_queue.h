@@ -5,30 +5,33 @@
 #pragma once
 
 // Project headers
-#include "HelperMacros.h>
-#include "WaitInterruptedException.h"
+#include "stdexcept_ext.h"
 
 // STL headers
 #include <condition_variable>
 #include <deque>
 #include <mutex>
 
-namespace siodb::utils {
+namespace stdext {
 
 /**
  * A thread-safe queue.
  * @tparam T Element type.
  */
 template<typename T>
-class ConcurrentQueue {
+class concurrent_queue {
 public:
-    /** Initializes object of class ConcurrentQueue */
-    ConcurrentQueue()
-        : m_interruptRequested(false)
+    /** Initializes object of class concurrent_queue */
+    concurrent_queue()
+        : m_interrupt_requested(false)
     {
     }
 
-    DECLARE_NONCOPYABLE(ConcurrentQueue);
+    /** Copy construction disabled. */
+    concurrent_queue(const concurrent_queue&) = delete;
+
+    /** Copying assignment disbled. */
+    concurrent_queue& operator=(const concurrent_queue&) = delete;
 
     /**
      * Pushes element to queue.
@@ -56,17 +59,17 @@ public:
      * Pops element from the queue. If no elements available, waits for an element to appear.
      * Wait can be interrupted by calling interrupt().
      * @return Popped element.
-     * @throw WaitInterruptedException if operation was interrupted.
+     * @throw wait_interrupted_error if operation was interrupted.
      */
     T pop()
     {
         std::unique_lock lock(m_mutex);
 
-        while (!m_interruptRequested && m_queue.empty())
+        while (!m_interrupt_requested && m_queue.empty())
             m_cond.wait(lock);
 
-        if (m_interruptRequested)
-            throw WaitInterruptedException("ConcurrentQueue::pop(): wait interrupted");
+        if (m_interrupt_requested)
+            throw wait_interrupted_error("concurrent_queue::pop(): wait interrupted");
 
         auto e = std::move(m_queue.front());
         m_queue.pop_front();
@@ -97,7 +100,7 @@ public:
     void request_interrupt()
     {
         std::unique_lock lock(m_mutex);
-        m_interruptRequested = true;
+        m_interrupt_requested = true;
         m_cond.notify_one();
     }
 
@@ -105,7 +108,7 @@ public:
     void cancel_interrupt()
     {
         std::unique_lock lock(m_mutex);
-        m_interruptRequested = false;
+        m_interrupt_requested = false;
     }
 
 private:
@@ -119,7 +122,7 @@ private:
     std::deque<T> m_queue;
 
     /** Indicates that pop() operation must be interrupted. */
-    bool m_interruptRequested;
+    bool m_interrupt_requested;
 };
 
-}  // namespace siodb::utils
+}  // namespace stdext

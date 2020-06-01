@@ -11,6 +11,7 @@ include ../../../mk/Prolog.mk
 include $(MK)/MainTargets.mk
 
 # List of all subdirs to recurse into
-SUBDIRS:= digital_signature_key_test
+SUBDIRS:= \
+	digital_signature_key_test
 
 include $(MK)/ParallelRecurse.mk

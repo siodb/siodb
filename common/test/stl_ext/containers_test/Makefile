@@ -7,9 +7,12 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../../../mk/Prolog.mk
 
-TARGET_EXE:=lru_cache_test
+TARGET_EXE:=containers_test
 
-CXX_SRC:=LruCacheTest.cpp
+CXX_SRC:=  \
+	ContainersTest_Buffer.cpp  \
+	ContainersTest_LruCache.cpp  \
+	ContainersTest_Main.cpp
 
 CXXFLAGS+=-I../../lib
 

@@ -8,7 +8,7 @@
 #include "TablePtr.h"
 
 // Common project headers
-#include <siodb/common/utils/UnorderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 // CRT headers
 #include <cstdint>
@@ -16,9 +16,9 @@
 namespace siodb::iomgr::dbengine {
 
 /** Table LRU cache */
-class TableCache : public utils::unordered_lru_cache<std::uint32_t, TablePtr> {
+class TableCache : public stdext::unordered_lru_cache<std::uint32_t, TablePtr> {
 private:
-    using Base = utils::unordered_lru_cache<std::uint32_t, TablePtr>;
+    using Base = stdext::unordered_lru_cache<std::uint32_t, TablePtr>;
 
 public:
     /**

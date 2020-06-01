@@ -17,7 +17,7 @@ void ConstraintCache::evict()
 {
     try {
         Base::evict();
-    } catch (utils::LruCacheFullError&) {
+    } catch (stdext::lru_cache_full_error&) {
         throwDatabaseError(IOManagerMessageId::kErrorConstraintCacheFull, m_table.getDatabaseName(),
                 m_table.getName());
     }

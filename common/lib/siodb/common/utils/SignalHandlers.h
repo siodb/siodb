@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "WaitableEvent.h"
+#include "../stl_ext/event.h"
 
 // System headers
 #include <signal.h>

@@ -9,8 +9,8 @@
 #include "../IndexFileHeaderBase.h"
 
 // Common project headers
+#include <siodb/common/stl_ext/lru_cache.h>
 #include <siodb/common/utils/FileDescriptorGuard.h>
-#include <siodb/common/utils/UnorderedLruCache.h>
 
 // System headers
 #include <sys/types.h>
@@ -377,9 +377,9 @@ private:
     using NodePtr = std::shared_ptr<Node>;
 
     /** Regular cache of recently used nodes */
-    class NodeCache final : public utils::unordered_lru_cache<std::uint64_t, NodePtr> {
+    class NodeCache final : public stdext::unordered_lru_cache<std::uint64_t, NodePtr> {
     private:
-        using Base = utils::unordered_lru_cache<std::uint64_t, NodePtr>;
+        using Base = stdext::unordered_lru_cache<std::uint64_t, NodePtr>;
 
     public:
         /**

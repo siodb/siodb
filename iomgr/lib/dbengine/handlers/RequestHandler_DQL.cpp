@@ -22,7 +22,7 @@
 // Common project headers
 #include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/utils/Bitmask.h>
+#include <siodb/common/stl_ext/bitmask.h>
 #include <siodb/common/utils/EmptyString.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
@@ -235,7 +235,6 @@ void RequestHandler::executeSelectRequest(
     if (request.m_where != nullptr) updateColumnsFromExpression(dataSets, request.m_where, errors);
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
-
     for (auto& tableDataSet : dataSets)
         tableDataSet->resetCursor();
 
@@ -284,7 +283,7 @@ void RequestHandler::executeSelectRequest(
             if (!rowDataAvailable) break;
         }
 
-        utils::Bitmask nullMask;
+        stdext::bitmask nullMask;
         if (hasNullableColumns) nullMask.resize(columnCountToSend);
 
         std::vector<Variant> values(columnCountToSend);
@@ -331,14 +330,14 @@ void RequestHandler::executeSelectRequest(
                         auto& value = values[valueIndex];
                         value = rowValue;
                         rowLength += getVariantSize(value);
-                        if (hasNullableColumns) nullMask.setBit(valueIndex, value.isNull());
+                        if (hasNullableColumns) nullMask.set(valueIndex, value.isNull());
                         ++valueIndex;
                     }
                 } else {
                     auto& value = values[valueIndex];
                     value = expr.m_expression->evaluate(*dbContext);
                     rowLength += getVariantSize(value);
-                    if (hasNullableColumns) nullMask.setBit(valueIndex, value.isNull());
+                    if (hasNullableColumns) nullMask.set(valueIndex, value.isNull());
                     ++valueIndex;
                 }
             }
@@ -351,7 +350,7 @@ void RequestHandler::executeSelectRequest(
             //DBG_LOG_DEBUG(">>> OUTPUT: Row# " << rowNumber << ": Length=" << rowLength);
 
             if (hasNullableColumns) {
-                codedOutput.WriteRaw(nullMask.getData(), nullMask.getByteSize());
+                codedOutput.WriteRaw(nullMask.data(), nullMask.size());
                 protobuf::checkOutputStreamError(rawOutput);
             }
 
@@ -404,7 +403,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
     std::vector<Variant> values(2);
-    utils::Bitmask nullMask;
+    stdext::bitmask nullMask;
     if (!nullNotAllowed) nullMask.resize(values.size(), false);
 
     google::protobuf::io::CodedOutputStream codedOutput(&rawOutput);
@@ -413,17 +412,17 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
         values[1] = boost::uuids::to_string(dbRecord.m_uuid);
 
         if (!nullNotAllowed) {
-            nullMask.setBit(0, values[0].isNull());
-            nullMask.setBit(1, values[1].isNull());
+            nullMask.set(0, values[0].isNull());
+            nullMask.set(1, values[1].isNull());
         }
 
         const std::size_t rowSize =
-                getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.getByteSize();
+                getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();
 
         codedOutput.WriteVarint64(rowSize);
 
         if (!nullNotAllowed) {
-            codedOutput.WriteRaw(nullMask.getData(), nullMask.getByteSize());
+            codedOutput.WriteRaw(nullMask.data(), nullMask.size());
             protobuf::checkOutputStreamError(rawOutput);
         }
 

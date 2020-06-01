@@ -6,7 +6,7 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 
 // CRT headers
-#include "internal/Crt.h"
+#include "detail/Crt.h"
 
 // STL headers
 #include <algorithm>
@@ -81,4 +81,4 @@
 #include <google/protobuf/message.h>
 
 // System headers
-#include "internal/System.h"
+#include "detail/System.h"

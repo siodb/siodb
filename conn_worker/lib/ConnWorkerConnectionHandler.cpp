@@ -13,10 +13,10 @@
 #include <siodb/common/net/TcpConnection.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/SiodbProtocolTag.h>
+#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/utils/ErrorCodeChecker.h>
 #include <siodb/common/utils/SignalHandlers.h>
-#include <siodb/common/utils/StringBuilder.h>
-#include <siodb/common/utils/SystemError.h>
 
 // STL headers
 #include <iostream>
@@ -249,7 +249,7 @@ void ConnWorkerConnectionHandler::transmitRowData(
     while (true) {
         std::uint64_t rowLength = 0;
         if (!codedInput.ReadVarint64(&rowLength)) {
-            utils::throwSystemError("IO manager socket read error");
+            stdext::throw_system_error("IO manager socket read error");
         }
 
         std::uint8_t codedRowLength[9];
@@ -289,7 +289,7 @@ void ConnWorkerConnectionHandler::selectLastUsedDatabase(
 
     iomgr_protocol::DatabaseEngineRequest dbeRequest;
     dbeRequest.set_request_id(kUseDatabaseRequestId);
-    dbeRequest.set_text(utils::StringBuilder() << "USE DATABASE " << m_lastUsedDatabase);
+    dbeRequest.set_text(stdext::string_builder() << "USE DATABASE " << m_lastUsedDatabase);
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineRequest, dbeRequest, *m_ioMgrIo);

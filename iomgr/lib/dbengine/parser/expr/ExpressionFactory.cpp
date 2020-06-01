@@ -10,7 +10,7 @@
 #include "../antlr_wrappers/SiodbParserWrapper.h"
 
 // Common project headers
-#include <siodb/common/utils/StringBuilder.h>
+#include <siodb/common/stl_ext/string_builder.h>
 
 // Boost headers
 #include <boost/algorithm/hex.hpp>
@@ -233,8 +233,8 @@ requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
         antlr4::tree::ParseTree* tableNode, antlr4::tree::ParseTree* columnNode) const
 {
     if (!m_allowColumnExpressions) {
-        throw std::invalid_argument(utils::StringBuilder() << "Column " << columnNode->getText()
-                                                           << " is not allowed in this context");
+        throw std::invalid_argument(stdext::string_builder() << "Column " << columnNode->getText()
+                                                             << " is not allowed in this context");
     }
 
     std::string tableName;

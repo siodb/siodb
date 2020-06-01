@@ -6,11 +6,11 @@
 
 // Project headers
 #include "NetConstants.h"
-#include "internal/AddressInfoGuard.h"
+#include "detail/AddressInfoGuard.h"
+#include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
 #include "../utils/Debug.h"
 #include "../utils/FileDescriptorGuard.h"
-#include "../utils/SystemError.h"
 
 // STL headers
 #include <iostream>
@@ -101,12 +101,12 @@ int openTcpConnection(const std::string& host, int port, bool closeOnExecute)
         FileDescriptorGuard socket(::socket(currentAddrInfo->ai_family,
                 currentAddrInfo->ai_socktype, currentAddrInfo->ai_protocol));
         if (!socket.isValidFd()) {
-            utils::throwSystemError("Can't create TCP socket");
+            stdext::throw_system_error("Can't create TCP socket");
         }
 
         // If requested, prevent passing this fd to child processes
         if (closeOnExecute && !socket.setFdFlag(FD_CLOEXEC, true)) {
-            utils::throwSystemError("Can't set FD_CLOEXEC on the client TCP socket");
+            stdext::throw_system_error("Can't set FD_CLOEXEC on the client TCP socket");
         }
 
         // Convert actual address to string and show message

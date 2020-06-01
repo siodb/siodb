@@ -731,12 +731,12 @@ TEST(DML_Insert, NullValueTest)
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_TRUE(rowLength > 0);
-        siodb::utils::Bitmask nullBitmask(response.column_description_size(), false);
-        ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.getData(), nullBitmask.getByteSize()));
+        stdext::bitmask nullBitmask(response.column_description_size(), false);
+        ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
 
-        ASSERT_FALSE(nullBitmask.getBit(0));
-        ASSERT_FALSE(nullBitmask.getBit(1));
-        ASSERT_TRUE(nullBitmask.getBit(2));
+        ASSERT_FALSE(nullBitmask.get(0));
+        ASSERT_FALSE(nullBitmask.get(1));
+        ASSERT_TRUE(nullBitmask.get(2));
 
         std::uint64_t trid;
         ASSERT_TRUE(codedInput.ReadVarint64(&trid));
@@ -826,11 +826,11 @@ TEST(DML_Insert, InsertDefaultNullValueTest)
         for (std::uint32_t i = 0; i < 2; ++i) {
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
             ASSERT_TRUE(rowLength > 0);
-            siodb::utils::Bitmask nullBitmask(response.column_description_size(), false);
-            ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.getData(), nullBitmask.getByteSize()));
+            stdext::bitmask nullBitmask(response.column_description_size(), false);
+            ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
 
-            ASSERT_FALSE(nullBitmask.getBit(0));
-            ASSERT_TRUE(nullBitmask.getBit(1));
+            ASSERT_FALSE(nullBitmask.get(0));
+            ASSERT_TRUE(nullBitmask.get(1));
 
             std::uint32_t u32 = 0;
             ASSERT_TRUE(codedInput.ReadVarint32(&u32));

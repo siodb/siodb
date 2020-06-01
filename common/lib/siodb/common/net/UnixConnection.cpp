@@ -5,8 +5,8 @@
 #include "UnixConnection.h"
 
 // Project headers
+#include "../stl_ext/system_error_ext.h"
 #include "../utils/FileDescriptorGuard.h"
-#include "../utils/SystemError.h"
 
 // CRT headers
 #include <cstring>
@@ -34,12 +34,12 @@ int openUnixConnection(const std::string& serverSocketPath, bool closeOnExecute)
     // Create socket
     FileDescriptorGuard socket(::socket(AF_UNIX, SOCK_STREAM, 0));
     if (!socket.isValidFd()) {
-        utils::throwSystemError("Can't create new UNIX client socket");
+        stdext::throw_system_error("Can't create new UNIX client socket");
     }
 
     // If requested, prevent passing this fd to child processes
     if (closeOnExecute && !socket.setFdFlag(FD_CLOEXEC, true)) {
-        utils::throwSystemError("Can't set FD_CLOEXEC on the UNIX client socket");
+        stdext::throw_system_error("Can't set FD_CLOEXEC on the UNIX client socket");
     }
 
     // Fill connection parameters
@@ -49,7 +49,7 @@ int openUnixConnection(const std::string& serverSocketPath, bool closeOnExecute)
 
     // Attempt to connect
     if (::connect(socket.getFd(), (struct sockaddr*) &addr, (socklen_t) sizeof(addr)) < 0) {
-        utils::throwSystemError(
+        stdext::throw_system_error(
                 "Can't connect via UNIX client socket to the ", serverSocketPath.c_str());
     }
 

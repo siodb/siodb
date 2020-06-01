@@ -8,7 +8,7 @@
 #include "ColumnDefinitionPtr.h"
 
 // Common project headers
-#include <siodb/common/utils/UnorderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -16,9 +16,9 @@ class ColumnDefinition;
 
 /** LRU cache for column definitions */
 class ColumnDefinitionCache final
-    : public utils::unordered_lru_cache<std::uint64_t, ColumnDefinitionPtr> {
+    : public stdext::unordered_lru_cache<std::uint64_t, ColumnDefinitionPtr> {
 private:
-    using Base = utils::unordered_lru_cache<std::uint64_t, ColumnDefinitionPtr>;
+    using Base = stdext::unordered_lru_cache<std::uint64_t, ColumnDefinitionPtr>;
 
 public:
     /**

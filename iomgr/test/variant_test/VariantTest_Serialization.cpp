@@ -25,7 +25,7 @@ TEST(Serialization, Null)
     const auto size = src.getSerializedSize();
     ASSERT_EQ(size, kSerializedSize);
 
-    siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+    stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
     const auto end = src.serializeUnchecked(buffer.data());
     const auto actualSize = static_cast<std::size_t>(end - buffer.data());
     ASSERT_EQ(actualSize, size);
@@ -51,7 +51,7 @@ TEST(Serialization, Int8)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -78,7 +78,7 @@ TEST(Serialization, UInt8)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -108,7 +108,7 @@ TEST(Serialization, Int16)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -136,7 +136,7 @@ TEST(Serialization, UInt16)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -166,7 +166,7 @@ TEST(Serialization, Int32)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -194,7 +194,7 @@ TEST(Serialization, UInt32)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -224,7 +224,7 @@ TEST(Serialization, Int64)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -252,7 +252,7 @@ TEST(Serialization, UInt64)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -281,7 +281,7 @@ TEST(Serialization, Float)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -310,7 +310,7 @@ TEST(Serialization, Double)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -341,7 +341,7 @@ TEST(Serialization, DateTime)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -367,7 +367,7 @@ TEST(Serialization, String)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -393,7 +393,7 @@ TEST(Serialization, Binary)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -419,7 +419,7 @@ TEST(Serialization, Clob)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -442,7 +442,7 @@ TEST(Serialization, TooLargeClob)
     const auto size = src.getSerializedSize();
     ASSERT_EQ(size, 2U);
 
-    siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+    stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
     EXPECT_THROW(src.serializeUnchecked(buffer.data()), dbengine::VariantSerializationError);
 }
 
@@ -460,7 +460,7 @@ TEST(Serialization, Blob)
         const auto size = src.getSerializedSize();
         ASSERT_EQ(size, vsp.second);
 
-        siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+        stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
         const auto end = src.serializeUnchecked(buffer.data());
         const auto actualSize = static_cast<std::size_t>(end - buffer.data());
         ASSERT_EQ(actualSize, size);
@@ -483,7 +483,7 @@ TEST(Serialization, TooLargeBlob)
     const auto size = src.getSerializedSize();
     ASSERT_EQ(size, 2U);
 
-    siodb::utils::MemoryBuffer<std::uint8_t> buffer(size + kExtraBufferSize);
+    stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
     EXPECT_THROW(src.serializeUnchecked(buffer.data()), dbengine::VariantSerializationError);
 }
 

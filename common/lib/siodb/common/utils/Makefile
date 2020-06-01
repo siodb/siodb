@@ -20,22 +20,19 @@ CXX_SRC:= \
 	SiodbException.cpp  \
 	StringScanner.cpp  \
 	StringUtils.cpp  \
-	SystemError.cpp  \
 	Uuid.cpp \
 	Utf8String.cpp  \
 	Base128VariantEncodingCxx.cpp
 
 CXX_HDR:= \
+	detail/SignalHandlersDetail.h  \
 	Align.h  \
 	BinaryValue.h  \
-	Bitmask.h  \
 	ByteOrder.h  \
 	CheckOSUser.h  \
-	ConcurrentQueue.h  \
 	Constants.h  \
 	ComparisonMacros.h  \
 	ComparisonOperations.h  \
-	ContainerUtils.h  \
 	Debug.h  \
 	DeserializationError.h  \
 	EmptyString.h  \
@@ -44,22 +41,15 @@ CXX_HDR:= \
 	Format.h  \
 	FsUtils.h  \
 	HelperMacros.h  \
-	LruCache.h  \
-	MemoryBuffer.h  \
 	MessageCatalog.h  \
 	MutableOrConstantString.h  \
-	OrderedLruCache.h  \
 	SignalHandlers.h  \
 	SiodbException.h  \
 	StartupActions.h  \
-	StringBuilder.h  \
 	StringScanner.h  \
 	StringUtils.h  \
-	SystemError.h  \
-	UnorderedLruCache.h  \
 	Uuid.h  \
-	Utf8String.h  \
-	internal/SignalHandlersInternal.h
+	Utf8String.h
 
 C_SRC:= \
 	Base128VariantEncoding.c  \

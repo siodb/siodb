@@ -299,7 +299,7 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
                 m_id, ex.code().value(), std::strerror(ex.code().value()));
     }
 
-    utils::MemoryBuffer<std::uint8_t> buffer(uli::Node::kSize, 0);
+    stdext::buffer<std::uint8_t> buffer(uli::Node::kSize, 0);
 
     // Write header
     IndexFileHeader indexFileHeader;

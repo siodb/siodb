@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace siodb::utils {
+namespace stdext {
 
 /**
  * Converts range to map, using sequential numbers starting from @ref key as keys.
@@ -16,7 +16,7 @@ namespace siodb::utils {
  * @return Map object.
  */
 template<class Map, class ForwardIterator>
-Map rangeToMap(ForwardIterator first, ForwardIterator last, typename Map::key_type key)
+Map range_to_map(ForwardIterator first, ForwardIterator last, typename Map::key_type key)
 {
     Map result;
     while (first != last)
@@ -26,7 +26,7 @@ Map rangeToMap(ForwardIterator first, ForwardIterator last, typename Map::key_ty
 
 /**
  * Converts range to map, using values as keys and sequential numbers starting
- * from @ref value as values.
+ * from value as values.
  * @tparam Map Resulting map type.
  * @tparam ForwardIterator Range iterator type.
  * @param first Range start.
@@ -35,7 +35,7 @@ Map rangeToMap(ForwardIterator first, ForwardIterator last, typename Map::key_ty
  * @return Map object.
  */
 template<class Map, class ForwardIterator>
-Map rangeToValueMap(ForwardIterator first, ForwardIterator last, typename Map::mapped_type value)
+Map range_to_value_map(ForwardIterator first, ForwardIterator last, typename Map::mapped_type value)
 {
     Map result;
     while (first != last)
@@ -43,4 +43,4 @@ Map rangeToValueMap(ForwardIterator first, ForwardIterator last, typename Map::m
     return result;
 }
 
-}  // namespace siodb::utils
+}  // namespace stdext

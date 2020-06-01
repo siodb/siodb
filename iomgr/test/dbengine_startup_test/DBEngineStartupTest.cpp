@@ -11,11 +11,11 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/DatabaseInstance.h>
 #include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FsUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/StartupActions.h>
-#include <siodb/common/utils/StringBuilder.h>
 
 // CRT headers
 #include <ctime>
@@ -57,7 +57,7 @@ void CreateAndLoadInstance(const char* cipherId)
 
     // Fill general options
     const auto home = ::getenv("HOME");
-    const std::string baseDir = siodb::utils::StringBuilder()
+    const std::string baseDir = stdext::string_builder()
                                 << home << "/tmp/siodb_" << std::time(nullptr) << '_' << ::getpid();
     instanceOptions.m_generalOptions.m_dataDirectory = baseDir + "/data";
     instanceOptions.m_generalOptions.m_superUserInitialAccessKey =

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "helpers.h"
+#include "throw_std_exceptions.h"
 
 // CRT headers
 #include <cstdio>
@@ -13,7 +13,7 @@
 
 namespace stdext::detail {
 
-[[noreturn]] void throwOutOfRangeError(const char* prefix, std::size_t n, std::size_t limit)
+[[noreturn]] void throw_out_of_range_error(const char* prefix, std::size_t n, std::size_t limit)
 {
     const auto bufferSize = std::strlen(prefix) + 128;
     std::unique_ptr<char[]> buffer(new char[bufferSize]);
@@ -21,7 +21,7 @@ namespace stdext::detail {
     throw std::out_of_range(buffer.get());
 }
 
-[[noreturn]] void throwLengthError(const char* prefix, std::size_t n, std::size_t limit)
+[[noreturn]] void throw_length_error(const char* prefix, std::size_t n, std::size_t limit)
 {
     const auto bufferSize = std::strlen(prefix) + 128;
     std::unique_ptr<char[]> buffer(new char[bufferSize]);

@@ -6,8 +6,8 @@
 
 // Project headers
 #include "CustomProtobufOutputStream.h"
+#include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
-#include "../utils/SystemError.h"
 
 // CRT headers
 #include <cstring>
@@ -97,7 +97,7 @@ void reportStreamReadError(int errorCode, const char* message)
     if (message == nullptr) {
         message = "Read error";
     }
-    utils::throwSystemError(errorCode, message);
+    stdext::throw_system_error(errorCode, message);
 }
 
 void reportStreamWriteError(int errorCode, const char* message)
@@ -105,7 +105,7 @@ void reportStreamWriteError(int errorCode, const char* message)
     if (message == nullptr) {
         message = "Write error";
     }
-    utils::throwSystemError(errorCode, message);
+    stdext::throw_system_error(errorCode, message);
 }
 
 void checkInputStreamError(const CustomProtobufInputStream& rawStream)

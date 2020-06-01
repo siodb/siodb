@@ -8,8 +8,8 @@
 #include "DatabaseError.h"
 
 // Common project headers
+#include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/utils/MessageCatalog.h>
-#include <siodb/common/utils/StringBuilder.h>
 
 // Boost headers
 #include <boost/format.hpp>
@@ -77,8 +77,8 @@ template<class MessageId, class... Args>
 {
     const auto message = catalog.find(messageId);
     if (!message) {
-        throw UserVisibleDatabaseError(1,
-                utils::StringBuilder() << "Message not found: id=" << static_cast<int>(messageId));
+        throw UserVisibleDatabaseError(1, stdext::string_builder() << "Message not found: id="
+                                                                   << static_cast<int>(messageId));
     }
 
     std::string s;

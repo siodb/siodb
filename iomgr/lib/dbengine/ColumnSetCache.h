@@ -8,14 +8,14 @@
 #include "ColumnSetPtr.h"
 
 // Common project headers
-#include <siodb/common/utils/OrderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 namespace siodb::iomgr::dbengine {
 
 /** LRU cache for column sets */
-class ColumnSetCache : public utils::ordered_lru_cache<std::uint64_t, ColumnSetPtr> {
+class ColumnSetCache : public stdext::ordered_lru_cache<std::uint64_t, ColumnSetPtr> {
 private:
-    using Base = utils::ordered_lru_cache<std::uint64_t, ColumnSetPtr>;
+    using Base = stdext::ordered_lru_cache<std::uint64_t, ColumnSetPtr>;
 
 public:
     /**

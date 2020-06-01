@@ -8,8 +8,8 @@
 #include "ColumnDataBlockState.h"
 
 // Common project headers
+#include <siodb/common/stl_ext/lru_cache.h>
 #include <siodb/common/utils/FileDescriptorGuard.h>
-#include <siodb/common/utils/UnorderedLruCache.h>
 
 // STL headers
 #include <memory>

@@ -16,7 +16,7 @@ CXX_HDR:= \
 	ct_string.h  \
 
 C_HDR:= \
-	internal/string_ext_internal.h  \
+	detail/string_ext_detail.h  \
 	stdint_ext.h  \
 	string_ext.h
 

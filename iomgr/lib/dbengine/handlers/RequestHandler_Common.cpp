@@ -429,7 +429,7 @@ void RequestHandler::writeVariant(
                 throw std::runtime_error("Could not clone CLOB stream");
             }
             auto size = clob->getRemainingSize();
-            utils::MemoryBuffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
+            stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             codedOutput.WriteVarint32(size);
             while (size > 0) {
                 auto curChunkSize = std::min(size, kLobChunkSize);
@@ -445,7 +445,7 @@ void RequestHandler::writeVariant(
                 throw std::runtime_error("Could not clone BLOB stream");
             }
             auto size = blob->getRemainingSize();
-            utils::MemoryBuffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
+            stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             codedOutput.WriteVarint32(size);
             while (size > 0) {
                 auto curChunkSize = std::min(size, kLobChunkSize);

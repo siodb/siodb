@@ -5,7 +5,7 @@
 #include "ColumnDataType.h"
 
 // Common project headers
-#include <siodb/common/utils/ContainerUtils.h>
+#include <siodb/common/stl_ext/algorithm_ext.h>
 
 // STL headers
 #include <array>
@@ -46,7 +46,7 @@ const std::array<const char*, COLUMN_DATA_TYPE_MAX> kColumnDataTypeNames {
 
 /** Map of column data type names */
 const std::unordered_map<std::string, int> kColumnDataTypesByName =
-        utils::rangeToValueMap<std::unordered_map<std::string, int>>(
+        stdext::range_to_value_map<std::unordered_map<std::string, int>>(
                 kColumnDataTypeNames.cbegin(), kColumnDataTypeNames.cend(), 0);
 
 /** Mapping from variant value type to column data type */

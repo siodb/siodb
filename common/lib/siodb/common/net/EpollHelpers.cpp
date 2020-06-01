@@ -6,7 +6,7 @@
 
 // Project headers
 #include "ConnectionError.h"
-#include "../utils/SystemError.h"
+#include "../stl_ext/system_error_ext.h"
 
 // System headers
 #include <sys/epoll.h>
@@ -23,7 +23,7 @@ void epollWaitForData(int epollFd, bool ignoreEintr)
             if (ignoreEintr && errno == EINTR)
                 continue;
             else
-                utils::throwSystemError("epoll_wait failed");
+                stdext::throw_system_error("epoll_wait failed");
         }
 
         if (epollEvent.events & EPOLLERR)
@@ -38,7 +38,7 @@ void epollWaitForData(int epollFd, bool ignoreEintr)
 int createEpollFd(int fd, int events)
 {
     const int epollFd = ::epoll_create1(0);
-    if (epollFd < 0) utils::throwSystemError("epoll_create1 failed");
+    if (epollFd < 0) stdext::throw_system_error("epoll_create1 failed");
 
     struct epoll_event event;
     event.data.fd = fd;
@@ -46,7 +46,7 @@ int createEpollFd(int fd, int events)
     if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) != 0) {
         const int errorCode = errno;
         ::close(epollFd);
-        utils::throwSystemError(errorCode, "epoll_ctl failed");
+        stdext::throw_system_error(errorCode, "epoll_ctl failed");
     }
 
     return epollFd;

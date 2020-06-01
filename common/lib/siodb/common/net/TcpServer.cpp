@@ -4,15 +4,15 @@
 
 #include "TcpServer.h"
 
+// Internal headers
+#include "detail/AddressInfoGuard.h"
+
 // Project headers
 #include "NetConstants.h"
+#include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
 #include "../utils/FileDescriptorGuard.h"
 #include "../utils/HelperMacros.h"
-#include "../utils/SystemError.h"
-
-// Internal headers
-#include "internal/AddressInfoGuard.h"
 
 // CRT headers
 #include <cerrno>
@@ -123,18 +123,18 @@ int createTcpServer(int domain, const char* serverAddress, int port, int backlog
     FileDescriptorGuard socket(
             ::socket(addrInfos->ai_family, addrInfos->ai_socktype, addrInfos->ai_protocol));
     if (!socket.isValidFd()) {
-        utils::throwSystemError("Can't create new socket");
+        stdext::throw_system_error("Can't create new socket");
     }
 
     // Prevent passing this fd to child processes
     if (!socket.setFdFlag(FD_CLOEXEC, true)) {
-        utils::throwSystemError("Can't set FD_CLOEXEC on the server TCP socket");
+        stdext::throw_system_error("Can't set FD_CLOEXEC on the server TCP socket");
     }
 
     // Enable address reuse
     int flag = 1;
     if (::setsockopt(socket.getFd(), SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0) {
-        utils::throwSystemError("Can't enable address resuse on the TCP socket");
+        stdext::throw_system_error("Can't enable address resuse on the TCP socket");
     }
 
     // Bind the server

@@ -16,7 +16,7 @@ void ConstraintDefinitionCache::evict()
 {
     try {
         Base::evict();
-    } catch (utils::LruCacheFullError&) {
+    } catch (stdext::lru_cache_full_error&) {
         throwDatabaseError(
                 IOManagerMessageId::kErrorConstraintDefinitionCacheFull, m_database.getName());
     }

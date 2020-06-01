@@ -10,7 +10,7 @@
 #include "Variant.h"
 
 // Common project headers
-#include <siodb/common/utils/Bitmask.h>
+#include <siodb/common/stl_ext/bitmask.h>
 
 // STL headers
 #include <optional>
@@ -203,7 +203,7 @@ protected:
     std::vector<Variant> m_values;
 
     /** Indicates which values are already read */
-    utils::Bitmask m_valueReadMask;
+    stdext::bitmask m_valueReadMask;
 
     /** Indication that row data is avaliable for reading. */
     bool m_hasCurrentRow;

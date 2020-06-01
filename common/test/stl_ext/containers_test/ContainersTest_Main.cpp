@@ -2,8 +2,11 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-// CRT headers
-#include "detail/Crt.h"
+// Google Test
+#include <gtest/gtest.h>
 
-// System headers
-#include "detail/System.h"
+int main(int argc, char** argv)
+{
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}

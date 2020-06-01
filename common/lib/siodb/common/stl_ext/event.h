@@ -4,36 +4,36 @@
 
 #pragma once
 
-// Project headers
-#include "HelperMacros.h"
-
 // STL headers
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 
-namespace siodb::utils {
+namespace stdext {
 
-class WaitableEvent {
+class event {
 public:
     /**
-     * Initializes new object of class WaitableEvent.
+     * Initializes new object of class event.
      * @param autoReset Flag showing whether to auto-reset event after it has been signaled.
      */
-    explicit WaitableEvent(bool autoReset = false) noexcept
+    explicit event(bool autoReset = false) noexcept
         : m_signaled(false)
-        , m_autoReset(autoReset)
+        , m_auto_reset(autoReset)
     {
     }
 
-    DECLARE_NONCOPYABLE(WaitableEvent);
+    /** Copy constrution is prohibited */
+    event(const event&) = delete;
+    /** Copy assignment is prohibited */
+    event& operator=(const event&) = delete;
 
     /**
      * Returns current state.
      * @return Current state.
      */
-    bool isSignaled() const
+    bool signaled() const
     {
         std::lock_guard lock(m_mutex);
         return m_signaled;
@@ -45,7 +45,7 @@ public:
         std::unique_lock lock(m_mutex);
         while (!m_signaled)
             m_cond.wait(lock);
-        if (m_autoReset) m_signaled = false;
+        if (m_auto_reset) m_signaled = false;
     }
 
     /**
@@ -54,13 +54,13 @@ public:
      * @return true, if even caught, false if timeout has expired.
      */
     template<class Clock, class Duration>
-    bool waitUntil(const std::chrono::time_point<Clock, Duration>& timeoutTime)
+    bool wait_until(const std::chrono::time_point<Clock, Duration>& timeoutTime)
     {
         std::unique_lock lock(m_mutex);
         while (!m_signaled) {
             if (m_cond.wait_until(lock, timeoutTime) == std::cv_status::timeout) return false;
         }
-        if (m_autoReset) m_signaled = false;
+        if (m_auto_reset) m_signaled = false;
         return true;
     }
 
@@ -70,28 +70,30 @@ public:
      * @return true, if even caught, false if timeout has expired.
      */
     template<class Rep, class Period>
-    bool waitFor(const std::chrono::duration<Rep, Period>& timeout)
+    bool wait_for(const std::chrono::duration<Rep, Period>& timeout)
     {
         std::unique_lock lock(m_mutex);
         while (!m_signaled) {
             if (m_cond.wait_for(lock, timeout) == std::cv_status::timeout) return false;
         }
-        if (m_autoReset) m_signaled = false;
+        if (m_auto_reset) m_signaled = false;
         return true;
     }
 
-    /**
-     * Signal about event.
-     * @param broadcast if true, signal to all waiting thread, otherwise signal only single thread
-     */
-    void signal(bool broadcast = false)
+    /** Signal event and notify single waiting thread. */
+    void notify_one()
     {
         std::lock_guard lock(m_mutex);
         m_signaled = true;
-        if (broadcast)
-            m_cond.notify_all();
-        else
-            m_cond.notify_one();
+        m_cond.notify_all();
+    }
+
+    /** Signal event and notify all waiting threads. */
+    void notify_all()
+    {
+        std::lock_guard lock(m_mutex);
+        m_signaled = true;
+        m_cond.notify_one();
     }
 
     /** Resets state to not signaled */
@@ -109,7 +111,7 @@ private:
     /** Current state */
     bool m_signaled;
     /** Flag showing whether to auto-reset state after signal */
-    const bool m_autoReset;
+    const bool m_auto_reset;
 };
 
-}  // namespace siodb::utils
+}  // namespace stdext

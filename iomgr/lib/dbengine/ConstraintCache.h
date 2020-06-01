@@ -8,7 +8,7 @@
 #include "ConstraintPtr.h"
 
 // Common project headers
-#include <siodb/common/utils/UnorderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -16,9 +16,9 @@ class Constraint;
 class Table;
 
 /** LRU cache for constraints */
-class ConstraintCache : public utils::unordered_lru_cache<std::uint64_t, ConstraintPtr> {
+class ConstraintCache : public stdext::unordered_lru_cache<std::uint64_t, ConstraintPtr> {
 private:
-    using Base = utils::unordered_lru_cache<std::uint64_t, ConstraintPtr>;
+    using Base = stdext::unordered_lru_cache<std::uint64_t, ConstraintPtr>;
 
 public:
     /**

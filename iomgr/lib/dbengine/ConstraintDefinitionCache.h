@@ -8,7 +8,7 @@
 #include "ConstraintDefinitionPtr.h"
 
 // Common project headers
-#include <siodb/common/utils/UnorderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 // CRT headers
 #include <cstdint>
@@ -20,9 +20,9 @@ class Database;
 
 /** Table LRU cache */
 class ConstraintDefinitionCache
-    : public utils::unordered_lru_cache<std::uint64_t, ConstraintDefinitionPtr> {
+    : public stdext::unordered_lru_cache<std::uint64_t, ConstraintDefinitionPtr> {
 private:
-    using Base = utils::unordered_lru_cache<std::uint64_t, ConstraintDefinitionPtr>;
+    using Base = stdext::unordered_lru_cache<std::uint64_t, ConstraintDefinitionPtr>;
 
 public:
     /**

@@ -21,7 +21,7 @@
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/utils/SystemError.h>
+#include <siodb/common/stl_ext/system_error_ext.h>
 
 // STL headers
 #include <functional>
@@ -86,9 +86,8 @@ void RequestHandler::executeUpdateRequest(
             continue;
         }
 
-        const auto it = std::find_if(
-                tableColumns.cbegin(),
-                tableColumns.cend(), [&columnRef](const auto& tableColumn) noexcept {
+        const auto it = std::find_if(tableColumns.cbegin(), tableColumns.cend(),
+                [&columnRef](const auto& tableColumn) noexcept {
                     return tableColumn->getName() == columnRef.m_column;
                 });
         if (it == tableColumns.cend()) {

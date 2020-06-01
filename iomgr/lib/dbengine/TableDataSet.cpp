@@ -35,7 +35,7 @@ const std::string& TableDataSet::getName() const noexcept
 const Variant& TableDataSet::getColumnValue(std::size_t index)
 {
     // Check index
-    const bool hasValue = m_valueReadMask.getBit(index);
+    const bool hasValue = m_valueReadMask.get(index);
     // Normally should never happen
     if (!m_hasCurrentRow) throw std::runtime_error("No more rows");
     // Read column value
@@ -55,7 +55,7 @@ const std::vector<Variant>& TableDataSet::getCurrentRow()
 
     // Read all column values
     for (std::size_t i = 0, n = m_columnInfos.size(); i != n; ++i) {
-        if (!m_valueReadMask.getBit(i)) readColumnValue(i);
+        if (!m_valueReadMask.get(i)) readColumnValue(i);
     }
 
     return m_values;
@@ -174,7 +174,7 @@ void TableDataSet::readColumnValue(std::size_t index)
         }
     }
 
-    m_valueReadMask.setBit(index, true);
+    m_valueReadMask.set(index, true);
 }
 
 }  // namespace siodb::iomgr::dbengine

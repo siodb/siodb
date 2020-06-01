@@ -10,7 +10,7 @@
 #include <string>
 #include <system_error>
 
-namespace siodb::utils {
+namespace stdext {
 
 /**
  * Formats error string using given prefix and error code.
@@ -18,7 +18,7 @@ namespace siodb::utils {
  * @param prefix Prefix string.
  * @return Error string.
  */
-std::string formatErrorMessage(int errorCode, const char* prefix);
+std::string format_system_error_message(int errorCode, const char* prefix);
 
 /**
  * Formats error string using given prefix and error code.
@@ -26,9 +26,9 @@ std::string formatErrorMessage(int errorCode, const char* prefix);
  * @param prefix Prefix string.
  * @return Error string.
  */
-inline std::string formatErrorMessage(int errorCode, const std::string& prefix)
+inline std::string format_system_error_message(int errorCode, const std::string& prefix)
 {
-    return formatErrorMessage(errorCode, prefix.c_str());
+    return format_system_error_message(errorCode, prefix.c_str());
 }
 
 /**
@@ -36,7 +36,7 @@ inline std::string formatErrorMessage(int errorCode, const std::string& prefix)
  * @param errorCode An error code.
  * @param description Action description.
  */
-[[noreturn]] inline void throwSystemError(int errorCode, const char* description)
+[[noreturn]] inline void throw_system_error(int errorCode, const char* description)
 {
     throw std::system_error(errorCode, std::generic_category(), description);
 }
@@ -45,9 +45,9 @@ inline std::string formatErrorMessage(int errorCode, const std::string& prefix)
  * Throws std::system_error with current errno and action description.
  * @param description Action description.
  */
-[[noreturn]] inline void throwSystemError(const char* description)
+[[noreturn]] inline void throw_system_error(const char* description)
 {
-    throwSystemError(errno, description);
+    throw_system_error(errno, description);
 }
 
 /**
@@ -55,18 +55,18 @@ inline std::string formatErrorMessage(int errorCode, const std::string& prefix)
  * @param errorCode An error code.
  * @param description Action description.
  */
-[[noreturn]] inline void throwSystemError(int errorCode, const std::string& description)
+[[noreturn]] inline void throw_system_error(int errorCode, const std::string& description)
 {
-    throwSystemError(errorCode, description.c_str());
+    throw_system_error(errorCode, description.c_str());
 }
 
 /**
  * Throws std::system_error with current errno and action description.
  * @param description Action description.
  */
-[[noreturn]] inline void throwSystemError(const std::string& description)
+[[noreturn]] inline void throw_system_error(const std::string& description)
 {
-    throwSystemError(errno, description);
+    throw_system_error(errno, description);
 }
 
 /**
@@ -74,16 +74,16 @@ inline std::string formatErrorMessage(int errorCode, const std::string& prefix)
  * @param description Action description.
  * @param arg1 Action description argument.
  */
-[[noreturn]] void throwSystemError(int errorCode, const char* description, const char* arg1);
+[[noreturn]] void throw_system_error(int errorCode, const char* description, const char* arg1);
 
 /**
  * Throws std::system_error with current errno and action description.
  * @param description Action description.
  * @param arg1 Action description argument.
  */
-[[noreturn]] inline void throwSystemError(const char* description, const char* arg1)
+[[noreturn]] inline void throw_system_error(const char* description, const char* arg1)
 {
-    throwSystemError(errno, description, arg1);
+    throw_system_error(errno, description, arg1);
 }
 
-}  // namespace siodb::utils
+}  // namespace stdext

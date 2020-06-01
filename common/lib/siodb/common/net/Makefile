@@ -20,14 +20,14 @@ C_SRC:= \
 	NetUtils.c
 
 CXX_HDR:= \
+	detail/AddressInfoGuard.h  \
 	ConnectionError.h  \
 	EpollHelpers.h  \
 	NetConstants.h  \
 	TcpConnection.h  \
 	TcpServer.h  \
 	UnixConnection.h  \
-	UnixServer.h  \
-	internal/AddressInfoGuard.h
+	UnixServer.h
 
 C_HDR:= \
 	NetUtils.h

@@ -4,9 +4,11 @@
 
 #include "SignalHandlers.h"
 
+// Internal headers
+#include "detail/SignalHandlersDetail.h"
+
 // Project headers
 #include "HelperMacros.h"
-#include "internal/SignalHandlersInternal.h"
 
 // CRT headers
 #include <cstring>
@@ -17,7 +19,7 @@ namespace {
 
 sighandler_t g_chainedHandler;
 int g_exitSignal;
-WaitableEvent g_exitEvent;
+stdext::event g_exitEvent;
 
 }  // namespace
 
@@ -53,7 +55,7 @@ void waitForExitEvent()
 
 bool isExitEventSignaled()
 {
-    return g_exitEvent.isSignaled();
+    return g_exitEvent.signaled();
 }
 
 int getExitSignal() noexcept
@@ -66,7 +68,7 @@ namespace {
 void terminationSignalHandler(int signal)
 {
     g_exitSignal = signal;
-    g_exitEvent.signal();
+    g_exitEvent.notify_one();
     if (g_chainedHandler) {
         g_chainedHandler(signal);
     }

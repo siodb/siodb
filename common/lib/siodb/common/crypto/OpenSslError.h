@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "../utils/StringBuilder.h"
+#include "../stl_ext/string_builder.h"
 
 // STL headers
 #include <stdexcept>
@@ -60,7 +60,7 @@ private:
     {
         constexpr std::size_t kMinOpenSSLErrorBufferLength = 120;
         char errorText[kMinOpenSSLErrorBufferLength];
-        return utils::StringBuilder() << str << ": " << ERR_error_string(errorCode, errorText);
+        return stdext::string_builder() << str << ": " << ERR_error_string(errorCode, errorText);
     }
 
 private:

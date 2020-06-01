@@ -6,9 +6,9 @@
 
 // Project headers
 #include "../config/SiodbDefs.h"
+#include "../stl_ext/system_error_ext.h"
 #include "../utils/CheckOSUser.h"
 #include "../utils/FileDescriptorGuard.h"
-#include "../utils/SystemError.h"
 
 // CRT headers
 #include <cstring>
@@ -36,7 +36,7 @@ int createUnixServer(const std::string& serverSocketPath, int backlog, bool remo
     // Remove any previous socket on that path
     if (removePreviousSocket) {
         if (::remove(serverSocketPath.c_str()) < 0 && errno != ENOENT) {
-            utils::throwSystemError(
+            stdext::throw_system_error(
                     "Can't remove previous UNIX server socket at ", serverSocketPath.c_str());
         }
     }
@@ -44,18 +44,18 @@ int createUnixServer(const std::string& serverSocketPath, int backlog, bool remo
     // Create socket
     FileDescriptorGuard socket(::socket(AF_UNIX, SOCK_STREAM, 0));
     if (!socket.isValidFd()) {
-        utils::throwSystemError("Can't create new UNIX server socket");
+        stdext::throw_system_error("Can't create new UNIX server socket");
     }
 
     // Prevent passing this fd to child processes
     if (!socket.setFdFlag(FD_CLOEXEC, true)) {
-        utils::throwSystemError("Can't set FD_CLOEXEC on the UNIX server socket");
+        stdext::throw_system_error("Can't set FD_CLOEXEC on the UNIX server socket");
     }
 
     // Based on idea from here https://stackoverflow.com/q/38095467/1540501
     // Remove group permissions
     if (fchmod(socket.getFd(), 0700) < 0) {
-        utils::throwSystemError("Can't remove group premissions from UNIX server socket");
+        stdext::throw_system_error("Can't remove group premissions from UNIX server socket");
     }
 
     // Fill server socket parameters
@@ -65,25 +65,25 @@ int createUnixServer(const std::string& serverSocketPath, int backlog, bool remo
 
     // Bind the server
     if (::bind(socket.getFd(), (struct sockaddr*) &addr, (socklen_t) sizeof(addr)) < 0) {
-        utils::throwSystemError("Can't bind UNIX server socket to ", serverSocketPath.c_str());
+        stdext::throw_system_error("Can't bind UNIX server socket to ", serverSocketPath.c_str());
     }
 
     // Change ownership
     if (::chown(serverSocketPath.c_str(), -1, utils::getOsGroupId(kAdminGroupName)) < 0) {
-        utils::throwSystemError(
+        stdext::throw_system_error(
                 "Can't change ownerhip of the UNIX server socket at ", serverSocketPath.c_str());
     }
 
     // Restore group permissions
     // Note: At least in Linux, fchmod() doesn't work correctly here, so use chmod().
     if (::chmod(serverSocketPath.c_str(), 0770) < 0) {
-        utils::throwSystemError("Can't restore group premissions on the UNIX server socket at ",
+        stdext::throw_system_error("Can't restore group premissions on the UNIX server socket at ",
                 serverSocketPath.c_str());
     }
 
     // Start listening on the server socket
     if (::listen(socket.getFd(), backlog) < 0) {
-        utils::throwSystemError(
+        stdext::throw_system_error(
                 "Can't listen with UNIX server socket at ", serverSocketPath.c_str());
     }
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "SystemError.h"
+#include "system_error_ext.h"
 
 // CRT headers
 #include <cstring>
@@ -10,20 +10,21 @@
 // STL headers
 #include <sstream>
 
-namespace siodb::utils {
+namespace stdext {
 
-std::string formatErrorMessage(int errorCode, const char* prefix)
+std::string format_system_error_message(int errorCode, const char* prefix)
 {
     std::ostringstream err;
     err << prefix << ": " << std::strerror(errorCode);
     return err.str();
 }
 
-void throwSystemError(int errorCode, const char* description, const char* arg1)
+[[noreturn]]
+void throw_system_error(int errorCode, const char* description, const char* arg1)
 {
     std::ostringstream err;
     err << description << arg1;
-    throwSystemError(errorCode, err.str().c_str());
+    throw_system_error(errorCode, err.str().c_str());
 }
 
-}  // namespace siodb::utils
+}  // namespace stdext

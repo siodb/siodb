@@ -13,6 +13,8 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/DatabaseInstance.h>
 #include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
@@ -21,8 +23,6 @@
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/SignalHandlers.h>
 #include <siodb/common/utils/StartupActions.h>
-#include <siodb/common/utils/StringBuilder.h>
-#include <siodb/common/utils/SystemError.h>
 #include <siodb/iomgr/shared/IOManagerExitCode.h>
 
 // STL headers
@@ -158,7 +158,7 @@ extern "C" int iomgrMain(int argc, char** argv)
                 siodb::FileDescriptorGuard lockFile(
                         ::open(initFlagFilePath.c_str(), O_CREAT, siodb::kLockFileCreationMode));
                 if (!lockFile.isValidFd())
-                    siodb::utils::throwSystemError("Can't create iomgr initialization file");
+                    stdext::throw_system_error("Can't create iomgr initialization file");
             }
         } catch (std::exception& ex) {
             LOG_FATAL << ex.what() << '.' << std::endl;

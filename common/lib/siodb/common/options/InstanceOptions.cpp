@@ -4,13 +4,13 @@
 
 #include "InstanceOptions.h"
 
+// Internal headers
+#include "detail/DatabaseOptionsDetail.h"
+
 // Project headers
 #include "DatabaseInstance.h"
 #include "../net/NetConstants.h"
 #include "../stl_wrap/filesystem_wrapper.h"
-
-// Internal headers
-#include "internal/DatabaseOptionsInternal.h"
 
 // CRT headers
 #include <cstring>
@@ -37,14 +37,14 @@ struct BoolTranslator {
     typedef std::string internal_type;
     typedef int external_type;
 
-    boost::optional<bool> get_value(const std::string& option)
+    boost::optional<bool> get_value(const std::string& option) noexcept
     {
         if ((::strcasecmp(option.c_str(), "true") == 0)
                 || (::strcasecmp(option.c_str(), "yes") == 0))
-            return boost::make_optional(true);
+            return true;
         else if ((::strcasecmp(option.c_str(), "false") == 0)
                  || (::strcasecmp(option.c_str(), "no") == 0))
-            return boost::make_optional(false);
+            return false;
         else
             return boost::none;
     }
@@ -60,7 +60,7 @@ std::string InstanceOptions::getExecutableDir() const
 
 void InstanceOptions::load(const std::string& instanceName)
 {
-    const auto config = readConfiguration(instanceName);
+    const auto config = detail::readConfiguration(instanceName);
     InstanceOptions tmpOptions;
 
     // Instance options
@@ -490,7 +490,7 @@ void InstanceOptions::load(const std::string& instanceName)
     *this = std::move(tmpOptions);
 }
 
-namespace {
+namespace detail {
 
 boost::property_tree::ptree readConfiguration(const std::string& instanceName)
 {
@@ -501,6 +501,6 @@ boost::property_tree::ptree readConfiguration(const std::string& instanceName)
     return config;
 }
 
-}  // anonymous namespace
+}  // namespace detail
 
 }  // namespace siodb::config

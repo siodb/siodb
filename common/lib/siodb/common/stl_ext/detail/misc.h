@@ -14,57 +14,39 @@
 namespace stdext::detail {
 
 /**
- * Throws std::out_of_range error with specified prefix text.
- * @param prefix Prefix text.
- * @param n Actual value.
- * @param limit Limit value.
- * @throw std::out_of_range
- */
-[[noreturn]] void throwOutOfRangeError(const char* prefix, ::std::size_t n, ::std::size_t limit);
-
-/**
- * Throws std::length_error with specified prefix text.
- * @param prefix Prefix text.
- * @param n Actual value.
- * @param limit Limit value.
- * @throw std::length_error
- */
-[[noreturn]] void throwLengthError(const char* prefix, ::std::size_t n, ::std::size_t limit);
-
-/**
  * Detects POD type.
  * @tparam T A type.
  */
 template<typename T>
-using IsTrivialType = ::std::enable_if_t<::std::is_trivial_v<T>, bool>;
+using is_trivial_type = ::std::enable_if_t<::std::is_trivial_v<T>, bool>;
 
 /**
  * Detects non-POD type.
  * @tparam T A type.
  */
 template<typename T>
-using IsNonTrivialType = ::std::enable_if_t<!::std::is_trivial_v<T>, bool>;
+using is_non_trivial_type = ::std::enable_if_t<!::std::is_trivial_v<T>, bool>;
 
 /**
  * Detects move constructible type.
  * @tparam T A type.
  */
 template<typename T>
-using IsMoveConstructibleType = ::std::enable_if_t<::std::is_move_constructible_v<T>, bool>;
+using is_move_constructible_type = ::std::enable_if_t<::std::is_move_constructible_v<T>, bool>;
 
 /**
  * Detects non-move contructible type.
  * @tparam T A type.
  */
 template<typename T>
-using IsNonMoveConstructibleType = ::std::enable_if_t<!::std::is_move_constructible_v<T>, bool>;
+using is_not_move_constructible_type = ::std::enable_if_t<!::std::is_move_constructible_v<T>, bool>;
 
 /**
  * Detects trivially constructible type.
  * @tparam T A type.
  */
 template<typename T>
-using IsTriviallyConstructibleType =
+using is_trivially_constructible_type =
         ::std::enable_if_t<::std::is_trivially_constructible_v<T>, bool>;
 
 /**
@@ -72,7 +54,7 @@ using IsTriviallyConstructibleType =
  * @tparam T A type.
  */
 template<typename T>
-using IsNonTriviallyConstructibleType =
+using is_not_trivially_constructible_type =
         ::std::enable_if_t<!::std::is_trivially_constructible_v<T>, bool>;
 
 /**
@@ -80,14 +62,15 @@ using IsNonTriviallyConstructibleType =
  * @tparam T A type.
  */
 template<typename T>
-using IsTriviallyDestructibleType = ::std::enable_if_t<::std::is_trivially_destructible_v<T>, bool>;
+using is_trivially_destructible_type =
+        ::std::enable_if_t<::std::is_trivially_destructible_v<T>, bool>;
 
 /**
  * Detects non-trivially destructible type.
  * @tparam T A type.
  */
 template<typename T>
-using IsNonTriviallyDestructibleType =
+using is_not_trivially_destructible_type =
         ::std::enable_if_t<!::std::is_trivially_destructible_v<T>, bool>;
 
 /**
@@ -98,8 +81,8 @@ using IsNonTriviallyDestructibleType =
  * @param first2 Pointer to a first item of the second range.
  * @return true if elements in the range are equal, false otherwise.
  */
-template<class T, IsTrivialType<T> = true>
-inline bool areRangesEqual(const T* first1, const T* last1, const T* first2) noexcept
+template<class T, is_trivial_type<T> = true>
+inline bool are_ranges_equal(const T* first1, const T* last1, const T* first2) noexcept
 {
     return ::std::memcmp(first1, first2, (last1 - first1) * sizeof(T)) == 0;
 }
@@ -112,8 +95,8 @@ inline bool areRangesEqual(const T* first1, const T* last1, const T* first2) noe
  * @param first2 Pointer to a first item of the second range.
  * @return true if elements in the range are equal, false otherwise.
  */
-template<class T, IsNonTrivialType<T> = true>
-bool areRangesEqual(const T* first1, const T* last1, const T* first2) noexcept
+template<class T, is_non_trivial_type<T> = true>
+bool are_ranges_equal(const T* first1, const T* last1, const T* first2) noexcept
 {
     for (; first1 != last1; ++first1, ++first2) {
         if (*first1 != *first2) return false;
@@ -129,8 +112,8 @@ bool areRangesEqual(const T* first1, const T* last1, const T* first2) noexcept
  * @param first2 Pointer to a first item of the second range.
  * @return true if elements in the range are not equal, false otherwise.
  */
-template<class T, IsTrivialType<T> = true>
-inline bool areRangesNotEqual(const T* first1, const T* last1, const T* first2) noexcept
+template<class T, is_trivial_type<T> = true>
+inline bool are_ranges_not_equal(const T* first1, const T* last1, const T* first2) noexcept
 {
     return ::std::memcmp(first1, first2, (last1 - first1) * sizeof(T)) != 0;
 }
@@ -143,8 +126,8 @@ inline bool areRangesNotEqual(const T* first1, const T* last1, const T* first2) 
  * @param first2 Pointer to a first item of the second range.
  * @return true if elements in the range are not equal, false otherwise.
  */
-template<class T, IsNonTrivialType<T> = true>
-bool areRangesNotEqual(const T* first1, const T* last1, const T* first2) noexcept
+template<class T, is_non_trivial_type<T> = true>
+bool are_ranges_not_equal(const T* first1, const T* last1, const T* first2) noexcept
 {
     for (; first1 != last1; ++first1, ++first2) {
         if (*first1 == *first2) return false;
@@ -159,9 +142,9 @@ bool areRangesNotEqual(const T* first1, const T* last1, const T* first2) noexcep
  * @param last Pointer to an item right after the last item of the range.
  * @param allocator Allocator object.
  */
-template<class Allocator, IsTriviallyConstructibleType<typename Allocator::value_type> = true>
-inline void defaultInitializeRange([[maybe_unused]]
-                                   typename ::std::allocator_traits<Allocator>::pointer first,
+template<class Allocator, is_trivially_constructible_type<typename Allocator::value_type> = true>
+inline void default_initialize_range([[maybe_unused]]
+                                     typename ::std::allocator_traits<Allocator>::pointer first,
         [[maybe_unused]] typename ::std::allocator_traits<Allocator>::pointer last,
         [[maybe_unused]] Allocator& allocator)
 {
@@ -174,8 +157,9 @@ inline void defaultInitializeRange([[maybe_unused]]
  * @param last Pointer to an item right after the last item of the range.
  * @param allocator Allocator object.
  */
-template<class Allocator, IsNonTriviallyConstructibleType<typename Allocator::value_type> = true>
-inline void defaultInitializeRange(typename ::std::allocator_traits<Allocator>::pointer first,
+template<class Allocator,
+        is_not_trivially_constructible_type<typename Allocator::value_type> = true>
+inline void default_initialize_range(typename ::std::allocator_traits<Allocator>::pointer first,
         typename ::std::allocator_traits<Allocator>::pointer last, Allocator& allocator)
 {
     for (; first != last; ++first)
@@ -188,8 +172,8 @@ inline void defaultInitializeRange(typename ::std::allocator_traits<Allocator>::
  * @param first Pointer to a first item of the range.
  * @param last Pointer to an item right after the last item of the range.
  */
-template<class T, IsTriviallyConstructibleType<T> = true>
-inline void defaultInitializeRange([[maybe_unused]] T* first, [[maybe_unused]] T* last)
+template<class T, is_trivially_constructible_type<T> = true>
+inline void default_initialize_range([[maybe_unused]] T* first, [[maybe_unused]] T* last)
 {
 }
 
@@ -199,8 +183,8 @@ inline void defaultInitializeRange([[maybe_unused]] T* first, [[maybe_unused]] T
  * @param first Pointer to a first item of the range.
  * @param last Pointer to an item right after the last item of the range.
  */
-template<class T, IsNonTriviallyConstructibleType<T> = true>
-void defaultInitializeRange(T* first, T* last)
+template<class T, is_not_trivially_constructible_type<T> = true>
+void default_initialize_range(T* first, T* last)
 {
     for (; first != last; ++first)
         first->T();
@@ -213,9 +197,9 @@ void defaultInitializeRange(T* first, T* last)
  * @param last Pointer to an item right after the last item of the range.
  * @param allocator Allocator object.
  */
-template<class Allocator, IsTriviallyDestructibleType<typename Allocator::value_type> = true>
-inline void destroyRange([[maybe_unused]]
-                         typename ::std::allocator_traits<Allocator>::pointer first,
+template<class Allocator, is_trivially_destructible_type<typename Allocator::value_type> = true>
+inline void destroy_range([[maybe_unused]]
+                          typename ::std::allocator_traits<Allocator>::pointer first,
         [[maybe_unused]] typename ::std::allocator_traits<Allocator>::pointer last,
         [[maybe_unused]] Allocator& allocator)
 {
@@ -228,9 +212,9 @@ inline void destroyRange([[maybe_unused]]
  * @param last Pointer to an item right after the last item of the range.
  * @param allocator Allocator object.
  */
-template<class Allocator, IsNonTriviallyDestructibleType<typename Allocator::value_type> = true>
-inline void destroyRange([[maybe_unused]]
-                         typename ::std::allocator_traits<Allocator>::pointer first,
+template<class Allocator, is_not_trivially_destructible_type<typename Allocator::value_type> = true>
+inline void destroy_range([[maybe_unused]]
+                          typename ::std::allocator_traits<Allocator>::pointer first,
         [[maybe_unused]] typename ::std::allocator_traits<Allocator>::pointer last,
         Allocator& allocator)
 {
@@ -244,8 +228,8 @@ inline void destroyRange([[maybe_unused]]
  * @param first Pointer to a first item of the range.
  * @param last Pointer to an item right after the last item of the range.
  */
-template<class T, IsTriviallyDestructibleType<T> = true>
-inline void destroyRange([[maybe_unused]] T* first, [[maybe_unused]] T* last)
+template<class T, is_trivially_destructible_type<T> = true>
+inline void destroy_range([[maybe_unused]] T* first, [[maybe_unused]] T* last)
 {
 }
 
@@ -255,8 +239,8 @@ inline void destroyRange([[maybe_unused]] T* first, [[maybe_unused]] T* last)
  * @param first Pointer to a first item of the range.
  * @param last Pointer to an item right after the last item of the range.
  */
-template<class T, IsNonTriviallyDestructibleType<T> = true>
-void destroyRange(T* first, T* last)
+template<class T, is_not_trivially_destructible_type<T> = true>
+void destroy_range(T* first, T* last)
 {
     for (; first != last; ++first)
         first->~T();

@@ -5,7 +5,7 @@
 #include "MessageCatalog.h"
 
 // Project headers
-#include "StringBuilder.h"
+#include "../stl_ext/string_builder.h"
 
 // STL headers
 #include <fstream>
@@ -27,7 +27,7 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
     // Open message catalog file
     std::ifstream ifs(messageCatalogFilePath);
     if (!ifs.is_open()) {
-        throw std::runtime_error(utils::StringBuilder()
+        throw std::runtime_error(stdext::string_builder()
                                  << "Can't open message catalog file " << messageCatalogFilePath);
     }
 
@@ -62,7 +62,7 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
                 if (pos != s.length()) throw std::invalid_argument("invalid number");
             } catch (std::exception& ex) {
                 throw MessageCatalogParseError(
-                        utils::StringBuilder() << "Invalid message ID: " << ex.what());
+                        stdext::string_builder() << "Invalid message ID: " << ex.what());
             }
 
             // Parse message severity class
@@ -82,8 +82,9 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
                 const auto it = severities->find(s);
 
                 if (it == severities->end()) {
-                    throw MessageCatalogParseError(
-                            StringBuilder() << "Unknown message severity class '" << s << "'");
+                    throw MessageCatalogParseError(stdext::string_builder()
+                                                   << "Unknown message severity class '" << s
+                                                   << "'");
                 }
                 severity = it->second;
             }
@@ -99,7 +100,7 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
             // Check message ID uniqueness
             const auto it = m_messages.find(id);
             if (it != m_messages.end()) {
-                throw MessageCatalogParseError(utils::StringBuilder()
+                throw MessageCatalogParseError(stdext::string_builder()
                                                << "Duplicate message ID " << id
                                                << " (previous one was defined at the line "
                                                << it->second->getSourceLineNo() << ')');
@@ -109,8 +110,8 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
             auto message = std::make_shared<Message>(id, severity, std::move(text), lineNo);
             m_messages.emplace(id, message);
         } catch (MessageCatalogParseError& ex) {
-            throw std::runtime_error(utils::StringBuilder() << messageCatalogFilePath << '('
-                                                            << lineNo << "): " << ex.what());
+            throw std::runtime_error(stdext::string_builder() << messageCatalogFilePath << '('
+                                                              << lineNo << "): " << ex.what());
         }
     }
 }

@@ -15,11 +15,11 @@ CXX_SRC:= \
 	InstanceOptions.cpp
 
 CXX_HDR:= \
+	detail/DatabaseOptionsDetail.h  \
 	DatabaseInstance.h  \
 	DatabaseInstanceSocket.h  \
 	InstanceOptions.h  \
 	InvalidConfigurationOptionError.h  \
-	LogOptions.h  \
-	internal/DatabaseOptionsInternal.h
+	LogOptions.h
 
 include $(MK)/Main.mk

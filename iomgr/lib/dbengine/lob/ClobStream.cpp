@@ -26,7 +26,7 @@ std::string ClobStream::readAsString(std::uint32_t length)
 {
     auto available = std::min(length, getRemainingSize());
     if (available == 0) return std::string();
-    utils::MemoryBuffer<std::uint8_t> buffer(available + 1);
+    stdext::buffer<std::uint8_t> buffer(available + 1);
     std::uint64_t pos = 0;
     while (pos < available) {
         const auto n = read(buffer.data() + pos, available - pos);

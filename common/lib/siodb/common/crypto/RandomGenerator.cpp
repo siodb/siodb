@@ -7,8 +7,8 @@
 // Project headers
 #include "OpenSslError.h"
 #include "../io/FileIO.h"
+#include "../stl_ext/system_error_ext.h"
 #include "../utils/FileDescriptorGuard.h"
-#include "../utils/SystemError.h"
 
 // OpenSSL headers
 #include <openssl/rand.h>

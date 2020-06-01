@@ -19,18 +19,21 @@
 //---------------------------------------------------------------------------//
 
 // Project headers
-#include "../stl_ext/utility_ext.h"
+#include "utility_ext.h"
 
 // STL headers
 #include <list>
+#include <map>
 #include <optional>
+#include <unordered_map>
 
-namespace siodb::utils {
+namespace stdext {
 
 /** Thrown when LRU cache is full */
-class LruCacheFullError : public std::runtime_error {
+class lru_cache_full_error : public std::runtime_error {
 public:
-    LruCacheFullError()
+    /** Initializes object of class lru_cache_full_error */
+    lru_cache_full_error()
         : std::runtime_error("LRU cache full")
     {
     }
@@ -1316,7 +1319,7 @@ protected:
                     return;
                 }
             }
-            if (!on_last_chance_cleanup()) throw LruCacheFullError();
+            if (!on_last_chance_cleanup()) throw lru_cache_full_error();
         }
     }
 
@@ -1349,4 +1352,15 @@ inline void swap(basic_lru_cache<Key, Value, List, Map>& a,
     a.swap(b);
 }
 
-}  // namespace siodb::utils
+/** LRU cache specialization with ordered map. */
+template<class Key, class Value>
+using ordered_lru_cache = basic_lru_cache<Key, Value,
+        std::map<Key, std::pair<Value, typename std::list<Key>::iterator>>, std::list<Key>>;
+
+/** LRU cache specialization with unordered map. */
+template<class Key, class Value>
+using unordered_lru_cache = basic_lru_cache<Key, Value,
+        std::unordered_map<Key, std::pair<Value, typename std::list<Key>::iterator>>,
+        std::list<Key>>;
+
+}  // namespace stdext

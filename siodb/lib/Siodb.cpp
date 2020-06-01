@@ -11,14 +11,14 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/UnixServer.h>
 #include <siodb/common/options/DatabaseInstance.h>
+#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/FileDescriptorGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/SignalHandlers.h>
 #include <siodb/common/utils/StartupActions.h>
-#include <siodb/common/utils/StringBuilder.h>
-#include <siodb/common/utils/SystemError.h>
 
 // CRT headers
 #include <cerrno>
@@ -141,19 +141,19 @@ extern "C" int siodbMain(int argc, char** argv)
             siodb::FileDescriptorGuard lockFile(::open(lockFilePath.c_str(),
                     O_CREAT | O_WRONLY | O_CLOEXEC, siodb::kLockFileCreationMode));
             if (!lockFile.isValidFd())
-                siodb::utils::throwSystemError("Can't open or create initialization lock file");
+                stdext::throw_system_error("Can't open or create initialization lock file");
 
             if (!lockFile.lock(F_TLOCK, 0))
-                siodb::utils::throwSystemError("Can't lock initialization lock file");
+                stdext::throw_system_error("Can't lock initialization lock file");
 
             const auto iomgrInitFlagFilePath = siodb::composeIomgrInitializionFlagFilePath(
                     instanceOptions->m_generalOptions.m_name);
             if (fs::exists(iomgrInitFlagFilePath)) {
                 // IO manager should create flag file after initialization,
                 if (!fs::remove(iomgrInitFlagFilePath)) {
-                    siodb::utils::throwSystemError(siodb::utils::StringBuilder()
-                                                   << "Can't remove iomgr initialization file "
-                                                   << iomgrInitFlagFilePath);
+                    stdext::throw_system_error(stdext::string_builder()
+                                               << "Can't remove iomgr initialization file "
+                                               << iomgrInitFlagFilePath);
                 }
             }
 

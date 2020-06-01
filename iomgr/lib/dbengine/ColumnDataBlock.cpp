@@ -12,12 +12,12 @@
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
+#include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FileDescriptorGuard.h>
 #include <siodb/common/utils/FsUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
-#include <siodb/common/utils/StringBuilder.h>
 
 // CRT headers
 #include <cstdlib>
@@ -94,7 +94,7 @@ void ColumnDataBlock::readData(void* data, std::size_t length, std::uint32_t pos
 {
     if (pos + length > m_column.getDataBlockDataAreaSize()) {
         std::ostringstream err;
-        throw std::runtime_error(utils::StringBuilder()
+        throw std::runtime_error(stdext::string_builder()
                                  << getDisplayName() << ": Invalid offset or length: " << pos
                                  << ", " << length);
     }
@@ -111,7 +111,7 @@ void ColumnDataBlock::writeData(const void* data, std::size_t length, std::uint3
 {
     if (pos + length > m_column.getDataBlockDataAreaSize()) {
         std::ostringstream err;
-        throw std::runtime_error(utils::StringBuilder()
+        throw std::runtime_error(stdext::string_builder()
                                  << getDisplayName() << ": Invalid offset or length: " << pos
                                  << ", " << length);
     }

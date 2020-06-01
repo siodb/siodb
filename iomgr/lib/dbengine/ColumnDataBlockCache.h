@@ -8,15 +8,15 @@
 #include "ColumnDataBlockPtr.h"
 
 // Common project headers
-#include <siodb/common/utils/UnorderedLruCache.h>
+#include <siodb/common/stl_ext/lru_cache.h>
 
 namespace siodb::iomgr::dbengine {
 
 /** LRU cache for data blocks */
 class ColumnDataBlockCache final
-    : public utils::unordered_lru_cache<std::uint64_t, ColumnDataBlockPtr> {
+    : public stdext::unordered_lru_cache<std::uint64_t, ColumnDataBlockPtr> {
 private:
-    using Base = utils::unordered_lru_cache<std::uint64_t, ColumnDataBlockPtr>;
+    using Base = stdext::unordered_lru_cache<std::uint64_t, ColumnDataBlockPtr>;
 
 public:
     /**

@@ -5,7 +5,7 @@
 #include "ostream_ext.h"
 
 // Project headers
-#include "../crt_ext/internal/string_ext_internal.h"
+#include "../crt_ext/detail/string_ext_detail.h"
 
 // STL headers
 #include <algorithm>

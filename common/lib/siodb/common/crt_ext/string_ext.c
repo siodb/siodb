@@ -2,8 +2,8 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-// Project headers
-#include "internal/string_ext_internal.h"
+// Internal headers
+#include "detail/string_ext_detail.h"
 
 // CRT Headers
 #include <errno.h>

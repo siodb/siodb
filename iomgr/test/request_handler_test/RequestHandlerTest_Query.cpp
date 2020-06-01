@@ -999,9 +999,9 @@ TEST(Query, SelectWithExpression)
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
             ASSERT_TRUE(rowLength > 0U);
 
-            siodb::utils::Bitmask nullBitmask(response.column_description_size(), false);
-            ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.getData(), nullBitmask.getByteSize()));
-            ASSERT_FALSE(nullBitmask.getBit(0));
+            stdext::bitmask nullBitmask(response.column_description_size(), false);
+            ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
+            ASSERT_FALSE(nullBitmask.get(0));
 
             std::uint32_t u32 = 0;
             ASSERT_TRUE(codedInput.ReadVarint32(&u32));
@@ -1140,12 +1140,12 @@ TEST(Query, SelectWithExpressionWithNull)
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_TRUE(rowLength > 0U);
 
-        siodb::utils::Bitmask nullBitmask(response.column_description_size(), false);
-        ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.getData(), nullBitmask.getByteSize()));
-        ASSERT_TRUE(nullBitmask.getBit(0));
-        ASSERT_FALSE(nullBitmask.getBit(1));
-        ASSERT_FALSE(nullBitmask.getBit(2));
-        ASSERT_TRUE(nullBitmask.getBit(3));
+        stdext::bitmask nullBitmask(response.column_description_size(), false);
+        ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
+        ASSERT_TRUE(nullBitmask.get(0));
+        ASSERT_FALSE(nullBitmask.get(1));
+        ASSERT_FALSE(nullBitmask.get(2));
+        ASSERT_TRUE(nullBitmask.get(3));
 
         std::uint8_t u8 = 0;
         ASSERT_TRUE(codedInput.ReadRaw(&u8, 1));
@@ -1285,12 +1285,12 @@ TEST(Query, SelectWithWhereIsNull)
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_TRUE(rowLength > 0);
-        siodb::utils::Bitmask nullBitmask(response.column_description_size(), false);
-        ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.getData(), nullBitmask.getByteSize()));
+        stdext::bitmask nullBitmask(response.column_description_size(), false);
+        ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
 
-        ASSERT_FALSE(nullBitmask.getBit(0));
-        ASSERT_FALSE(nullBitmask.getBit(1));
-        ASSERT_TRUE(nullBitmask.getBit(2));
+        ASSERT_FALSE(nullBitmask.get(0));
+        ASSERT_FALSE(nullBitmask.get(1));
+        ASSERT_TRUE(nullBitmask.get(2));
 
         std::uint64_t trid;
         ASSERT_TRUE(codedInput.ReadVarint64(&trid));
