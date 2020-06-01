@@ -611,7 +611,6 @@ keyword:
 	| K_FOREIGN
 	| K_FROM
 	| K_FULL
-	| K_REAL_NAME
 	| K_GLOB
 	| K_GROUP
 	| K_HAVING
@@ -690,6 +689,8 @@ keyword:
 	| K_WITH
 	| K_WITHOUT;
 
+attribute: K_DESCRIPTION | K_REAL_NAME;
+
 name: any_name;
 
 function_name: any_name;
@@ -730,6 +731,7 @@ transaction_name: any_name;
 
 any_name:
 	IDENTIFIER
+	| attribute
 	| keyword
 	| STRING_LITERAL
 	| '(' any_name ')';

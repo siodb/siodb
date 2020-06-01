@@ -31,7 +31,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/containers_test",
             "args": [
-                "--gtest_filter=Buffer.ResizeFromEmptyToNonEmptyInitialized"
+                "--gtest_filter=*"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
@@ -115,7 +115,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/sql_parser_test",
             "args": [
-                "--gtest_filter=UM.CreateUserWithNullRealNameAndDescription"
+                "--gtest_filter=SqlParser_Query.SelectWithAttribute"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

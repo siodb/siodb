@@ -116,13 +116,17 @@ std::size_t getTerminalType(antlr4::tree::ParseTree* node) noexcept
 
 std::string getAnyNameText(antlr4::tree::ParseTree* node)
 {
-    const auto nodeTerminalType = helpers::getTerminalType(node->children.at(0));
-    if (nodeTerminalType == SiodbParser::IDENTIFIER) return node->getText();
+    switch (helpers::getTerminalType(node->children.at(0))) {
+        case SiodbParser::IDENTIFIER: return node->getText();
+        case SiodbParser::STRING_LITERAL: return unquoteString(node->getText());
+        default: break;
+    }
 
-    if (nodeTerminalType == SiodbParser::STRING_LITERAL) return unquoteString(node->getText());
-
-    const auto nodeNonTerminalType = helpers::getNonTerminalType(node->children.at(0));
-    if (nodeNonTerminalType == SiodbParser::RuleKeyword) return node->getText();
+    switch (helpers::getNonTerminalType(node->children.at(0))) {
+        case SiodbParser::RuleAttribute:
+        case SiodbParser::RuleKeyword: return node->getText();
+        default: break;
+    }
 
     // '(' any_text ')' case
     if (node->children.size() == 3) return getAnyNameText(node->children[1]);

@@ -16,10 +16,10 @@ namespace parser_ns = dbengine::parser;
 
 namespace {
 
-void checkColumnNameAndAlias(const requests::ResultExpression& resultColumn,
-        const std::string& name, const std::string& alias)
+void checkColumnNameAndAlias(
+        const requests::ResultExpression& resultColumn, const char* name, const char* alias)
 {
-    EXPECT_EQ(
+    ASSERT_EQ(
             resultColumn.m_expression->getType(), requests::ExpressionType::kSingleColumnReference);
     const auto columnExpression =
             dynamic_cast<const requests::SingleColumnExpression*>(resultColumn.m_expression.get());
@@ -30,7 +30,7 @@ void checkColumnNameAndAlias(const requests::ResultExpression& resultColumn,
 
 }  // namespace
 
-TEST(SqlParser_Query, Select)
+TEST(SqlParser_Query, SelectSimple)
 {
     // Parse statement and prepare request
     const std::string statement(
@@ -1115,9 +1115,7 @@ TEST(SqlParser_Query, SelectWithWhereOperatorPrecedence)
             requests::ExpressionType::kSingleColumnReference);
 }
 
-/**
- * Test checks SQL keyword usage in where clause.
- */
+/** This test checks usage of SQL keyword in the WHERE clause. */
 TEST(SqlParser_Query, SelectWithKeyword)
 {
     // Parse statement. ASC and WITH are SQL keywords, keywords are allowed to be used in statements
@@ -1157,6 +1155,35 @@ TEST(SqlParser_Query, SelectWithKeyword)
 
     EXPECT_TRUE(rightColumnExpr.getTableName().empty());
     EXPECT_EQ(rightColumnExpr.getColumnName(), "B");
+}
+
+/** This test checks usage of attribute as column name. */
+TEST(SqlParser_Query, SelectWithAttribute)
+{
+    // Here "real_name" and "description" are attributes.
+    const std::string statement(
+            "SELECT trid, real_name as name, description FROM my_database.my_table;");
+
+    // Parse statement and prepare request
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_tables[0].m_name, "MY_TABLE");
+
+    // Check columns
+    ASSERT_EQ(request.m_resultExpressions.size(), 3U);
+
+    checkColumnNameAndAlias(request.m_resultExpressions[0], "TRID", "");
+    checkColumnNameAndAlias(request.m_resultExpressions[1], "REAL_NAME", "NAME");
+    checkColumnNameAndAlias(request.m_resultExpressions[2], "DESCRIPTION", "");
 }
 
 /**
