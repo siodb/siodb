@@ -122,13 +122,6 @@ in this repository's top-level directory.
 
 ## Useful References
 
+- Official website of the project 👉 [here](https://siodb.io).
 - [SQL99 Complete, Really](https://crate.io/docs/sql-99/en/latest/index.html)
 - [Linux Containers](https://linuxcontainers.org/lxd/getting-started-cli/)
-- [Guide to predefined macros in C++ compilers (gcc, clang, msvc etc.)](https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html)
-- [How folders created in /var/run on each reboot](https://askubuntu.com/a/306479/168448)
-- [How to remove trailing whitespaces in a file on Linux](http://ask.xmodulo.com/remove-trailing-whitespaces-linux.html)
-- [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
-- Criticism of the Google C++ Style Guide: [Google C++ Style Guide is No Good](https://eyakubovich.github.io/2018-11-27-google-cpp-style-guide-is-no-good/)
-- [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuideline)
-- Official website of the project 👉 [here](https://siodb.io).
-
