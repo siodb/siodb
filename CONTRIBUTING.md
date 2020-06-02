@@ -8,7 +8,7 @@ We'd love to see your contribution. Here is the process:
 3. Fork official Siodb repository.
 4. Develop your contribution in your fork on the separate branch started from latest commit on the master branch.
 5. When you are ready to submit your contribution, please make sure that:
-   1. Your code follows [Siodb Coding Guidelines](docs/dev/CodingGuidelines.md).
+   1. Your code follows [Siodb Coding Guidelines](docs/dev/coding_guidelines/CodingGuidelines.md).
    2. You have added new or properly modified existing unit tests for the changes you've implemented.
    3. Your modified version passes all unit tests.
    4. Your mofified version passes [SQL tests](tests/sql_tests/README.md).
