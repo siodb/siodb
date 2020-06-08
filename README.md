@@ -22,7 +22,7 @@ A relational SQL database that secures your data, manages personal data life-cyc
 
 **Current status:** Alpha version
 
-## Quick start (Docker)
+## Quick Start (Docker)
 
 ```bash
 docker run -p 127.0.0.1:50000:50000/tcp --name siodb siodb/siodb
@@ -43,7 +43,7 @@ UUID                             NAME
 1 rows.
 ```
 
-## Quick start (Linux)
+## Quick Start (Linux)
 
 ### Get the bootstrap script and run it
 
@@ -64,7 +64,7 @@ siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
 
 Reference [here](https://docs.siodb.io/quick_start/).
 
-## Developer's corner
+## Developer's Corner
 
 ### Contributing
 
@@ -76,12 +76,12 @@ Go to the contribution page 👉 [Here](CONTRIBUTING.md).
 | -------- | :--------------------------------------------------- |
 | Golang   | [Github](https://github.com/siodb/siodb-go-driver)   |
 | Rust     | [Github](https://github.com/siodb/siodb-rust-driver) |
-| Java     | [Github](https://github.com/siodb/siodb-java-driver) |
+| Java     | [Github](https://github.com/siodb/siodb-jdbc-driver) |
 | Python   | [Github](https://github.com/siodb/siodb-python-driver) |
 | C++      | [Github](https://github.com/siodb/siodb-cxx-driver) |
 | .NET     | [Github](https://github.com/siodb/siodb-dotnet-driver) |
 
-### Development resource
+### Development resources
 
 The resources to integrate Siodb in your development are
 available [here](https://docs.siodb.io/development).
