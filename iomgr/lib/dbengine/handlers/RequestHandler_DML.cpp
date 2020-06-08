@@ -34,9 +34,10 @@ void RequestHandler::executeUpdateRequest(
     response.set_affected_row_count(0);
     response.set_has_affected_row_count(true);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table.m_name))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table.m_name);
@@ -48,16 +49,16 @@ void RequestHandler::executeUpdateRequest(
 
     if (request.m_values.empty()) throwDatabaseError(IOManagerMessageId::kErrorValuesListIsEmpty);
 
-    const auto db = m_instance.getDatabaseChecked(dbName);
+    const auto database = m_instance.findDatabaseChecked(databaseName);
     if (!isValidDatabaseObjectName(request.m_table.m_name))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table.m_name);
 
-    if (db->isSystemTable(request.m_table.m_name)) {
-        throwDatabaseError(
-                IOManagerMessageId::kErrorCannotUpdateSystemTable, dbName, request.m_table.m_name);
+    if (database->isSystemTable(request.m_table.m_name)) {
+        throwDatabaseError(IOManagerMessageId::kErrorCannotUpdateSystemTable, databaseName,
+                request.m_table.m_name);
     }
 
-    const auto table = db->getTableChecked(request.m_table.m_name);
+    const auto table = database->findTableChecked(request.m_table.m_name);
     const auto tableColumns = table->getColumnsOrderedByPosition();
 
     // Positions of used columns
@@ -91,8 +92,8 @@ void RequestHandler::executeUpdateRequest(
                     return tableColumn->getName() == columnRef.m_column;
                 });
         if (it == tableColumns.cend()) {
-            errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorColumnDoesNotExist, dbName,
-                    request.m_table.m_name, columnRef.m_column));
+            errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorColumnDoesNotExist,
+                    databaseName, request.m_table.m_name, columnRef.m_column));
         } else {
             const auto& tableColumnRecord = **it;
             tableDataSet->emplaceColumnInfo(
@@ -157,22 +158,23 @@ void RequestHandler::executeDeleteRequest(
     response.set_affected_row_count(0);
     response.set_has_affected_row_count(true);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
-    const auto db = m_instance.getDatabaseChecked(dbName);
+    const auto database = m_instance.findDatabaseChecked(databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table.m_name))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table.m_name);
 
-    if (db->isSystemTable(request.m_table.m_name)) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotDeleteFromSystemTable, dbName,
+    if (database->isSystemTable(request.m_table.m_name)) {
+        throwDatabaseError(IOManagerMessageId::kErrorCannotDeleteFromSystemTable, databaseName,
                 request.m_table.m_name);
     }
 
     const auto tableDataSet = std::make_shared<TableDataSet>(
-            db->getTableChecked(request.m_table.m_name), request.m_table.m_alias);
+            database->findTableChecked(request.m_table.m_name), request.m_table.m_alias);
     requests::DatabaseContext dbContext(std::vector<DataSetPtr> {tableDataSet});
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
@@ -210,21 +212,22 @@ void RequestHandler::executeInsertRequest(
     response.set_affected_row_count(0);
     response.set_has_affected_row_count(true);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
-    const auto db = m_instance.getDatabaseChecked(dbName);
+    const auto database = m_instance.findDatabaseChecked(databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
-    if (db->isSystemTable(request.m_table)) {
+    if (database->isSystemTable(request.m_table)) {
         throwDatabaseError(
-                IOManagerMessageId::kErrorCannotInsertToSystemTable, dbName, request.m_table);
+                IOManagerMessageId::kErrorCannotInsertToSystemTable, databaseName, request.m_table);
     }
 
-    const auto table = db->getTableChecked(request.m_table);
+    const auto table = database->findTableChecked(request.m_table);
 
     if (request.m_values.empty()) throwDatabaseError(IOManagerMessageId::kErrorValuesListIsEmpty);
 
@@ -242,7 +245,7 @@ void RequestHandler::executeInsertRequest(
         // In case of insert with multiple rows, all rows should have the same size
         filledColumnsCount = request.m_values.at(0).size();
         if (filledColumnsCount >= tableColumns.size()) {
-            throwDatabaseError(IOManagerMessageId::kErrorTooManyColumnsToInsert, dbName,
+            throwDatabaseError(IOManagerMessageId::kErrorTooManyColumnsToInsert, databaseName,
                     request.m_table, filledColumnsCount, tableColumns.size() - 1);
         }
     }
@@ -271,7 +274,7 @@ void RequestHandler::executeInsertRequest(
 
             if (it == tableColumnsByName.cend()) {
                 errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorColumnDoesNotExist,
-                        dbName, request.m_table, columnName));
+                        databaseName, request.m_table, columnName));
             } else
                 columnNames.push_back(it->first);
         }
@@ -290,7 +293,7 @@ void RequestHandler::executeInsertRequest(
 
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
-    const TransactionParameters transactionParams(m_userId, db->generateNextTransactionId());
+    const TransactionParameters transactionParams(m_userId, database->generateNextTransactionId());
 
     // Do not include TRID
     const auto requestColumnCount =

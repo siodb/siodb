@@ -70,20 +70,22 @@ void RequestHandler::executeCreateTableRequest(iomgr_protocol::DatabaseEngineRes
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
-    const auto db = m_instance.getDatabaseChecked(dbName);
+    const auto database = m_instance.findDatabaseChecked(databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
-    if (db->isSystemDatabase() && !db->canContainUserTables())
+    if (database->isSystemDatabase() && !database->canContainUserTables())
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateUserTablesInSystemDatabase);
 
-    if (db->isTableExists(request.m_table))
-        throwDatabaseError(IOManagerMessageId::kErrorTableAlreadyExists, dbName, request.m_table);
+    if (database->isTableExists(request.m_table))
+        throwDatabaseError(
+                IOManagerMessageId::kErrorTableAlreadyExists, databaseName, request.m_table);
 
     std::vector<ColumnSpecification> tableColumns;
     tableColumns.reserve(request.m_columns.size());
@@ -92,7 +94,8 @@ void RequestHandler::executeCreateTableRequest(iomgr_protocol::DatabaseEngineRes
 
     // NOTE: Duplicate columns and columns with invalid names
     // are checked inside the createUserTable().
-    db->createUserTable(std::string(request.m_table), TableType::kDisk, tableColumns, m_userId, {});
+    database->createUserTable(
+            std::string(request.m_table), TableType::kDisk, tableColumns, m_userId, {});
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
@@ -103,9 +106,10 @@ void RequestHandler::executeAddColumnRequest(iomgr_protocol::DatabaseEngineRespo
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
@@ -126,9 +130,10 @@ void RequestHandler::executeCreateIndexRequest(iomgr_protocol::DatabaseEngineRes
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
@@ -167,8 +172,8 @@ void RequestHandler::executeUseDatabaseRequest(iomgr_protocol::DatabaseEngineRes
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
     // Throws exception if database does not exist
-    auto newDatabase = m_instance.getDatabaseChecked(request.m_database);
-    m_instance.getDatabaseChecked(m_currentDatabaseName)->release();
+    auto newDatabase = m_instance.findDatabaseChecked(request.m_database);
+    m_instance.findDatabaseChecked(m_currentDatabaseName)->release();
     newDatabase->use();
     m_currentDatabaseName = request.m_database;
 
@@ -184,9 +189,10 @@ void RequestHandler::executeDropTableRequest(iomgr_protocol::DatabaseEngineRespo
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
@@ -199,9 +205,10 @@ void RequestHandler::executeDropColumnRequest(iomgr_protocol::DatabaseEngineResp
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
@@ -217,9 +224,10 @@ void RequestHandler::executeDropIndexRequest(iomgr_protocol::DatabaseEngineRespo
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     if (!isValidDatabaseObjectName(request.m_index))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidIndexName, request.m_index);
@@ -232,9 +240,10 @@ void RequestHandler::executeAlterColumnRequest(iomgr_protocol::DatabaseEngineRes
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
@@ -261,9 +270,10 @@ void RequestHandler::executeDetachDatabaseRequest(iomgr_protocol::DatabaseEngine
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     sendNotImplementedYet(response);
 }
@@ -273,9 +283,10 @@ void RequestHandler::executeRenameTableRequest(iomgr_protocol::DatabaseEngineRes
 {
     response.set_has_affected_row_count(false);
 
-    const auto& dbName = request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, dbName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     if (!isValidDatabaseObjectName(request.m_newTable))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_newTable);

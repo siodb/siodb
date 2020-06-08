@@ -106,7 +106,7 @@ public:
      * @param count Number of values that can fit in the outout buffer.
      * @return Number of values actually copied.
      */
-    std::uint64_t getValue(const void* key, void* value, std::size_t count) override;
+    std::uint64_t findValue(const void* key, void* value, std::size_t count) override;
 
     /**
      * Counts how much values available for this key.
@@ -134,14 +134,14 @@ public:
      * @param key Buffer for storing key.
      * @return true if minimum key exists, false if index is empty.
      */
-    bool getFirstKey(void* key) override;
+    bool findFirstKey(void* key) override;
 
     /**
      * Returns last key in the index storage. Always reads index storage.
      * @param key Buffer for storing key.
      * @return true if minimum key exists, false if index is empty.
      */
-    bool getLastKey(void* key) override;
+    bool findLastKey(void* key) override;
 
     /**
      * Returns previous key in the index.
@@ -149,7 +149,7 @@ public:
      * @param prevKey Buffer for storing previous key.
      * @return true if previous key obtained, false otherwise.
      */
-    bool getPrevKey(const void* key, void* prevKey) override;
+    bool findPreviousKey(const void* key, void* prevKey) override;
 
     /**
      * Returns next key in the index.
@@ -157,7 +157,7 @@ public:
      * @param nextKey Buffer for storing next key.
      * @return true if next key obtained, false otherwise.
      */
-    bool getNextKey(const void* key, void* nextKey) override;
+    bool findNextKey(const void* key, void* nextKey) override;
 
 private:
     /** Index file header */
@@ -685,9 +685,9 @@ private:
      * @param nodeId Node ID.
      * @return Node object.
      */
-    NodePtr getNode(std::uint64_t nodeId)
+    NodePtr findNode(std::uint64_t nodeId)
     {
-        return getNode(*m_file, nodeId);
+        return findNode(*m_file, nodeId);
     }
 
     /**
@@ -696,7 +696,7 @@ private:
      * @param nodeId Node ID.
      * @return Node object.
      */
-    NodePtr getNode(io::File& file, std::uint64_t nodeId);
+    NodePtr findNode(io::File& file, std::uint64_t nodeId);
 
     /**
      * Reads existing node object from the standard data file.
@@ -751,7 +751,7 @@ private:
     NodePtr getNewNode(io::File& file)
     {
         return (m_nextFreeNodeId > m_nodeCount) ? makeNode(file, m_nextFreeNodeId++)
-                                                : getNode(file, m_nextFreeNodeId);
+                                                : findNode(file, m_nextFreeNodeId);
     }
 
     /**

@@ -9,6 +9,7 @@
 #include "FileData.h"
 #include "Node.h"
 #include "UniqueLinearIndex.h"
+#include "../Debug.h"
 #include "../ThrowDatabaseError.h"
 
 // Common project headers
@@ -36,16 +37,16 @@ void NodeCache::flush()
                 }
             } catch (DatabaseError& ex) {
                 hadErrors = true;
-                LOG_ERROR << m_owner.m_index.getDisplayName() << ": Failed to save ULI node #"
+                LOG_ERROR << m_owner.m_index.makeDisplayName() << ": Failed to save ULI node #"
                           << e.second.first->m_nodeId << ": " << ex.getErrorCode() << ' '
                           << ex.what();
             } catch (std::exception& ex) {
                 hadErrors = true;
-                LOG_ERROR << m_owner.m_index.getDisplayName() << ": Failed to save ULI node #"
+                LOG_ERROR << m_owner.m_index.makeDisplayName() << ": Failed to save ULI node #"
                           << e.second.first->m_nodeId << ": " << ex.what();
             } catch (...) {
                 hadErrors = true;
-                LOG_ERROR << m_owner.m_index.getDisplayName() << ": Failed to save ULI node #"
+                LOG_ERROR << m_owner.m_index.makeDisplayName() << ": Failed to save ULI node #"
                           << e.second.first->m_nodeId << ": unknown error";
             }
         } catch (...) {
@@ -67,8 +68,8 @@ bool NodeCache::can_evict([[maybe_unused]] const key_type& key, const mapped_typ
 void NodeCache::on_evict([[maybe_unused]] const key_type& key, mapped_type& value,
         [[maybe_unused]] bool clearingCache) const
 {
-    ULI_DBG_LOG_DEBUG("NodeCache " << m_owner.m_index.getDisplayName() << ": Evicting node #" << key
-                                   << " tag " << value->m_tag);
+    ULI_DBG_LOG_DEBUG("NodeCache " << m_owner.m_index.makeDisplayName() << ": Evicting node #"
+                                   << key << " tag " << value->m_tag);
     if (value->m_modified) {
         throw std::runtime_error(
                 "UniqueLinearIndex: attempt to evict modified node from the cache");
@@ -77,7 +78,7 @@ void NodeCache::on_evict([[maybe_unused]] const key_type& key, mapped_type& valu
 
 bool NodeCache::on_last_chance_cleanup()
 {
-    ULI_DBG_LOG_DEBUG("NodeCache " << m_owner.m_index.getDisplayName() << ": Last chance cleanup");
+    ULI_DBG_LOG_DEBUG("NodeCache " << m_owner.m_index.makeDisplayName() << ": Last chance cleanup");
     std::size_t savedCount = 0;
     for (const auto& e : map_internal()) {
         if (!e.second.first->m_modified) continue;
@@ -91,7 +92,7 @@ void NodeCache::saveNode(const map_type::value_type& mapElement) const
 {
     auto& node = *mapElement.second.first;
     // Log this always
-    LOG_DEBUG << "NodeCache " << m_owner.m_index.getDisplayName() << ": Saving node #"
+    LOG_DEBUG << "NodeCache " << m_owner.m_index.makeDisplayName() << ": Saving node #"
               << node.m_nodeId << " tag " << node.m_tag << ": node "
               << (node.m_modified ? " modified" : " not modified");
     if (!node.m_modified) return;

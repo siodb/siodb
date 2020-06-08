@@ -165,7 +165,7 @@ public:
      * @return User access key object.
      * @throw DatabaseError if user access key object doesn't exists.
      */
-    UserAccessKeyPtr getUserAccessKeyChecked(const std::string& name) const;
+    UserAccessKeyPtr findUserAccessKeyChecked(const std::string& name) const;
 
     /**
      * Creates new user access key.
@@ -206,7 +206,7 @@ private:
      * @param name User access key name.
      * @return User access key object or nullptr if it doesn't exist.
      */
-    UserAccessKeyPtr getUserAccessKeyUnlocked(const std::string& name) const noexcept;
+    UserAccessKeyPtr findUserAccessKeyUnlocked(const std::string& name) const noexcept;
 
 private:
     /** User name */

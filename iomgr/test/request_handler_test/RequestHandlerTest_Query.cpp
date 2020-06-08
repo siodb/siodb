@@ -126,8 +126,8 @@ TEST(Query, SelectWithWhere)
             {"B", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_1", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_1",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -225,8 +225,8 @@ TEST(Query, SelectWithWhereBetweenDatetime)
             {"DT", siodb::COLUMN_DATA_TYPE_TIMESTAMP, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_2", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_2",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -318,8 +318,8 @@ TEST(Query, SelectWithWhereCompoundExpression)
             {"U32", siodb::COLUMN_DATA_TYPE_UINT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_3", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_3",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -418,8 +418,8 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
             {"I64", siodb::COLUMN_DATA_TYPE_INT64, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_4", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_4",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -549,7 +549,7 @@ TEST(Query, SelectWithWhereUsingTableAlias)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_WITH_TABLE_ALIAS",
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_WITH_TABLE_ALIAS",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -629,8 +629,8 @@ TEST(Query, SelectWithWhereColumnAlias)
             {"C", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_5", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_5",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -707,8 +707,8 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
             {"T", siodb::COLUMN_DATA_TYPE_TEXT, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_6", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_6",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -812,10 +812,10 @@ TEST(Query, SelectFrom2Tables)
             {"B", siodb::COLUMN_DATA_TYPE_BOOL, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_7_1",
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_7_1",
             dbengine::TableType::kDisk, table1Columns, dbengine::User::kSuperUserId, {});
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_7_2",
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_7_2",
             dbengine::TableType::kDisk, table2Columns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT_1 -----------
@@ -941,8 +941,8 @@ TEST(Query, SelectWithExpression)
             {"U16", siodb::COLUMN_DATA_TYPE_UINT16, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_8", dbengine::TableType::kDisk,
-            table1Columns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_8",
+            dbengine::TableType::kDisk, table1Columns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -1081,7 +1081,7 @@ TEST(Query, SelectWithExpressionWithNull)
             {"I64", siodb::COLUMN_DATA_TYPE_INT64, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("TEST_EXPRESSION", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("TEST_EXPRESSION", dbengine::TableType::kDisk,
             table1Columns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -1177,7 +1177,7 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
             {"I64", siodb::COLUMN_DATA_TYPE_INT64, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("TEST_EXPRESSION_EMPTY",
+    instance->findDatabase("SYS")->createUserTable("TEST_EXPRESSION_EMPTY",
             dbengine::TableType::kDisk, table1Columns, dbengine::User::kSuperUserId, {});
 
     /// ----------- SELECT -----------
@@ -1221,7 +1221,7 @@ TEST(Query, SelectWithWhereIsNull)
             {"T", siodb::COLUMN_DATA_TYPE_TEXT, false},
     };
 
-    instance->getDatabase("SYS")->createUserTable("NULL_TEST_TABLE_1", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("NULL_TEST_TABLE_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -1317,7 +1317,7 @@ TEST(Query, SelectWithWhereEqualNull)
             {"T", siodb::COLUMN_DATA_TYPE_TEXT, false},
     };
 
-    instance->getDatabase("SYS")->createUserTable("NULL_TEST_TABLE_2", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("NULL_TEST_TABLE_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -1398,8 +1398,8 @@ TEST(Query, SelectWithLimit)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_1", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_1",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -1479,8 +1479,8 @@ TEST(Query, SelectWithZeroLimit)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_2", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_2",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -1552,8 +1552,8 @@ TEST(Query, SelectWithNegativeLimit)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_3", dbengine::TableType::kDisk,
-            tableColumns, dbengine::User::kSuperUserId, {});
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_3",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
     {
@@ -1614,7 +1614,7 @@ TEST(Query, SelectWithLimitAndOffset)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_1",
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_1",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -1697,7 +1697,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_2",
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_2",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -1772,7 +1772,7 @@ TEST(Query, SelectWithNegativeOffset)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_3",
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_3",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -1836,7 +1836,7 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1",
+    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------

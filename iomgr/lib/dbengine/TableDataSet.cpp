@@ -64,7 +64,7 @@ const std::vector<Variant>& TableDataSet::getCurrentRow()
 std::optional<std::uint32_t> TableDataSet::getDataSourceColumnPosition(
         const std::string& name) const
 {
-    return m_table->getColumnPosition(name);
+    return m_table->findColumnPosition(name);
 }
 
 std::uint32_t TableDataSet::getDataSourceId() const noexcept
@@ -103,7 +103,7 @@ void TableDataSet::resetCursor()
 
 bool TableDataSet::moveToNextRow()
 {
-    m_hasCurrentRow = m_masterColumnIndex->getNextKey(m_currentKey, m_nextKey);
+    m_hasCurrentRow = m_masterColumnIndex->findNextKey(m_currentKey, m_nextKey);
     std::swap(m_currentKey, m_nextKey);
     if (m_hasCurrentRow) {
         readMasterColumnRecord();
@@ -134,7 +134,7 @@ void TableDataSet::readMasterColumnRecord()
     std::uint8_t value[12];
 
     // Obtain master column record address
-    if (m_masterColumnIndex->getValue(m_currentKey, value, 1) != 1) {
+    if (m_masterColumnIndex->findValue(m_currentKey, value, 1) != 1) {
         throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                 m_table->getDatabaseName(), m_table->getName(), m_table->getDatabaseUuid(),
                 m_table->getId(), 2);

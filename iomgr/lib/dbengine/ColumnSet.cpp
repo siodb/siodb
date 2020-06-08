@@ -33,7 +33,7 @@ ColumnSet::ColumnSet(Table& table, const ColumnSetRecord& columnSetRecord)
 
 void ColumnSet::markClosedForModification()
 {
-    LOG_DEBUG << "Closing column set " << m_table.getDisplayName() << '.' << m_id;
+    LOG_DEBUG << "Closing column set " << m_table.makeDisplayName() << '.' << m_id;
     if (!m_openForModification) {
         throwDatabaseError(IOManagerMessageId::kErrorColumnSetAlreadyClosedForModification,
                 m_table.getDatabaseName(), m_table.getName(), m_id, m_table.getDatabaseUuid(),
@@ -54,7 +54,7 @@ std::uint64_t ColumnSet::addColumn(const ColumnDefinition& columnDefinition)
     return m_columns.back()->getId();
 }
 
-std::uint32_t ColumnSet::getColumnPosition(std::uint64_t columnId) const
+std::uint32_t ColumnSet::findColumnPosition(std::uint64_t columnId) const
 {
     const auto it = m_columnIdToPoisitionMapping.find(columnId);
     if (it != m_columnIdToPoisitionMapping.cend()) return it->second;

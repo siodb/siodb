@@ -55,7 +55,7 @@ Index::Index(Table& table, const IndexRecord& indexRecord, const IndexKeyTraits&
 {
 }
 
-std::string Index::getDisplayName() const
+std::string Index::makeDisplayName() const
 {
     std::ostringstream oss;
     oss << '\'' << m_table.getDatabaseName() << "'.'" << m_table.getName() << "'.'" << m_name
@@ -63,7 +63,7 @@ std::string Index::getDisplayName() const
     return oss.str();
 }
 
-std::string Index::getDisplayCode() const
+std::string Index::makeDisplayCode() const
 {
     std::ostringstream oss;
     oss << m_table.getDatabaseUuid() << '.' << m_table.getId() << '.' << m_id;

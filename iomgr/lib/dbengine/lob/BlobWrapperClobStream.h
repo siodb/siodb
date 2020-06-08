@@ -73,7 +73,7 @@ private:
     char m_pendingChar;
 
     /** Hex table character */
-    static const char m_hexTable[16];
+    static const char s_hexTable[16];
 };
 
 }  // namespace siodb::iomgr::dbengine

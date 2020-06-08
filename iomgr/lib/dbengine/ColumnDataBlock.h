@@ -110,13 +110,13 @@ public:
      * Returns display name of the block.
      * @return Display name.
      */
-    std::string getDisplayName() const;
+    std::string makeDisplayName() const;
 
     /**
      * Returns display code of the block.
      * @return Display code.
      */
-    std::string getDisplayCode() const;
+    std::string makeDisplayCode() const;
 
     /**
      * Returns indication that block is modified.
@@ -177,7 +177,7 @@ public:
     }
 
     /** Saves header */
-    void saveHeader() const;
+    void writeHeader() const;
 
     /**
      * Reads data from the data file at a given position.
@@ -291,7 +291,7 @@ private:
     bool m_dataModified;
 
     /** Data file header prototype */
-    static const BinaryValue m_dataFileHeaderProto;
+    static const BinaryValue s_dataFileHeaderProto;
 };
 
 }  // namespace siodb::iomgr::dbengine

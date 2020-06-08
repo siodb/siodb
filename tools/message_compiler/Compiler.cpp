@@ -17,7 +17,7 @@
 
 static constexpr const char* kAllWhitespaces = " \t\n\r\f\v";
 
-static const std::unordered_set<std::string> kKnownSeverities {
+static const std::unordered_set<std::string> g_knownSeverities {
         "Debug",
         "Trace",
         "Info",
@@ -133,7 +133,7 @@ bool parseMessages(const CompilerOptions& options, MessageContainer& messages)
                 if (msg.m_severity.empty()) throw std::runtime_error("Severity not specified");
 
                 // Validate severity
-                if (kKnownSeverities.count(msg.m_severity) == 0) {
+                if (g_knownSeverities.count(msg.m_severity) == 0) {
                     std::ostringstream err;
                     err << "Unknown severity '" << msg.m_severity << "'";
                     throw std::runtime_error(err.str());

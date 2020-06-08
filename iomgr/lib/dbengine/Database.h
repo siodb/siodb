@@ -437,13 +437,13 @@ public:
      * Returns display name of the database.
      * @return Display name.
      */
-    std::string getDisplayName() const;
+    std::string makeDisplayName() const;
 
     /**
      * Returns display code of the database.
      * @return Display code.
      */
-    std::string getDisplayCode() const
+    std::string makeDisplayCode() const
     {
         return boost::uuids::to_string(m_uuid);
     }
@@ -486,7 +486,7 @@ public:
     std::string getTableName(std::uint32_t tableId) const
     {
         std::lock_guard lock(m_mutex);
-        return getTableNameUnlocked(tableId);
+        return findTableNameUnlocked(tableId);
     }
 
     /**
@@ -510,7 +510,7 @@ public:
      * @return Corresponding table object.
      * @throw DatabaseError if requested table doesn't exist.
      */
-    TablePtr getTableChecked(const std::string& tableName);
+    TablePtr findTableChecked(const std::string& tableName);
 
     /**
      * Returns existing table object.
@@ -518,7 +518,7 @@ public:
      * @return Corresponding table object.
      * @throw DatabaseError if requested table doesn't exist.
      */
-    TablePtr getTableChecked(std::uint32_t tableId);
+    TablePtr findTableChecked(std::uint32_t tableId);
 
     /**
      * Creates new constraint definition or returns suitable existing one.
@@ -547,7 +547,7 @@ public:
      * @return Constraint definition object.
      * @throws DatabaseError if constraint definition doesn't exist.
      */
-    ConstraintDefinitionPtr getConstraintDefinitionChecked(std::uint64_t constraintDefinitionId);
+    ConstraintDefinitionPtr findConstraintDefinitionChecked(std::uint64_t constraintDefinitionId);
 
     /**
      * Creates new constraint object for the given table.
@@ -589,7 +589,7 @@ public:
      * @return Column set record.
      * @throw DatabaseError if column set record doesn't exist.
      */
-    ColumnSetRecord getColumnSetRecord(std::uint64_t columnId) const;
+    ColumnSetRecord findColumnSetRecord(std::uint64_t columnId) const;
 
     /**
      * Returns column record with given ID.
@@ -597,7 +597,7 @@ public:
      * @return Column record.
      * @throw DatabaseError if column record doesn't exist.
      */
-    ColumnRecord getColumnRecord(std::uint64_t columnId) const;
+    ColumnRecord findColumnRecord(std::uint64_t columnId) const;
 
     /**
      * Returns column definition record with given ID.
@@ -605,7 +605,7 @@ public:
      * @return Column definition record.
      * @throw DatabaseError if column definition record doesn't exist.
      */
-    ColumnDefinitionRecord getColumnDefinitionRecord(std::uint64_t columnDefinitionId) const;
+    ColumnDefinitionRecord findColumnDefinitionRecord(std::uint64_t columnDefinitionId) const;
 
     /**
      * Returns latest column definition ID for the given column.
@@ -615,7 +615,7 @@ public:
      * @throw DatabaseError if column doesn't exist or there is no column definitions
      *                      for the specified column.
      */
-    std::uint64_t getLatestColumnDefinitionIdForColumn(
+    std::uint64_t findLatestColumnDefinitionIdForColumn(
             std::uint32_t tableId, std::uint64_t columnId);
 
     /**
@@ -624,7 +624,7 @@ public:
      * @return Column definition constraint record.
      * @throw DatabaseError if column definition constraint record doesn't exist.
      */
-    ColumnDefinitionConstraintRecord getColumnDefinitionConstraintRecord(
+    ColumnDefinitionConstraintRecord findColumnDefinitionConstraintRecord(
             std::uint64_t columnDefinitionConstraintId) const;
 
     /**
@@ -633,7 +633,7 @@ public:
      * @return Constraint record.
      * @throw DatabaseError if constaint record doesn't exist.
      */
-    ConstraintRecord getConstraintRecord(std::uint64_t constraintId) const;
+    ConstraintRecord findConstraintRecord(std::uint64_t constraintId) const;
 
     /**
      * Returns index record with given ID.
@@ -641,7 +641,7 @@ public:
      * @return Index record.
      * @throw DatabaseError if column record doesn't exist.
      */
-    IndexRecord getIndexRecord(std::uint64_t indexId) const;
+    IndexRecord findIndexRecord(std::uint64_t indexId) const;
 
     /**
      * Generates new table ID.
@@ -1101,13 +1101,13 @@ private:
      * Constructs database metadata file path.
      * @return Database metadata file path.
      */
-    std::string getMetadataFilePath() const;
+    std::string makeMetadataFilePath() const;
 
     /**
      * Constructs system tables file path.
      * @return Database metadata file path.
      */
-    std::string getSystemObjectsFilePath() const;
+    std::string makeSystemObjectsFilePath() const;
 
     /**
      * Validates database name.
@@ -1132,21 +1132,21 @@ private:
      * @param tableId Table ID.
      * @return Table name or throws exception if table doesn't exist in cache.
      */
-    std::string getTableNameUnlocked(std::uint32_t tableId) const;
+    std::string findTableNameUnlocked(std::uint32_t tableId) const;
 
     /**
      * Returns existing table object. Does not acquire table cache access synchronization lock.
      * @param tableName Table name.
      * @return Corresponding table object or nullptr if it doesn't exist.
      */
-    TablePtr getTableUnlocked(const std::string& tableName);
+    TablePtr findTableUnlocked(const std::string& tableName);
 
     /**
      * Returns existing table object. Does not acquire table cache access synchronization lock.
      * @param tableId Table ID.
      * @return Corresponding table object or nullptr if it doesn't exist.
      */
-    TablePtr getTableUnlocked(std::uint32_t tableId);
+    TablePtr findTableUnlocked(std::uint32_t tableId);
 
     /**
      * Loads table from disk. Does not acquire table cache access synchronization lock.
@@ -1183,7 +1183,7 @@ private:
      * @param constraintDefinitionId Constraint definition ID.
      * @return Corresponding constraint definition object or nullptr if it doesn't exist.
      */
-    ConstraintDefinitionPtr getConstraintDefinitionUnlocked(std::uint64_t constraintDefinitionId);
+    ConstraintDefinitionPtr findConstraintDefinitionUnlocked(std::uint64_t constraintDefinitionId);
 
     /**
      * Loads constraint definition from disk. Does not acquire constraint definition cache

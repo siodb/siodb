@@ -32,7 +32,7 @@ TEST(DML_Insert, InsertSingleRecordToItems)
             {"PRICE", siodb::COLUMN_DATA_TYPE_DOUBLE, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("TEST_ITEMS", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("TEST_ITEMS", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -117,7 +117,7 @@ TEST(DML_Insert, InsertMultipleRecordsToItems)
             {"LAST_NAME", siodb::COLUMN_DATA_TYPE_TEXT, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("TEST_CUSTOMERS", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("TEST_CUSTOMERS", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -222,7 +222,7 @@ TEST(DML_Insert, InsertDataTypesWithLength)
             {"BOOK_TEXT", siodb::COLUMN_DATA_TYPE_TEXT, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("TEST_DIGITAL_BOOKS", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("TEST_DIGITAL_BOOKS", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -351,7 +351,7 @@ TEST(DML_Insert, InsertMinMaxValues)
             {"FLOAT", siodb::COLUMN_DATA_TYPE_FLOAT, true},
             {"DOUBLE", siodb::COLUMN_DATA_TYPE_DOUBLE, true}};
 
-    instance->getDatabase("SYS")->createUserTable("TEST_TABLE_MIN_MAX", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("TEST_TABLE_MIN_MAX", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -533,7 +533,7 @@ TEST(DML_Insert, DateTimeTest)
             {"FINISH_DATE", siodb::COLUMN_DATA_TYPE_TIMESTAMP, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("TEST_CONTRACTS", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("TEST_CONTRACTS", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -666,7 +666,7 @@ TEST(DML_Insert, NullValueTest)
             {"T", siodb::COLUMN_DATA_TYPE_TEXT, false},
     };
 
-    instance->getDatabase("SYS")->createUserTable("NULL_TEST_TABLE", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("NULL_TEST_TABLE", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -760,7 +760,7 @@ TEST(DML_Insert, InsertDefaultNullValueTest)
             {"U2", siodb::COLUMN_DATA_TYPE_UINT32, false},
     };
 
-    instance->getDatabase("SYS")->createUserTable("TEST_DEFAULT_NULL", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("TEST_DEFAULT_NULL", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();

@@ -99,7 +99,7 @@ struct ColumnDefinitionRecord {
     ColumnDefinitionConstraintRegistry m_constraints;
 
     /** Structure UUID */
-    static const Uuid kClassUuid;
+    static const Uuid s_classUuid;
 
     /** Structure name */
     static constexpr const char* kClassName = "ColumnDefinitionRecord";

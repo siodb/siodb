@@ -126,7 +126,7 @@ struct ConstraintDefinitionRecord {
     constexpr static std::uint64_t kHashSeed = 0x3ff6a09e667f3bcd;
 
     /** Structure UUID */
-    static const Uuid kClassUuid;
+    static const Uuid s_classUuid;
 
     /** Structure name */
     static constexpr const char* kClassName = "ConstraintDefinitionRecord";

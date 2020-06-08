@@ -188,13 +188,13 @@ public:
      * Returns display name of the database.
      * @return Display name.
      */
-    std::string getDisplayName() const;
+    std::string makeDisplayName() const;
 
     /**
      * Returns display code of the database.
      * @return Display code.
      */
-    std::string getDisplayCode() const;
+    std::string makeDisplayCode() const;
 
     /**
      * Creates index file path.
@@ -254,7 +254,7 @@ public:
      * @param count Number of values that can fit in the outout buffer.
      * @return Number of values actually copied.
      */
-    virtual std::uint64_t getValue(const void* key, void* value, std::size_t count) = 0;
+    virtual std::uint64_t findValue(const void* key, void* value, std::size_t count) = 0;
 
     /**
      * Counts how much values available for this key.
@@ -282,14 +282,14 @@ public:
      * @param key Buffer for storing key.
      * @return true if minimum key exists, false if index is empty.
      */
-    virtual bool getFirstKey(void* key) = 0;
+    virtual bool findFirstKey(void* key) = 0;
 
     /**
      * Returns last key in the index storage. Always reads index storage.
      * @param key Buffer for storing key.
      * @return true if minimum key exists, false if index is empty.
      */
-    virtual bool getLastKey(void* key) = 0;
+    virtual bool findLastKey(void* key) = 0;
 
     /**
      * Returns previous key in the index.
@@ -297,7 +297,7 @@ public:
      * @param prevKey Buffer for storing previous key.
      * @return true if previous key obtained, false otherwise.
      */
-    virtual bool getPrevKey(const void* key, void* prevKey) = 0;
+    virtual bool findPreviousKey(const void* key, void* prevKey) = 0;
 
     /**
      * Returns next key in the index.
@@ -305,7 +305,7 @@ public:
      * @param nextKey Buffer for storing next key.
      * @return true if next key obtained, false otherwise.
      */
-    virtual bool getNextKey(const void* key, void* nextKey) = 0;
+    virtual bool findNextKey(const void* key, void* nextKey) = 0;
 
 protected:
     /** Creates initialization flag file. */

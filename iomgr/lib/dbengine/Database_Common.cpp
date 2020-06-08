@@ -47,24 +47,24 @@ bool Database::isSystemDatabase() const noexcept
     return false;
 }
 
-std::string Database::getDisplayName() const
+std::string Database::makeDisplayName() const
 {
     std::ostringstream oss;
     oss << '\'' << m_name << '\'';
     return oss.str();
 }
 
-TablePtr Database::getTableChecked(const std::string& tableName)
+TablePtr Database::findTableChecked(const std::string& tableName)
 {
     std::lock_guard lock(m_mutex);
-    if (auto table = getTableUnlocked(tableName)) return table;
+    if (auto table = findTableUnlocked(tableName)) return table;
     throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, m_name, tableName);
 }
 
-TablePtr Database::getTableChecked(std::uint32_t tableId)
+TablePtr Database::findTableChecked(std::uint32_t tableId)
 {
     std::lock_guard lock(m_mutex);
-    if (auto table = getTableUnlocked(tableId)) return table;
+    if (auto table = findTableUnlocked(tableId)) return table;
     throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, m_name, tableId);
 }
 
@@ -88,7 +88,7 @@ ConstraintDefinitionPtr Database::findOrCreateConstraintDefinition(
         if (r.first->m_type == type && r.first->m_expression == serializedExpression
                 && ((system && r.first->m_id < kFirstUserTableConstraintDefinitionId)
                         || (!system && r.first->m_id >= kFirstUserTableConstraintDefinitionId))) {
-            return getConstraintDefinitionChecked(r.first->m_id);
+            return findConstraintDefinitionChecked(r.first->m_id);
         }
     }
 
@@ -103,11 +103,11 @@ ConstraintDefinitionPtr Database::findOrCreateConstraintDefinition(
     return constraintDefinition;
 }
 
-ConstraintDefinitionPtr Database::getConstraintDefinitionChecked(
+ConstraintDefinitionPtr Database::findConstraintDefinitionChecked(
         std::uint64_t constraintDefinitionId)
 {
     std::lock_guard lock(m_mutex);
-    if (auto constraintDefinition = getConstraintDefinitionUnlocked(constraintDefinitionId))
+    if (auto constraintDefinition = findConstraintDefinitionUnlocked(constraintDefinitionId))
         return constraintDefinition;
     throwDatabaseError(IOManagerMessageId::kErrorConstraintDefinitionDoesNotExist, m_name,
             constraintDefinitionId);
@@ -160,7 +160,7 @@ ConstraintPtr Database::createConstraint(
     std::lock_guard lock(m_mutex);
 
     const auto constraintDefinition =
-            getConstraintDefinitionChecked(constraintRecord.m_constraintDefinitionId);
+            findConstraintDefinitionChecked(constraintRecord.m_constraintDefinitionId);
 
     switch (constraintDefinition->getType()) {
         case ConstraintType::kNotNull: {
@@ -183,7 +183,7 @@ bool Database::isConstraintExists(const std::string& constraintName) const
     return m_constraintRegistry.byName().count(constraintName) > 0;
 }
 
-ColumnSetRecord Database::getColumnSetRecord(std::uint64_t columnSetId) const
+ColumnSetRecord Database::findColumnSetRecord(std::uint64_t columnSetId) const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_columnSetRegistry.byId();
@@ -193,7 +193,7 @@ ColumnSetRecord Database::getColumnSetRecord(std::uint64_t columnSetId) const
     return *it;
 }
 
-ColumnRecord Database::getColumnRecord(std::uint64_t columnId) const
+ColumnRecord Database::findColumnRecord(std::uint64_t columnId) const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_columnRegistry.byId();
@@ -203,7 +203,7 @@ ColumnRecord Database::getColumnRecord(std::uint64_t columnId) const
     return *it;
 }
 
-ColumnDefinitionRecord Database::getColumnDefinitionRecord(std::uint64_t columnDefinitionId) const
+ColumnDefinitionRecord Database::findColumnDefinitionRecord(std::uint64_t columnDefinitionId) const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_columnDefinitionRegistry.byId();
@@ -215,7 +215,7 @@ ColumnDefinitionRecord Database::getColumnDefinitionRecord(std::uint64_t columnD
     return *it;
 }
 
-std::uint64_t Database::getLatestColumnDefinitionIdForColumn(
+std::uint64_t Database::findLatestColumnDefinitionIdForColumn(
         std::uint32_t tableId, std::uint64_t columnId)
 {
     std::lock_guard lock(m_mutex);
@@ -228,7 +228,7 @@ std::uint64_t Database::getLatestColumnDefinitionIdForColumn(
             IOManagerMessageId::kErrorMissingColumnDefinitionsForColumn, m_uuid, tableId, columnId);
 }
 
-ConstraintRecord Database::getConstraintRecord(std::uint64_t constraintId) const
+ConstraintRecord Database::findConstraintRecord(std::uint64_t constraintId) const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_constraintRegistry.byId();
@@ -238,7 +238,7 @@ ConstraintRecord Database::getConstraintRecord(std::uint64_t constraintId) const
     return *it;
 }
 
-IndexRecord Database::getIndexRecord(std::uint64_t indexId) const
+IndexRecord Database::findIndexRecord(std::uint64_t indexId) const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_indexRegistry.byId();
@@ -610,7 +610,7 @@ TablePtr Database::createTableUnlocked(std::string&& name, TableType type,
 TablePtr Database::loadSystemTable(const std::string& name)
 {
     if (SIODB_UNLIKELY(m_tableRegistry.empty())) loadSystemObjectsInfo();
-    auto table = getTableUnlocked(name);
+    auto table = findTableUnlocked(name);
     if (table) return table;
     throwDatabaseError(IOManagerMessageId::kErrorMissingSystemTable, m_name, name, m_id, 0);
 }
@@ -648,15 +648,15 @@ void Database::checkDataConsistency()
 {
     // Just by loading all tables we enforce data consistency check.
     for (const auto& e : m_tableRegistry.byName()) {
-        const auto table = getTableChecked(e.m_id);
-        LOG_DEBUG << "Table " << table->getDisplayName() << " OK";
+        const auto table = findTableChecked(e.m_id);
+        LOG_DEBUG << "Table " << table->makeDisplayName() << " OK";
     }
 }
 
 std::unique_ptr<MemoryMappedFile> Database::createMetadataFile() const
 {
     // Create metadata file
-    const auto metadataFilePath = getMetadataFilePath();
+    const auto metadataFilePath = makeMetadataFilePath();
     constexpr auto kOpenFlags = O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME;
     FileDescriptorGuard fd(::open(metadataFilePath.c_str(), kOpenFlags, kDataFileCreationMode));
     if (!fd.isValidFd()) {
@@ -683,7 +683,7 @@ std::unique_ptr<MemoryMappedFile> Database::createMetadataFile() const
 std::unique_ptr<MemoryMappedFile> Database::openMetadataFile() const
 {
     // Open metadata file
-    const auto metadataFilePath = getMetadataFilePath();
+    const auto metadataFilePath = makeMetadataFilePath();
     constexpr auto kOpenFlags = O_RDWR | O_CLOEXEC | O_NOATIME;
     const int fd = ::open(metadataFilePath.c_str(), kOpenFlags, kDataFileCreationMode);
     if (fd < 0) {
@@ -697,12 +697,12 @@ std::unique_ptr<MemoryMappedFile> Database::openMetadataFile() const
             fd, true, MemoryMappedFile::deduceMemoryProtectionMode(kOpenFlags), MAP_POPULATE, 0, 0);
 }
 
-std::string Database::getMetadataFilePath() const
+std::string Database::makeMetadataFilePath() const
 {
     return utils::constructPath(m_dataDir, kMetadataFileName);
 }
 
-std::string Database::getSystemObjectsFilePath() const
+std::string Database::makeSystemObjectsFilePath() const
 {
     return utils::constructPath(m_dataDir, kSystemObjectsFileName);
 }
@@ -713,7 +713,7 @@ std::string&& Database::validateDatabaseName(std::string&& databaseName)
     throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 }
 
-std::string Database::getTableNameUnlocked(std::uint32_t tableId) const
+std::string Database::findTableNameUnlocked(std::uint32_t tableId) const
 {
     const auto& index = m_tableRegistry.byId();
     const auto it = index.find(tableId);
@@ -721,7 +721,7 @@ std::string Database::getTableNameUnlocked(std::uint32_t tableId) const
     throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, m_name, tableId);
 }
 
-TablePtr Database::getTableUnlocked(const std::string& tableName)
+TablePtr Database::findTableUnlocked(const std::string& tableName)
 {
     const auto& index = m_tableRegistry.byName();
     const auto it = index.find(tableName);
@@ -731,7 +731,7 @@ TablePtr Database::getTableUnlocked(const std::string& tableName)
     return loadTableUnlocked(*it);
 }
 
-TablePtr Database::getTableUnlocked(std::uint32_t tableId)
+TablePtr Database::findTableUnlocked(std::uint32_t tableId)
 {
     const auto& index = m_tableRegistry.byId();
     const auto it = index.find(tableId);
@@ -790,7 +790,7 @@ ConstraintDefinitionPtr Database::createConstraintDefinitionUnlocked(bool system
     return constraintDefinition;
 }
 
-ConstraintDefinitionPtr Database::getConstraintDefinitionUnlocked(
+ConstraintDefinitionPtr Database::findConstraintDefinitionUnlocked(
         std::uint64_t constraintDefinitionId)
 {
     const auto& index = m_constraintDefinitionRegistry.byId();

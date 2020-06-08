@@ -16,7 +16,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-const Uuid UserPermissionRecord::kClassUuid =
+const Uuid UserPermissionRecord::s_classUuid =
         boost::lexical_cast<Uuid>("560ff756-a68d-4e8b-a3b9-213e4e80f808");
 
 UserPermissionRecord::UserPermissionRecord(const UserPermission& userPermission)
@@ -41,7 +41,7 @@ std::size_t UserPermissionRecord::getSerializedSize(unsigned version) const noex
 std::uint8_t* UserPermissionRecord::serializeUnchecked(std::uint8_t* buffer, unsigned version) const
         noexcept
 {
-    std::memcpy(buffer, kClassUuid.data, Uuid::static_size());
+    std::memcpy(buffer, s_classUuid.data, Uuid::static_size());
     buffer += Uuid::static_size();
     buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
@@ -58,8 +58,8 @@ std::size_t UserPermissionRecord::deserialize(const std::uint8_t* buffer, std::s
 {
     if (length < Uuid::static_size())
         helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
-    if (std::memcmp(kClassUuid.data, buffer, Uuid::static_size()) != 0)
-        helpers::reportClassUuidMismatch(kClassName, buffer, kClassUuid.data);
+    if (std::memcmp(s_classUuid.data, buffer, Uuid::static_size()) != 0)
+        helpers::reportClassUuidMismatch(kClassName, buffer, s_classUuid.data);
 
     std::size_t totalConsumed = Uuid::static_size();
 

@@ -217,7 +217,7 @@ void Database::loadSystemObjectsInfo()
 {
     io::FilePtr f;
     try {
-        f = openFile(getSystemObjectsFilePath());
+        f = openFile(makeSystemObjectsFilePath());
     } catch (std::exception& ex) {
         throwDatabaseError(
                 IOManagerMessageId::kErrorCannotOpenSystemObjectsFile, m_name, m_uuid, ex.what());
@@ -236,7 +236,7 @@ void Database::loadSystemObjectsInfo()
 void Database::saveSystemObjectsInfo() const
 {
     // Open file
-    const auto filePath = getSystemObjectsFilePath();
+    const auto filePath = makeSystemObjectsFilePath();
     const auto tmpFilePath = filePath + ".tmp";
     io::FilePtr f;
     try {

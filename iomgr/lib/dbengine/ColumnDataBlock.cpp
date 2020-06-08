@@ -35,7 +35,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-const BinaryValue ColumnDataBlock::m_dataFileHeaderProto(kDataFileHeaderSize, 0);
+const BinaryValue ColumnDataBlock::s_dataFileHeaderProto(kDataFileHeaderSize, 0);
 
 ColumnDataBlock::ColumnDataBlock(
         Column& column, std::uint64_t prevBlockId, ColumnDataBlockState state)
@@ -56,7 +56,7 @@ ColumnDataBlock::ColumnDataBlock(Column& column, std::uint64_t id)
     : m_column(column)
     , m_header(column.getDatabaseUuid(), column.getTableId(), column.getId(), id,
               column.getDataBlockDataAreaSize())
-    , m_prevBlockId(column.getPrevBlockId(id))
+    , m_prevBlockId(column.findPrevBlockId(id))
     , m_dataFilePath(makeDataFilePath())
     , m_file(openDataFile())
     , m_state(ColumnDataBlockState::kCreating)
@@ -68,13 +68,13 @@ ColumnDataBlock::ColumnDataBlock(Column& column, std::uint64_t id)
 
 ColumnDataBlock::~ColumnDataBlock()
 {
-    //DBG_LOG_DEBUG("Deactivating ColumnDataBlock " << m_column.getDisplayName());
+    //DBG_LOG_DEBUG("Deactivating ColumnDataBlock " << m_column.makeDisplayName());
     const bool headerModified = m_headerModified;
-    if (m_headerModified) saveHeader();
+    if (m_headerModified) writeHeader();
     if (m_dataModified || headerModified) m_file->flush();
 }
 
-std::string ColumnDataBlock::getDisplayName() const
+std::string ColumnDataBlock::makeDisplayName() const
 {
     std::ostringstream oss;
     oss << '\'' << m_column.getDatabaseName() << "'.'" << m_column.getTableName() << "'.'"
@@ -82,7 +82,7 @@ std::string ColumnDataBlock::getDisplayName() const
     return oss.str();
 }
 
-std::string ColumnDataBlock::getDisplayCode() const
+std::string ColumnDataBlock::makeDisplayCode() const
 {
     std::ostringstream oss;
     oss << m_column.getDatabaseUuid() << '.' << m_column.getTableId() << '.' << m_column.getId()
@@ -95,7 +95,7 @@ void ColumnDataBlock::readData(void* data, std::size_t length, std::uint32_t pos
     if (pos + length > m_column.getDataBlockDataAreaSize()) {
         std::ostringstream err;
         throw std::runtime_error(stdext::string_builder()
-                                 << getDisplayName() << ": Invalid offset or length: " << pos
+                                 << makeDisplayName() << ": Invalid offset or length: " << pos
                                  << ", " << length);
     }
     const auto readOffset = pos + m_header.m_dataAreaOffset;
@@ -112,7 +112,7 @@ void ColumnDataBlock::writeData(const void* data, std::size_t length, std::uint3
     if (pos + length > m_column.getDataBlockDataAreaSize()) {
         std::ostringstream err;
         throw std::runtime_error(stdext::string_builder()
-                                 << getDisplayName() << ": Invalid offset or length: " << pos
+                                 << makeDisplayName() << ": Invalid offset or length: " << pos
                                  << ", " << length);
     }
     const auto writeOffset = pos + m_header.m_dataAreaOffset;
@@ -132,7 +132,7 @@ void ColumnDataBlock::finalize(const ColumnDataBlockHeader::Digest& prevBlockDig
     m_header.m_fillTimestamp = std::time(nullptr);
     computeDigest(prevBlockDigest, m_header.m_digest);
     m_headerModified = true;
-    saveHeader();
+    writeHeader();
     m_state = ColumnDataBlockState::kClosed;
     m_column.updateBlockState(getId(), m_state);
 }
@@ -204,7 +204,7 @@ io::FilePtr ColumnDataBlock::createDataFile() const
 
     // Prepare and write header
     const auto remainingHeaderSize =
-            m_dataFileHeaderProto.size() - ColumnDataBlockHeader::kSerializedSize;
+            s_dataFileHeaderProto.size() - ColumnDataBlockHeader::kSerializedSize;
     std::uint8_t buffer[ColumnDataBlockHeader::kSerializedSize];
     m_header.serialize(buffer);
     if (file->write(buffer, sizeof(buffer), 0) != sizeof(buffer)) {
@@ -216,7 +216,7 @@ io::FilePtr ColumnDataBlock::createDataFile() const
     }
 
     // Write rest of header
-    if (file->write(m_dataFileHeaderProto.data(), remainingHeaderSize, sizeof(buffer))
+    if (file->write(s_dataFileHeaderProto.data(), remainingHeaderSize, sizeof(buffer))
             != remainingHeaderSize) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateNewColumnDataBlockFile,
                 m_dataFilePath, m_column.getDatabaseName(), m_column.getTableName(),
@@ -302,7 +302,7 @@ void ColumnDataBlock::loadHeader()
     m_header = header;
 }
 
-void ColumnDataBlock::saveHeader() const
+void ColumnDataBlock::writeHeader() const
 {
     uint8_t header[ColumnDataBlockHeader::kSerializedSize];
     m_header.serialize(header);

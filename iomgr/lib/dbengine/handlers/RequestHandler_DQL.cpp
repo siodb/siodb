@@ -48,12 +48,12 @@ void RequestHandler::executeSelectRequest(
 {
     response.set_has_affected_row_count(false);
 
-    const std::string& dbName =
+    const std::string& databaseName =
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(dbName))
+    if (!isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    const auto db = m_instance.getDatabaseChecked(dbName);
+    const auto database = m_instance.findDatabaseChecked(databaseName);
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
 
@@ -80,7 +80,7 @@ void RequestHandler::executeSelectRequest(
         tableDataSets.reserve(request.m_tables.size());
         for (const auto& table : request.m_tables) {
             tableDataSets.push_back(std::make_shared<TableDataSet>(
-                    db->getTableChecked(table.m_name), table.m_alias));
+                    database->findTableChecked(table.m_name), table.m_alias));
         }
         dbContext = std::make_unique<requests::DatabaseContext>(std::move(tableDataSets));
     }
@@ -93,7 +93,7 @@ void RequestHandler::executeSelectRequest(
     std::size_t columnCountToSend = 0;
 
     for (const auto& tableDataSet : dataSets) {
-        const auto table = db->getTableChecked(tableDataSet->getDataSourceId());
+        const auto table = database->findTableChecked(tableDataSet->getDataSourceId());
         const auto columnSetId = table->getCurrentColumnSetId();
         const auto tableColumns = table->getColumnsOrderedByPosition();
         const auto n = tableColumns.size();
@@ -134,7 +134,7 @@ void RequestHandler::executeSelectRequest(
                 else {
                     errors.push_back(
                             makeDatabaseError(IOManagerMessageId::kErrorTableDoesNotExistInContext,
-                                    dbName, tableName));
+                                    databaseName, tableName));
                 }
             }
 
@@ -191,7 +191,7 @@ void RequestHandler::executeSelectRequest(
                 if (!idx) {
                     errors.push_back(
                             makeDatabaseError(IOManagerMessageId::kErrorTableDoesNotExistInContext,
-                                    dbName, tableName));
+                                    databaseName, tableName));
                     continue;
                 }
                 tableIndex = *idx;
@@ -205,7 +205,7 @@ void RequestHandler::executeSelectRequest(
                     });
             if (it == tableColumnRecords.end()) {
                 errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorColumnDoesNotExist,
-                        dbName, dataSets[tableIndex]->getName(), columnName));
+                        databaseName, dataSets[tableIndex]->getName(), columnName));
             } else {
                 addColumnToResponse(response, *it->m_column, resultExpr.m_alias);
                 columnExpression->setDatasetTableIndex(tableIndex);
@@ -384,11 +384,11 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    const auto sysDb = m_instance.getDatabaseChecked(Database::kSystemDatabaseName);
-    const auto sysDbTable = sysDb->getTableChecked(Database::kSysDatabasesTableName);
+    const auto sysDb = m_instance.findDatabaseChecked(Database::kSystemDatabaseName);
+    const auto sysDbTable = sysDb->findTableChecked(Database::kSysDatabasesTableName);
 
-    const auto nameColumn = sysDbTable->getColumnChecked(Database::kSysDatabases_Name_ColumnName);
-    const auto uuidColumn = sysDbTable->getColumnChecked(Database::kSysDatabases_Uuid_ColumnName);
+    const auto nameColumn = sysDbTable->findColumnChecked(Database::kSysDatabases_Name_ColumnName);
+    const auto uuidColumn = sysDbTable->findColumnChecked(Database::kSysDatabases_Uuid_ColumnName);
 
     addColumnToResponse(response, *nameColumn, "");
     addColumnToResponse(response, *uuidColumn, "");

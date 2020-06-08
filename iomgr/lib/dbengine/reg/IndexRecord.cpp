@@ -13,7 +13,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-const Uuid IndexRecord::kClassUuid =
+const Uuid IndexRecord::s_classUuid =
         boost::lexical_cast<Uuid>("f6c807ee-f24a-4398-ae44-d189036c7842");
 
 IndexRecord::IndexRecord(const Index& index)
@@ -43,7 +43,7 @@ std::size_t IndexRecord::getSerializedSize(unsigned version) const noexcept
 
 std::uint8_t* IndexRecord::serializeUnchecked(std::uint8_t* buffer, unsigned version) const noexcept
 {
-    std::memcpy(buffer, kClassUuid.data, Uuid::static_size());
+    std::memcpy(buffer, s_classUuid.data, Uuid::static_size());
     buffer += Uuid::static_size();
     buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
@@ -63,8 +63,8 @@ std::size_t IndexRecord::deserialize(const std::uint8_t* buffer, std::size_t len
 {
     if (length < Uuid::static_size())
         helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
-    if (std::memcmp(kClassUuid.data, buffer, Uuid::static_size()) != 0)
-        helpers::reportClassUuidMismatch(kClassName, buffer, kClassUuid.data);
+    if (std::memcmp(s_classUuid.data, buffer, Uuid::static_size()) != 0)
+        helpers::reportClassUuidMismatch(kClassName, buffer, s_classUuid.data);
 
     std::size_t totalConsumed = Uuid::static_size();
 

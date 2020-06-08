@@ -29,15 +29,15 @@ char* _u128toa(const uint128_t* value, char* str, int base)
     return strcpy(str, _u128toa_impl(value, buffer, sizeof(buffer), base, false, false));
 }
 
-static const char kLowercaseDigits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-static const char kUppercaseDigits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static const char g_lowercaseDigits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+static const char g_uppercaseDigits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 char* _i128toa_impl(const int128_t* value, char* buffer, size_t bufferSize, int base,
         _Bool uppercase, _Bool sign)
 {
     const _Bool base10 = base == 10;
     const _Bool neg = base10 && *value < 0;
-    const char* const digits = uppercase ? kUppercaseDigits : kLowercaseDigits;
+    const char* const digits = uppercase ? g_uppercaseDigits : g_lowercaseDigits;
     int128_t v = (neg) ? *value : -*value;
     char* p = buffer + bufferSize - 1;
     *p = '\0';
@@ -52,7 +52,7 @@ char* _i128toa_impl(const int128_t* value, char* buffer, size_t bufferSize, int 
 char* _u128toa_impl(const uint128_t* value, char* buffer, size_t bufferSize, int base,
         _Bool uppercase, _Bool sign)
 {
-    const char* const digits = uppercase ? kUppercaseDigits : kLowercaseDigits;
+    const char* const digits = uppercase ? g_uppercaseDigits : g_lowercaseDigits;
     uint128_t v = *value;
     char* p = buffer + bufferSize - 1;
     *p = '\0';

@@ -38,13 +38,13 @@ RequestHandler::RequestHandler(
     , m_userId(userId)
     , m_currentDatabaseName(Database::kSystemDatabaseName)
 {
-    m_instance.getDatabaseChecked(m_currentDatabaseName)->use();
+    m_instance.findDatabaseChecked(m_currentDatabaseName)->use();
 }
 
 RequestHandler::~RequestHandler()
 {
     try {
-        m_instance.getDatabaseChecked(m_currentDatabaseName)->release();
+        m_instance.findDatabaseChecked(m_currentDatabaseName)->release();
     } catch (std::exception& ex) {
         try {
             LOG_ERROR << "RequestHandler: " << ex.what();

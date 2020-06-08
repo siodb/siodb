@@ -19,7 +19,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-const Uuid ConstraintDefinitionRecord::kClassUuid =
+const Uuid ConstraintDefinitionRecord::s_classUuid =
         boost::lexical_cast<Uuid>("2077e02b-168a-48ab-9a66-80f0effc4031");
 
 ConstraintDefinitionRecord::ConstraintDefinitionRecord(
@@ -51,7 +51,7 @@ std::size_t ConstraintDefinitionRecord::getSerializedSize(unsigned version) cons
 std::uint8_t* ConstraintDefinitionRecord::serializeUnchecked(
         std::uint8_t* buffer, unsigned version) const noexcept
 {
-    std::memcpy(buffer, kClassUuid.data, Uuid::static_size());
+    std::memcpy(buffer, s_classUuid.data, Uuid::static_size());
     buffer += Uuid::static_size();
     buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
@@ -64,8 +64,8 @@ std::size_t ConstraintDefinitionRecord::deserialize(const std::uint8_t* buffer, 
 {
     if (length < Uuid::static_size())
         helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
-    if (std::memcmp(kClassUuid.data, buffer, Uuid::static_size()) != 0)
-        helpers::reportClassUuidMismatch(kClassName, buffer, kClassUuid.data);
+    if (std::memcmp(s_classUuid.data, buffer, Uuid::static_size()) != 0)
+        helpers::reportClassUuidMismatch(kClassName, buffer, s_classUuid.data);
 
     std::size_t totalConsumed = Uuid::static_size();
 

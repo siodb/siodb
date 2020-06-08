@@ -42,7 +42,7 @@ public:
         : m_database(database)
         , m_id(constraintDefinitionRecord.m_id)
         , m_type(constraintDefinitionRecord.m_type)
-        , m_expression(decodeExpression(constraintDefinitionRecord.m_expression))
+        , m_expression(deserializeExpression(constraintDefinitionRecord.m_expression))
         , m_hash(constraintDefinitionRecord.m_hash)
         , m_writtenToStorage(true)
     {
@@ -140,11 +140,11 @@ private:
     std::uint64_t computeHash() const;
 
     /**
-     * Decodes constraint definition expression taking into account constraint type.
+     * Deserializes constraint definition expression taking into account constraint type.
      * @param expressionBinary Serialized expression in the binary format.
      * @return Expression object.
      */
-    static requests::ExpressionPtr decodeExpression(const BinaryValue& expressionBinary);
+    static requests::ExpressionPtr deserializeExpression(const BinaryValue& expressionBinary);
 
 private:
     /** Database that this constaint definition belongs to */

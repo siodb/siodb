@@ -9,7 +9,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-const char BlobWrapperClobStream::m_hexTable[16] = {
+const char BlobWrapperClobStream::s_hexTable[16] = {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
 BlobWrapperClobStream::BlobWrapperClobStream(BlobStream* blobStream, bool owner)
@@ -65,8 +65,8 @@ std::ptrdiff_t BlobWrapperClobStream::read(void* buffer, std::size_t bufferSize)
     // Convert to text as hex
     while (src < end) {
         const char srcByte = *src++;
-        const char hiChar = m_hexTable[(srcByte >> 4) & 0xF];
-        const char loChar = m_hexTable[srcByte & 0xF];
+        const char hiChar = s_hexTable[(srcByte >> 4) & 0xF];
+        const char loChar = s_hexTable[srcByte & 0xF];
         *dest++ = hiChar;
         if (dest == end) {
             m_pendingChar = loChar;

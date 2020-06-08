@@ -121,13 +121,13 @@ public:
      * Returns display name of the table.
      * @return Display name.
      */
-    std::string getDisplayName() const;
+    std::string makeDisplayName() const;
 
     /**
      * Returns display code of the table.
      * @return Display code.
      */
-    std::string getDisplayCode() const;
+    std::string makeDisplayCode() const;
 
     /**
      * Return indication that this is system table.
@@ -169,27 +169,15 @@ public:
     }
 
     /**
-     * Returns cached column info by column ID.
-     * @param columnId Column ID.
-     * @return Table column record if such column exists in the current column set.
-     * @throw DatabaseError if column doesn't exist in cache.
-     */
-    TableColumn getColumnById(std::uint64_t columnId) const
-    {
-        std::lock_guard lock(m_mutex);
-        return getColumnByIdUnlocked(columnId);
-    }
-
-    /**
      * Returns cached column info by column position.
      * @param position Column position.
      * @return Table column record if position is valid.
      * @throw DatabaseError if column doesn't exist in the current column set.
      */
-    TableColumn getColumnByPosition(std::uint32_t position) const
+    TableColumn findColumnByPosition(std::uint32_t position) const
     {
         std::lock_guard lock(m_mutex);
-        return getColumnByPositionUnlocked(position);
+        return findColumnByPositionUnlocked(position);
     }
 
     /**
@@ -228,7 +216,7 @@ public:
      * @return Column set with given ID.
      * @throw DatabaseError if column set doesn't exist
      */
-    ColumnSetPtr getColumnSetChecked(std::uint64_t columnSetId);
+    ColumnSetPtr findColumnSetChecked(std::uint64_t columnSetId);
 
     /**
      * Creates new column set.
@@ -272,10 +260,10 @@ public:
      * @param columnId Column ID.
      * @return Corresponding column object. Throws exception if requested column doesn't exist.
      */
-    ColumnPtr getColumnChecked(std::uint64_t columnId) const
+    ColumnPtr findColumnChecked(std::uint64_t columnId) const
     {
         std::lock_guard lock(m_mutex);
-        return getColumnCheckedUnlocked(columnId);
+        return findColumnCheckedUnlocked(columnId);
     }
 
     /**
@@ -283,10 +271,10 @@ public:
      * @param columnName Column name.
      * @return Corresponding column object. Throws exception if requested column doesn't exist.
      */
-    ColumnPtr getColumnChecked(const std::string& columnName) const
+    ColumnPtr findColumnChecked(const std::string& columnName) const
     {
         std::lock_guard lock(m_mutex);
-        return getColumnCheckedUnlocked(columnName);
+        return findColumnCheckedUnlocked(columnName);
     }
 
     /**
@@ -294,10 +282,10 @@ public:
      * @param columnId Column ID.
      * @return Corresponding column object or nullptr if it doesn't exist.
      */
-    ColumnPtr getColumn(std::uint64_t columnId) const
+    ColumnPtr findColumn(std::uint64_t columnId) const
     {
         std::lock_guard lock(m_mutex);
-        return getColumnUnlocked(columnId);
+        return findColumnUnlocked(columnId);
     }
 
     /**
@@ -305,10 +293,10 @@ public:
      * @param columnName Column name.
      * @return Corresponding column object or nullptr if it doesn't exist.
      */
-    ColumnPtr getColumn(const std::string& columnName) const
+    ColumnPtr findColumn(const std::string& columnName) const
     {
         std::lock_guard lock(m_mutex);
-        return getColumnUnlocked(columnName);
+        return findColumnUnlocked(columnName);
     }
 
     /**
@@ -316,7 +304,7 @@ public:
      * @param columnId Column ID.
      * @return Corresponding column position or empty value if it doesn't exist.
      */
-    std::optional<std::uint32_t> getColumnPosition(std::uint64_t columnId) const
+    std::optional<std::uint32_t> findColumnPosition(std::uint64_t columnId) const
     {
         std::lock_guard lock(m_mutex);
         return getColumnPositionUnlocked(columnId);
@@ -327,7 +315,7 @@ public:
      * @param columnName Column name.
      * @return Corresponding column position or empty value if it doesn't exist.
      */
-    std::optional<std::uint32_t> getColumnPosition(const std::string& columnName) const
+    std::optional<std::uint32_t> findColumnPosition(const std::string& columnName) const
     {
         std::lock_guard lock(m_mutex);
         return getColumnPositionUnlocked(columnName);
@@ -361,7 +349,7 @@ public:
      * @return Constraint object.
      * @throw DatabaseError if costraint doesn't exist.
      */
-    ConstraintPtr getConstraintChecked(Column* column, std::uint64_t constraintId);
+    ConstraintPtr findConstraintChecked(Column* column, std::uint64_t constraintId);
 
     /**
      * Returns "NOT NULL" system constraint definition.
@@ -378,9 +366,9 @@ public:
      * @return Constraint definition object.
      * @throws DatabaseError if constraint definition doesn't exist.
      */
-    ConstraintDefinitionPtr getConstraintDefinitionChecked(std::uint64_t constraintDefinitionId)
+    ConstraintDefinitionPtr findConstraintDefinitionChecked(std::uint64_t constraintDefinitionId)
     {
-        return m_database.getConstraintDefinitionChecked(constraintDefinitionId);
+        return m_database.findConstraintDefinitionChecked(constraintDefinitionId);
     }
 
     /**
@@ -487,7 +475,7 @@ public:
      * @param columnDefinitionId Column definition ID.
      * @throw DatabaseError if column definition doesn't exist.
      */
-    ColumnDefinitionPtr getColumnDefinitionChecked(std::uint64_t columnDefinitionId);
+    ColumnDefinitionPtr findColumnDefinitionChecked(std::uint64_t columnDefinitionId);
 
 private:
     /**
@@ -560,7 +548,7 @@ private:
      * @param columnId Column ID.
      * @return Column record or throws exception if column doesn't exist in cache.
      */
-    TableColumn getColumnByIdUnlocked(std::uint64_t columnId) const;
+    TableColumn findColumnByIdUnlocked(std::uint64_t columnId) const;
 
     /**
      * Returns cached column info by column position.
@@ -568,42 +556,35 @@ private:
      * @return Table column record if such column exists.
      * @throw DatabaseException if column doesn't exist in the current column set.
      */
-    TableColumn getColumnByPositionUnlocked(std::uint32_t position) const;
-
-    /**
-     * Returns cached column info by column name.
-     * @param columnName Column name.
-     * @return Column record or throws exception if column doesn't exist in cache.
-     */
-    ColumnRecord getColumnInfoByNameUnlocked(const std::string& columnName) const;
+    TableColumn findColumnByPositionUnlocked(std::uint32_t position) const;
 
     /**
      * Returns existing column object. Does not acquire column registry lock.
      * @param columnId Column Id.
      * @return Corresponding column object. Throws exception if requested column doesn't exist.
      */
-    ColumnPtr getColumnCheckedUnlocked(uint64_t columnId) const;
+    ColumnPtr findColumnCheckedUnlocked(uint64_t columnId) const;
 
     /**
      * Returns existing column object. Does not acquire column registry lock.
      * @param columnName Column name.
      * @return Corresponding column object. Throws exception if requested column doesn't exist.
      */
-    ColumnPtr getColumnCheckedUnlocked(const std::string& columnName) const;
+    ColumnPtr findColumnCheckedUnlocked(const std::string& columnName) const;
 
     /**
      * Returns existing column object. Does not acquire column registry lock.
      * @param columnId Column Id.
      * @return Corresponding column object or nullptr if it doesn't exist.
      */
-    ColumnPtr getColumnUnlocked(uint64_t columnId) const noexcept;
+    ColumnPtr findColumnUnlocked(uint64_t columnId) const noexcept;
 
     /**
      * Returns existing column object. Does not acquire column registry lock.
      * @param columnName Column name.
      * @return Corresponding column object or nullptr if it doesn't exist.
      */
-    ColumnPtr getColumnUnlocked(const std::string& columnName) const noexcept;
+    ColumnPtr findColumnUnlocked(const std::string& columnName) const noexcept;
 
     /**
      * Returns existing column position. Does not acquire column registry lock.

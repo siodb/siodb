@@ -19,7 +19,7 @@
 
 namespace siodb {
 
-const std::vector<void*> SiodbException::m_emptyStackTrace;
+const std::vector<void*> SiodbException::s_emptyStackTrace;
 
 std::string SiodbException::getStackTraceAsString()
 {

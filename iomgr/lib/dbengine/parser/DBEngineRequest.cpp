@@ -6,11 +6,11 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-const std::unordered_set<ConstraintType> Constraint::m_tableOnlyConstraintTypes {
+const std::unordered_set<ConstraintType> Constraint::s_tableOnlyConstraintTypes {
         ConstraintType::kForeignKey,
 };
 
-const std::unordered_set<ConstraintType> Constraint::m_columnOnlyConstraintTypes {
+const std::unordered_set<ConstraintType> Constraint::s_columnOnlyConstraintTypes {
         ConstraintType::kNotNull,
         ConstraintType::kDefaultValue,
         ConstraintType::kReferences,

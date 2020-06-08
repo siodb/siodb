@@ -45,14 +45,14 @@ public:
      * @param blockId Block ID.
      * @return Parent block ID or zero if there is no parent block.
      */
-    std::uint64_t getPrevBlockId(std::uint64_t blockId) const;
+    std::uint64_t findPrevBlockId(std::uint64_t blockId) const;
 
     /**
      * Populates list of next block IDs for a given block.
      * @param blockId Block ID.
      * @return List of next blocks.
      */
-    std::vector<std::uint64_t> getNextBlockIds(std::uint64_t blockId) const;
+    std::vector<std::uint64_t> findNextBlockIds(std::uint64_t blockId) const;
 
     /**
      * Records new block and next block if applicable.

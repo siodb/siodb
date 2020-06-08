@@ -8,6 +8,7 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "Node.h"
 #include "UniqueLinearIndex.h"
+#include "../Debug.h"
 #include "../ThrowDatabaseError.h"
 
 namespace siodb::iomgr::dbengine::uli {
@@ -43,7 +44,7 @@ std::size_t FileData::countNodesInFile() const
     return nodeCount;
 }
 
-NodePtr FileData::getNode(std::uint64_t nodeId)
+NodePtr FileData::findNode(std::uint64_t nodeId)
 {
     auto cachedNode = m_nodeCache.get(nodeId);
     return cachedNode ? *cachedNode : readNode(nodeId);

@@ -24,7 +24,8 @@ std::uint64_t ConstraintDefinition::computeHash() const
     return ConstraintDefinitionRecord::computeHash(m_type, expressionBinary);
 }
 
-requests::ExpressionPtr ConstraintDefinition::decodeExpression(const BinaryValue& expressionBinary)
+requests::ExpressionPtr ConstraintDefinition::deserializeExpression(
+        const BinaryValue& expressionBinary)
 {
     requests::ExpressionPtr result;
     requests::Expression::deserialize(expressionBinary.data(), expressionBinary.size(), result);

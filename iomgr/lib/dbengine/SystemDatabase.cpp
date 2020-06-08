@@ -264,11 +264,11 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
 
     // Obtain columns
     const auto masterColumn = m_sysUsersTable->getMasterColumn();
-    const auto nameColumn = m_sysUsersTable->getColumnChecked(kSysUsers_Name_ColumnName);
-    const auto realNameColumn = m_sysUsersTable->getColumnChecked(kSysUsers_RealName_ColumnName);
-    const auto stateColumn = m_sysUsersTable->getColumnChecked(kSysUsers_State_ColumnName);
+    const auto nameColumn = m_sysUsersTable->findColumnChecked(kSysUsers_Name_ColumnName);
+    const auto realNameColumn = m_sysUsersTable->findColumnChecked(kSysUsers_RealName_ColumnName);
+    const auto stateColumn = m_sysUsersTable->findColumnChecked(kSysUsers_State_ColumnName);
     const auto descriptionColumn =
-            m_sysUsersTable->getColumnChecked(kSysUsers_Description_ColumnName);
+            m_sysUsersTable->findColumnChecked(kSysUsers_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -302,7 +302,7 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysUsersTable->getName(), m_uuid, m_sysUsersTable->getId(), 2);
         }
@@ -338,7 +338,7 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
         LOG_DEBUG << "Database " << m_name << ": readAllUsers: User #" << trid << " '"
                   << userRecord.m_name << '\'';
         reg.insert(std::move(userRecord));
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     // Finally swap registries
     userRegistry.swap(reg);
@@ -351,14 +351,14 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
 
     // Obtain columns
     const auto masterColumn = m_sysDatabasesTable->getMasterColumn();
-    const auto uuidColumn = m_sysDatabasesTable->getColumnChecked(kSysDatabases_Uuid_ColumnName);
-    const auto nameColumn = m_sysDatabasesTable->getColumnChecked(kSysDatabases_Name_ColumnName);
+    const auto uuidColumn = m_sysDatabasesTable->findColumnChecked(kSysDatabases_Uuid_ColumnName);
+    const auto nameColumn = m_sysDatabasesTable->findColumnChecked(kSysDatabases_Name_ColumnName);
     const auto cipherIdColumn =
-            m_sysDatabasesTable->getColumnChecked(kSysDatabases_CipherId_ColumnName);
+            m_sysDatabasesTable->findColumnChecked(kSysDatabases_CipherId_ColumnName);
     const auto cipherKeyColumn =
-            m_sysDatabasesTable->getColumnChecked(kSysDatabases_CipherKey_ColumnName);
+            m_sysDatabasesTable->findColumnChecked(kSysDatabases_CipherKey_ColumnName);
     const auto descriptionColumn =
-            m_sysDatabasesTable->getColumnChecked(kSysDatabases_Description_ColumnName);
+            m_sysDatabasesTable->findColumnChecked(kSysDatabases_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -393,7 +393,7 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
         LOG_DEBUG << "readAllDatabases: Next key: " << trid;
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysDatabasesTable->getName(), m_uuid, m_sysDatabasesTable->getId(), 2);
         }
@@ -428,7 +428,7 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
         LOG_DEBUG << "Database " << m_name << ": readAllDatabases: Database #" << trid << " '"
                   << databaseRecord.m_name << '\'';
         reg.insert(std::move(databaseRecord));
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     // Finally swap registries
     databaseRegistry.swap(reg);
@@ -552,20 +552,20 @@ void SystemDatabase::updateUser(
 
     if (params.m_realName) {
         columnValues.emplace_back(*params.m_realName);
-        columnPositions.push_back(m_sysUsersTable->getColumnChecked(kSysUsers_RealName_ColumnName)
+        columnPositions.push_back(m_sysUsersTable->findColumnChecked(kSysUsers_RealName_ColumnName)
                                           ->getCurrentPosition());
     }
 
     if (params.m_description) {
         columnValues.emplace_back(*params.m_description);
         columnPositions.push_back(
-                m_sysUsersTable->getColumnChecked(kSysUsers_Description_ColumnName)
+                m_sysUsersTable->findColumnChecked(kSysUsers_Description_ColumnName)
                         ->getCurrentPosition());
     }
 
     if (params.m_active) {
         columnValues.emplace_back(std::uint8_t(*params.m_active ? 1 : 0));
-        columnPositions.push_back(m_sysUsersTable->getColumnChecked(kSysUsers_State_ColumnName)
+        columnPositions.push_back(m_sysUsersTable->findColumnChecked(kSysUsers_State_ColumnName)
                                           ->getCurrentPosition());
     }
 
@@ -590,14 +590,14 @@ void SystemDatabase::updateUserAccessKey(std::uint64_t accessKeyId,
         columnValues.emplace_back(*params.m_description);
         columnPositions.push_back(
                 m_sysUserAccessKeysTable
-                        ->getColumnChecked(kSysUserAccessKeys_Description_ColumnName)
+                        ->findColumnChecked(kSysUserAccessKeys_Description_ColumnName)
                         ->getCurrentPosition());
     }
 
     if (params.m_active) {
         columnValues.emplace_back(std::uint8_t(*params.m_active ? 1 : 0));
         columnPositions.push_back(
-                m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_State_ColumnName)
+                m_sysUserAccessKeysTable->findColumnChecked(kSysUserAccessKeys_State_ColumnName)
                         ->getCurrentPosition());
     }
 
@@ -665,15 +665,15 @@ std::size_t SystemDatabase::readAllUserAccessKeys(UserAccessKeyRegistries& userA
     // Obtain columns
     const auto masterColumn = m_sysUserAccessKeysTable->getMasterColumn();
     const auto userIdColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_UserId_ColumnName);
+            m_sysUserAccessKeysTable->findColumnChecked(kSysUserAccessKeys_UserId_ColumnName);
     const auto nameColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_Name_ColumnName);
+            m_sysUserAccessKeysTable->findColumnChecked(kSysUserAccessKeys_Name_ColumnName);
     const auto textColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_Text_ColumnName);
+            m_sysUserAccessKeysTable->findColumnChecked(kSysUserAccessKeys_Text_ColumnName);
     const auto stateColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_State_ColumnName);
+            m_sysUserAccessKeysTable->findColumnChecked(kSysUserAccessKeys_State_ColumnName);
     const auto descriptionColumn =
-            m_sysUserAccessKeysTable->getColumnChecked(kSysUserAccessKeys_Description_ColumnName);
+            m_sysUserAccessKeysTable->findColumnChecked(kSysUserAccessKeys_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -707,7 +707,7 @@ std::size_t SystemDatabase::readAllUserAccessKeys(UserAccessKeyRegistries& userA
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysUserAccessKeysTable->getName(), m_uuid, m_sysUserAccessKeysTable->getId(),
                     2);
@@ -742,7 +742,7 @@ std::size_t SystemDatabase::readAllUserAccessKeys(UserAccessKeyRegistries& userA
         LOG_DEBUG << "Database " << m_name << ": readAllUserAccessKeys: User access key #" << trid
                   << " '" << accessKeyRecord.m_name << '\'';
         regs[accessKeyRecord.m_userId].insert(std::move(accessKeyRecord));
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     // Finally swap registries
     userAccessKeyRegistries.swap(regs);

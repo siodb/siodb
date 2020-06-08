@@ -45,7 +45,7 @@ struct FileData {
      * @param nodeId Node ID.
      * @return Node object.
      */
-    NodePtr getNode(std::uint64_t nodeId);
+    NodePtr findNode(std::uint64_t nodeId);
 
     /**
      * Reads in existing physical node.

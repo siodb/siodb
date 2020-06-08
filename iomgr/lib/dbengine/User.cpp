@@ -38,9 +38,9 @@ User::User(const UserRecord& userRecord)
         m_accessKeys.push_back(std::make_shared<UserAccessKey>(*this, accessKeyRecord));
 }
 
-UserAccessKeyPtr User::getUserAccessKeyChecked(const std::string& name) const
+UserAccessKeyPtr User::findUserAccessKeyChecked(const std::string& name) const
 {
-    if (auto userAccessKey = getUserAccessKeyUnlocked(name)) return userAccessKey;
+    if (auto userAccessKey = findUserAccessKeyUnlocked(name)) return userAccessKey;
     throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, m_name, name);
 }
 
@@ -99,7 +99,7 @@ std::string&& User::validateUserName(std::string&& userName)
     throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, userName);
 }
 
-UserAccessKeyPtr User::getUserAccessKeyUnlocked(const std::string& name) const noexcept
+UserAccessKeyPtr User::findUserAccessKeyUnlocked(const std::string& name) const noexcept
 {
     auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
             [&name](const auto& accessKey) noexcept { return accessKey->getName() == name; });

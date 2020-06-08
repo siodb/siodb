@@ -393,7 +393,7 @@ CXX_HDR:= \
 	dbengine/DatabaseObjectName.h  \
 	dbengine/DatabaseObjectType.h  \
 	dbengine/DatabasePtr.h  \
-	dbengine/DebugDbEngine.h  \
+	dbengine/Debug.h  \
 	dbengine/DefaultValueConstraint.h  \
 	dbengine/DmlOperationType.h  \
 	dbengine/FirstUserObjectId.h  \

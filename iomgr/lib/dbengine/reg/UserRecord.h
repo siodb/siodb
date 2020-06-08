@@ -101,7 +101,7 @@ struct UserRecord {
     UserAccessKeyRegistry m_accessKeys;
 
     /** Structure UUID */
-    static const Uuid kClassUuid;
+    static const Uuid s_classUuid;
 
     /** Structure name */
     static constexpr const char* kClassName = "UserRecord";

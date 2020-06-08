@@ -96,7 +96,7 @@ struct IndexColumnRecord {
     bool m_sortDescending;
 
     /** Structure UUID */
-    static const Uuid kClassUuid;
+    static const Uuid s_classUuid;
 
     /** Structure name */
     static constexpr const char* kClassName = "IndexColumnRecord";

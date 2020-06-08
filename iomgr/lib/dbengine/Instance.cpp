@@ -68,7 +68,7 @@ Instance::Instance(const config::InstanceOptions& options)
         createInstanceData();
 }
 
-std::string Instance::getDisplayName() const
+std::string Instance::makeDisplayName() const
 {
     std::ostringstream oss;
     oss << '\'' << m_name << '\'';
@@ -86,24 +86,25 @@ std::size_t Instance::getDatbaseCount() const
     return m_databaseRegistry.size();
 }
 
-std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName() const noexcept
+std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName() const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_databaseRegistry.byName();
-    std::vector<DatabaseRecord> dbRecords(index.begin(), index.end());
-    std::sort(dbRecords.begin(), dbRecords.end(), [](const auto& left, const auto& right) noexcept {
-        return left.m_name < right.m_name;
-    });
-    return dbRecords;
+    std::vector<DatabaseRecord> databaseRecords(index.begin(), index.end());
+    std::sort(databaseRecords.begin(), databaseRecords.end(),
+            [](const auto& left, const auto& right) noexcept {
+                return left.m_name < right.m_name;
+            });
+    return databaseRecords;
 }
 
-DatabasePtr Instance::getDatabaseChecked(const std::string& databaseName)
+DatabasePtr Instance::findDatabaseChecked(const std::string& databaseName)
 {
-    if (auto db = getDatabase(databaseName)) return db;
+    if (auto database = findDatabase(databaseName)) return database;
     throwDatabaseError(IOManagerMessageId::kErrorDatabaseDoesNotExist, databaseName);
 }
 
-DatabasePtr Instance::getDatabase(const std::string& databaseName)
+DatabasePtr Instance::findDatabase(const std::string& databaseName)
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_databaseRegistry.byName();
@@ -143,7 +144,7 @@ bool Instance::dropDatabase(
 {
     std::lock_guard lock(m_cacheMutex);
 
-    const auto database = getDatabase(name);
+    const auto database = findDatabase(name);
     if (!database) {
         if (databaseMustExist)
             throwDatabaseError(IOManagerMessageId::kErrorDatabaseDoesNotExist, name);
@@ -172,17 +173,17 @@ bool Instance::dropDatabase(
     return true;
 }
 
-UserPtr Instance::getUserChecked(const std::string& userName)
+UserPtr Instance::findUserChecked(const std::string& userName)
 {
     std::lock_guard lock(m_mutex);
-    if (auto user = getUserUnlocked(userName)) return user;
+    if (auto user = findUserUnlocked(userName)) return user;
     throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
 }
 
-UserPtr Instance::getUserChecked(std::uint32_t userId)
+UserPtr Instance::findUserChecked(std::uint32_t userId)
 {
     std::lock_guard lock(m_mutex);
-    if (auto user = getUserUnlocked(userId)) return user;
+    if (auto user = findUserUnlocked(userId)) return user;
     throwDatabaseError(IOManagerMessageId::kErrorUserIdDoesNotExist, userId);
 }
 
@@ -221,7 +222,7 @@ void Instance::dropUser(const std::string& name, bool userMustExist, std::uint32
     const auto id = it->m_id;
     if (id == User::kSuperUserId) throwDatabaseError(IOManagerMessageId::kErrorCannotDropSuperUser);
 
-    auto user = getUserUnlocked(*it);
+    auto user = findUserUnlocked(*it);
     m_userCache.erase(id);
     index.erase(it);
 
@@ -240,7 +241,7 @@ void Instance::updateUser(
     if (it == index.cend()) throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, name);
     auto& mutableUserRecord = stdext::as_mutable(*it);
 
-    const auto user = getUserUnlocked(*it);
+    const auto user = findUserUnlocked(*it);
     const auto id = user->getId();
 
     const bool needUpdateRealName = params.m_realName && *params.m_realName != it->m_realName;
@@ -290,7 +291,7 @@ std::uint64_t Instance::createUserAccessKey(const std::string& userName, const s
     // NOTE: We don't index by UserRecord::m_accessKeys.
     auto& mutableUserRecord = stdext::as_mutable(*it);
 
-    const auto user = getUserUnlocked(*it);
+    const auto user = findUserUnlocked(*it);
 
     const auto id = m_systemDatabase->generateNextUserAccessKeyId();
     const auto accessKey = user->addUserAccessKey(id, std::string(keyName), std::string(text),
@@ -323,7 +324,7 @@ void Instance::dropUserAccessKey(const std::string& userName, const std::string&
     if (itKey == accessKeyIndex.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, name);
 
-    const auto user = getUserUnlocked(*itUser);
+    const auto user = findUserUnlocked(*itUser);
 
     const auto accessKeyId = itKey->m_id;
     accessKeyIndex.erase(itKey);
@@ -346,8 +347,8 @@ void Instance::updateUserAccessKey(const std::string& userName, const std::strin
     if (itKey == accessKeyIndex.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, keyName);
 
-    const auto user = getUserUnlocked(*itUser);
-    const auto userAccessKey = user->getUserAccessKeyChecked(keyName);
+    const auto user = findUserUnlocked(*itUser);
+    const auto userAccessKey = user->findUserAccessKeyChecked(keyName);
 
     const bool needUpdateDescription =
             params.m_description && *params.m_description != itKey->m_description;
@@ -389,7 +390,7 @@ void Instance::updateUserAccessKey(const std::string& userName, const std::strin
 
 void Instance::beginUserAuthentication(const std::string& userName)
 {
-    const auto user = getUserChecked(userName);
+    const auto user = findUserChecked(userName);
     if (!user->isActive()) throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
     if (user->getActiveKeyCount() == 0)
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
@@ -398,7 +399,7 @@ void Instance::beginUserAuthentication(const std::string& userName)
 std::pair<std::uint32_t, Uuid> Instance::authenticateUser(
         const std::string& userName, const std::string& signature, const std::string& challenge)
 {
-    const auto user = getUserChecked(userName);
+    const auto user = findUserChecked(userName);
     const auto accessKeys = user->getAccessKeys();
 
     if (!user->isActive()) throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
@@ -517,7 +518,7 @@ void Instance::loadSuperUser()
 {
     LOG_DEBUG << "Instance: Loading super user.";
     m_systemDatabase->readAllUsers(m_userRegistry);
-    m_superUser = getUserChecked(User::kSuperUserId);
+    m_superUser = findUserChecked(User::kSuperUserId);
 }
 
 void Instance::recordSuperUser()
@@ -586,7 +587,7 @@ std::string Instance::loadSuperUserInitialAccessKey() const
     return accessKey;
 }
 
-DatabasePtr Instance::getDatabaseUnlocked(const std::string& databaseName)
+DatabasePtr Instance::findDatabaseUnlocked(const std::string& databaseName)
 {
     const auto& databasesByName = m_databaseRegistry.byName();
     const auto it = databasesByName.find(databaseName);
@@ -623,7 +624,7 @@ void Instance::checkDataConsistency()
 
 int Instance::openMetadataFile() const
 {
-    const auto metadataFilePath = getMetadataFilePath();
+    const auto metadataFilePath = makeMetadataFilePath();
     int fd = ::open(metadataFilePath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME,
             kDataFileCreationMode);
     if (fd < 0) {
@@ -666,7 +667,7 @@ void Instance::saveMetadata() const
     }
 }
 
-std::string Instance::getMetadataFilePath() const
+std::string Instance::makeMetadataFilePath() const
 {
     return utils::constructPath(m_dataDir, kMetadataFileName);
 }
@@ -733,25 +734,25 @@ Uuid Instance::beginSession()
     return sessionUuid;
 }
 
-UserPtr Instance::getUserUnlocked(const std::string& userName)
+UserPtr Instance::findUserUnlocked(const std::string& userName)
 {
     DBG_LOG_DEBUG("Looking up user '" << userName << "'");
     const auto& index = m_userRegistry.byName();
     const auto it = index.find(userName);
     if (it == index.cend()) return nullptr;
-    return getUserUnlocked(*it);
+    return findUserUnlocked(*it);
 }
 
-UserPtr Instance::getUserUnlocked(std::uint32_t userId)
+UserPtr Instance::findUserUnlocked(std::uint32_t userId)
 {
     DBG_LOG_DEBUG("Looking up user #" << userId);
     const auto& index = m_userRegistry.byId();
     const auto it = index.find(userId);
     if (it == index.cend()) return nullptr;
-    return getUserUnlocked(*it);
+    return findUserUnlocked(*it);
 }
 
-UserPtr Instance::getUserUnlocked(const UserRecord& userRecord)
+UserPtr Instance::findUserUnlocked(const UserRecord& userRecord)
 {
     const auto cachedUser = m_userCache.get(userRecord.m_id);
     if (cachedUser) return *cachedUser;

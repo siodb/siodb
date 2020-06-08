@@ -39,7 +39,7 @@ public:
     IndexColumn(Index& index, const IndexColumnRecord& indexColumnRecord)
         : m_index(validateIndex(index, indexColumnRecord))
         , m_id(indexColumnRecord.m_id)
-        , m_columnDefinition(m_index.getTable().getColumnDefinitionChecked(
+        , m_columnDefinition(m_index.getTable().findColumnDefinitionChecked(
                   indexColumnRecord.m_columnDefinitionId))
         , m_sortDescending(indexColumnRecord.m_sortDescending)
     {

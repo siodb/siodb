@@ -30,7 +30,7 @@ TEST(DML_Update, UpdateAllValues)
             {"I16", siodb::COLUMN_DATA_TYPE_INT16, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_1", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -137,7 +137,7 @@ TEST(DML_Update, UpdateWhereByTRID)
             {"U8", siodb::COLUMN_DATA_TYPE_UINT8, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_2", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -261,7 +261,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
             {"D", siodb::COLUMN_DATA_TYPE_DOUBLE, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_3", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_3", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -395,7 +395,7 @@ TEST(DML_Update, UpdateSeveralColumns)
             {"U32", siodb::COLUMN_DATA_TYPE_UINT32, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_4", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_4", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -519,7 +519,7 @@ TEST(DML_Update, UpdateConcatString)
             {"U8", siodb::COLUMN_DATA_TYPE_UINT8, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("UPDATE_TEST_5", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_5", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------

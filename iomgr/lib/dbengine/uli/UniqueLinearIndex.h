@@ -113,7 +113,7 @@ public:
      * @param count Number of values that can fit in the outout buffer.
      * @return Number of values actually copied.
      */
-    std::uint64_t getValue(const void* key, void* value, std::size_t count) override;
+    std::uint64_t findValue(const void* key, void* value, std::size_t count) override;
 
     /**
      * Counts how much values available for this key.
@@ -141,14 +141,14 @@ public:
      * @param key Buffer for storing key.
      * @return true if minimum key exists, false if index is empty.
      */
-    bool getFirstKey(void* key) override;
+    bool findFirstKey(void* key) override;
 
     /**
      * Returns last key in the index storage. Always reads index storage.
      * @param key Buffer for storing key.
      * @return true if minimum key exists, false if index is empty.
      */
-    bool getLastKey(void* key) override;
+    bool findLastKey(void* key) override;
 
     /**
      * Returns previous key in the index.
@@ -156,7 +156,7 @@ public:
      * @param prevKey Buffer for storing previous key.
      * @return true if previous key obtained, false otherwise.
      */
-    bool getPrevKey(const void* key, void* prevKey) override;
+    bool findPreviousKey(const void* key, void* prevKey) override;
 
     /**
      * Returns next key in the index.
@@ -164,7 +164,7 @@ public:
      * @param nextKey Buffer for storing next key.
      * @return true if next key obtained, false otherwise.
      */
-    bool getNextKey(const void* key, void* nextKey) override;
+    bool findNextKey(const void* key, void* nextKey) override;
 
 private:
     /** Index file header */
@@ -221,14 +221,14 @@ private:
      * @return Node object if node found.
      * @throw DatabaseError if node not found.
      */
-    uli::NodePtr getNodeChecked(std::uint64_t nodeId);
+    uli::NodePtr findNodeChecked(std::uint64_t nodeId);
 
     /**
      * Returns node with given ID.
      * @param nodeId A node Id.
      * @return Node object or nullptr if not found.
      */
-    uli::NodePtr getNode(std::uint64_t nodeId);
+    uli::NodePtr findNode(std::uint64_t nodeId);
 
     /**
      * Makes new physical node and corresponding node object.
@@ -366,30 +366,30 @@ private:
     static bool validateKeyType(const IndexKeyTraits& keyTraits);
 
     /**
-     * Gets leading (minimal) key in the index.
+     * Finds leading (minimal) key in the index.
      * @return Minimal key in the index, if no elements - maximal possible key.
      */
-    BinaryValue getLeadingKey();
+    BinaryValue findLeadingKey();
 
     /**
-     * Gets leading (minimal) key in the index.
+     * Find leading (minimal) key in the index.
      * @param key Key buffer.
      * @return true if leading key found, false is index is empty.
      */
-    bool getLeadingKey(void* key);
+    bool findLeadingKey(void* key);
 
     /**
-     * Gets trailing (maximum) key in the index.
+     * Finds trailing (maximum) key in the index.
      * @return Maximum key in the index, if no elements - maximal possible key.
      */
-    BinaryValue getTrailingKey();
+    BinaryValue findTrailingKey();
 
     /**
-     * Gets trailing (maximum) key in the index.
+     * Finds trailing (maximum) key in the index.
      * @param key Key buffer.
      * @return true if leading key found, false is index is empty.
      */
-    bool getTrailingKey(void* key);
+    bool findTrailingKey(void* key);
 
     /**
      * Gets key before (less) in the index.
@@ -397,7 +397,7 @@ private:
      * @param keyBefore Buffer for a key before.
      * @return true if key before exists, false if not.
      */
-    bool getKeyBefore(const void* key, void* keyBefore);
+    bool findKeyBefore(const void* key, void* keyBefore);
 
     /**
      * Gets key after (less) in the index.
@@ -405,7 +405,7 @@ private:
      * @param keyAfter Buffer for a key after.
      * @return true if key before exists, false if not.
      */
-    bool getKeyAfter(const void* key, void* keyAfter);
+    bool findKeyAfter(const void* key, void* keyAfter);
 
     /**
      * Updates min and max keys after erasing/deletion.

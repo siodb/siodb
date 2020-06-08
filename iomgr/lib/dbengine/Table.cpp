@@ -51,7 +51,7 @@ Table::Table(Database& database, const TableRecord& tableRecord)
     , m_dataDir(ensureDataDir(
               utils::constructPath(database.getDataDir(), kTableDataDirPrefix, m_id), false))
     , m_columnSetCache(kColumnSetCacheCapacity)
-    , m_currentColumnSet(getColumnSetChecked(tableRecord.m_currentColumnSetId))
+    , m_currentColumnSet(findColumnSetChecked(tableRecord.m_currentColumnSetId))
     , m_constraintCache(*this, kConstraintCacheCapacity)
     , m_firstUserTrid(tableRecord.m_firstUserTrid)
 {
@@ -60,14 +60,14 @@ Table::Table(Database& database, const TableRecord& tableRecord)
     m_masterColumn->loadMasterColumnMainIndex();
 }
 
-std::string Table::getDisplayName() const
+std::string Table::makeDisplayName() const
 {
     std::ostringstream oss;
     oss << '\'' << m_database.getName() << "'.'" << m_name << '\'';
     return oss.str();
 }
 
-std::string Table::getDisplayCode() const
+std::string Table::makeDisplayCode() const
 {
     std::ostringstream oss;
     oss << m_database.getUuid() << '.' << m_id;
@@ -77,7 +77,7 @@ std::string Table::getDisplayCode() const
 std::uint32_t Table::getColumnCurrentPosition(std::uint64_t columnId) const
 {
     std::lock_guard lock(m_mutex);
-    return m_currentColumnSet->getColumnPosition(columnId);
+    return m_currentColumnSet->findColumnPosition(columnId);
 }
 
 std::vector<ColumnPtr> Table::getColumnsOrderedByPosition() const
@@ -98,12 +98,12 @@ std::uint64_t Table::getCurrentColumnSetId() const
     return m_currentColumnSet->getId();
 }
 
-ColumnSetPtr Table::getColumnSetChecked(std::uint64_t columnSetId)
+ColumnSetPtr Table::findColumnSetChecked(std::uint64_t columnSetId)
 {
     std::lock_guard lock(m_mutex);
     const auto cachedColumnSet = m_columnSetCache.get(columnSetId);
     if (cachedColumnSet) return *cachedColumnSet;
-    const auto record = m_database.getColumnSetRecord(columnSetId);
+    const auto record = m_database.findColumnSetRecord(columnSetId);
     return createColumnSetUnlocked(record);
 }
 
@@ -164,12 +164,12 @@ ConstraintPtr Table::createConstraint(std::string&& name,
     return constraint;
 }
 
-ConstraintPtr Table::getConstraintChecked(Column* column, std::uint64_t constraintId)
+ConstraintPtr Table::findConstraintChecked(Column* column, std::uint64_t constraintId)
 {
     std::lock_guard lock(m_mutex);
     const auto cachedConstraint = m_constraintCache.get(constraintId);
     if (cachedConstraint) return *cachedConstraint;
-    return createConstraintUnlocked(column, m_database.getConstraintRecord(constraintId));
+    return createConstraintUnlocked(column, m_database.findConstraintRecord(constraintId));
 }
 
 std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
@@ -261,9 +261,9 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
         const auto& columns = m_currentColumnSet->getColumns();
         for (std::size_t i = currentValueCount; i < requiredValueCount; ++i) {
             const auto& columnSetColumn = columns.at(i + 1);
-            const auto column = getColumnChecked(columnSetColumn->getColumnId());
+            const auto column = findColumnChecked(columnSetColumn->getColumnId());
             const auto columnDefinition =
-                    column->getColumnDefinitionChecked(columnSetColumn->getColumnDefinitionId());
+                    column->findColumnDefinitionChecked(columnSetColumn->getColumnDefinitionId());
             columnValues.at(i) = columnDefinition->getDefaultValue();
         }
     }
@@ -284,7 +284,7 @@ bool Table::deleteRow(std::uint64_t trid, const TransactionParameters& transacti
     // Find row
     std::uint8_t key[8], value[12];
     ::pbeEncodeUInt64(trid, key);
-    if (!m_masterColumn->getMasterColumnMainIndex()->getValue(key, value, 1)) return false;
+    if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, value, 1)) return false;
 
     // Read master column record
     ColumnDataAddress oldMcrAddr;
@@ -304,7 +304,7 @@ void Table::deleteRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mc
             mcr.getCreateTimestamp(), transactionParameters.m_timestamp, DmlOperationType::kDelete,
             transactionParameters.m_userId, mcr.getTableRowId(), m_currentColumnSet->getId(),
             mcrAddress);
-    m_masterColumn->putMasterColumnRecord(newMcr);
+    m_masterColumn->writeMasterColumnRecord(newMcr);
 }
 
 bool Table::updateRow(std::uint64_t trid, std::vector<Variant>&& columnValues,
@@ -315,7 +315,7 @@ bool Table::updateRow(std::uint64_t trid, std::vector<Variant>&& columnValues,
     // Find row
     std::uint8_t key[8], value[12];
     ::pbeEncodeUInt64(trid, key);
-    if (!m_masterColumn->getMasterColumnMainIndex()->getValue(key, value, 1)) return false;
+    if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, value, 1)) return false;
 
     // Read master column record
     ColumnDataAddress mcrAddr;
@@ -357,7 +357,7 @@ void Table::updateRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mc
         for (const auto columnPosition : columnPositions) {
             const auto& tableColumnRecord = tableColumns[columnPosition];
             if (tableColumnRecord->isMasterColumn()) continue;
-            auto res = tableColumnRecord->putRecord(std::move(columnValues[valueIndex]));
+            auto res = tableColumnRecord->writeRecord(std::move(columnValues[valueIndex]));
             // Normal column positions start from 1, column at position 0 is master column.
             auto& record = columnRecords[columnPosition - 1];
             record.setAddress(res.first);
@@ -366,7 +366,7 @@ void Table::updateRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mc
             ++valueIndex;
         }
         newMcr.setColumnRecords(std::move(columnRecords));
-        m_masterColumn->putMasterColumnRecord(newMcr);
+        m_masterColumn->writeMasterColumnRecord(newMcr);
     } catch (...) {
         // Rollback updated columns
         auto blockIt = nextBlockIds.cbegin();
@@ -445,9 +445,9 @@ void Table::setLastSystemTrid(std::uint64_t lastSystemTrid)
     m_masterColumn->setLastSystemTrid(lastSystemTrid);
 }
 
-ColumnDefinitionPtr Table::getColumnDefinitionChecked(std::uint64_t columnDefinitionId)
+ColumnDefinitionPtr Table::findColumnDefinitionChecked(std::uint64_t columnDefinitionId)
 {
-    const auto columnDefinitionRecord = m_database.getColumnDefinitionRecord(columnDefinitionId);
+    const auto columnDefinitionRecord = m_database.findColumnDefinitionRecord(columnDefinitionId);
     std::lock_guard lock(m_mutex);
     const auto& index = m_currentColumns.byColumnId();
     const auto it = index.find(columnDefinitionRecord.m_columnId);
@@ -456,7 +456,7 @@ ColumnDefinitionPtr Table::getColumnDefinitionChecked(std::uint64_t columnDefini
                 columnDefinitionId, columnDefinitionRecord.m_columnId, m_database.getName(), m_name,
                 m_database.getUuid(), m_id);
     }
-    return it->m_column->getColumnDefinitionChecked(columnDefinitionId);
+    return it->m_column->findColumnDefinitionChecked(columnDefinitionId);
 }
 
 // --- internals ---
@@ -488,15 +488,15 @@ void Table::loadColumnsUnlocked()
     std::uint32_t position = 0;
     for (const auto& columnSetColumn : columns) {
         const auto columnDefinitionRecord =
-                m_database.getColumnDefinitionRecord(columnSetColumn->getColumnDefinitionId());
-        const auto columnRecord = m_database.getColumnRecord(columnDefinitionRecord.m_columnId);
+                m_database.findColumnDefinitionRecord(columnSetColumn->getColumnDefinitionId());
+        const auto columnRecord = m_database.findColumnRecord(columnDefinitionRecord.m_columnId);
         auto column = std::make_shared<Column>(*this, columnRecord, m_firstUserTrid);
         currentColumns.insert(TableColumn(column, columnSetColumn->getId(), position++));
     }
     m_currentColumns.swap(currentColumns);
 
     // Finally, update master column
-    m_masterColumn = getColumnCheckedUnlocked(Database::kMasterColumnName);
+    m_masterColumn = findColumnCheckedUnlocked(Database::kMasterColumnName);
 }
 
 ColumnSetPtr Table::createColumnSetUnlocked()
@@ -534,7 +534,7 @@ ConstraintPtr Table::createConstraintUnlocked(
     return constraint;
 }
 
-TableColumn Table::getColumnByIdUnlocked(std::uint64_t columnId) const
+TableColumn Table::findColumnByIdUnlocked(std::uint64_t columnId) const
 {
     const auto& index = m_currentColumns.byColumnId();
     const auto it = index.find(columnId);
@@ -543,7 +543,7 @@ TableColumn Table::getColumnByIdUnlocked(std::uint64_t columnId) const
             IOManagerMessageId::kErrorColumnDoesNotExist, m_database.getName(), m_name, columnId);
 }
 
-TableColumn Table::getColumnByPositionUnlocked(std::uint32_t position) const
+TableColumn Table::findColumnByPositionUnlocked(std::uint32_t position) const
 {
     const auto& index = m_currentColumns.byPosition();
     const auto it = index.find(position);
@@ -552,30 +552,30 @@ TableColumn Table::getColumnByPositionUnlocked(std::uint32_t position) const
             m_name, position + 1);
 }
 
-ColumnPtr Table::getColumnCheckedUnlocked(uint64_t columnId) const
+ColumnPtr Table::findColumnCheckedUnlocked(uint64_t columnId) const
 {
-    auto column = getColumnUnlocked(columnId);
+    auto column = findColumnUnlocked(columnId);
     if (column) return column;
     throwDatabaseError(
             IOManagerMessageId::kErrorColumnDoesNotExist2, m_database.getName(), m_name, columnId);
 }
 
-ColumnPtr Table::getColumnCheckedUnlocked(const std::string& columnName) const
+ColumnPtr Table::findColumnCheckedUnlocked(const std::string& columnName) const
 {
-    auto column = getColumnUnlocked(columnName);
+    auto column = findColumnUnlocked(columnName);
     if (column) return column;
     throwDatabaseError(
             IOManagerMessageId::kErrorColumnDoesNotExist, m_database.getName(), m_name, columnName);
 }
 
-ColumnPtr Table::getColumnUnlocked(uint64_t columnId) const noexcept
+ColumnPtr Table::findColumnUnlocked(uint64_t columnId) const noexcept
 {
     const auto& index = m_currentColumns.byColumnId();
     const auto it = index.find(columnId);
     return it == index.cend() ? nullptr : it->m_column;
 }
 
-ColumnPtr Table::getColumnUnlocked(const std::string& columnName) const noexcept
+ColumnPtr Table::findColumnUnlocked(const std::string& columnName) const noexcept
 {
     const auto& index = m_currentColumns.byName();
     const auto it = index.find(columnName);
@@ -668,12 +668,12 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::doInsertRowU
         std::size_t i = 0;
         for (const auto& tableColumnRecord : m_currentColumns.byPosition()) {
             if (tableColumnRecord.m_column->isMasterColumn()) continue;
-            auto res = tableColumnRecord.m_column->putRecord(std::move(columnValues[i]));
+            auto res = tableColumnRecord.m_column->writeRecord(std::move(columnValues[i]));
             mcr->addColumnRecord(res.first, tp.m_timestamp, tp.m_timestamp);
             nextBlockIds.push_back(res.second.getBlockId());
             ++i;
         }
-        m_masterColumn->putMasterColumnRecord(*mcr);
+        m_masterColumn->writeMasterColumnRecord(*mcr);
     } catch (...) {
         rollbackLastRow(*mcr, nextBlockIds);
         throw;

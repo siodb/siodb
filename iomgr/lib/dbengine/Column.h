@@ -180,13 +180,13 @@ public:
      * Returns display name of the column.
      * @return Display name.
      */
-    std::string getDisplayName() const;
+    std::string makeDisplayName() const;
 
     /**
      * Returns display code of the column.
      * @return Display code.
      */
-    std::string getDisplayCode() const;
+    std::string makeDisplayCode() const;
 
     /**
      * Returns first user range TRID.
@@ -222,7 +222,7 @@ public:
      * @return Column definition.
      * @throw DatabaseError if column definition doesn't exist
      */
-    ColumnDefinitionPtr getColumnDefinitionChecked(std::uint64_t columnDefinitionId);
+    ColumnDefinitionPtr findColumnDefinitionChecked(std::uint64_t columnDefinitionId);
 
     /**
      * Returns current column definition.
@@ -281,7 +281,7 @@ public:
      * @return Previous block ID in the chain.
      * @throw DatabaseError if given block doesn't exist in the block registry.
      */
-    std::uint64_t getPrevBlockId(std::uint64_t blockId) const;
+    std::uint64_t findPrevBlockId(std::uint64_t blockId) const;
 
     /**
      * Update state of the the given block in the block registry.
@@ -313,14 +313,14 @@ public:
      * @param value A value to put. May be altered by this function.
      * @return Pair containing data address and next data address
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> putRecord(Variant&& value);
+    std::pair<ColumnDataAddress, ColumnDataAddress> writeRecord(Variant&& value);
 
     /**
      * Adds new data to a master column.
      * @param record Master column record.
      * @return Pair containing data address and next data address
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> putMasterColumnRecord(
+    std::pair<ColumnDataAddress, ColumnDataAddress> writeMasterColumnRecord(
             const MasterColumnRecord& record);
 
     /**
@@ -446,7 +446,7 @@ private:
         std::atomic<std::uint64_t> m_lastSystemTrid;
 
         /** TRID counter file marker value */
-        static const std::uint64_t kMarker = 0x1234567890abcdef;
+        static constexpr std::uint64_t kMarker = 0x1234567890abcdef;
 
         /** Counters data size */
         static constexpr std::uint64_t kDataSize = 24;
@@ -541,7 +541,7 @@ private:
     ColumnDefinitionPtr loadColumnDefinitionUnlocked(std::uint64_t columnDefinitionId)
     {
         return createColumnDefinitionUnlocked(
-                m_table.getDatabase().getColumnDefinitionRecord(columnDefinitionId));
+                m_table.getDatabase().findColumnDefinitionRecord(columnDefinitionId));
     }
 
     /**
@@ -579,7 +579,7 @@ private:
      * @return Block object if block exists.
      * @throw DatabaseError if block doesn't exist.
      */
-    ColumnDataBlockPtr getExistingBlock(std::uint64_t blockId);
+    ColumnDataBlockPtr findExistingBlock(std::uint64_t blockId);
 
     /**
      * Finds first block on disk.
@@ -594,10 +594,10 @@ private:
      * @param block Starting block.
      * @return Pair containing data address and next data address
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> storeClob(
+    std::pair<ColumnDataAddress, ColumnDataAddress> writeClob(
             ClobStream& clob, const ColumnDataBlockPtr& block)
     {
-        return storeLob(clob, block);
+        return writeLob(clob, block);
     }
 
     /**
@@ -607,10 +607,10 @@ private:
      * @param block Starting block.
      * @return Pair containing data address and next data address
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> storeBlob(
+    std::pair<ColumnDataAddress, ColumnDataAddress> writeBlob(
             BlobStream& blob, const ColumnDataBlockPtr& block)
     {
-        return storeLob(blob, block);
+        return writeLob(blob, block);
     }
 
     /**
@@ -620,7 +620,7 @@ private:
      * @param block Starting block.
      * @return Pair containing data address and next data address
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> storeLob(
+    std::pair<ColumnDataAddress, ColumnDataAddress> writeLob(
             LobStream& lob, ColumnDataBlockPtr block);
 
     /**
@@ -631,7 +631,7 @@ private:
      * @param block Starting block.
      * @return Pair containing data address and next data address
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> storeBuffer(
+    std::pair<ColumnDataAddress, ColumnDataAddress> writeBuffer(
             const void* src, std::uint32_t length, ColumnDataBlockPtr block);
 
     /**
@@ -772,10 +772,10 @@ private:
     ColumnDataBlockCache m_blockCache;
 
     /** Minimum required block free spaces for various column data type */
-    static const std::array<std::uint32_t, ColumnDataType_MAX> m_minRequiredBlockFreeSpaces;
+    static const std::array<std::uint32_t, ColumnDataType_MAX> s_minRequiredBlockFreeSpaces;
 
     /** Well known ignorable files during consistency check */
-    static const std::unordered_set<std::string> m_wellKnownIgnorableFiles;
+    static const std::unordered_set<std::string> s_wellKnownIgnorableFiles;
 
     /** Normal column directory prefix */
     static constexpr const char* kColumnDataDirPrefix = "c";
@@ -808,10 +808,10 @@ private:
     static constexpr std::size_t kBlockFreeSpaceThresholdForLob = 0x100;
 
     /** Marker offest in the TRID counter file */
-    static const int kTridCounterFileMarkerOffset = 0;
+    static constexpr int kTridCounterFileMarkerOffset = 0;
 
     /** User TRID counter offest in the TRID counter file */
-    static const int kTridCounterFileUserTridOffset =
+    static constexpr int kTridCounterFileUserTridOffset =
             kTridCounterFileMarkerOffset + sizeof(TridCounters::kMarker);
 
     /** System TRID counter offest in the TRID counter file */

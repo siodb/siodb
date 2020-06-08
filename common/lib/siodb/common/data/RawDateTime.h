@@ -109,16 +109,29 @@ struct RawTime {
     /** Fill up to 64 bits */
     unsigned m_reserved2 : 16;
 
+    /** Minimum hours value */
     static constexpr int kMinHours = 0;
-    static constexpr int kMaxHours = 23;
-    static constexpr int kMinMinutes = 0;
-    static constexpr int kMaxMinutes = 59;
-    static constexpr int kMinSeconds = 0;
-    static constexpr int kMaxSeconds = 59;
-    static constexpr int kMinNanoseconds = 0;
-    static constexpr int kMaxNanoseconds = 999999999;
 
-    static const RawTime kZeroTime;
+    /** Maximum hours value */
+    static constexpr int kMaxHours = 23;
+
+    /** Minimum minutes value */
+    static constexpr int kMinMinutes = 0;
+
+    /** Maximum minutes value */
+    static constexpr int kMaxMinutes = 59;
+
+    /** Minimum seconds value */
+    static constexpr int kMinSeconds = 0;
+
+    /** Maximum seconds value */
+    static constexpr int kMaxSeconds = 59;
+
+    /** Minimum nanoseconds value */
+    static constexpr int kMinNanoseconds = 0;
+
+    /** Maximum nanoseconds value */
+    static constexpr int kMaxNanoseconds = 999999999;
 
     /**
      * Compares this object with other RawTime
@@ -171,7 +184,7 @@ struct RawTime {
 
 #pragma pack(pop)
 
-constexpr const RawTime RawTime::kZeroTime {0, 0, 0, 0, 0, 0};
+constexpr const RawTime kZeroRawTime {0, 0, 0, 0, 0, 0};
 
 /** Date time value. */
 struct RawDateTime {
@@ -203,9 +216,7 @@ struct RawDateTime {
     static constexpr const char* kDefaultDateScanString = "%6d-%02d-%02d";
 
     /* Initializes structure RawDateTime. */
-    RawDateTime() noexcept
-    {
-    }
+    RawDateTime() noexcept = default;
 
     /**
      * Initializes structure RawDateTime from a string.

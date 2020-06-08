@@ -6,7 +6,6 @@
 
 // Project headers
 #include "NodePtr.h"
-#include "../DebugDbEngine.h"
 
 // Common project headers
 #include <siodb/common/stl_ext/lru_cache.h>

@@ -38,7 +38,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
             {"U64", siodb::COLUMN_DATA_TYPE_UINT64, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("COMPLEX_TEST_1", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("COMPLEX_TEST_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -205,7 +205,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
             {"U64", siodb::COLUMN_DATA_TYPE_UINT64, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("COMPLEX_TEST_2", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("COMPLEX_TEST_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- Update -----------
@@ -413,7 +413,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
             {"U64", siodb::COLUMN_DATA_TYPE_UINT64, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("COMPLEX_TEST_3", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("COMPLEX_TEST_3", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------

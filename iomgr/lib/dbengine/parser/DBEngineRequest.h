@@ -540,7 +540,7 @@ public:
      */
     static bool isTableOnlyConstraint(ConstraintType constraintType) noexcept
     {
-        return m_tableOnlyConstraintTypes.count(constraintType) > 0;
+        return s_tableOnlyConstraintTypes.count(constraintType) > 0;
     }
 
     /**
@@ -550,7 +550,7 @@ public:
      */
     static bool isColumnOnlyConstraint(ConstraintType constraintType) noexcept
     {
-        return m_columnOnlyConstraintTypes.count(constraintType) > 0;
+        return s_columnOnlyConstraintTypes.count(constraintType) > 0;
     }
 
     /** Constraint type */
@@ -561,10 +561,10 @@ public:
 
 private:
     /** Table-only constraint types */
-    static const std::unordered_set<ConstraintType> m_tableOnlyConstraintTypes;
+    static const std::unordered_set<ConstraintType> s_tableOnlyConstraintTypes;
 
     /** Column-only constraint types */
-    static const std::unordered_set<ConstraintType> m_columnOnlyConstraintTypes;
+    static const std::unordered_set<ConstraintType> s_columnOnlyConstraintTypes;
 };
 
 /** NULL and NOT NULL constraint */

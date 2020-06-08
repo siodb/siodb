@@ -27,14 +27,14 @@ void Database::readAllTables()
 
     // Obtain columns
     const auto masterColumn = m_sysTablesTable->getMasterColumn();
-    const auto typeColumn = m_sysTablesTable->getColumnChecked(kSysTables_Type_ColumnName);
-    const auto nameColumn = m_sysTablesTable->getColumnChecked(kSysTables_Name_ColumnName);
+    const auto typeColumn = m_sysTablesTable->findColumnChecked(kSysTables_Type_ColumnName);
+    const auto nameColumn = m_sysTablesTable->findColumnChecked(kSysTables_Name_ColumnName);
     const auto firstUserTridColumn =
-            m_sysTablesTable->getColumnChecked(kSysTables_FirstUserTrid_ColumnName);
+            m_sysTablesTable->findColumnChecked(kSysTables_FirstUserTrid_ColumnName);
     const auto currentColumnSetIdColumn =
-            m_sysTablesTable->getColumnChecked(kSysTables_CurrentColumnSetId_ColumnName);
+            m_sysTablesTable->findColumnChecked(kSysTables_CurrentColumnSetId_ColumnName);
     const auto descriptionColumn =
-            m_sysTablesTable->getColumnChecked(kSysTables_Description_ColumnName);
+            m_sysTablesTable->findColumnChecked(kSysTables_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -70,7 +70,7 @@ void Database::readAllTables()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysTablesTable->getName(), m_uuid, m_sysTablesTable->getId(), 2);
         }
@@ -129,7 +129,7 @@ void Database::readAllTables()
         LOG_DEBUG << "Database " << m_name << ": readAllTables: Table #" << tableRecord.m_id << " '"
                   << tableRecord.m_name << '\'';
         reg.insert(std::move(tableRecord));
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     if (hasInvalidTables) throw std::runtime_error("There are invalid table records");
 
@@ -144,9 +144,9 @@ void Database::readAllColumnSets()
     // Obtain columns
     const auto masterColumn = m_sysColumnSetsTable->getMasterColumn();
     const auto tableIdColumn =
-            m_sysColumnSetsTable->getColumnChecked(kSysColumnSets_TableId_ColumnName);
+            m_sysColumnSetsTable->findColumnChecked(kSysColumnSets_TableId_ColumnName);
     const auto columnCountColumn =
-            m_sysColumnSetsTable->getColumnChecked(kSysColumnSets_ColumnCount_ColumnName);
+            m_sysColumnSetsTable->findColumnChecked(kSysColumnSets_ColumnCount_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -183,7 +183,7 @@ void Database::readAllColumnSets()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnSetsTable->getName(), m_uuid, m_sysColumnSetsTable->getId(), 2);
         }
@@ -222,7 +222,7 @@ void Database::readAllColumnSets()
         ColumnSetRecord columnSetRecord(columnSetId, tableId);
         reg.insert(std::move(columnSetRecord));
         LOG_DEBUG << "Database " << m_name << ": readAllColumnSets: Column set #" << trid;
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     if (hasInvalidColumnSets) throw std::runtime_error("There are invalid column sets");
 
@@ -237,15 +237,15 @@ void Database::readAllColumns()
 
     // Obtain columns
     const auto masterColumn = m_sysColumnsTable->getMasterColumn();
-    const auto tableIdColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_TableId_ColumnName);
+    const auto tableIdColumn = m_sysColumnsTable->findColumnChecked(kSysColumns_TableId_ColumnName);
     const auto dataTypeColumn =
-            m_sysColumnsTable->getColumnChecked(kSysColumns_DataType_ColumnName);
-    const auto nameColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_Name_ColumnName);
-    const auto stateColumn = m_sysColumnsTable->getColumnChecked(kSysColumns_State_ColumnName);
+            m_sysColumnsTable->findColumnChecked(kSysColumns_DataType_ColumnName);
+    const auto nameColumn = m_sysColumnsTable->findColumnChecked(kSysColumns_Name_ColumnName);
+    const auto stateColumn = m_sysColumnsTable->findColumnChecked(kSysColumns_State_ColumnName);
     const auto blockDataAreaSizeColumn =
-            m_sysColumnsTable->getColumnChecked(kSysColumns_BlockDataAreaSize_ColumnName);
+            m_sysColumnsTable->findColumnChecked(kSysColumns_BlockDataAreaSize_ColumnName);
     const auto descriptionColumn =
-            m_sysColumnsTable->getColumnChecked(kSysColumns_Description_ColumnName);
+            m_sysColumnsTable->findColumnChecked(kSysColumns_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -287,7 +287,7 @@ void Database::readAllColumns()
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(key, &trid);
         //DBG_LOG_DEBUG("Database " << m_name << ": readAllColumns: Looking up TRID " << trid);
-        if (index->getValue(currentKey, value, 1) != 1)
+        if (index->findValue(currentKey, value, 1) != 1)
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnsTable->getName(), m_uuid, m_sysColumnsTable->getId(), 2);
         ColumnDataAddress mcrAddr;
@@ -329,7 +329,7 @@ void Database::readAllColumns()
         tableColumns.m_columns.push_back(std::move(columnRecord));
         LOG_DEBUG << "Database " << m_name << ": readAllColumns: Column #" << trid << " '"
                   << columnRecord.m_name << '\'';
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     const auto& tablesById = m_tableRegistry.byId();
 
@@ -454,9 +454,9 @@ void Database::readAllColumnDefs()
     // Obtain columns
     const auto masterColumn = m_sysColumnDefsTable->getMasterColumn();
     const auto columnIdColumn =
-            m_sysColumnDefsTable->getColumnChecked(kSysColumnDefs_ColumnId_ColumnName);
+            m_sysColumnDefsTable->findColumnChecked(kSysColumnDefs_ColumnId_ColumnName);
     const auto constraintCountColumn =
-            m_sysColumnDefsTable->getColumnChecked(kSysColumnDefs_ConstraintCount_ColumnName);
+            m_sysColumnDefsTable->findColumnChecked(kSysColumnDefs_ConstraintCount_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -493,7 +493,7 @@ void Database::readAllColumnDefs()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnDefsTable->getName(), m_uuid, m_sysColumnDefsTable->getId(), 2);
         }
@@ -532,7 +532,7 @@ void Database::readAllColumnDefs()
         ColumnDefinitionRecord columnDefinitionRecord(columnDefinitionId, columnId);
         reg.insert(std::move(columnDefinitionRecord));
         LOG_DEBUG << "Database " << m_name << ": readAllColumnDefs: Column definition #" << trid;
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     if (hasInvalidColumnDefs) throw std::runtime_error("There are invalid column definitions");
 
@@ -547,9 +547,9 @@ void Database::readAllColumnSetColumns()
 
     // Obtain columns
     const auto masterColumn = m_sysColumnSetColumnsTable->getMasterColumn();
-    const auto columnSetIdColumn = m_sysColumnSetColumnsTable->getColumnChecked(
+    const auto columnSetIdColumn = m_sysColumnSetColumnsTable->findColumnChecked(
             kSysColumnSetColumns_ColumnSetId_ColumnName);
-    const auto columnDefinitionIdColumn = m_sysColumnSetColumnsTable->getColumnChecked(
+    const auto columnDefinitionIdColumn = m_sysColumnSetColumnsTable->findColumnChecked(
             kSysColumnSetColumns_ColumnDefinitionId_ColumnName);
 
     // Obtain min and max TRID
@@ -591,7 +591,7 @@ void Database::readAllColumnSetColumns()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnSetColumnsTable->getName(), m_uuid,
                     m_sysColumnSetColumnsTable->getId(), 2);
@@ -670,7 +670,7 @@ void Database::readAllColumnSetColumns()
         columnSetRecord.m_columns.insert(std::move(columnSetColumnRecord));
         LOG_DEBUG << "Database " << m_name
                   << ": readAllColumnSetColumns: Column set column record #" << trid;
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     if (hasInvalidColumnSetColumns)
         throw std::runtime_error("There are invalid column set columns");
@@ -693,9 +693,9 @@ void Database::readAllConstraintDefs()
     // Obtain columns
     const auto masterColumn = m_sysConstraintDefsTable->getMasterColumn();
     const auto typeColumn =
-            m_sysConstraintDefsTable->getColumnChecked(kSysConstraintDefs_Type_ColumnName);
+            m_sysConstraintDefsTable->findColumnChecked(kSysConstraintDefs_Type_ColumnName);
     const auto exprColumn =
-            m_sysConstraintDefsTable->getColumnChecked(kSysConstraintDefs_Expr_ColumnName);
+            m_sysConstraintDefsTable->findColumnChecked(kSysConstraintDefs_Expr_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -731,7 +731,7 @@ void Database::readAllConstraintDefs()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysConstraintDefsTable->getName(), m_uuid, m_sysConstraintDefsTable->getId(),
                     2);
@@ -778,7 +778,7 @@ void Database::readAllConstraintDefs()
         reg.insert(std::move(constraintDefinitionRecord));
         LOG_DEBUG << "Database " << m_name << ": readAllConstraintDefs: Constraint definition #"
                   << trid;
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     if (hasInvalidConstraintDefs)
         throw std::runtime_error("There are invalid coinstraint definition records");
@@ -795,17 +795,17 @@ void Database::readAllConstraints()
     // Obtain columns
     const auto masterColumn = m_sysConstraintsTable->getMasterColumn();
     const auto nameColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_Name_ColumnName);
+            m_sysConstraintsTable->findColumnChecked(kSysConstraints_Name_ColumnName);
     const auto stateColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_State_ColumnName);
+            m_sysConstraintsTable->findColumnChecked(kSysConstraints_State_ColumnName);
     const auto tableIdColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_TableId_ColumnName);
+            m_sysConstraintsTable->findColumnChecked(kSysConstraints_TableId_ColumnName);
     const auto columnIdColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_ColumnId_ColumnName);
+            m_sysConstraintsTable->findColumnChecked(kSysConstraints_ColumnId_ColumnName);
     const auto defIdColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_DefinitionId_ColumnName);
+            m_sysConstraintsTable->findColumnChecked(kSysConstraints_DefinitionId_ColumnName);
     const auto descriptionColumn =
-            m_sysConstraintsTable->getColumnChecked(kSysConstraints_Description_ColumnName);
+            m_sysConstraintsTable->findColumnChecked(kSysConstraints_Description_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -842,7 +842,7 @@ void Database::readAllConstraints()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysConstraintsTable->getName(), m_uuid, m_sysConstraintsTable->getId(), 2);
         }
@@ -910,7 +910,7 @@ void Database::readAllConstraints()
         reg.insert(std::move(constraintRecord));
         LOG_DEBUG << "Database " << m_name << ": readAllConstraints: Constraint #" << trid << " '"
                   << constraintRecord.m_name << '\'';
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     if (hasInvalidConstraints) throw std::runtime_error("There are invalid constraint records");
 
@@ -925,9 +925,9 @@ void Database::readAllColumnDefConstraints()
 
     // Obtain columns
     const auto masterColumn = m_sysColumnDefConstraintsTable->getMasterColumn();
-    const auto columnDefinitionIdColumn = m_sysColumnDefConstraintsTable->getColumnChecked(
+    const auto columnDefinitionIdColumn = m_sysColumnDefConstraintsTable->findColumnChecked(
             kSysColumnDefinitionConstraintList_ColumnDefinitionId_ColumnName);
-    const auto constraintIdColumn = m_sysColumnDefConstraintsTable->getColumnChecked(
+    const auto constraintIdColumn = m_sysColumnDefConstraintsTable->findColumnChecked(
             kSysColumnDefinitionConstraintList_ConstraintId_ColumnName);
 
     // Obtain min and max TRID
@@ -969,7 +969,7 @@ void Database::readAllColumnDefConstraints()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->getValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, value, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnDefConstraintsTable->getName(), m_uuid,
                     m_sysColumnDefConstraintsTable->getId(), 2);
@@ -1039,7 +1039,7 @@ void Database::readAllColumnDefConstraints()
                 columnDefinitionConstraintId, columnDefinitionId, constraintId);
         LOG_DEBUG << "Database " << m_name
                   << ": readAllColumnDefConstraints: Column definition constraint record #" << trid;
-    } while (index->getNextKey(currentKey, nextKey));
+    } while (index->findNextKey(currentKey, nextKey));
 
     if (hasInvalidColumnDefinitionConstraintList)
         throw std::runtime_error("There are invalid column definition constraints");
@@ -1063,26 +1063,26 @@ void Database::readAllIndices()
     // Obtain columns of the SYS_INDICES table
     const auto sysIndicesMasterColumn = m_sysIndicesTable->getMasterColumn();
     const auto sysIndicesTypeColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_Type_ColumnName);
+            m_sysIndicesTable->findColumnChecked(kSysIndices_Type_ColumnName);
     const auto sysIndicesIsUniqueColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_Unique_ColumnName);
+            m_sysIndicesTable->findColumnChecked(kSysIndices_Unique_ColumnName);
     const auto sysIndicesNameColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_Name_ColumnName);
+            m_sysIndicesTable->findColumnChecked(kSysIndices_Name_ColumnName);
     const auto sysIndicesTableIdColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_TableId_ColumnName);
+            m_sysIndicesTable->findColumnChecked(kSysIndices_TableId_ColumnName);
     const auto sysIndicesDataFileSizeColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_DataFileSize_ColumnName);
+            m_sysIndicesTable->findColumnChecked(kSysIndices_DataFileSize_ColumnName);
     const auto descriptionColumn =
-            m_sysIndicesTable->getColumnChecked(kSysIndices_Description_ColumnName);
+            m_sysIndicesTable->findColumnChecked(kSysIndices_Description_ColumnName);
 
     // Obtain columns of the SYS_INDEX_COLUMNS table
     const auto sysIndexColumnsMasterColumn = m_sysIndexColumnsTable->getMasterColumn();
     const auto sysIndexColumnsIndexIdColumn =
-            m_sysIndexColumnsTable->getColumnChecked(kSysIndexColumns_IndexId_ColumnName);
-    const auto sysIndexColumnsColumnDefinitionIdColumn = m_sysIndexColumnsTable->getColumnChecked(
+            m_sysIndexColumnsTable->findColumnChecked(kSysIndexColumns_IndexId_ColumnName);
+    const auto sysIndexColumnsColumnDefinitionIdColumn = m_sysIndexColumnsTable->findColumnChecked(
             kSysIndexColumns_ColumnDefinitionId_ColumnName);
     const auto sysIndexColumnsSortDescColumn =
-            m_sysIndexColumnsTable->getColumnChecked(kSysIndexColumns_SortDesc_ColumnName);
+            m_sysIndexColumnsTable->findColumnChecked(kSysIndexColumns_SortDesc_ColumnName);
 
     // Obtain min and max TRID
     const auto sysIndexColumnsIndex = sysIndexColumnsMasterColumn->getMasterColumnMainIndex();
@@ -1128,7 +1128,7 @@ void Database::readAllIndices()
             //DBG_LOG_DEBUG("Database " << m_name
             //                          << ": readAllIndices: Looking up SYS_INDEX_COLUMNS.TRID "
             //                          << trid);
-            if (sysIndexColumnsIndex->getValue(currentKey, value, 1) != 1) {
+            if (sysIndexColumnsIndex->findValue(currentKey, value, 1) != 1) {
                 throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                         m_name, m_sysIndexColumnsTable->getName(), m_uuid,
                         m_sysIndexColumnsTable->getId(), 2);
@@ -1166,7 +1166,7 @@ void Database::readAllIndices()
                     mcr.getTableRowId(), indexId, columnDefinitionId, sortDescending);
             ++indexInfo.m_columnDefinitionIds[columnDefinitionId];
             LOG_DEBUG << "Database " << m_name << ": readAllIndices: Index column #" << trid;
-        } while (sysIndexColumnsIndex->getNextKey(currentKey, nextKey));
+        } while (sysIndexColumnsIndex->findNextKey(currentKey, nextKey));
     }
 
     const auto sysIndicesIndex = sysIndicesMasterColumn->getMasterColumnMainIndex();
@@ -1206,7 +1206,7 @@ void Database::readAllIndices()
             ::pbeDecodeUInt64(currentKey, &trid);
             //DBG_LOG_DEBUG("Database " << m_name << ": readAllIndices: Looking up SYS_INDICES.TRID "
             //                          << trid);
-            if (sysIndicesIndex->getValue(currentKey, value, 1) != 1) {
+            if (sysIndicesIndex->findValue(currentKey, value, 1) != 1) {
                 throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                         m_name, m_sysIndicesTable->getName(), m_uuid, m_sysIndicesTable->getId(),
                         2);
@@ -1360,7 +1360,7 @@ void Database::readAllIndices()
             LOG_DEBUG << "Database " << m_name << ": readAllIndices: Index #" << trid << " '"
                       << indexRecord.m_name << '\'';
             reg.insert(std::move(indexRecord));
-        } while (sysIndicesIndex->getNextKey(currentKey, nextKey));
+        } while (sysIndicesIndex->findNextKey(currentKey, nextKey));
     }
 
     if (containsUnrelatedReferences) {

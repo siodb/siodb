@@ -7,7 +7,7 @@
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "Column.h"
-#include "DebugDbEngine.h"
+#include "Debug.h"
 #include "ThrowDatabaseError.h"
 
 // Common project headers
@@ -41,17 +41,17 @@ BlockRegistry::BlockRegistry(const Column& column, bool create)
     , m_lastBlockId(0)
 {
     DBG_LOG_DEBUG((create ? "Creating" : "Loading")
-                  << " Block Registry" << m_column.getDisplayName() << " in " << m_dataDir);
+                  << " Block Registry" << m_column.makeDisplayName() << " in " << m_dataDir);
     if (create)
         createDataFiles();
     else
         openDataFiles();
 }
 
-std::uint64_t BlockRegistry::getPrevBlockId(std::uint64_t blockId) const
+std::uint64_t BlockRegistry::findPrevBlockId(std::uint64_t blockId) const
 {
-    BREG_DBG_LOG_DEBUG("BlockRegistry::getPrevBlockId(): " << m_column.getDisplayName()
-                                                           << ": blockId=" << blockId);
+    BREG_DBG_LOG_DEBUG("BlockRegistry::findPrevBlockId(): " << m_column.makeDisplayName()
+                                                            << ": blockId=" << blockId);
 
     // Obtain block record location
     const auto blockRecordOffset = checkBlockRecordPresent(blockId);
@@ -72,7 +72,7 @@ std::uint64_t BlockRegistry::getPrevBlockId(std::uint64_t blockId) const
     return prevBlockId;
 }
 
-std::vector<std::uint64_t> BlockRegistry::getNextBlockIds(std::uint64_t blockId) const
+std::vector<std::uint64_t> BlockRegistry::findNextBlockIds(std::uint64_t blockId) const
 {
     std::vector<std::uint64_t> nextBlocks;
 
@@ -118,7 +118,7 @@ void BlockRegistry::recordBlock(
     // Obtain block record location
     const auto blockRecordOffset = blockId * BlockListRecord::kSerializedSize;
 
-    BREG_DBG_LOG_DEBUG("BlockRegistry::recordBlock(): " << m_column.getDisplayName() << '.'
+    BREG_DBG_LOG_DEBUG("BlockRegistry::recordBlock(): " << m_column.makeDisplayName() << '.'
                                                         << blockId << ", parent " << parentBlockId
                                                         << ", state " << static_cast<int>(state)
                                                         << ", offset " << blockRecordOffset);
@@ -150,7 +150,7 @@ void BlockRegistry::recordBlock(
 
 void BlockRegistry::updateBlockState(std::uint64_t blockId, ColumnDataBlockState state) const
 {
-    BREG_DBG_LOG_DEBUG("BlockRegistry::updateBlockState(): " << m_column.getDisplayName() << '.'
+    BREG_DBG_LOG_DEBUG("BlockRegistry::updateBlockState(): " << m_column.makeDisplayName() << '.'
                                                              << blockId << ", new state "
                                                              << static_cast<int>(state));
 
@@ -176,7 +176,7 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
     const auto blockRecordOffset = checkBlockRecordPresent(blockId);
 
     BREG_DBG_LOG_DEBUG("BlockRegistry: Recording NEXT block: "
-                       << m_column.getDisplayName() << '.' << blockId << ", next " << nextBlockId);
+                       << m_column.makeDisplayName() << '.' << blockId << ", next " << nextBlockId);
 
     // Load block record
     std::uint8_t blockRecordBuffer[BlockListRecord::kSerializedSize];
@@ -370,7 +370,7 @@ void BlockRegistry::createDataFiles()
     m_blockListFile.swap(blockListFile);
     m_nextBlockListFile.swap(nextBlockListFile);
 
-    BREG_DBG_LOG_DEBUG("BlockRegistry " << m_column.getDisplayName() << ": data files created.");
+    BREG_DBG_LOG_DEBUG("BlockRegistry " << m_column.makeDisplayName() << ": data files created.");
 }
 
 void BlockRegistry::openDataFiles()
@@ -438,15 +438,16 @@ void BlockRegistry::openDataFiles()
     m_lastBlockId = blockListFileSize / BlockListRecord::kSerializedSize;
     if (m_lastBlockId > 0) --m_lastBlockId;
 
-    BREG_DBG_LOG_DEBUG("BlockRegistry " << m_column.getDisplayName() << ": data files opened.");
+    BREG_DBG_LOG_DEBUG("BlockRegistry " << m_column.makeDisplayName() << ": data files opened.");
 
     // Log this always
-    LOG_DEBUG << "BlockRegistry " << m_column.getDisplayName() << ": lastBlockId=" << m_lastBlockId;
+    LOG_DEBUG << "BlockRegistry " << m_column.makeDisplayName()
+              << ": lastBlockId=" << m_lastBlockId;
 }
 
 void BlockRegistry::loadRecord(std::uint64_t blockId, BlockListRecord& record) const
 {
-    BREG_DBG_LOG_DEBUG("BlockRegistry::loadBlockRecord(): " << m_column.getDisplayName()
+    BREG_DBG_LOG_DEBUG("BlockRegistry::loadBlockRecord(): " << m_column.makeDisplayName()
                                                             << ": blockId=" << blockId);
 
     // Obtain block record location
@@ -471,7 +472,7 @@ void BlockRegistry::loadRecord(std::uint64_t blockId, BlockListRecord& record) c
 off_t BlockRegistry::checkBlockRecordPresent(std::uint64_t blockId) const
 {
     BREG_DBG_LOG_DEBUG("BlockRegistry::checkBlockRecordPresent(): "
-                       << m_column.getDisplayName() << " lastBlockId=" << m_lastBlockId
+                       << m_column.makeDisplayName() << " lastBlockId=" << m_lastBlockId
                        << " checking blockId " << blockId);
 
     // Check block ID

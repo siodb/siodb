@@ -42,11 +42,11 @@ TEST(DDL, CreateDatabase)
     std::size_t index = 0;
     for (const auto& [cipherId, keySeed] : parameters) {
         ++index;
-        const auto dbName = boost::to_upper_copy("TEST_DB_" + cipherId + "_" + keySeed);
+        const auto databaseName = boost::to_upper_copy("TEST_DB_" + cipherId + "_" + keySeed);
         {
             /// ----------- CREATE DATABASE -----------
             std::ostringstream ss;
-            ss << "CREATE DATABASE " << dbName << " WITH CIPHER_ID = '" << cipherId
+            ss << "CREATE DATABASE " << databaseName << " WITH CIPHER_ID = '" << cipherId
                << "', CIPHER_KEY_SEED = '" << keySeed << '\'';
 
             parser_ns::SqlParser parser(ss.str());
@@ -76,7 +76,7 @@ TEST(DDL, CreateDatabase)
         /// ----------- SELECT -----------
         {
             std::ostringstream ss;
-            ss << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '" << dbName
+            ss << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '" << databaseName
                << "' AND CIPHER_ID = '" << cipherId << '\'';
 
             parser_ns::SqlParser parser(ss.str());
@@ -111,10 +111,10 @@ TEST(DDL, CreateDatabase)
 
             std::uint32_t nameLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint32(&nameLength));
-            ASSERT_EQ(nameLength, dbName.length());
-            std::string name(dbName.length(), '\0');
+            ASSERT_EQ(nameLength, databaseName.length());
+            std::string name(databaseName.length(), '\0');
             ASSERT_TRUE(codedInput.ReadRaw(name.data(), nameLength));
-            ASSERT_EQ(name, dbName);
+            ASSERT_EQ(name, databaseName);
 
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
             ASSERT_TRUE(rowLength == 0U);
@@ -124,7 +124,7 @@ TEST(DDL, CreateDatabase)
             const auto requestHandler = TestEnvironment::makeRequestHandler();
 
             std::ostringstream ss;
-            ss << "DROP DATABASE " << (index % 2 == 0 ? "IF EXISTS " : "") << dbName;
+            ss << "DROP DATABASE " << (index % 2 == 0 ? "IF EXISTS " : "") << databaseName;
             parser_ns::SqlParser parser(ss.str());
             parser.parse();
 

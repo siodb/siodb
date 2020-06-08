@@ -13,7 +13,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-const Uuid TableRecord::kClassUuid =
+const Uuid TableRecord::s_classUuid =
         boost::lexical_cast<Uuid>("be67ce29-0485-4d3c-885d-fd2fe799eb1b");
 
 TableRecord::TableRecord(const Table& table)
@@ -36,7 +36,7 @@ std::size_t TableRecord::getSerializedSize(unsigned version) const noexcept
 
 std::uint8_t* TableRecord::serializeUnchecked(std::uint8_t* buffer, unsigned version) const noexcept
 {
-    std::memcpy(buffer, kClassUuid.data, Uuid::static_size());
+    std::memcpy(buffer, s_classUuid.data, Uuid::static_size());
     buffer += Uuid::static_size();
     buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
@@ -52,8 +52,8 @@ std::size_t TableRecord::deserialize(const std::uint8_t* buffer, std::size_t len
 {
     if (length < Uuid::static_size())
         helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
-    if (std::memcmp(kClassUuid.data, buffer, Uuid::static_size()) != 0)
-        helpers::reportClassUuidMismatch(kClassName, buffer, kClassUuid.data);
+    if (std::memcmp(s_classUuid.data, buffer, Uuid::static_size()) != 0)
+        helpers::reportClassUuidMismatch(kClassName, buffer, s_classUuid.data);
 
     std::size_t totalConsumed = Uuid::static_size();
 

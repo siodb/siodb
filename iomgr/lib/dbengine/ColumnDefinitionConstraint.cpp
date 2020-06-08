@@ -27,7 +27,7 @@ ColumnDefinitionConstraint::ColumnDefinitionConstraint(ColumnDefinition& columnD
     : m_columnDefinition(
             validateColumnDefinition(columnDefinition, columnDefinitionConstraintRecord))
     , m_id(columnDefinitionConstraintRecord.m_id)
-    , m_constraint(m_columnDefinition.getTable().getConstraintChecked(
+    , m_constraint(m_columnDefinition.getTable().findConstraintChecked(
               &m_columnDefinition.getColumn(), columnDefinitionConstraintRecord.m_constraintId))
 {
 }

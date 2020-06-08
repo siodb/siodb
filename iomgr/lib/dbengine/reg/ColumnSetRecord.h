@@ -95,7 +95,7 @@ struct ColumnSetRecord {
     ColumnSetColumnRegistry m_columns;
 
     /** Structure UUID */
-    static const Uuid kClassUuid;
+    static const Uuid s_classUuid;
 
     /** Structure name */
     static constexpr const char* kClassName = "ColumnSetRecord";

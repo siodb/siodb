@@ -31,7 +31,7 @@ TEST(DML_Delete, DeleteAllRows)
             {"U16", siodb::COLUMN_DATA_TYPE_UINT16, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("DELETE_TEST_1", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("DELETE_TEST_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -123,7 +123,7 @@ TEST(DML_Delete, DeleteByTrid)
             {"I16", siodb::COLUMN_DATA_TYPE_INT16, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("DELETE_TEST_2", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("DELETE_TEST_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -231,7 +231,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
             {"I16", siodb::COLUMN_DATA_TYPE_INT16, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("DELETE_TEST_3", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("DELETE_TEST_3", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -339,7 +339,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
             {"I16", siodb::COLUMN_DATA_TYPE_INT16, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("DELETE_TEST_4", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("DELETE_TEST_4", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------
@@ -450,7 +450,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
             {"U64", siodb::COLUMN_DATA_TYPE_UINT64, true},
     };
 
-    instance->getDatabase("SYS")->createUserTable("DELETE_TEST_5", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("DELETE_TEST_5", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     /// ----------- INSERT -----------

@@ -383,7 +383,7 @@ void RawDateTime::parse(const char* s, std::size_t len, const char* format)
     m_timePart.m_reserved1 = 0;
     m_timePart.m_reserved2 = 0;
 
-    m_datePart.m_hasTimePart = m_timePart != RawTime::kZeroTime;
+    m_datePart.m_hasTimePart = m_timePart != kZeroRawTime;
 }
 
 std::string RawDateTime::formatDefault() const

@@ -67,13 +67,13 @@ public:
      * Returns display name of the instance.
      * @return Display name.
      */
-    std::string getDisplayName() const;
+    std::string makeDisplayName() const;
 
     /**
      * Returns display code of the instance.
      * @return Display code.
      */
-    std::string getDisplayCode() const
+    std::string makeDisplayCode() const
     {
         return boost::uuids::to_string(m_uuid);
     }
@@ -125,7 +125,7 @@ public:
      * Returns a vector with databases ordered by name.
      * @return Vector with databases.
      */
-    std::vector<DatabaseRecord> getDatabaseRecordsOrderedByName() const noexcept;
+    std::vector<DatabaseRecord> getDatabaseRecordsOrderedByName() const;
 
     /**
      * Returns existing database object.
@@ -133,14 +133,14 @@ public:
      * @return Corresponding database object.
      * @throw DatabaseError if database doesn't exist
      */
-    DatabasePtr getDatabaseChecked(const std::string& databaseName);
+    DatabasePtr findDatabaseChecked(const std::string& databaseName);
 
     /**
      * Returns existing database object.
      * @param databaseName database name.
      * @return Corresponding database object or nullptr if it doesn't exist.
      */
-    DatabasePtr getDatabase(const std::string& databaseName);
+    DatabasePtr findDatabase(const std::string& databaseName);
 
     /**
      * Creates new database object and writes all necessary on-disk data structures.
@@ -173,7 +173,7 @@ public:
      * @return Corresponding user object.
      * @throw DatabaseError if user doesn't exist
      */
-    UserPtr getUserChecked(const std::string& userName);
+    UserPtr findUserChecked(const std::string& userName);
 
     /**
      * Returns existing user object.
@@ -181,7 +181,7 @@ public:
      * @return Corresponding database object.
      * @throw DatabaseError if user doesn't exist
      */
-    UserPtr getUserChecked(std::uint32_t userId);
+    UserPtr findUserChecked(std::uint32_t userId);
 
     /**
      * Creates new user.
@@ -331,7 +331,7 @@ private:
      * @param databaseName database name.
      * @return Corresponding database object or nullptr if it doesn't exist.
      */
-    DatabasePtr getDatabaseUnlocked(const std::string& databaseName);
+    DatabasePtr findDatabaseUnlocked(const std::string& databaseName);
 
     /** Checks instance data consistency */
     void checkDataConsistency();
@@ -378,7 +378,7 @@ private:
      * Constructs instance metadata file path.
      * @return Instance metadata file path.
      */
-    std::string getMetadataFilePath() const;
+    std::string makeMetadataFilePath() const;
 
     /**
      * Serializes instance metadata into memory buffer.
@@ -411,21 +411,21 @@ private:
      * @param userName User name.
      * @return Corresponding user object or nullptr if it doesn't exist.
      */
-    UserPtr getUserUnlocked(const std::string& userName);
+    UserPtr findUserUnlocked(const std::string& userName);
 
     /**
      * Returns existing user object.
      * @param userId User ID.
      * @return Corresponding database object or nullptr if it doesn't exist.
      */
-    UserPtr getUserUnlocked(std::uint32_t userId);
+    UserPtr findUserUnlocked(std::uint32_t userId);
 
     /**
      * Returns cached user object or creates new one.
      * @param userRecord User record.
      * @return Corresponding user object.
      */
-    UserPtr getUserUnlocked(const UserRecord& userRecord);
+    UserPtr findUserUnlocked(const UserRecord& userRecord);
 
 private:
     /** Instance identifier */

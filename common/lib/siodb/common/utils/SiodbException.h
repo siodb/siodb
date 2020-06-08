@@ -52,7 +52,7 @@ public:
 #ifdef _DEBUG
         return m_stackTrace;
 #else
-        return m_emptyStackTrace;
+        return s_emptyStackTrace;
 #endif
     }
 
@@ -81,7 +81,7 @@ private:
 #endif
 
     /** Fallback empty stack trace vector. */
-    static const std::vector<void*> m_emptyStackTrace;
+    static const std::vector<void*> s_emptyStackTrace;
 };
 
 }  // namespace siodb

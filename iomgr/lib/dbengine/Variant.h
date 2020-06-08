@@ -1290,7 +1290,7 @@ public:
      */
     static const Variant& null() noexcept
     {
-        return m_nullValue;
+        return s_nullValue;
     }
 
     /**
@@ -1299,7 +1299,7 @@ public:
      */
     static const Variant& emptyString() noexcept
     {
-        return m_emptyStringValue;
+        return s_emptyStringValue;
     }
 
     /**
@@ -1925,10 +1925,10 @@ private:
     VariantType m_valueType;
 
     /** Null value */
-    static const Variant m_nullValue;
+    static const Variant s_nullValue;
 
     /** Empty string value */
-    static const Variant m_emptyStringValue;
+    static const Variant s_emptyStringValue;
 
     /** Hex conversion table */
     static const char m_hexConversionTable[16];

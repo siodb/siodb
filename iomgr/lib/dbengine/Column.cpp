@@ -31,7 +31,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-const std::array<std::uint32_t, ColumnDataType_MAX> Column::m_minRequiredBlockFreeSpaces {
+const std::array<std::uint32_t, ColumnDataType_MAX> Column::s_minRequiredBlockFreeSpaces {
         1,  // COLUMN_DATA_TYPE_BOOL
         1,  // COLUMN_DATA_TYPE_INT8
         1,  // COLUMN_DATA_TYPE_UINT8
@@ -59,7 +59,7 @@ const std::array<std::uint32_t, ColumnDataType_MAX> Column::m_minRequiredBlockFr
         // COLUMN_DATA_TYPE_UUID
 };
 
-const std::unordered_set<std::string> Column::m_wellKnownIgnorableFiles {
+const std::unordered_set<std::string> Column::s_wellKnownIgnorableFiles {
         Column::kInitializationFlagFile,
         Column::kMainIndexIdFile,
         Column::kTridCounterFile,
@@ -127,8 +127,8 @@ Column::Column(Table& table, const ColumnRecord& columnRecord, std::uint64_t fir
     , m_dataDir(ensureDataDir())
     , m_masterColumnData(maybeCreateMasterColumnData(false, firstUserTrid))
     , m_columnDefinitionCache(kColumnDefinitionCacheCapacity)
-    , m_currentColumnDefinition(getColumnDefinitionChecked(
-              getDatabase().getLatestColumnDefinitionIdForColumn(m_table.getId(), m_id)))
+    , m_currentColumnDefinition(findColumnDefinitionChecked(
+              getDatabase().findLatestColumnDefinitionIdForColumn(m_table.getId(), m_id)))
     , m_notNull(m_currentColumnDefinition->isNotNull())
     , m_blockRegistry(*this)
     , m_lastBlockId(m_blockRegistry.getLastBlockId())
@@ -137,21 +137,21 @@ Column::Column(Table& table, const ColumnRecord& columnRecord, std::uint64_t fir
     checkDataConsistency();
 }
 
-std::string Column::getDisplayName() const
+std::string Column::makeDisplayName() const
 {
     std::ostringstream oss;
     oss << '\'' << getDatabaseName() << "'.'" << m_table.getName() << "'.'" << m_name << '\'';
     return oss.str();
 }
 
-std::string Column::getDisplayCode() const
+std::string Column::makeDisplayCode() const
 {
     std::ostringstream oss;
     oss << getDatabaseUuid() << '.' << m_table.getId() << '.' << m_id;
     return oss.str();
 }
 
-ColumnDefinitionPtr Column::getColumnDefinitionChecked(std::uint64_t columnDefinitionId)
+ColumnDefinitionPtr Column::findColumnDefinitionChecked(std::uint64_t columnDefinitionId)
 {
     std::lock_guard lock(m_mutex);
     const auto cachedColumnDef = m_columnDefinitionCache.get(columnDefinitionId);
@@ -180,10 +180,10 @@ ColumnDataBlockPtr Column::createBlock(std::uint64_t prevBlockId, ColumnDataBloc
     return block;
 }
 
-std::uint64_t Column::getPrevBlockId(std::uint64_t blockId) const
+std::uint64_t Column::findPrevBlockId(std::uint64_t blockId) const
 {
     std::lock_guard lock(m_mutex);
-    return m_blockRegistry.getPrevBlockId(blockId);
+    return m_blockRegistry.findPrevBlockId(blockId);
 }
 
 void Column::updateBlockState(std::uint64_t blockId, ColumnDataBlockState state) const
@@ -195,7 +195,7 @@ void Column::updateBlockState(std::uint64_t blockId, ColumnDataBlockState state)
 void Column::readRecord(
         const ColumnDataAddress& addr, Variant& value, bool lobStreamsMustHoldSource)
 {
-    //DBG_LOG_DEBUG("Column::readRecord(): " << getDisplayName() << " at " << addr);
+    //DBG_LOG_DEBUG("Column::readRecord(): " << makeDisplayName() << " at " << addr);
 
     // Handle NULL value
     if (addr.isNullValueAddress()) {
@@ -204,8 +204,8 @@ void Column::readRecord(
     }
 
     std::lock_guard lock(m_mutex);
-    auto block = getExistingBlock(addr.getBlockId());
-    std::uint32_t requiredLength = m_minRequiredBlockFreeSpaces[m_dataType];
+    auto block = findExistingBlock(addr.getBlockId());
+    std::uint32_t requiredLength = s_minRequiredBlockFreeSpaces[m_dataType];
     if (addr.getOffset() + requiredLength >= m_dataBlockDataAreaSize) {
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDataBlockPosition, getDatabaseName(),
                 m_table.getName(), m_name, addr.getBlockId(), getDatabaseUuid(), m_table.getId(),
@@ -324,7 +324,7 @@ void Column::readRecord(
 void Column::readMasterColumnRecord(const ColumnDataAddress& addr, MasterColumnRecord& record)
 {
     // Read MCR size
-    auto block = getExistingBlock(addr.getBlockId());
+    auto block = findExistingBlock(addr.getBlockId());
     std::uint8_t recordSizeBuffer[2];
     auto offset = addr.getOffset();
     block->readData(recordSizeBuffer, 1, offset++);
@@ -345,7 +345,7 @@ void Column::readMasterColumnRecord(const ColumnDataAddress& addr, MasterColumnR
     record.deserialize(buffer.get(), recordSize);
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::putRecord(Variant&& value)
+std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& value)
 {
     std::lock_guard lock(m_mutex);
 
@@ -359,7 +359,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::putRecord(Variant&& valu
     }
 
     Variant v;
-    std::uint32_t requiredLength = m_minRequiredBlockFreeSpaces[m_dataType];
+    std::uint32_t requiredLength = s_minRequiredBlockFreeSpaces[m_dataType];
 
     try {
         // Cast value to column data type
@@ -574,10 +574,10 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::putRecord(Variant&& valu
         case COLUMN_DATA_TYPE_TEXT: {
             if (v.isString()) {
                 const auto& s = v.getString();
-                storeBuffer(s.c_str(), s.length(), block);
+                writeBuffer(s.c_str(), s.length(), block);
             } else {
                 assert(v.isClob());
-                return storeClob(v.getClob(), block);
+                return writeClob(v.getClob(), block);
             }
             break;
         }
@@ -585,10 +585,10 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::putRecord(Variant&& valu
         case COLUMN_DATA_TYPE_BINARY: {
             if (v.isBinary()) {
                 const auto& s = v.getBinary();
-                storeBuffer(s.data(), s.size(), block);
+                writeBuffer(s.data(), s.size(), block);
             } else {
                 assert(v.isBlob());
-                return storeBlob(v.getBlob(), block);
+                return writeBlob(v.getBlob(), block);
             }
             break;
         }
@@ -609,14 +609,14 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::putRecord(Variant&& valu
     block->incNextDataPos(actualLength);
     itBlock->second = block->getFreeDataSpace();
 
-    //DBG_LOG_DEBUG("Column::putRecord(): " << getDisplayName() << " at "
+    //DBG_LOG_DEBUG("Column::writeRecord(): " << makeDisplayName() << " at "
     //                                       << ColumnDataAddress(block->getId(), pos));
 
     return std::make_pair(ColumnDataAddress(block->getId(), pos),
             ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::putMasterColumnRecord(
+std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
         const MasterColumnRecord& record)
 {
     // Check that this is master column
@@ -681,9 +681,9 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::putMasterColumnRecord(
     block->incNextDataPos(recordSizeWithSizeTag);
     itBlock->second = block->getFreeDataSpace();
 
-    DBG_LOG_DEBUG("Column::putMasterColumnRecord(): " << getDisplayName() << ": MCR: " << record
-                                                      << " at "
-                                                      << ColumnDataAddress(block->getId(), pos));
+    DBG_LOG_DEBUG("Column::writeMasterColumnRecord(): " << makeDisplayName() << ": MCR: " << record
+                                                        << " at "
+                                                        << ColumnDataAddress(block->getId(), pos));
 
     return std::make_pair(ColumnDataAddress(block->getId(), pos),
             ColumnDataAddress(block->getId(), block->getNextDataPos()));
@@ -753,7 +753,7 @@ void Column::rollbackToAddress(
         // Adjust block metadata
         block->setNextDataPos(0);
         block->resetFillTimestamp();
-        block->saveHeader();
+        block->writeHeader();
 
         // Update block free space info
         updateAvailableBlock(*block);
@@ -771,7 +771,7 @@ void Column::rollbackToAddress(
     block->setNextDataPos(addr.getOffset());
     if (block->getId() != firstAvailableBlockId) {
         block->resetFillTimestamp();
-        block->saveHeader();
+        block->writeHeader();
     }
 
     updateAvailableBlock(*block);
@@ -781,7 +781,7 @@ std::uint32_t Column::loadLobChunkHeader(
         std::uint64_t blockId, std::uint32_t offset, LobChunkHeader& header)
 {
     std::lock_guard lock(m_mutex);
-    auto block = getExistingBlock(blockId);
+    auto block = findExistingBlock(blockId);
     return loadLobChunkHeaderUnlocked(*block, offset, header);
 }
 
@@ -789,7 +789,7 @@ void Column::readData(
         std::uint64_t blockId, std::uint32_t offset, void* buffer, std::size_t bufferSize)
 {
     std::lock_guard lock(m_mutex);
-    auto block = getExistingBlock(blockId);
+    auto block = findExistingBlock(blockId);
     block->readData(buffer, bufferSize, offset);
 }
 
@@ -930,7 +930,7 @@ void Column::loadMasterColumnMainIndex()
     ::pbeDecodeUInt64(reinterpret_cast<const std::uint8_t*>(&indexId0), &indexId);
 
     // Create index
-    const auto indexRecord = getDatabase().getIndexRecord(indexId);
+    const auto indexRecord = getDatabase().findIndexRecord(indexId);
     m_masterColumnData->m_mainIndex = std::make_shared<UInt64UniqueLinearIndex>(
             m_table, indexRecord, kMasterColumnNameMainIndexValueSize);
 }
@@ -992,8 +992,8 @@ void Column::checkDataConsistency()
         while (true) {
             // Load block
             //DBG_LOG_DEBUG("Column::checkDataConsistency(): "
-            //              << getDisplayName() << ": Checking block " << blockInfo.m_currentBlockId);
-            const auto currentBlock = getExistingBlock(blockInfo.m_currentBlockId);
+            //              << makeDisplayName() << ": Checking block " << blockInfo.m_currentBlockId);
+            const auto currentBlock = findExistingBlock(blockInfo.m_currentBlockId);
 
             // Ensure previous block ID saved in block is correct
             if (currentBlock->getPrevBlockId() != blockInfo.m_prevBlockId) {
@@ -1016,13 +1016,13 @@ void Column::checkDataConsistency()
             }
 
             // Collect block into available block list, if it has enough free space
-            if (currentBlock->getFreeDataSpace() >= m_minRequiredBlockFreeSpaces[m_dataType]) {
+            if (currentBlock->getFreeDataSpace() >= s_minRequiredBlockFreeSpaces[m_dataType]) {
                 m_availableDataBlocks.emplace(
                         currentBlock->getId(), currentBlock->getFreeDataSpace());
             }
 
             // Determine next blocks
-            const auto nextBlockIds = m_blockRegistry.getNextBlockIds(blockInfo.m_currentBlockId);
+            const auto nextBlockIds = m_blockRegistry.findNextBlockIds(blockInfo.m_currentBlockId);
             if (nextBlockIds.empty()) break;
             blockInfo.m_prevBlockId = blockInfo.m_currentBlockId;
             blockInfo.m_prevBlockDigest = currentBlockDigest;
@@ -1110,7 +1110,7 @@ ColumnDataBlockPtr Column::createOrGetNextBlock(
     ColumnDataBlockPtr nextBlock;
 
     // Get existing next blocks
-    const auto nextBlockIds = m_blockRegistry.getNextBlockIds(block.getId());
+    const auto nextBlockIds = m_blockRegistry.findNextBlockIds(block.getId());
     if (!nextBlockIds.empty()) {
         // Iterare existing next blocks in the reverse order because there's higher probability
         // to get block with necessary free space this way.
@@ -1159,7 +1159,7 @@ ColumnDataBlockPtr Column::createOrGetNextBlock(
     return nextBlock;
 }
 
-ColumnDataBlockPtr Column::getExistingBlock(std::uint64_t blockId)
+ColumnDataBlockPtr Column::findExistingBlock(std::uint64_t blockId)
 {
     auto block = loadBlock(blockId);
     if (!block) {
@@ -1206,7 +1206,7 @@ std::uint64_t Column::findFirstBlock() const
                 // do nothing here
             }
         }
-        if (fileIgnored && m_wellKnownIgnorableFiles.count(fileName) == 0) {
+        if (fileIgnored && s_wellKnownIgnorableFiles.count(fileName) == 0) {
             LOG_WARNING << utils::format(
                     "Consistency check for column '%1%'.'%2%'.'%3%': file '%4%' ignored",
                     getDatabaseName(), m_table.getName(), m_name, fileName);
@@ -1217,7 +1217,7 @@ std::uint64_t Column::findFirstBlock() const
     return firstBlockId;
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::storeLob(
+std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeLob(
         LobStream& lob, ColumnDataBlockPtr block)
 {
     ColumnDataAddress result;
@@ -1293,7 +1293,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::storeLob(
     return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::storeBuffer(
+std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
         const void* src, std::uint32_t length, ColumnDataBlockPtr block)
 {
     // Remember initial address
@@ -1358,7 +1358,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::storeBuffer(
 
 void Column::loadText(const ColumnDataAddress& addr, Variant& value, bool lobStreamsMustHoldSource)
 {
-    auto block = getExistingBlock(addr.getBlockId());
+    auto block = findExistingBlock(addr.getBlockId());
     LobChunkHeader chunkHeader;
     loadLobChunkHeaderUnlocked(*block, addr.getOffset(), chunkHeader);
     if (chunkHeader.m_remainingLobLength == 0) {
@@ -1382,7 +1382,7 @@ void Column::loadText(const ColumnDataAddress& addr, Variant& value, bool lobStr
 void Column::loadBinary(
         const ColumnDataAddress& addr, Variant& value, bool lobStreamsMustHoldSource)
 {
-    auto block = getExistingBlock(addr.getBlockId());
+    auto block = findExistingBlock(addr.getBlockId());
     LobChunkHeader chunkHeader;
     loadLobChunkHeaderUnlocked(*block, addr.getOffset(), chunkHeader);
     if (chunkHeader.m_remainingLobLength == 0) {

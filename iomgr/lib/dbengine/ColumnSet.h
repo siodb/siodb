@@ -133,7 +133,7 @@ public:
      * @return Column position.
      * @throw DatabaseError if column does not belong to this ColumnSet.
      */
-    std::uint32_t getColumnPosition(std::uint64_t columnId) const;
+    std::uint32_t findColumnPosition(std::uint64_t columnId) const;
 
 private:
     /** Column ID to position in the column set mapping type. */

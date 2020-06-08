@@ -124,7 +124,7 @@ public:
      * @return Column position in the data source.
      * @throw std::out_of_range if index is out of range.
      */
-    std::size_t getColumnPosition(std::size_t index) const
+    std::size_t findColumnPosition(std::size_t index) const
     {
         return m_columnInfos.at(index).m_posInTable;
     }

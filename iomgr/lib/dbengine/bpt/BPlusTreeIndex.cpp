@@ -139,7 +139,7 @@ void BPlusTreeIndex::flush()
     }
 }
 
-std::uint64_t BPlusTreeIndex::getValue(const void* key, void* value, std::size_t count)
+std::uint64_t BPlusTreeIndex::findValue(const void* key, void* value, std::size_t count)
 {
     // Check that buffer has some capacity,
     // otherwise there is no sense to continue
@@ -185,27 +185,28 @@ bool BPlusTreeIndex::getMaxKey([[maybe_unused]] void* key)
     return false;
 }
 
-bool BPlusTreeIndex::getFirstKey([[maybe_unused]] void* key)
+bool BPlusTreeIndex::findFirstKey([[maybe_unused]] void* key)
 {
-    // TODO: Implement BPlusTreeIndex::getFirstKey()
+    // TODO: Implement BPlusTreeIndex::findFirstKey()
     return false;
 }
 
-bool BPlusTreeIndex::getLastKey([[maybe_unused]] void* key)
+bool BPlusTreeIndex::findLastKey([[maybe_unused]] void* key)
 {
-    // TODO: Implement BPlusTreeIndex::getLastKey()
+    // TODO: Implement BPlusTreeIndex::findLastKey()
     return false;
 }
 
-bool BPlusTreeIndex::getPrevKey([[maybe_unused]] const void* key, [[maybe_unused]] void* prevKey)
+bool BPlusTreeIndex::findPreviousKey(
+        [[maybe_unused]] const void* key, [[maybe_unused]] void* prevKey)
 {
-    // TODO: Implement BPlusTreeIndex::getPrevKey()
+    // TODO: Implement BPlusTreeIndex::findPreviousKey()
     return false;
 }
 
-bool BPlusTreeIndex::getNextKey([[maybe_unused]] const void* key, [[maybe_unused]] void* nextKey)
+bool BPlusTreeIndex::findNextKey([[maybe_unused]] const void* key, [[maybe_unused]] void* nextKey)
 {
-    // TODO: Implement BPlusTreeIndex::getNextKey()
+    // TODO: Implement BPlusTreeIndex::findNextKey()
     return false;
 }
 
@@ -358,16 +359,16 @@ std::size_t BPlusTreeIndex::findRootNode()
 #if 0
     // Fallback method - find root node by enumerating and testing all nodes sequentially
     std::uint64_t rootNodeId = 1;
-    auto node = getNode(rootNodeId);
+    auto node = findNode(rootNodeId);
     while (node && node->m_header.m_common.m_nodeType != NodeType::kRootInternalNode
             && node->m_header.m_common.m_nodeType != NodeType::kRootLeafNode) {
         ++rootNodeId;
-        node = getNode(rootNodeId);
+        node = findNode(rootNodeId);
     }
 #endif
 
     // Load and validate root node
-    auto node = getNode(rootNodeId);
+    auto node = findNode(rootNodeId);
     if (!node || !node->isRoot()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotFindIndexRoot, m_table.getDatabaseName(),
                 m_table.getName(), m_name, m_table.getDatabaseUuid(), m_table.getId(), m_id);
@@ -403,7 +404,7 @@ BPlusTreeIndex::NodePtr BPlusTreeIndex::findNode(const void* key)
     //
 
     auto currentNodeId = m_rootNodeId;
-    auto currentNode = getNode(currentNodeId);
+    auto currentNode = findNode(currentNodeId);
 
     while (currentNode && currentNode->m_header.m_common.m_nodeType != NodeType::kLeafNode
             && currentNode->m_header.m_common.m_nodeType != NodeType::kRootLeafNode) {
@@ -449,7 +450,7 @@ BPlusTreeIndex::NodePtr BPlusTreeIndex::findNode(const void* key)
             }
         }
 
-        currentNode = getNode(nextNodeId);
+        currentNode = findNode(nextNodeId);
         currentNodeId = nextNodeId;
     }
 
@@ -462,7 +463,7 @@ BPlusTreeIndex::NodePtr BPlusTreeIndex::findNode(const void* key)
     return currentNode;
 }
 
-BPlusTreeIndex::NodePtr BPlusTreeIndex::getNode(io::File& file, std::uint64_t nodeId)
+BPlusTreeIndex::NodePtr BPlusTreeIndex::findNode(io::File& file, std::uint64_t nodeId)
 {
     auto cachedNode = m_nodeCache.get(nodeId);
     return cachedNode ? *cachedNode : readNode(file, nodeId);
