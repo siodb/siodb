@@ -22,11 +22,19 @@ A relational SQL database that secures your data, manages personal data life-cyc
 
 **Current status:** Alpha version
 
-## Quick Start (Docker)
+## Quick Start
+
+### Docker
 
 ```bash
 docker run -p 127.0.0.1:50000:50000/tcp --name siodb siodb/siodb
 ```
+
+### Cloud
+
+[![Deploy to Hidora](https://raw.githubusercontent.com/siodb/siodb-jelastic/master/images/deploy-to-hidora.png)](https://siodb.hidora.com)
+
+*Free Trial. Only requires an email address.*
 
 ### Connect to the instance in the container
 
