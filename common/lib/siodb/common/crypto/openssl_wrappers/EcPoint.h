@@ -21,27 +21,25 @@ public:
      * @param group Group.
      * @throw OpenSslError if EC_POINT could not be created.
      */
-    explicit EcPoint(const EC_GROUP* group)
-        : m_ecPoint(EC_POINT_new(group))
+    explicit EcPoint(const ::EC_GROUP* group)
+        : m_ecPoint(::EC_POINT_new(group))
     {
         if (!m_ecPoint) throw OpenSslError("EC_POINT_new failed");
     }
 
     DECLARE_NONCOPYABLE(EcPoint);
 
-    /**
-     * Deinitializes object.
-     */
+    /** Deinitializes object. */
     ~EcPoint()
     {
-        EC_POINT_clear_free(m_ecPoint);
+        ::EC_POINT_clear_free(m_ecPoint);
     }
 
     /**
      * Converts class into EC_POINT*.
      * @return EC_POINT pointer.
      */
-    operator EC_POINT*() noexcept
+    operator ::EC_POINT*() noexcept
     {
         return m_ecPoint;
     }
@@ -50,7 +48,7 @@ public:
      * Converts class into const EC_POINT*.
      * @return Const EC_POINT pointer.
      */
-    operator const EC_POINT*() const noexcept
+    operator const ::EC_POINT*() const noexcept
     {
         return m_ecPoint;
     }
@@ -59,7 +57,7 @@ public:
      * Releases pointer without freeing memory
      * @return Released EC_POINT.
      */
-    EC_POINT* release() noexcept
+    ::EC_POINT* release() noexcept
     {
         auto ecPoint = m_ecPoint;
         m_ecPoint = nullptr;
@@ -68,7 +66,7 @@ public:
 
 private:
     /** Ecliptic curve point */
-    EC_POINT* m_ecPoint;
+    ::EC_POINT* m_ecPoint;
 };
 
 }  // namespace siodb::crypto

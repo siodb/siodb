@@ -21,7 +21,7 @@ public:
      * @throw OpenSslError if EVP_PKEY could not be created.
      */
     EvpKey()
-        : m_evpKey(EVP_PKEY_new())
+        : m_evpKey(::EVP_PKEY_new())
     {
         if (!m_evpKey) throw OpenSslError("EVP_PKEY_new failed");
     }
@@ -30,26 +30,24 @@ public:
      * Initializes object of class EvpKey.
      * @param evpKey Key.
      */
-    explicit EvpKey(EVP_PKEY* evpKey) noexcept
+    explicit EvpKey(::EVP_PKEY* evpKey) noexcept
         : m_evpKey(evpKey)
     {
     }
 
     DECLARE_NONCOPYABLE(EvpKey);
 
-    /**
-     * Deinitializes object.
-     */
+    /** Deinitializes object. */
     ~EvpKey()
     {
-        EVP_PKEY_free(m_evpKey);
+        ::EVP_PKEY_free(m_evpKey);
     }
 
     /**
      * Converts class into EVP_PKEY*.
      * @return EVP_PKEY ponter.
      */
-    operator EVP_PKEY*() noexcept
+    operator ::EVP_PKEY*() noexcept
     {
         return m_evpKey;
     }
@@ -58,7 +56,7 @@ public:
      * Converts class into const EVP_PKEY*.
      * @return Const EVP_PKEY pointer.
      */
-    operator const EVP_PKEY*() const noexcept
+    operator const ::EVP_PKEY*() const noexcept
     {
         return m_evpKey;
     }
@@ -67,7 +65,7 @@ public:
      * Releases pointer without freeing memory
      * @return Released EVP_PKEY.
      */
-    EVP_PKEY* release() noexcept
+    ::EVP_PKEY* release() noexcept
     {
         auto key = m_evpKey;
         m_evpKey = nullptr;
@@ -76,7 +74,7 @@ public:
 
 private:
     /** Key */
-    EVP_PKEY* m_evpKey;
+    ::EVP_PKEY* m_evpKey;
 };
 
 }  // namespace siodb::crypto

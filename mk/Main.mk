@@ -5,19 +5,29 @@
 # Common part of all makefiles.
 # Contains common make rules
 
-.PHONY: all clean full-clean check-headers
+.PHONY: all clean full-clean check-headers print-config
 
 #### TOOLCHAIN SELECTION #####
 
-ifeq ($(DISTRO),Ubuntu)
-TOOLCHAIN:=gcc8
+# CentOS
+ifeq ($(DISTRO),CentOS)
+TOOLCHAIN:=gcc
 endif
 
-ifeq ($(DISTRO),Debian)
-TOOLCHAIN:=gcc8
+# RHEL 7
+ifeq ($(DISTRO),RedHatEnterpriseServer)
+TOOLCHAIN:=gcc
 endif
 
+# RHEL 8
+ifeq ($(DISTRO),RedHatEnterprise)
+TOOLCHAIN:=gcc
+endif
+
+# Default choice (Ubuntu, Debian, Mint, etc.)
+ifndef TOOLCHAIN
 TOOLCHAIN:=gcc8
+endif
 
 ifeq ($(TOOLCHAIN),gcc)
 CC:=gcc
@@ -104,6 +114,11 @@ CXX_INCLUDE+=-I/usr/local/include/gtest-gmock-1.8.1
 ifdef BOOST_VERSION
 CXX_INCLUDE+=-I/usr/include/boost$(BOOST_VERSION)
 LIBS+=-L/usr/lib64/boost$(BOOST_VERSION)
+endif
+
+ifdef OPENSSL_ROOT
+CXX_INCLUDE+=-I$(OPENSSL_ROOT)/include
+LDFLAGS+=-L$(OPENSSL_ROOT)/lib -Wl,-rpath -Wl,$(OPENSSL_ROOT)/lib
 endif
 
 DEFS+=-D_GNU_SOURCE $(TARGET_DEFS)
@@ -207,10 +222,23 @@ SUPPLEMENTARY_TARGETS+=$(TARGET_LIB_FILES)
 endif
 
 all: \
+	print-config \
 	$(MAIN_TARGET) \
 	$(SUPPLEMENTARY_TARGETS)
 
-check-headers: $(CXX_CHK) $(C_CHK)
+print-config:
+	@echo -e "\n================================================================================\n"\
+	"Build Settings:\n"\
+	"\nDISTRO=$(DISTRO) $(DISTRO_VERSION)\n"\
+	"CC=$(CC)\n"\
+	"CXX=$(LD)\n"\
+	"LD=$(LD)\n"\
+	"\nCFLAGS=$(CFLAGS)\n\n"\
+	"CXXFLAGS=$(CXXFLAGS)\n\n"\
+	"LDFLAGS=$(LDFLAGS)\n"\
+	"================================================================================\n"
+
+check-headers: print-config $(CXX_CHK) $(C_CHK)
 
 # Targets with actions
 

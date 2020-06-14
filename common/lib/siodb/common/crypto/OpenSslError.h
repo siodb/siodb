@@ -23,7 +23,7 @@ public:
      * @param what Explanatory message.
      */
     explicit OpenSslError(const char* what)
-        : std::runtime_error(OpenSslError::createErrorText(what, ERR_get_error()))
+        : std::runtime_error(OpenSslError::createErrorText(what, ::ERR_get_error()))
         , m_error(ERR_get_error())
     {
     }
@@ -60,7 +60,7 @@ private:
     {
         constexpr std::size_t kMinOpenSSLErrorBufferLength = 120;
         char errorText[kMinOpenSSLErrorBufferLength];
-        return stdext::string_builder() << str << ": " << ERR_error_string(errorCode, errorText);
+        return stdext::string_builder() << str << ": " << ::ERR_error_string(errorCode, errorText);
     }
 
 private:

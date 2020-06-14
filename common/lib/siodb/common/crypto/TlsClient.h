@@ -44,7 +44,7 @@ public:
      */
     void enableCertificateVerification() noexcept
     {
-        SSL_CTX_set_verify(m_sslContext, SSL_VERIFY_PEER, NULL);
+        ::SSL_CTX_set_verify(m_sslContext, SSL_VERIFY_PEER, NULL);
     }
 
 private:
@@ -53,7 +53,7 @@ private:
      * @return OpenSsl TLS method.
      * @throw OpenSslError in case of OpenSsl error.
      */
-    const SSL_METHOD* getSslMethod() const;
+    const ::SSL_METHOD* getSslMethod() const;
 
 private:
     /** OpenSsl context */

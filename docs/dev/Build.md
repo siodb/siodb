@@ -4,6 +4,8 @@
   - [Ubuntu 18.04 LTS](#ubuntu-1804-lts)
   - [CentOS 7](#centos-7)
   - [CentOS 8](#centos-8)
+  - [RHEL 7](#rhel-7)
+  - [RHEL 8](#rhel-8)
 - [Third-Party Libraries](#third-party-libraries)
 - [System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)](#system-setup-debian-ubuntu-centos-rhel-suse-sles)
 - [Compiling Siodb](#compiling-siodb)
@@ -13,8 +15,7 @@
 
 ### Ubuntu 18.04 LTS
 
-- Change current directory to the root of siodb Git repository.
-- Run following commands:
+Change current directory to the root of siodb Git repository, and run following commands:
 
 ```shell
 
@@ -39,18 +40,17 @@ sudo apt install curl mc p7zip-full vim wget zip
 sudo apt install gitk kdiff3 okular openjdk-8-jdk
 ```
 
-Proceed to section "Building Third-Party Libraries".
+Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ### CentOS 7
 
-- Change current directory to the root of siodb Git repository.
-- Run following commands:
+Change current directory to the root of siodb Git repository, and run following commands:
 
 ```shell
 
 # Enable additional repositories
 sudo yum -y install \
-    https://repo.ius.io/ius-release-el7.rpm \
+    https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.7-1.x86_64.rpm \
     https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 
 # Enable software collections
@@ -59,11 +59,11 @@ sudo yum -y install centos-release-scl
 # Update your system
 sudo yum -y update
 
-# Uniinstall older git
-sudo yum remove git gitk
+# Uninstall any existing git
+sudo yum remove git*
 
-# Install newer git
-sudo yum install git2u
+# Install latest git
+sudo yum install git
 
 # Install required tools and libraries
 sudo yum -y install cmake3 gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
@@ -98,19 +98,26 @@ rm -rf /tmp/getllvm
 sudo yum install -y curl mc p7zip vim zip
 
 # Recommended supplementary installs for GUI machines
-sudo yum install -y git2u-gitk kdiff3 java-1.8.0-openjdk
+sudo yum install -y gitk kdiff3 java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
 ```
 
-Proceed to section "Building Third-Party Libraries".
+Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
+
+- You can check what is latest version here: [OpenSSL Downloads](https://www.openssl.org/source/)
+  (for example, latest version is 1.1.1g at the moment of writing this).
+- You can get detailed installation instructions, for example, on the following web pages:
+  - [How To Install OpenSSL 1.1.1d in CentOS](https://www.hostnextra.com/kb/how-to-install-openssl-1-1-1d-in-centos/)
+  - [Installing OpenSSL on CentOS 7](https://cloudwafer.com/blog/installing-openssl-on-centos-7/)
+
+Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ### CentOS 8
 
-- Change current directory to the root of siodb Git repository.
-- Run following commands:
+Change current directory to the root of siodb Git repository, and run following commands:
 
 ```shell
 
@@ -151,21 +158,146 @@ sudo ldconfig
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-## Third-Party Libraries
+Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
-- Change current directory to the root of siodb Git repository.
+### RHEL 7
+
+Change current directory to the root of siodb Git repository, and run following commands:
+
+```shell
+
+# Enable additional repositories
+sudo yum -y install \
+    https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.7-1.x86_64.rpm \
+    https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+
+# Enable software collections
+sudo yum-config-manager --enable rhel-server-rhscl-7-rpms
+
+# Update your system
+sudo yum -y update
+
+# Uninstall any existing git
+sudo yum remove git*
+
+# Install latest git
+sudo yum install git
+
+# Install required tools and libraries
+sudo yum -y install cmake3 gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
+          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
+          wget zlib-devel python
+
+sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
+--slave /usr/local/bin/ctest ctest /usr/bin/ctest \
+--slave /usr/local/bin/cpack cpack /usr/bin/cpack \
+--slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake \
+--family cmake
+
+sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
+--slave /usr/local/bin/ctest ctest /usr/bin/ctest3 \
+--slave /usr/local/bin/cpack cpack /usr/bin/cpack3 \
+--slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
+--family cmake
+
+# Install clang-9. This one is for SLES, but works on the CentOS 7 too.
+mkdir /tmp/getllvm
+cd /tmp/getllvm
+wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
+sudo cp -Rf local /usr
+sudo ldconfig
+sudo mandb
+cd $HOME
+rm -rf /tmp/getllvm
+
+# Recommended supplementary installs for everyone
+sudo yum install -y curl mc p7zip vim zip
+
+# Recommended supplementary installs for GUI machines
+sudo yum install -y gitk kdiff3 java-1.8.0-openjdk
+
+# Permanently tell ldconfig to scan /usr/local/lib when updating cache
+sudo sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
+sudo ldconfig
+```
+
+Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
+
+- You can check what is latest version here: [OpenSSL Downloads](https://www.openssl.org/source/)
+  (for example, latest version is 1.1.1g at the moment of writing this).
+- You can get detailed installation instructions, for example, on the following web pages:
+  - [How To Install OpenSSL 1.1.1d in CentOS](https://www.hostnextra.com/kb/how-to-install-openssl-1-1-1d-in-centos/)
+  - [Installing OpenSSL on CentOS 7](https://cloudwafer.com/blog/installing-openssl-on-centos-7/)
+
+Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+
+### RHEL 8
+
+Change current directory to the root of siodb Git repository, and run following commands:
+
+```shell
+
+# Enable additional repositories
+sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
+# Update your system
+sudo yum -y update
+
+# Install required tools and libraries
+sudo yum -y install cmake gcc gcc-c++ boost-devel libcurl-devel \
+          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb \
+          wget zlib-devel python2
+
+# Install clang-9. This one is for SLES, but works on the CentOS 8 too.
+mkdir /tmp/getllvm
+cd /tmp/getllvm
+wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
+sudo cp -Rf local /usr
+sudo ldconfig
+sudo mandb
+cd $HOME
+rm -rf /tmp/getllvm
+
+# Recommended supplementary installs for everyone
+sudo yum install -y curl mc p7zip vim zip
+
+# Recommended supplementary installs for GUI machines
+sudo yum install -y gitk java-1.8.0-openjdk
+
+# Permanently tell ldconfig to scan /usr/local/lib when updating cache
+sudo sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
+sudo ldconfig
+
+# Link python 2
+sudo ln -s /usr/bin/python2 /usr/bin/python
+```
+
+Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+
+## Building Third-Party Libraries
+
+Change current directory to the root of siodb Git repository and execute following commands:
+
+**NOTE:** Adjust make parameter `-j4` to number of CPUs/cores available on the your build machine.
 
 ```shell
 
 # CENTOS 7 ONLY: Enable devtoolset-8
 scl enable devtoolset-8 bash
 
+# Install source code formatting hook for git
+cp -fv tools/git_hooks/siodb-clang-format.hook .git/hooks/pre-commit
+
 # Build and install Google Protobuf library
 cd thirdparty/protobuf
-tar xaf protobuf-all-3.10.0.tar.xz
-cd protobuf-3.10.0
+tar xaf protobuf-all-3.11.4.tar.xz
+cd protobuf-3.11.4
 ./configure
-make -j2
+make -j4
 sudo make install
 sudo ldconfig
 cd ../..
@@ -177,7 +309,7 @@ cd utfcpp-3.1
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DUTF8_TESTS=Off ..
-make -j2
+make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
@@ -194,7 +326,7 @@ cd antlr4-cpp-runtime-4.8-source
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j2
+make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
@@ -215,7 +347,7 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_TZ_DB=ON \
       -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
-make -j2
+make -j4
 sudo make install
 cd ../../..
 
@@ -223,19 +355,16 @@ cd ../../..
 cd xxHash
 tar xaf xxHash-0.7.2.tar.xz
 cd xxHash-0.7.2
-make -j2
+make -j4
 sudo make install
 sudo ldconfig
 cd ../..
 
 # Build and install message compiler
 cd ../tools/message_compiler
-make -j2
+make -j4
 sudo make install
 cd ../..
-
-# Install source code formatting hook for git
-cp -v tools/git_hooks/siodb-clang-format.hook .git/hooks/pre-commit
 ```
 
 ## System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)
@@ -280,10 +409,11 @@ and re-login.
 
 ## Compiling Siodb
 
-- Build debug version: `make -j2`. Build outputs will appear in the directory `debug/bin`.
-- Build release version: `make -j2 DEBUG=0`. Build outputs will appear in the directory `release/bin`.
+- Build debug version: `make -j4`. Build outputs will appear in the directory `debug/bin`.
+- Build release version: `make -j4 DEBUG=0`. Build outputs will appear in the directory `release/bin`.
 - List all available build commands: `make help`.
-- Adjust `-jN` option in the above `make` commands according to available number of CPUs and memory
+
+**NOTE:** Adjust `-jN` option in the above `make` commands according to available number of CPUs and memory
   on the build host.
 
 ## Running Siodb

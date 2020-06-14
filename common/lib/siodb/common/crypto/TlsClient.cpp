@@ -9,9 +9,9 @@
 
 namespace siodb::crypto {
 
-const SSL_METHOD* TlsClient::getSslMethod() const
+const ::SSL_METHOD* TlsClient::getSslMethod() const
 {
-    const SSL_METHOD* method = TLS_client_method();
+    const ::SSL_METHOD* method = ::TLS_client_method();
     if (method == nullptr) throw OpenSslError("TLS_client_method returned nullptr");
     return method;
 }

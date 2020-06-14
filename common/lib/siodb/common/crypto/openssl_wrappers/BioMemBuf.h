@@ -18,29 +18,29 @@ class BioMemBuf {
 public:
     /**
      * Initializes object of class BioMemBuf.
-     * @throw OpenSslError if context could not be created
+     * @param buffer Data buffer.
+     * @param size Data buffer size.
+     * @throw OpenSslError if context could not be created.
      */
     BioMemBuf(const void* buffer, std::size_t size)
-        : m_bio(BIO_new_mem_buf(buffer, size))
+        : m_bio(::BIO_new_mem_buf(buffer, size))
     {
         if (!m_bio) throw OpenSslError("BIO_new_mem_buf failed");
     }
 
     DECLARE_NONCOPYABLE(BioMemBuf);
 
-    /**
-     * Deinitializes object.
-     */
+    /** Deinitializes object. */
     ~BioMemBuf()
     {
-        BIO_free(m_bio);
+        ::BIO_free(m_bio);
     }
 
     /**
      * Converts class into BIO*.
      * @return BIO pointer.
      */
-    operator BIO*() noexcept
+    operator ::BIO*() noexcept
     {
         return m_bio;
     }
@@ -49,14 +49,14 @@ public:
      * Converts class into const BIO*.
      * @return const BIO pointer.
      */
-    operator const BIO*() const noexcept
+    operator const ::BIO*() const noexcept
     {
         return m_bio;
     }
 
 private:
     /** BIO */
-    BIO* m_bio;
+    ::BIO* m_bio;
 };
 
 }  // namespace siodb::crypto

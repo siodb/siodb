@@ -18,29 +18,29 @@ class EvpPKeyCtx {
 public:
     /**
      * Initializes object of class EvpPKeyCtx.
+     * @param key A key.
+     * @param engine Engine object.
      * @throw OpenSslError if context could not be created
      */
-    EvpPKeyCtx(EVP_PKEY* key, ENGINE* engine)
-        : m_ctx(EVP_PKEY_CTX_new(key, engine))
+    EvpPKeyCtx(::EVP_PKEY* key, ::ENGINE* engine)
+        : m_ctx(::EVP_PKEY_CTX_new(key, engine))
     {
         if (!m_ctx) throw OpenSslError("EVP_PKEY_CTX_new failed");
     }
 
     DECLARE_NONCOPYABLE(EvpPKeyCtx);
 
-    /**
-     * Deinitializes object.
-     */
+    /** Deinitializes object. */
     ~EvpPKeyCtx()
     {
-        EVP_PKEY_CTX_free(m_ctx);
+        ::EVP_PKEY_CTX_free(m_ctx);
     }
 
     /**
      * Converts class into EVP_PKEY_CTX*.
      * @return Context.
      */
-    operator EVP_PKEY_CTX*() noexcept
+    operator ::EVP_PKEY_CTX*() noexcept
     {
         return m_ctx;
     }
@@ -49,14 +49,14 @@ public:
      * Converts class into const EVP_PKEY_CTX*.
      * @return Const context.
      */
-    operator const EVP_PKEY_CTX*() const noexcept
+    operator const ::EVP_PKEY_CTX*() const noexcept
     {
         return m_ctx;
     }
 
 private:
     /** Context */
-    EVP_PKEY_CTX* m_ctx;
+    ::EVP_PKEY_CTX* m_ctx;
 };
 
 }  // namespace siodb::crypto

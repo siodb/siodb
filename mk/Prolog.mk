@@ -23,10 +23,31 @@ SIODBMC:=siodbmc.0.1.4
 
 ARCH:=$(shell uname -m)
 
+# Based on this: https://stackoverflow.com/a/8540718/1540501
+_get_major_version=$(firstword $(subst ., ,$1))
+
 DISTRO=$(shell lsb_release -is)
+DISTRO_VERSION=$(shell lsb_release -rs)
+DISTRO_MAJOR:=$(call _get_major_version, $(DISTRO_VERSION))
+
+
+# CentOS specific
 ifeq ($(DISTRO),CentOS)
 BOOST_VERSION:=169
+ifeq ($(DISTRO_MAJOR),7)
+OPENSSL_ROOT:=/usr/local/ssl
 endif
+endif # CentOS
+
+# RHEL 7 specific
+ifeq ($(DISTRO),RedHatEnterpriseServer)
+ifeq ($(DISTRO_MAJOR),7)
+BOOST_VERSION:=169
+OPENSSL_ROOT:=/usr/local/ssl
+endif
+endif # RHEL 7
+
+# Various options
 
 ifneq ($(VERBOSE),1)
 NOECHO=@

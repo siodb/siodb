@@ -9,6 +9,7 @@
 #include <siodb/common/utils/Uuid.h>
 
 // STL headers
+#include <optional>
 #include <string>
 
 namespace siodb::iomgr::dbengine {

@@ -21,17 +21,18 @@ public:
      * @throw OpenSslError if BIGNUM could not be created
      */
     BigNum()
-        : m_bigNum(BN_new())
+        : m_bigNum(::BN_new())
     {
         if (!m_bigNum) throw OpenSslError("BN_new failed");
     }
 
     /**
      * Initializes object of class BigNum.
+     * @param src Source object.
      * @throw OpenSslError if BIGNUM could not be created
      */
-    BigNum(BigNum&& other) noexcept
-        : m_bigNum(other.release())
+    BigNum(BigNum&& src) noexcept
+        : m_bigNum(src.release())
     {
     }
 
@@ -44,14 +45,21 @@ public:
      * @throw OpenSslError if BIGNUM could not be created
      */
     BigNum(const unsigned char* bigNumStr, int len)
-        : m_bigNum(BN_bin2bn(bigNumStr, len, nullptr))
+        : m_bigNum(::BN_bin2bn(bigNumStr, len, nullptr))
     {
         if (!m_bigNum) throw OpenSslError("BN_bin2bn failed");
+    }
+
+    /** Deinitializes object. */
+    ~BigNum()
+    {
+        ::BN_clear_free(m_bigNum);
     }
 
     /**
      * Move assignment.
      * @param src Source object.
+     * @return this object.
      */
     BigNum& operator=(BigNum&& src) noexcept
     {
@@ -63,18 +71,10 @@ public:
     }
 
     /**
-     * Deinitializes object.
-     */
-    ~BigNum()
-    {
-        BN_clear_free(m_bigNum);
-    }
-
-    /**
-     * Converts class into BIGNUM*.
+     * Returns underlying BIGNUM* object.
      * @return BIGNUM pointer.
      */
-    operator BIGNUM*() noexcept
+    operator ::BIGNUM*() noexcept
     {
         return m_bigNum;
     }
@@ -83,16 +83,16 @@ public:
      * Converts class into const BIGNUM*.
      * @return Const BIGNUM pointer.
      */
-    operator const BIGNUM*() const noexcept
+    operator const ::BIGNUM*() const noexcept
     {
         return m_bigNum;
     }
 
     /**
-     * Releases pointer without freeing memory
+     * Releases pointer without freeing memory.
      * @return Released BIGNUM.
      */
-    BIGNUM* release() noexcept
+    ::BIGNUM* release() noexcept
     {
         auto bn = m_bigNum;
         m_bigNum = nullptr;
@@ -101,7 +101,7 @@ public:
 
 private:
     /** Big number */
-    BIGNUM* m_bigNum;
+    ::BIGNUM* m_bigNum;
 };
 
 }  // namespace siodb::crypto

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Git short aliases for some commands
 # https://pastebin.com/u4FPKaE1
 
 git config --global alias.co checkout

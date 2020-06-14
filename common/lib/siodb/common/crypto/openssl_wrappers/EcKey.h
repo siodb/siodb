@@ -22,26 +22,24 @@ public:
      * @throw OpenSslError if EC_KEY could not be created.
      */
     explicit EcKey(int curveId)
-        : m_ecKey(EC_KEY_new_by_curve_name(curveId))
+        : m_ecKey(::EC_KEY_new_by_curve_name(curveId))
     {
         if (!m_ecKey) throw OpenSslError("EC_KEY_new_by_curve_name failed");
     }
 
     DECLARE_NONCOPYABLE(EcKey);
 
-    /**
-     * Deinitializes object.
-     */
+    /** Deinitializes object. */
     ~EcKey()
     {
-        EC_KEY_free(m_ecKey);
+        ::EC_KEY_free(m_ecKey);
     }
 
     /**
      * Converts class into EC_KEY*.
      * @return EC_KEY pointer.
      */
-    operator EC_KEY*() noexcept
+    operator ::EC_KEY*() noexcept
     {
         return m_ecKey;
     }
@@ -50,7 +48,7 @@ public:
      * Converts class into const EC_KEY*.
      * @return Const EC_KEY pointer.
      */
-    operator const EC_KEY*() const noexcept
+    operator const ::EC_KEY*() const noexcept
     {
         return m_ecKey;
     }
@@ -59,7 +57,7 @@ public:
      * Releases pointer without freeing memory
      * @return Released EC_KEY.
      */
-    EC_KEY* release() noexcept
+    ::EC_KEY* release() noexcept
     {
         auto ecKey = m_ecKey;
         m_ecKey = nullptr;
@@ -68,7 +66,7 @@ public:
 
 private:
     /** Ecliptic curve key */
-    EC_KEY* m_ecKey;
+    ::EC_KEY* m_ecKey;
 };
 
 }  // namespace siodb::crypto

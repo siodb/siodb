@@ -11,6 +11,7 @@
 #include <cstdint>
 
 // STL headers
+#include <optional>
 #include <string>
 
 namespace siodb::iomgr::dbengine {

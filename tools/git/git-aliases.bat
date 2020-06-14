@@ -1,5 +1,6 @@
 @echo off
 
+Git short aliases for some commands
 REM https://pastebin.com/u4FPKaE1
 
 git config --global alias.co checkout

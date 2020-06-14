@@ -12,7 +12,10 @@
 namespace siodb::crypto {
 
 /** Connection type */
-enum class TlsConnectionType { kServer, kClient };
+enum class TlsConnectionType {
+    kServer,
+    kClient,
+};
 
 /** TLS connection */
 class TlsConnection final : public io::IoBase {

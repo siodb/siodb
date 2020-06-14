@@ -21,26 +21,24 @@ public:
      * @throw OpenSslError if context could not be created
      */
     EvpMdCtx()
-        : m_ctx(EVP_MD_CTX_create())
+        : m_ctx(::EVP_MD_CTX_create())
     {
         if (!m_ctx) throw OpenSslError("EVP_MD_CTX_create failed");
     }
 
     DECLARE_NONCOPYABLE(EvpMdCtx);
 
-    /**
-     * Deinitializes object.
-     */
+    /** Deinitializes object. */
     ~EvpMdCtx()
     {
-        EVP_MD_CTX_destroy(m_ctx);
+        ::EVP_MD_CTX_destroy(m_ctx);
     }
 
     /**
      * Converts class into EVP_MD_CTX*.
      * @return Context.
      */
-    operator EVP_MD_CTX*() noexcept
+    operator ::EVP_MD_CTX*() noexcept
     {
         return m_ctx;
     }
@@ -49,14 +47,14 @@ public:
      * Converts class into const EVP_MD_CTX*.
      * @return Const context.
      */
-    operator const EVP_MD_CTX*() const noexcept
+    operator const ::EVP_MD_CTX*() const noexcept
     {
         return m_ctx;
     }
 
 private:
     /** Context */
-    EVP_MD_CTX* m_ctx;
+    ::EVP_MD_CTX* m_ctx;
 };
 
 }  // namespace siodb::crypto

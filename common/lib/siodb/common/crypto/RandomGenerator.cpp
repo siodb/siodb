@@ -17,19 +17,19 @@ namespace siodb::crypto {
 
 RandomGenerator::RandomGenerator()
 {
-    while (!RAND_status()) {
+    while (!::RAND_status()) {
         FileDescriptorGuard fd(::open("/dev/urandom", O_RDONLY));
         if (!fd.isValidFd()) throw std::runtime_error("Can't open /dev/urandom");
         std::uint8_t rdata[32];
         if (::readExact(fd.getFd(), rdata, sizeof(rdata), kIgnoreSignals) != sizeof(rdata))
             throw std::runtime_error("Can't read data from /dev/urandom");
-        RAND_seed(&rdata, sizeof(rdata));
+        ::RAND_seed(&rdata, sizeof(rdata));
     }
 }
 
 void RandomGenerator::getRandomBytes(unsigned char* data, std::size_t size) const
 {
-    if (RAND_bytes(data, size) != 1) throw OpenSslError("RAND_bytes failed");
+    if (::RAND_bytes(data, size) != 1) throw OpenSslError("RAND_bytes failed");
 }
 
 }  // namespace siodb::crypto

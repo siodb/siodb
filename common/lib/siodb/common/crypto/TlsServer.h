@@ -68,7 +68,7 @@ private:
      * @return OpenSsl TLS method.
      * @throw OpenSslError in case of OpenSsl error.
      */
-    const SSL_METHOD* getSslMethod() const;
+    const ::SSL_METHOD* getSslMethod() const;
 
 private:
     /** Open SSL context */

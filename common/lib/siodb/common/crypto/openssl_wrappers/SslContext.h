@@ -21,37 +21,35 @@ public:
      * @param method SSL method.
      * @throw OpenSslError if SSL_CTX object could not be created.
      */
-    SslContext(const SSL_METHOD* method)
-        : m_sslCtx(SSL_CTX_new(method))
+    SslContext(const ::SSL_METHOD* method)
+        : m_sslCtx(::SSL_CTX_new(method))
     {
         if (!m_sslCtx) throw OpenSslError("SSL_CTX_new failed");
     }
 
     /**
      * Initializes object of class SslContext.
-     * @param other SSL context.
+     * @param src SSL context.
      */
-    SslContext(SslContext&& other) noexcept
-        : m_sslCtx(other.m_sslCtx)
+    SslContext(SslContext&& src) noexcept
+        : m_sslCtx(src.m_sslCtx)
     {
-        other.m_sslCtx = nullptr;
+        src.m_sslCtx = nullptr;
     }
 
     DECLARE_NONCOPYABLE(SslContext);
 
-    /**
-     * Deinitializes object.
-     */
+    /** Deinitializes object. */
     ~SslContext()
     {
-        SSL_CTX_free(m_sslCtx);
+        ::SSL_CTX_free(m_sslCtx);
     }
 
     /**
      * Converts class into SSL_CTX*.
      * @return SSL_CTX pointer.
      */
-    operator SSL_CTX*() noexcept
+    operator ::SSL_CTX*() noexcept
     {
         return m_sslCtx;
     }
@@ -60,7 +58,7 @@ public:
      * Converts class into const SSL_CTX*.
      * @return Const SSL_CTX pointer.
      */
-    operator const SSL_CTX*() const noexcept
+    operator const ::SSL_CTX*() const noexcept
     {
         return m_sslCtx;
     }
@@ -69,7 +67,7 @@ public:
      * Releases pointer without freeing memory.
      * @return Released SSL_CTX.
      */
-    SSL_CTX* release() noexcept
+    ::SSL_CTX* release() noexcept
     {
         auto sslCtx = m_sslCtx;
         m_sslCtx = nullptr;
@@ -78,7 +76,7 @@ public:
 
 private:
     /** SSL context */
-    SSL_CTX* m_sslCtx;
+    ::SSL_CTX* m_sslCtx;
 };
 
 }  // namespace siodb::crypto

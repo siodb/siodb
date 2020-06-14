@@ -21,16 +21,14 @@ public:
      * @throw OpenSslError if RSA could not be created.
      */
     RsaKey()
-        : m_rsaKey(RSA_new())
+        : m_rsaKey(::RSA_new())
     {
         if (!m_rsaKey) throw OpenSslError("RSA_new failed");
     }
 
     DECLARE_NONCOPYABLE(RsaKey);
 
-    /**
-     * Deinitializes object.
-     */
+    /** Deinitializes object. */
     ~RsaKey()
     {
         RSA_free(m_rsaKey);

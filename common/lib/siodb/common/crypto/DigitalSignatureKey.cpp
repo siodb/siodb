@@ -68,41 +68,30 @@ constexpr const char* kNoneCipher = "none";
 
 KeyType parseOpenSshType(utils::StringScanner& scanner) noexcept
 {
-    const auto rsaIt = std::find_if(
-            kOpenSshRsaKeyNames.begin(),
-            kOpenSshRsaKeyNames.end(), [&scanner](const auto& str) noexcept {
-                return scanner.startsWith(str);
-            });
+    const auto rsaIt = std::find_if(kOpenSshRsaKeyNames.begin(), kOpenSshRsaKeyNames.end(),
+            [&scanner](const auto& str) noexcept { return scanner.startsWith(str); });
     if (rsaIt != kOpenSshRsaKeyNames.end()) {
         scanner.advance(std::strlen(*rsaIt));
         return KeyType::kRsa;
     }
 
-    const auto dsaIt = std::find_if(
-            kOpenSshDsaKeyNames.begin(),
-            kOpenSshDsaKeyNames.end(), [&scanner](const auto& str) noexcept {
-                return scanner.startsWith(str);
-            });
+    const auto dsaIt = std::find_if(kOpenSshDsaKeyNames.begin(), kOpenSshDsaKeyNames.end(),
+            [&scanner](const auto& str) noexcept { return scanner.startsWith(str); });
     if (dsaIt != kOpenSshDsaKeyNames.end()) {
         scanner.advance(std::strlen(*dsaIt));
         return KeyType::kDsa;
     }
 
-    const auto ecDsaIt = std::find_if(
-            kOpenSshEcDsaKeyNames.begin(),
-            kOpenSshEcDsaKeyNames.end(), [&scanner](const auto& str) noexcept {
-                return scanner.startsWith(str);
-            });
+    const auto ecDsaIt = std::find_if(kOpenSshEcDsaKeyNames.begin(), kOpenSshEcDsaKeyNames.end(),
+            [&scanner](const auto& str) noexcept { return scanner.startsWith(str); });
     if (ecDsaIt != kOpenSshEcDsaKeyNames.end()) {
         scanner.advance(std::strlen(*ecDsaIt));
         return KeyType::kEcdsa;
     }
 
-    const auto ed25519It = std::find_if(
-            kOpenSshEd25519KeyNames.begin(),
-            kOpenSshEd25519KeyNames.end(), [&scanner](const auto& str) noexcept {
-                return scanner.startsWith(str);
-            });
+    const auto ed25519It =
+            std::find_if(kOpenSshEd25519KeyNames.begin(), kOpenSshEd25519KeyNames.end(),
+                    [&scanner](const auto& str) noexcept { return scanner.startsWith(str); });
     if (ed25519It != kOpenSshEd25519KeyNames.end()) {
         scanner.advance(std::strlen(*ed25519It));
         return KeyType::kEd25519;
@@ -132,9 +121,9 @@ BigNum readBigNum(utils::StringScanner& scanner)
 
 void checkRsaLength(const RSA* rsa)
 {
-    const BIGNUM* rsaN;
-    RSA_get0_key(rsa, &rsaN, nullptr, nullptr);
-    const auto bnBits = BN_num_bits(rsaN);
+    const ::BIGNUM* rsaN;
+    ::RSA_get0_key(rsa, &rsaN, nullptr, nullptr);
+    const auto bnBits = ::BN_num_bits(rsaN);
     if (bnBits < kMinRsaKeyLength)
         throw std::runtime_error("RSA key has less than 2048 bits length");
 }
@@ -147,8 +136,7 @@ std::string decodeBase64(const char* str, size_t size)
     using namespace boost::archive::iterators;
     using ItBinaryT = transform_width<binary_from_base64<std::string::const_iterator>, 8, 6>;
 
-    std::string output(ItBinaryT(str), ItBinaryT(str + size));
-    return output;
+    return std::string(ItBinaryT(str), ItBinaryT(str + size));
 }
 
 /** 
@@ -161,8 +149,7 @@ std::string decodeBase64WithNewLines(const char* str, size_t size)
             transform_width<binary_from_base64<remove_whitespace<std::string::const_iterator>>, 8,
                     6>;
 
-    std::string output(ItBinaryT(str), ItBinaryT(str + size));
-    return output;
+    return std::string(ItBinaryT(str), ItBinaryT(str + size));
 }
 
 void readAndCheckKeyType(
@@ -185,9 +172,8 @@ int readAndCheckEcCurveType(utils::StringScanner& scanner)
     const auto stringSize = readOpenSshEncodedSize(scanner);
     if (stringSize > scanner.remainingSize()) throw std::runtime_error("Invalid type string size");
 
-    const auto it = std::find_if(
-            kEcCurveNames.begin(),
-            kEcCurveNames.end(), [&scanner](const auto& ecNameIdPair) noexcept {
+    const auto it = std::find_if(kEcCurveNames.begin(), kEcCurveNames.end(),
+            [&scanner](const auto& ecNameIdPair) noexcept {
                 return scanner.startsWith(ecNameIdPair.first);
             });
 
@@ -197,7 +183,7 @@ int readAndCheckEcCurveType(utils::StringScanner& scanner)
     return it->second;
 }
 
-void readECPoint(utils::StringScanner& scanner, EC_POINT* v, const EC_GROUP* g)
+void readECPoint(utils::StringScanner& scanner, ::EC_POINT* v, const ::EC_GROUP* g)
 {
     const auto length = readOpenSshEncodedSize(scanner);
 
@@ -205,37 +191,38 @@ void readECPoint(utils::StringScanner& scanner, EC_POINT* v, const EC_GROUP* g)
         throw std::runtime_error("Only uncompressed points is allowed for EC");
 
     const auto dataPtr = reinterpret_cast<const unsigned char*>(scanner.current());
-    if (EC_POINT_oct2point(g, v, dataPtr, length, nullptr) != 1)
+    if (::EC_POINT_oct2point(g, v, dataPtr, length, nullptr) != 1)
         throw OpenSslError("EC_POINT_oct2point failed");
 }
 
-void validateEcPublicKey(const EC_GROUP* group, const EC_POINT* qPoint)
+void validateEcPublicKey(const ::EC_GROUP* group, const ::EC_POINT* qPoint)
 {
     BigNum order, x, y, tmp;
-    if (EC_METHOD_get_field_type(EC_GROUP_method_of(group)) != NID_X9_62_prime_field)
+    if (::EC_METHOD_get_field_type(::EC_GROUP_method_of(group)) != NID_X9_62_prime_field)
         throw std::runtime_error("EC_METHOD is invalid");
 
     /* Q != infinity */
-    if (EC_POINT_is_at_infinity(group, qPoint) == 1)
+    if (::EC_POINT_is_at_infinity(group, qPoint) == 1)
         throw std::runtime_error("EC_METHOD: EC_POINT is unreachable");
 
-    if (EC_GROUP_get_order(group, order, nullptr) != 1
-            || EC_POINT_get_affine_coordinates_GFp(group, qPoint, x, y, nullptr) != 1)
+    if (::EC_GROUP_get_order(group, order, nullptr) != 1
+            || ::EC_POINT_get_affine_coordinates_GFp(group, qPoint, x, y, nullptr) != 1)
         throw std::runtime_error("EC_GROUP values is invalid");
 
-    if (BN_num_bits(x) <= BN_num_bits(order) / 2 || BN_num_bits(y) <= BN_num_bits(order) / 2)
+    if (::BN_num_bits(x) <= ::BN_num_bits(order) / 2
+            || ::BN_num_bits(y) <= ::BN_num_bits(order) / 2)
         throw std::runtime_error("EC_GROUP values is invalid");
 
     EcPoint nq(group);
-    if (EC_POINT_mul(group, nq, nullptr, qPoint, order, nullptr) != 1)
+    if (::EC_POINT_mul(group, nq, nullptr, qPoint, order, nullptr) != 1)
         throw OpenSslError("EC_POINT_mul failed");
 
-    if (EC_POINT_is_at_infinity(group, nq) != 1)
+    if (::EC_POINT_is_at_infinity(group, nq) != 1)
         throw std::runtime_error("EC_POINT should be infinity");
 
-    if (!BN_sub(tmp, order, BN_value_one())) throw std::runtime_error("EC_GROUP is invalid");
+    if (!::BN_sub(tmp, order, ::BN_value_one())) throw std::runtime_error("EC_GROUP is invalid");
 
-    if (BN_cmp(x, tmp) >= 0 || BN_cmp(y, tmp) >= 0)
+    if (::BN_cmp(x, tmp) >= 0 || ::BN_cmp(y, tmp) >= 0)
         throw std::runtime_error("EC_POINT should be infinity");
 }
 
@@ -259,8 +246,8 @@ void DigitalSignatureKey::parseOpenSslKey(utils::StringScanner& scanner)
 
     if (!key) throw OpenSslError("SSL key parse failed");
 
-    if (EVP_PKEY_base_id(*key) == EVP_PKEY_RSA) {
-        const auto rsa = EVP_PKEY_get0_RSA(*key);
+    if (::EVP_PKEY_base_id(*key) == EVP_PKEY_RSA) {
+        const auto rsa = ::EVP_PKEY_get0_RSA(*key);
         if (rsa == nullptr) throw OpenSslError("Invalid RSA key");
 
         checkRsaLength(rsa);
@@ -277,7 +264,7 @@ void DigitalSignatureKey::parseOpenSshRsaPublicKey(const std::string& str)
     RsaKey rsa;
     BigNum rsaE = std::move(readBigNum(scanner));
     BigNum rsaN = std::move(readBigNum(scanner));
-    if (RSA_set0_key(rsa, rsaN, rsaE, nullptr) != 1) throw OpenSslError("RSA_set0_key failed");
+    if (::RSA_set0_key(rsa, rsaN, rsaE, nullptr) != 1) throw OpenSslError("RSA_set0_key failed");
 
     // Values are in key now
     rsaE.release();
@@ -285,7 +272,7 @@ void DigitalSignatureKey::parseOpenSshRsaPublicKey(const std::string& str)
 
     checkRsaLength(rsa);
     auto evpKey = std::make_shared<EvpKey>();
-    if (EVP_PKEY_set1_RSA(*evpKey, rsa) == 0) throw OpenSslError("EVP_PKEY_set1_RSA failed");
+    if (::EVP_PKEY_set1_RSA(*evpKey, rsa) == 0) throw OpenSslError("EVP_PKEY_set1_RSA failed");
 
     rsa.release();
     m_key = std::move(evpKey);
@@ -301,7 +288,7 @@ void DigitalSignatureKey::parseOpenSshDsaPublicKey(const std::string& str)
     auto dsaP = readBigNum(scanner);
     auto dsaQ = readBigNum(scanner);
     auto dsaG = readBigNum(scanner);
-    if (DSA_set0_pqg(dsa, dsaP, dsaQ, dsaG) == 0) throw OpenSslError("DSA_set0_pqg failed");
+    if (::DSA_set0_pqg(dsa, dsaP, dsaQ, dsaG) == 0) throw OpenSslError("DSA_set0_pqg failed");
 
     // Values are in key now
     dsaP.release();
@@ -309,12 +296,12 @@ void DigitalSignatureKey::parseOpenSshDsaPublicKey(const std::string& str)
     dsaG.release();
 
     auto dsaPubKey = readBigNum(scanner);
-    if (DSA_set0_key(dsa, dsaPubKey, nullptr) == 0) throw OpenSslError("DSA_set0_key failed");
+    if (::DSA_set0_key(dsa, dsaPubKey, nullptr) == 0) throw OpenSslError("DSA_set0_key failed");
 
     dsaPubKey.release();
 
     auto evpKey = std::make_shared<EvpKey>();
-    if (EVP_PKEY_set1_DSA(*evpKey, dsa) == 0) throw OpenSslError("EVP_PKEY_set1_DSA failed");
+    if (::EVP_PKEY_set1_DSA(*evpKey, dsa) == 0) throw OpenSslError("EVP_PKEY_set1_DSA failed");
 
     dsa.release();
     m_key = std::move(evpKey);
@@ -327,18 +314,18 @@ void DigitalSignatureKey::parseOpenSshEcdsaPublicKey(const std::string& str)
 
     const auto curveId = readAndCheckEcCurveType(scanner);
     EcKey ecKey(curveId);
-    EcPoint qPoint(EC_KEY_get0_group(ecKey));
+    EcPoint qPoint(::EC_KEY_get0_group(ecKey));
 
-    readECPoint(scanner, qPoint, EC_KEY_get0_group(ecKey));
-    validateEcPublicKey(EC_KEY_get0_group(ecKey), qPoint);
-    if (EC_KEY_set_public_key(ecKey, qPoint) != 1)
+    readECPoint(scanner, qPoint, ::EC_KEY_get0_group(ecKey));
+    validateEcPublicKey(::EC_KEY_get0_group(ecKey), qPoint);
+    if (::EC_KEY_set_public_key(ecKey, qPoint) != 1)
         throw OpenSslError("EC_KEY_set_public_key failed");
 
     // Point is in key now
     qPoint.release();
 
     auto evpKey = std::make_shared<EvpKey>();
-    if (EVP_PKEY_set1_EC_KEY(*evpKey, ecKey) == 0)
+    if (::EVP_PKEY_set1_EC_KEY(*evpKey, ecKey) == 0)
         throw OpenSslError("EVP_PKEY_set1_EC_KEY failed");
 
     ecKey.release();
@@ -353,7 +340,7 @@ void DigitalSignatureKey::parseOpenSshEd25519PublicKey(const std::string& str)
     if (publicKeyLength != kEd25519strSize)
         throw std::runtime_error("ED25519 length is not equal to 32 bytes");
 
-    auto evpKey = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
+    auto evpKey = ::EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
             reinterpret_cast<const unsigned char*>(scanner.current()), kEd25519strSize);
 
     if (!evpKey) throw OpenSslError("EVP_PKEY_new failed");
@@ -416,26 +403,22 @@ void DigitalSignatureKey::parseOpenSshPrivateKey(const std::string& str)
     if (keyFormatSize > scanner.remainingSize())
         throw std::runtime_error("Invalid OpenSSH key type string size");
 
-    if (std::find_if(
-                kOpenSshEd25519KeyNames.begin(), kOpenSshEd25519KeyNames.end(),
+    if (std::find_if(kOpenSshEd25519KeyNames.begin(), kOpenSshEd25519KeyNames.end(),
                 [&scanner](const auto& str) noexcept { return scanner.startsWith(str); })
             != kOpenSshEd25519KeyNames.end()) {
         scanner.advance(keyFormatSize);
         parseOpenSshEd25519PrivateKey(scanner);
-    } else if (std::find_if(
-                       kOpenSshRsaKeyNames.begin(), kOpenSshRsaKeyNames.end(),
+    } else if (std::find_if(kOpenSshRsaKeyNames.begin(), kOpenSshRsaKeyNames.end(),
                        [&scanner](const auto& str) noexcept { return scanner.startsWith(str); })
                != kOpenSshRsaKeyNames.end()) {
         // TODO: Support OpenSSH RSA key type
         throw std::runtime_error("OpenSSH RSA private key format is unsupported");
-    } else if (std::find_if(
-                       kOpenSshDsaKeyNames.begin(), kOpenSshDsaKeyNames.end(),
+    } else if (std::find_if(kOpenSshDsaKeyNames.begin(), kOpenSshDsaKeyNames.end(),
                        [&scanner](const auto& str) noexcept { return scanner.startsWith(str); })
                != kOpenSshDsaKeyNames.end()) {
         // TODO: Support OpenSSH DSA key type
         throw std::runtime_error("OpenSSH DSA private key format is unsupported");
-    } else if (std::find_if(
-                       kOpenSshEcDsaKeyNames.begin(), kOpenSshEcDsaKeyNames.end(),
+    } else if (std::find_if(kOpenSshEcDsaKeyNames.begin(), kOpenSshEcDsaKeyNames.end(),
                        [&scanner](const auto& str) noexcept { return scanner.startsWith(str); })
                != kOpenSshEcDsaKeyNames.end()) {
         // TODO: Support OpenSSH ECDSA key type
@@ -458,7 +441,7 @@ void DigitalSignatureKey::parseOpenSshEd25519PrivateKey(utils::StringScanner& sc
         throw std::runtime_error("ED25519 private key size should be 64 (priv + pub)");
 
     // Read only private part from private key
-    auto evpKey = EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
+    auto evpKey = ::EVP_PKEY_new_raw_private_key(EVP_PKEY_ED25519, NULL,
             reinterpret_cast<const unsigned char*>(scanner.current()), kEd25519strSize);
 
     if (!evpKey) throw OpenSslError("EVP_PKEY_new_raw_private_key failed");
@@ -519,16 +502,16 @@ void DigitalSignatureKey::parseFromString(const char* str, std::size_t size)
 std::string DigitalSignatureKey::createMessageDigest(const std::string& msg) const
 {
     EvpMdCtx ctx;
-    const EVP_MD* md = EVP_sha512();
+    const ::EVP_MD* md = ::EVP_sha512();
     if (md == nullptr) throw OpenSslError("EVP_sha512 failed");
 
-    if (EVP_DigestInit(ctx, md) != 1) throw OpenSslError("EVP_DigestInit failed");
+    if (::EVP_DigestInit(ctx, md) != 1) throw OpenSslError("EVP_DigestInit failed");
 
-    std::string digest(EVP_MD_size(md), '\0');
-    if (EVP_DigestUpdate(ctx, msg.data(), msg.size()) != 1)
+    std::string digest(::EVP_MD_size(md), '\0');
+    if (::EVP_DigestUpdate(ctx, msg.data(), msg.size()) != 1)
         throw OpenSslError("EVP_DigestInit failed");
 
-    if (EVP_DigestFinal(ctx, reinterpret_cast<unsigned char*>(digest.data()), nullptr) != 1)
+    if (::EVP_DigestFinal(ctx, reinterpret_cast<unsigned char*>(digest.data()), nullptr) != 1)
         throw OpenSslError("EVP_DigestInit failed");
 
     return digest;
@@ -537,27 +520,27 @@ std::string DigitalSignatureKey::createMessageDigest(const std::string& msg) con
 std::string DigitalSignatureKey::signMessage(const std::string& msg) const
 {
     // ED25519 supports only one-shot digest signing and verifying
-    if (EVP_PKEY_base_id(*m_key) == EVP_PKEY_ED25519) return signMessageEd25519(msg);
+    if (::EVP_PKEY_base_id(*m_key) == EVP_PKEY_ED25519) return signMessageEd25519(msg);
 
     EvpPKeyCtx ctx(*m_key, nullptr);
 
-    if (EVP_PKEY_sign_init(ctx) <= 0) throw OpenSslError("EVP_PKEY_sign_init failed");
+    if (::EVP_PKEY_sign_init(ctx) <= 0) throw OpenSslError("EVP_PKEY_sign_init failed");
 
-    if (EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha512()) <= 0)
+    if (::EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha512()) <= 0)
         throw OpenSslError("EVP_PKEY_CTX_set_signature_md failed");
 
     const auto digest = createMessageDigest(msg);
     std::size_t signatureSize = 0;
 
     /* Determine buffer length */
-    if (EVP_PKEY_sign(ctx, nullptr, &signatureSize,
+    if (::EVP_PKEY_sign(ctx, nullptr, &signatureSize,
                 reinterpret_cast<const unsigned char*>(digest.data()), digest.size())
             <= 0)
         throw OpenSslError("EVP_PKEY_sign failed");
 
     // Now signatureSize contains maximum size;
     std::string signature(signatureSize, '\0');
-    if (EVP_PKEY_sign(ctx, reinterpret_cast<unsigned char*>(signature.data()), &signatureSize,
+    if (::EVP_PKEY_sign(ctx, reinterpret_cast<unsigned char*>(signature.data()), &signatureSize,
                 reinterpret_cast<const unsigned char*>(digest.data()), digest.size())
             <= 0)
         throw OpenSslError("EVP_PKEY_sign failed");
@@ -574,9 +557,9 @@ std::string DigitalSignatureKey::signMessageEd25519(const std::string& msg) cons
     EvpMdCtx ctx;
     signature.resize(kEd25519SignatureSize, '\0');
     std::size_t signatureSize = kEd25519SignatureSize;
-    EVP_DigestSignInit(ctx, NULL, NULL, NULL, *m_key);
+    ::EVP_DigestSignInit(ctx, NULL, NULL, NULL, *m_key);
 
-    const int result = EVP_DigestSign(ctx, reinterpret_cast<unsigned char*>(signature.data()),
+    const int result = ::EVP_DigestSign(ctx, reinterpret_cast<unsigned char*>(signature.data()),
             &signatureSize, reinterpret_cast<const unsigned char*>(msg.data()), msg.size());
 
     if (result <= 0) throw OpenSslError("EVP_DigestSign for Ed25519 failed");
@@ -588,17 +571,17 @@ bool DigitalSignatureKey::verifySignature(
         const std::string& message, const std::string& signature) const
 {
     // ED25519 supports only one-shot digest signing and verifying
-    const auto keyBaseId = EVP_PKEY_base_id(*m_key);
+    const auto keyBaseId = ::EVP_PKEY_base_id(*m_key);
     if (keyBaseId == EVP_PKEY_ED25519) return verifySignatureEd25519(message, signature);
 
     EvpPKeyCtx ctx(*m_key, nullptr);
-    if (EVP_PKEY_verify_init(ctx) <= 0) throw OpenSslError("EVP_PKEY_verify_init failed");
+    if (::EVP_PKEY_verify_init(ctx) <= 0) throw OpenSslError("EVP_PKEY_verify_init failed");
 
-    if (EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha512()) <= 0)
+    if (::EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha512()) <= 0)
         throw OpenSslError("EVP_PKEY_CTX_set_signature_md failed");
 
     const auto digest = createMessageDigest(message);
-    const auto rc = EVP_PKEY_verify(ctx, reinterpret_cast<const unsigned char*>(signature.data()),
+    const auto rc = ::EVP_PKEY_verify(ctx, reinterpret_cast<const unsigned char*>(signature.data()),
             signature.size(), reinterpret_cast<const unsigned char*>(digest.data()), digest.size());
 
     return rc == 1;
@@ -608,10 +591,10 @@ bool DigitalSignatureKey::verifySignatureEd25519(
         const std::string& message, const std::string& signature) const
 {
     EvpMdCtx ctx;
-    const auto rc = EVP_DigestVerifyInit(ctx, NULL, NULL, NULL, *m_key);
+    const auto rc = ::EVP_DigestVerifyInit(ctx, NULL, NULL, NULL, *m_key);
     if (rc <= 0) throw OpenSslError("EVP_DigestVerifyInit failed");
 
-    const bool result = EVP_DigestVerify(ctx,
+    const bool result = ::EVP_DigestVerify(ctx,
             reinterpret_cast<const unsigned char*>(signature.data()), signature.size(),
             reinterpret_cast<const unsigned char*>(message.data()), message.size());
 
