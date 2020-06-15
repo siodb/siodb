@@ -35,7 +35,7 @@ public:
     }
 
     /**
-     * Converts class into EVP_MD_CTX*.
+     * Returns underlying mutable EVP_MD_CTX object.
      * @return Context.
      */
     operator ::EVP_MD_CTX*() noexcept
@@ -44,7 +44,7 @@ public:
     }
 
     /**
-     * Converts class into const EVP_MD_CTX*.
+     * Returns underlying read-only EVP_MD_CTX object.
      * @return Const context.
      */
     operator const ::EVP_MD_CTX*() const noexcept

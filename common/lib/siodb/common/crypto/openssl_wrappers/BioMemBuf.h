@@ -37,7 +37,7 @@ public:
     }
 
     /**
-     * Converts class into BIO*.
+     * Return mutable underlying BIO object.
      * @return BIO pointer.
      */
     operator ::BIO*() noexcept
@@ -46,7 +46,7 @@ public:
     }
 
     /**
-     * Converts class into const BIO*.
+     * Returns read-only underlying BIO object.
      * @return const BIO pointer.
      */
     operator const ::BIO*() const noexcept

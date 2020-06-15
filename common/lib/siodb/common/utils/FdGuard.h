@@ -24,34 +24,34 @@ namespace siodb {
  * File descriptor lifetime guard. Holds file descriptor until end of current scope,
  * then closes it.
  */
-class FileDescriptorGuard {
+class FdGuard {
 public:
     /**
-     * Initialize object of the class FileDescriptorGuard.
+     * Initialize object of the class FdGuard.
      * @param fd File descriptor to be guarded.
      */
-    explicit FileDescriptorGuard(int fd = -1) noexcept
+    explicit FdGuard(int fd = -1) noexcept
         : m_fd(fd)
     {
     }
 
     /**
-     * Initialize object of the class FileDescriptorGuard.
+     * Initialize object of the class FdGuard.
      * @param src Source file descriptor guard.
      */
-    FileDescriptorGuard(FileDescriptorGuard&& src) noexcept
+    FdGuard(FdGuard&& src) noexcept
         : m_fd(src.m_fd)
     {
         src.m_fd = -1;
     }
 
-    /** Cleans up object of the class FileDescriptorGuard */
-    ~FileDescriptorGuard() noexcept
+    /** Cleans up object of the class FdGuard */
+    ~FdGuard() noexcept
     {
         reset();
     }
 
-    DECLARE_NONCOPYABLE(FileDescriptorGuard);
+    DECLARE_NONCOPYABLE(FdGuard);
 
     /**
      * Returns file descriptor validity flag.
@@ -99,8 +99,11 @@ public:
         return ret;
     }
 
-    /** Swap guard contents */
-    void swap(FileDescriptorGuard& other) noexcept
+    /**
+     * Swaps guard contents.
+     * @param other Other guard object.
+     */
+    void swap(FdGuard& other) noexcept
     {
         if (SIODB_LIKELY(&other != this)) std::swap(m_fd, other.m_fd);
     }
@@ -138,7 +141,7 @@ public:
      * @param src Source object.
      * @return this object.
      */
-    FileDescriptorGuard& operator=(FileDescriptorGuard&& src) noexcept
+    FdGuard& operator=(FdGuard&& src) noexcept
     {
         if (&src != this) {
             swap(src);
@@ -153,11 +156,11 @@ private:
 };
 
 /**
- * Swaps two FileDescriptorGuard objects.
+ * Swaps two FdGuard objects.
  * @param a first object.
  * @param b second object.
  */
-inline void swap(FileDescriptorGuard& a, FileDescriptorGuard& b)
+inline void swap(FdGuard& a, FdGuard& b)
 {
     a.swap(b);
 }

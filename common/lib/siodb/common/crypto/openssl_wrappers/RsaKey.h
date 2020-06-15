@@ -35,25 +35,25 @@ public:
     }
 
     /**
-     * Converts class into RSA*.
+     * Returns underlying mutable RSA object.
      * @return RSA pointer.
      */
-    operator RSA*() noexcept
+    operator ::RSA*() noexcept
     {
         return m_rsaKey;
     }
 
     /**
-     * Converts class into const RSA*.
+     * Returns underlying read-only RSA object.
      * @return Const RSA pointer.
      */
-    operator const RSA*() const noexcept
+    operator const ::RSA*() const noexcept
     {
         return m_rsaKey;
     }
 
     /**
-     * Releases pointer without freeing memory
+     * Releases underlying object without freeing memory.
      * @return Released RSA.
      */
     RSA* release() noexcept

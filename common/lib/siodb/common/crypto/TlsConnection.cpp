@@ -5,7 +5,7 @@
 #include "TlsConnection.h"
 
 // Project headers
-#include "../utils/FileDescriptorGuard.h"
+#include "../utils/FdGuard.h"
 
 // System headers
 #include <unistd.h>
@@ -17,7 +17,7 @@ TlsConnection::TlsConnection(
     : m_ssl(context)
     , m_autoCloseFd(autoCloseFd)
 {
-    FileDescriptorGuard guard(m_autoCloseFd ? fd : -1);
+    FdGuard guard(m_autoCloseFd ? fd : -1);
     if (::SSL_set_fd(m_ssl, fd) != 1) throw OpenSslError("SSL_set_fd failed");
     guard.release();
 

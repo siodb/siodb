@@ -28,7 +28,7 @@
 namespace siodb::iomgr {
 
 IOMgrConnectionHandler::IOMgrConnectionHandler(
-        FileDescriptorGuard&& clientFd, const dbengine::InstancePtr& instance)
+        FdGuard&& clientFd, const dbengine::InstancePtr& instance)
     : m_instance(instance)
 {
     auto clientIo = std::make_unique<siodb::io::FdIo>(clientFd.getFd(), false);

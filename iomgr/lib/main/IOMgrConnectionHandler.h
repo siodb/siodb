@@ -10,7 +10,7 @@
 
 // Common project headers
 #include <siodb/common/io/IoBase.h>
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // STL headers
@@ -27,7 +27,7 @@ public:
      * @param clientFd Client connection file descriptor guard.
      * @param instance Instance
      */
-    IOMgrConnectionHandler(FileDescriptorGuard&& clientFd, const dbengine::InstancePtr& instance);
+    IOMgrConnectionHandler(FdGuard&& clientFd, const dbengine::InstancePtr& instance);
 
     /**
      * Cleans up object
@@ -88,7 +88,7 @@ private:
     };
 
     /** A file descriptor for polling connection with Client */
-    FileDescriptorGuard m_clientEpollFd;
+    FdGuard m_clientEpollFd;
 
     /** Client connection IO */
     std::unique_ptr<siodb::io::IoBase> m_clientIo;

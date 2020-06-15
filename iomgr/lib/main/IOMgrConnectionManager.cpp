@@ -9,7 +9,7 @@
 #include <siodb/common/net/ConnectionError.h>
 #include <siodb/common/net/TcpServer.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 
 // System headers
 #include <arpa/inet.h>
@@ -58,7 +58,7 @@ IOMgrConnectionManager::~IOMgrConnectionManager()
 void IOMgrConnectionManager::connectionListenerThreadMain()
 {
     // Set up server socket
-    FileDescriptorGuard server;
+    FdGuard server;
     std::string socketPath;
     int port = -1;
     try {
@@ -97,7 +97,7 @@ void IOMgrConnectionManager::connectionListenerThreadMain()
         if (server.getFd() == -2) return;
 
         // Accept connection
-        FileDescriptorGuard fdGuard(acceptTcpConnection(server.getFd()));
+        FdGuard fdGuard(acceptTcpConnection(server.getFd()));
 
         // Validate connection file descriptor
         if (!fdGuard.isValidFd()) continue;
@@ -151,8 +151,7 @@ int IOMgrConnectionManager::acceptTcpConnection(int serverFd)
 
     // Note that last parameter of the accept4() is zero, so we intentionally want
     // resulting file descriptor to be inherited by child process.
-    FileDescriptorGuard client(
-            ::accept4(serverFd, reinterpret_cast<sockaddr*>(&addr), &addrLength, 0));
+    FdGuard client(::accept4(serverFd, reinterpret_cast<sockaddr*>(&addr), &addrLength, 0));
 
     if (!client.isValidFd()) {
         const int errorCode = errno;

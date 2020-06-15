@@ -8,7 +8,7 @@
 #include <cstddef>
 
 // Project headers
-#include "../utils/FileDescriptorGuard.h"
+#include "../utils/FdGuard.h"
 
 // System headers
 #include <sys/mman.h>  // intentionally included to provide mmap constants
@@ -95,7 +95,7 @@ private:
 
 private:
     /** File descriptor */
-    const FileDescriptorGuard m_fd;
+    const FdGuard m_fd;
 
     /** Mapping length */
     const std::size_t m_length;

@@ -658,7 +658,7 @@ std::unique_ptr<MemoryMappedFile> Database::createMetadataFile() const
     // Create metadata file
     const auto metadataFilePath = makeMetadataFilePath();
     constexpr auto kOpenFlags = O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME;
-    FileDescriptorGuard fd(::open(metadataFilePath.c_str(), kOpenFlags, kDataFileCreationMode));
+    FdGuard fd(::open(metadataFilePath.c_str(), kOpenFlags, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateDatabaseMetadataFile,

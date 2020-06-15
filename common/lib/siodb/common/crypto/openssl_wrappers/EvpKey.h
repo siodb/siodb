@@ -44,7 +44,7 @@ public:
     }
 
     /**
-     * Converts class into EVP_PKEY*.
+     * Returns underlying mutable EVP_PKEY object.
      * @return EVP_PKEY ponter.
      */
     operator ::EVP_PKEY*() noexcept
@@ -53,7 +53,7 @@ public:
     }
 
     /**
-     * Converts class into const EVP_PKEY*.
+     * Returns underlying read-only EVP_PKEY object.
      * @return Const EVP_PKEY pointer.
      */
     operator const ::EVP_PKEY*() const noexcept
@@ -62,7 +62,7 @@ public:
     }
 
     /**
-     * Releases pointer without freeing memory
+     * Releases underlying object without freeing memory.
      * @return Released EVP_PKEY.
      */
     ::EVP_PKEY* release() noexcept

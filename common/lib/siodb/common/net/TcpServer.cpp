@@ -11,7 +11,7 @@
 #include "NetConstants.h"
 #include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
-#include "../utils/FileDescriptorGuard.h"
+#include "../utils/FdGuard.h"
 #include "../utils/HelperMacros.h"
 
 // CRT headers
@@ -120,8 +120,7 @@ int createTcpServer(int domain, const char* serverAddress, int port, int backlog
     AddrInfosGuard guard(addrInfos, addrInfos != &addrInfo1);
 
     // Create socket using first resolved address
-    FileDescriptorGuard socket(
-            ::socket(addrInfos->ai_family, addrInfos->ai_socktype, addrInfos->ai_protocol));
+    FdGuard socket(::socket(addrInfos->ai_family, addrInfos->ai_socktype, addrInfos->ai_protocol));
     if (!socket.isValidFd()) {
         stdext::throw_system_error("Can't create new socket");
     }

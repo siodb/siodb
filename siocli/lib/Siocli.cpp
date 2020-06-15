@@ -24,7 +24,7 @@
 #include <siodb/common/sys/Syscalls.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/StartupActions.h>
 
 // Protobuf message headers
@@ -153,7 +153,7 @@ namespace {
 std::string loadUserIdentityKey(const char* path)
 {
     std::string key;
-    siodb::FileDescriptorGuard fd(::open(path, O_RDONLY));
+    siodb::FdGuard fd(::open(path, O_RDONLY));
     if (!fd.isValidFd()) stdext::throw_system_error("Can't open user identity key");
 
     struct stat st;

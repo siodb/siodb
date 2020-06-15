@@ -11,7 +11,7 @@
 #include <siodb/common/options/InstanceOptions.h>
 #include <siodb/common/protobuf/CustomProtobufInputStream.h>
 #include <siodb/common/protobuf/CustomProtobufOutputStream.h>
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // Protobuf message headers
@@ -29,7 +29,7 @@ public:
      * @param instanceOptions Database instance options.
      * @param adminMode Database administrator mode.
      */
-    ConnWorkerConnectionHandler(FileDescriptorGuard&& client,
+    ConnWorkerConnectionHandler(FdGuard&& client,
             const config::ConstInstaceOptionsPtr& instanceOptions, bool adminMode);
 
     DECLARE_NONCOPYABLE(ConnWorkerConnectionHandler);
@@ -117,7 +117,7 @@ private:
     std::string m_lastUsedDatabase;
 
     /** A file descriptor for polling connection with the client */
-    FileDescriptorGuard m_clientEpollFd;
+    FdGuard m_clientEpollFd;
 
     /** Log context name */
     static constexpr const char* kLogContext = "ConnWorkerConnectionHandler: ";

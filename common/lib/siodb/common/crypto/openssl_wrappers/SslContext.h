@@ -46,7 +46,7 @@ public:
     }
 
     /**
-     * Converts class into SSL_CTX*.
+     * Returns underlying mutable SSL_CTX object.
      * @return SSL_CTX pointer.
      */
     operator ::SSL_CTX*() noexcept
@@ -55,7 +55,7 @@ public:
     }
 
     /**
-     * Converts class into const SSL_CTX*.
+     * Returns underlying read-only SSL_CTX object.
      * @return Const SSL_CTX pointer.
      */
     operator const ::SSL_CTX*() const noexcept
@@ -64,7 +64,7 @@ public:
     }
 
     /**
-     * Releases pointer without freeing memory.
+     * Releases underlying object without freeing memory.
      * @return Released SSL_CTX.
      */
     ::SSL_CTX* release() noexcept

@@ -839,8 +839,8 @@ void Column::setLastSystemTrid(std::uint64_t lastSystemTrid)
 int Column::createTridCountersFile(std::uint64_t firstUserTrid)
 {
     const auto tridCounterFilePath = utils::constructPath(m_dataDir, kTridCounterFile);
-    FileDescriptorGuard fd(::open(tridCounterFilePath.c_str(),
-            O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC, kDataFileCreationMode));
+    FdGuard fd(::open(tridCounterFilePath.c_str(), O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC,
+            kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateTridCountersFile,
@@ -855,7 +855,7 @@ int Column::createTridCountersFile(std::uint64_t firstUserTrid)
 int Column::openTridCountersFile()
 {
     const auto tridCounterFilePath = utils::constructPath(m_dataDir, kTridCounterFile);
-    FileDescriptorGuard fd(::open(tridCounterFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC));
+    FdGuard fd(::open(tridCounterFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotOpenTridCounterFile, getDatabaseName(),
@@ -906,8 +906,8 @@ void Column::loadMasterColumnMainIndex()
 
     // Open file
     const auto mainIndexIdFilePath = utils::constructPath(m_dataDir, kMainIndexIdFile);
-    FileDescriptorGuard fd(::open(mainIndexIdFilePath.c_str(),
-            O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME, kDataFileCreationMode));
+    FdGuard fd(::open(mainIndexIdFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME,
+            kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotOpenMainIndexIdFile, getDatabaseName(),
@@ -1462,7 +1462,7 @@ void Column::createMasterColumnMainIndex()
 
     // Write index ID file
     const auto mainIndexIdFilePath = utils::constructPath(m_dataDir, kMainIndexIdFile);
-    FileDescriptorGuard fd(::open(mainIndexIdFilePath.c_str(),
+    FdGuard fd(::open(mainIndexIdFilePath.c_str(),
             O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;

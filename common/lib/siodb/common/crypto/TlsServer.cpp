@@ -7,7 +7,7 @@
 // Project headers
 #include "OpenSslError.h"
 #include "../log/Log.h"
-#include "../utils/FileDescriptorGuard.h"
+#include "../utils/FdGuard.h"
 
 // STL headers
 #include <algorithm>
@@ -82,7 +82,7 @@ void TlsServer::setClientCAList(const char* certificateChainFile)
 
 std::unique_ptr<TlsConnection> TlsServer::acceptConnection(int fd, bool autoCloseFd)
 {
-    FileDescriptorGuard guard(autoCloseFd ? fd : -1);
+    FdGuard guard(autoCloseFd ? fd : -1);
     auto result = std::make_unique<TlsConnection>(
             m_sslContext, fd, TlsConnectionType::kServer, autoCloseFd);
     guard.release();

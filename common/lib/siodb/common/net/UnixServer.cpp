@@ -8,7 +8,7 @@
 #include "../config/SiodbDefs.h"
 #include "../stl_ext/system_error_ext.h"
 #include "../utils/CheckOSUser.h"
-#include "../utils/FileDescriptorGuard.h"
+#include "../utils/FdGuard.h"
 
 // CRT headers
 #include <cstring>
@@ -42,7 +42,7 @@ int createUnixServer(const std::string& serverSocketPath, int backlog, bool remo
     }
 
     // Create socket
-    FileDescriptorGuard socket(::socket(AF_UNIX, SOCK_STREAM, 0));
+    FdGuard socket(::socket(AF_UNIX, SOCK_STREAM, 0));
     if (!socket.isValidFd()) {
         stdext::throw_system_error("Can't create new UNIX server socket");
     }

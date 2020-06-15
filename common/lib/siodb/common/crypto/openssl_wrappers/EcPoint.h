@@ -36,7 +36,7 @@ public:
     }
 
     /**
-     * Converts class into EC_POINT*.
+     * Returns underlying mutable EC_POINT object.
      * @return EC_POINT pointer.
      */
     operator ::EC_POINT*() noexcept
@@ -45,7 +45,7 @@ public:
     }
 
     /**
-     * Converts class into const EC_POINT*.
+     * Returns underlying read-only EC_POINT object.
      * @return Const EC_POINT pointer.
      */
     operator const ::EC_POINT*() const noexcept
@@ -54,7 +54,7 @@ public:
     }
 
     /**
-     * Releases pointer without freeing memory
+     * Releases underlying object without freeing memory.
      * @return Released EC_POINT.
      */
     ::EC_POINT* release() noexcept

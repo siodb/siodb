@@ -49,8 +49,8 @@ std::string createChallenge()
 
 }  // namespace
 
-ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(FileDescriptorGuard&& client,
-        const config::ConstInstaceOptionsPtr& instanceOptions, bool adminMode)
+ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(
+        FdGuard&& client, const config::ConstInstaceOptionsPtr& instanceOptions, bool adminMode)
     : m_dbOptions(instanceOptions)
     , m_adminMode(adminMode)
 {
@@ -70,7 +70,7 @@ ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(FileDescriptorGuard&& c
                        ? m_dbOptions->m_ioManagerOptions.m_ipv4port
                        : m_dbOptions->m_ioManagerOptions.m_ipv6port;
 
-    FileDescriptorGuard fdGuard(net::openTcpConnection("localhost", port, true));
+    FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
     auto iomgrIo = std::make_unique<io::FdIo>(fdGuard.getFd(), false);
     fdGuard.release();
     iomgrIo->setAutoClose(true);
@@ -132,7 +132,7 @@ void ConnWorkerConnectionHandler::run()
                                        ? m_dbOptions->m_ioManagerOptions.m_ipv4port
                                        : m_dbOptions->m_ioManagerOptions.m_ipv6port;
 
-                    FileDescriptorGuard fdGuard(net::openTcpConnection("localhost", port, true));
+                    FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
                     auto iomgrIo = std::make_unique<io::FdIo>(fdGuard.getFd(), false);
                     fdGuard.release();
                     iomgrIo->setAutoClose(true);

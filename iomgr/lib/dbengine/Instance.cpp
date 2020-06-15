@@ -537,7 +537,7 @@ BinaryValue Instance::loadSystemDatabaseCipherKey() const
     if (!cipher) return BinaryValue();
     BinaryValue key(cipher->getKeySize() / 8);
     const auto keyPath = composeInstanceSysDbEncryptionKeyFilePath(m_name);
-    FileDescriptorGuard fd(::open(keyPath.c_str(), O_RDONLY));
+    FdGuard fd(::open(keyPath.c_str(), O_RDONLY));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kFatalCannotOpenSystemDatabaseEncryptionKey, keyPath,

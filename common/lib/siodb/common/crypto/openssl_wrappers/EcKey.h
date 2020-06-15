@@ -36,7 +36,7 @@ public:
     }
 
     /**
-     * Converts class into EC_KEY*.
+     * Returns underlying read-only EC_KEY object.
      * @return EC_KEY pointer.
      */
     operator ::EC_KEY*() noexcept
@@ -45,7 +45,7 @@ public:
     }
 
     /**
-     * Converts class into const EC_KEY*.
+     * Returns underlying read-only EC_KEY object.
      * @return Const EC_KEY pointer.
      */
     operator const ::EC_KEY*() const noexcept
@@ -54,7 +54,7 @@ public:
     }
 
     /**
-     * Releases pointer without freeing memory
+     * Releases underlying object without freeing memory.
      * @return Released EC_KEY.
      */
     ::EC_KEY* release() noexcept

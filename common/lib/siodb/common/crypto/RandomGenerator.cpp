@@ -8,7 +8,7 @@
 #include "OpenSslError.h"
 #include "../io/FileIO.h"
 #include "../stl_ext/system_error_ext.h"
-#include "../utils/FileDescriptorGuard.h"
+#include "../utils/FdGuard.h"
 
 // OpenSSL headers
 #include <openssl/rand.h>
@@ -18,7 +18,7 @@ namespace siodb::crypto {
 RandomGenerator::RandomGenerator()
 {
     while (!::RAND_status()) {
-        FileDescriptorGuard fd(::open("/dev/urandom", O_RDONLY));
+        FdGuard fd(::open("/dev/urandom", O_RDONLY));
         if (!fd.isValidFd()) throw std::runtime_error("Can't open /dev/urandom");
         std::uint8_t rdata[32];
         if (::readExact(fd.getFd(), rdata, sizeof(rdata), kIgnoreSignals) != sizeof(rdata))

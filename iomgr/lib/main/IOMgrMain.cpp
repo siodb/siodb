@@ -155,7 +155,7 @@ extern "C" int iomgrMain(int argc, char** argv)
                     instanceOptions->m_generalOptions.m_name);
             if (!fs::exists(initFlagFilePath)) {
                 // Signal to siodb process that database is initialized and checked.
-                siodb::FileDescriptorGuard lockFile(
+                siodb::FdGuard lockFile(
                         ::open(initFlagFilePath.c_str(), O_CREAT, siodb::kLockFileCreationMode));
                 if (!lockFile.isValidFd())
                     stdext::throw_system_error("Can't create iomgr initialization file");

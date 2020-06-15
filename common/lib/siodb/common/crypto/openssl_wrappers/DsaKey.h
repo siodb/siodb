@@ -35,7 +35,7 @@ public:
     }
 
     /**
-     * Converts class into DSA*.
+     * Returns underlying mutable DSA object.
      * @return DSA pointer.
      */
     operator ::DSA*() noexcept
@@ -44,7 +44,7 @@ public:
     }
 
     /**
-     * Converts class into const DSA*.
+     * Returns underlying read-only DSA object.
      * @return Const DSA pointer.
      */
     operator const ::DSA*() const noexcept
@@ -53,7 +53,7 @@ public:
     }
 
     /**
-     * Releases pointer without freeing memory
+     * Releases underlying object without freeing memory.
      * @return Released DSA.
      */
     ::DSA* release() noexcept

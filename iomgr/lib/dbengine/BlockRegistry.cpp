@@ -345,8 +345,8 @@ void BlockRegistry::createDataFiles()
     const auto nextBlockListFilePath = utils::constructPath(
             m_dataDir, kNextBlockListFileName, m_column.getId(), kDataFileExtension);
 
-    FileDescriptorGuard blockListFile(::open(blockListFilePath.c_str(),
-            O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
+    FdGuard blockListFile(::open(blockListFilePath.c_str(), O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR,
+            kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateBlockListDataFile,
@@ -355,7 +355,7 @@ void BlockRegistry::createDataFiles()
                 m_column.getId(), errorCode, std::strerror(errorCode));
     }
 
-    FileDescriptorGuard nextBlockListFile(::open(nextBlockListFilePath.c_str(),
+    FdGuard nextBlockListFile(::open(nextBlockListFilePath.c_str(),
             O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -381,7 +381,7 @@ void BlockRegistry::openDataFiles()
     const auto nextBlockListFilePath = utils::constructPath(
             m_dataDir, kNextBlockListFileName, m_column.getId(), kDataFileExtension);
 
-    FileDescriptorGuard blockListFile(
+    FdGuard blockListFile(
             ::open(blockListFilePath.c_str(), O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -406,7 +406,7 @@ void BlockRegistry::openDataFiles()
                 blockListFileSize);
     }
 
-    FileDescriptorGuard nextBlockListFile(::open(
+    FdGuard nextBlockListFile(::open(
             nextBlockListFilePath.c_str(), O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;

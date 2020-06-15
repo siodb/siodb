@@ -37,7 +37,7 @@ CXX_HDR:= \
 	DeserializationError.h  \
 	EmptyString.h  \
 	ErrorCodeChecker.h  \
-	FileDescriptorGuard.h  \
+	FdGuard.h  \
 	Format.h  \
 	FsUtils.h  \
 	HelperMacros.h  \

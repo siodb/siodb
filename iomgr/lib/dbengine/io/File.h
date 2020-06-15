@@ -6,7 +6,7 @@
 
 // Common project headers
 #include <siodb/common/io/IOError.h>
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // CRT headers
@@ -164,7 +164,7 @@ protected:
 
 protected:
     /** File descriptor */
-    FileDescriptorGuard m_fd;
+    FdGuard m_fd;
 
     /** Last I/O error code */
     int m_lastError;

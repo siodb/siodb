@@ -15,7 +15,7 @@
 #include "../main/ClientSession.h"
 
 // Common project headers
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/Uuid.h>
 
@@ -483,7 +483,7 @@ private:
     const std::size_t m_blockCacheCapacity;
 
     /* Metadata file descriptor */
-    FileDescriptorGuard m_metadataFile;
+    FdGuard m_metadataFile;
 
     /** Flag which allows creating user tables in the system database */
     const bool m_allowCreatingUserTablesInSystemDatabase;

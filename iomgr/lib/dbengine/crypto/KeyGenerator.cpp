@@ -7,7 +7,7 @@
 // Common project headers
 #include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/io/FileIO.h>
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
 // CRT headers
@@ -39,7 +39,7 @@ BinaryValue generateCipherKey(unsigned keyLength, const std::string& seed)
     // Collect entropy from system
     std::uint8_t rdata[kRandomSeedSize + 2];
     {
-        FileDescriptorGuard fd(::open("/dev/urandom", O_RDONLY));
+        FdGuard fd(::open("/dev/urandom", O_RDONLY));
         if (!fd.isValidFd()) throw std::runtime_error("Can't open /dev/urandom for reading");
         if (::readExact(fd.getFd(), rdata, sizeof(rdata), kIgnoreSignals) != sizeof(rdata))
             throw std::runtime_error("Can't read data from /dev/urandom");

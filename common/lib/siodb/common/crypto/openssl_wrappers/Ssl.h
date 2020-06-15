@@ -51,7 +51,7 @@ public:
     }
 
     /**
-     * Converts class into SSL*.
+     * Returns underlying mutable SSL object.
      * @return SSL pointer.
      */
     operator ::SSL*() noexcept
@@ -60,7 +60,7 @@ public:
     }
 
     /**
-     * Converts class into const SSL*.
+     * Returns underlying read-only SSL object.
      * @return Const SSL pointer.
      */
     operator const ::SSL*() const noexcept
@@ -69,7 +69,7 @@ public:
     }
 
     /**
-     * Releases pointer without freeing memory
+     * Releases underlying object without freeing memory.
      * @return Released SSL.
      */
     ::SSL* release() noexcept
@@ -99,7 +99,7 @@ public:
 
     /**
      * Closes connection.
-     * @return 0 in case of success, false otherwise.
+     * @return zero on success, nonzero otherwise.
      */
     int close() noexcept
     {
@@ -110,7 +110,7 @@ public:
 
     /**
      * Returns indication whether connection active.
-     * @return true in case of active connection, false othewise.
+     * @return true if there is active connection, false othewise.
      */
     bool isConnected() const noexcept
     {

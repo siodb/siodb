@@ -15,7 +15,7 @@
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/SignalHandlers.h>
 #include <siodb/common/utils/StartupActions.h>
@@ -138,8 +138,8 @@ extern "C" int siodbMain(int argc, char** argv)
                     instanceOptions->m_generalOptions.m_name);
 
             // lockf() needs write permission
-            siodb::FileDescriptorGuard lockFile(::open(lockFilePath.c_str(),
-                    O_CREAT | O_WRONLY | O_CLOEXEC, siodb::kLockFileCreationMode));
+            siodb::FdGuard lockFile(::open(lockFilePath.c_str(), O_CREAT | O_WRONLY | O_CLOEXEC,
+                    siodb::kLockFileCreationMode));
             if (!lockFile.isValidFd())
                 stdext::throw_system_error("Can't open or create initialization lock file");
 

@@ -9,7 +9,7 @@
 
 // Common project headers
 #include <siodb/common/stl_ext/lru_cache.h>
-#include <siodb/common/utils/FileDescriptorGuard.h>
+#include <siodb/common/utils/FdGuard.h>
 
 // STL headers
 #include <memory>
@@ -218,10 +218,10 @@ private:
     const std::string m_dataDir;
 
     /** Block list file */
-    FileDescriptorGuard m_blockListFile;
+    FdGuard m_blockListFile;
 
     /** Next block list file */
-    FileDescriptorGuard m_nextBlockListFile;
+    FdGuard m_nextBlockListFile;
 
     /** Block list file size */
     std::uint64_t m_blockListFileSize;

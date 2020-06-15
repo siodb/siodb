@@ -37,7 +37,7 @@ public:
     }
 
     /**
-     * Converts class into EVP_PKEY_CTX*.
+     * Returns underlying mutable EVP_PKEY_CTX object.
      * @return Context.
      */
     operator ::EVP_PKEY_CTX*() noexcept
@@ -46,7 +46,7 @@ public:
     }
 
     /**
-     * Converts class into const EVP_PKEY_CTX*.
+     * Returns underlying read-only EVP_PKEY_CTX object.
      * @return Const context.
      */
     operator const ::EVP_PKEY_CTX*() const noexcept
