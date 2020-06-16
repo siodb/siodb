@@ -15,9 +15,10 @@
 
 ### Ubuntu 18.04 LTS
 
-Change current directory to the root of siodb Git repository, and run following commands:
+Run following commands:
 
 ```shell
+cd $HOME
 
 # Required tools and libraries
 sudo apt install build-essential cmake doxygen gdb graphviz gcc-8 g++-8 libboost1.65-dev \
@@ -40,17 +41,18 @@ sudo apt install curl mc p7zip-full vim wget zip
 sudo apt install gitk kdiff3 okular openjdk-8-jdk
 ```
 
-Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ### CentOS 7
 
-Change current directory to the root of siodb Git repository, and run following commands:
+Run following commands:
 
 ```shell
+cd $HOME
 
 # Enable additional repositories
 sudo yum -y install \
-    https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.7-1.x86_64.rpm \
+    https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.8-1.x86_64.rpm \
     https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 
 # Enable software collections
@@ -67,8 +69,8 @@ sudo yum install git
 
 # Install required tools and libraries
 sudo yum -y install cmake3 gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
-          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
-          wget zlib-devel python
+    libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
+    wget zlib-devel python
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -101,7 +103,7 @@ sudo yum install -y curl mc p7zip vim zip
 sudo yum install -y gitk kdiff3 java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
-sudo sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
+sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
 ```
 
@@ -113,13 +115,44 @@ Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
   - [How To Install OpenSSL 1.1.1d in CentOS](https://www.hostnextra.com/kb/how-to-install-openssl-1-1-1d-in-centos/)
   - [Installing OpenSSL on CentOS 7](https://cloudwafer.com/blog/installing-openssl-on-centos-7/)
 
-Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Below instructions are based on the mentioned above sources:
+
+```shell
+# Define lastest OpenSSL version
+export LATEST_OPENSSL_VERSION=1.1.1g
+
+# Download, build, test install
+cd /usr/local/src
+sudo wget https://www.openssl.org/source/openssl-${LATEST_OPENSSL_VERSION}.tar.gz
+sudo yum update -y
+sudo yum install yum install perl-core libtemplate-perl zlib-devel
+sudo tar xaf openssl-${LATEST_OPENSSL_VERSION}.tar.gz
+cd openssl-${LATEST_OPENSSL_VERSION}
+sudo ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
+sudo make -j4
+sudo make -j4 test
+sudo make -j4 install
+sudo /bin/sh -c 'echo "/usr/local/ssl/lib" > /etc/ld.so.conf.d/openssl-'${LATEST_OPENSSL_VERSION}'.conf'
+sudo ldconfig -v
+sudo mv /bin/openssl /bin/openssl.backup
+sudo /bin/sh -c 'echo "OPENSSL_PATH=/usr/local/ssl/bin" > /etc/profile.d/openssl.sh'
+sudo /bin/sh -c 'echo "export OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
+sudo /bin/sh -c 'echo "PATH=\$PATH:\$OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
+sudo /bin/sh -c 'echo "export PATH" >> /etc/profile.d/openssl.sh'
+sudo chmod +x /etc/profile.d/openssl.sh
+source /etc/profile.d/openssl.sh
+which openssl
+openssl version -a
+```
+
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ### CentOS 8
 
-Change current directory to the root of siodb Git repository, and run following commands:
+Run following commands:
 
 ```shell
+cd $HOME
 
 # Enable additional repositories
 sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
@@ -151,20 +184,21 @@ sudo yum install -y curl mc p7zip vim zip
 sudo yum install -y gitk java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
-sudo sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
+sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
 
 # Link python 2
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ### RHEL 7
 
-Change current directory to the root of siodb Git repository, and run following commands:
+Run following commands:
 
 ```shell
+cd $HOME
 
 # Enable additional repositories
 sudo yum -y install \
@@ -219,7 +253,7 @@ sudo yum install -y curl mc p7zip vim zip
 sudo yum install -y gitk kdiff3 java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
-sudo sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
+sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
 ```
 
@@ -231,13 +265,44 @@ Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
   - [How To Install OpenSSL 1.1.1d in CentOS](https://www.hostnextra.com/kb/how-to-install-openssl-1-1-1d-in-centos/)
   - [Installing OpenSSL on CentOS 7](https://cloudwafer.com/blog/installing-openssl-on-centos-7/)
 
-Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Below instructions are based on the mentioned above sources:
+
+```shell
+# Define lastest OpenSSL version
+export LATEST_OPENSSL_VERSION=1.1.1g
+
+# Download, build, test install
+cd /usr/local/src
+sudo wget https://www.openssl.org/source/openssl-${LATEST_OPENSSL_VERSION}.tar.gz
+sudo yum update -y
+sudo yum install yum install perl-core libtemplate-perl zlib-devel
+sudo tar xaf openssl-${LATEST_OPENSSL_VERSION}.tar.gz
+cd openssl-${LATEST_OPENSSL_VERSION}
+sudo ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
+sudo make -j4
+sudo make -j4 test
+sudo make -j4 install
+sudo /bin/sh -c 'echo "/usr/local/ssl/lib" > /etc/ld.so.conf.d/openssl-'${LATEST_OPENSSL_VERSION}'.conf'
+sudo ldconfig -v
+sudo mv /bin/openssl /bin/openssl.backup
+sudo /bin/sh -c 'echo "OPENSSL_PATH=/usr/local/ssl/bin" > /etc/profile.d/openssl.sh'
+sudo /bin/sh -c 'echo "export OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
+sudo /bin/sh -c 'echo "PATH=$PATH:$OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
+sudo /bin/sh -c 'echo "export $PATH" >> /etc/profile.d/openssl.sh'
+sudo chmod +x /etc/profile.d/openssl.sh
+source /etc/profile.d/openssl.sh
+which openssl
+openssl version -a
+```
+
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ### RHEL 8
 
-Change current directory to the root of siodb Git repository, and run following commands:
+Run following commands:
 
 ```shell
+cd $HOME
 
 # Enable additional repositories
 sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
@@ -269,14 +334,14 @@ sudo yum install -y curl mc p7zip vim zip
 sudo yum install -y gitk java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
-sudo sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
+sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
 
 # Link python 2
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-Proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ## Building Third-Party Libraries
 
@@ -285,6 +350,14 @@ Change current directory to the root of siodb Git repository and execute followi
 **NOTE:** Adjust make parameter `-j4` to number of CPUs/cores available on the your build machine.
 
 ```shell
+
+# Clone Siodb repository or your Siodb fork, for example:
+mkdir ~/projects
+cd ~/projects
+git clone git@github.com:siodb/siodb.git
+
+# Enter repository directiry
+cd siodb
 
 # CENTOS 7 ONLY: Enable devtoolset-8
 scl enable devtoolset-8 bash
