@@ -19,7 +19,7 @@ protected:
      * Initializes object of class BlobStream.
      * @param size Stream size.
      */
-    explicit BlobStream(std::uint32_t size)
+    explicit BlobStream(std::uint32_t size) noexcept
         : LobStream(size)
     {
     }

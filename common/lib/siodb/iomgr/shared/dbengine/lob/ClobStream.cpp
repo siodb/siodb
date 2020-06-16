@@ -34,6 +34,7 @@ std::string ClobStream::readAsString(std::uint32_t length)
         if (n == 0) break;
         pos += n;
     }
+    buffer[pos] = 0;
     return std::string(reinterpret_cast<const char*>(buffer.data()));
 }
 

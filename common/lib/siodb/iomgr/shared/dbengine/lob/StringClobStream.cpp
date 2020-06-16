@@ -9,7 +9,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-StringClobStream::StringClobStream(const StringClobStream& src)
+StringClobStream::StringClobStream(const StringClobStream& src) noexcept
     : LobStream(src.m_content->size())
     , ClobStream(src.m_content->size())
     , m_content(src.m_content)

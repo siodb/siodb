@@ -19,7 +19,7 @@ private:
      * Initializes object of class BinaryValueBlobStream.
      * @param src Source stream.
      */
-    explicit BinaryValueBlobStream(const BinaryValueBlobStream& src);
+    explicit BinaryValueBlobStream(const BinaryValueBlobStream& src) noexcept;
 
 public:
     /**

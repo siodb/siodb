@@ -427,8 +427,10 @@ TEST(Serialization, Clob)
         ASSERT_EQ(consumed, size);
         ASSERT_EQ(dest.getValueType(), src.getValueType());
 
-        const auto srcStr = src.getClob().readAsString(src.getClob().getSize());
-        const auto destStr = dest.getClob().readAsString(dest.getClob().getSize());
+        auto& srcClob = src.getClob();
+        const auto srcStr = srcClob.readAsString(srcClob.getSize());
+        auto& destClob = dest.getClob();
+        const auto destStr = destClob.readAsString(destClob.getSize());
         ASSERT_EQ(srcStr, destStr);
     }
 }
@@ -468,8 +470,10 @@ TEST(Serialization, Blob)
         ASSERT_EQ(consumed, size);
         ASSERT_EQ(dest.getValueType(), src.getValueType());
 
-        const auto srcVec = src.getBlob().readAsBinary(src.getBlob().getSize());
-        const auto destVec = dest.getBlob().readAsBinary(dest.getBlob().getSize());
+        auto& srcBlob = src.getBlob();
+        const auto srcVec = srcBlob.readAsBinary(srcBlob.getSize());
+        auto& destBlob = dest.getBlob();
+        const auto destVec = destBlob.readAsBinary(destBlob.getSize());
         ASSERT_EQ(srcVec, destVec);
     }
 }

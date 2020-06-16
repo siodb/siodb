@@ -24,7 +24,7 @@ public:
      * @param clobStream An underlying CLOB stream.
      * @param owner Take ownership of underlying CLOB stream.
      */
-    ClobWrapperBlobStream(ClobStream* clobStream, bool owner = false);
+    ClobWrapperBlobStream(ClobStream* clobStream, bool owner = false) noexcept;
 
     DECLARE_NONCOPYABLE(ClobWrapperBlobStream);
 

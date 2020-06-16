@@ -19,7 +19,7 @@ protected:
      * Initializes object of class ClobStream.
      * @param size Stream size.
      */
-    explicit ClobStream(std::uint32_t size)
+    explicit ClobStream(std::uint32_t size) noexcept
         : LobStream(size)
     {
     }

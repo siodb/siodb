@@ -19,7 +19,7 @@ private:
      * Initializes object of class StringClobStream.
      * @param src Source stream.
      */
-    explicit StringClobStream(const StringClobStream& src);
+    explicit StringClobStream(const StringClobStream& src) noexcept;
 
 public:
     /**

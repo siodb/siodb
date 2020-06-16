@@ -9,7 +9,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-BinaryValueBlobStream::BinaryValueBlobStream(const BinaryValueBlobStream& src)
+BinaryValueBlobStream::BinaryValueBlobStream(const BinaryValueBlobStream& src) noexcept
     : LobStream(src.m_content->size())
     , BlobStream(src.m_content->size())
     , m_content(src.m_content)

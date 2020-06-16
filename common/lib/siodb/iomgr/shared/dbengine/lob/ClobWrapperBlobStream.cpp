@@ -6,7 +6,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-ClobWrapperBlobStream::ClobWrapperBlobStream(ClobStream* clobStream, bool owner)
+ClobWrapperBlobStream::ClobWrapperBlobStream(ClobStream* clobStream, bool owner) noexcept
     : LobStream(clobStream->getRemainingSize())
     , BlobStream(clobStream->getRemainingSize())
     , m_clobStreamHolder(owner ? clobStream : nullptr)

@@ -17,7 +17,7 @@ protected:
      * Initializes object of class LobStream.
      * @param size Stream size.
      */
-    explicit LobStream(std::uint32_t size)
+    explicit LobStream(std::uint32_t size) noexcept
         : m_size(size)
         , m_pos(0)
     {

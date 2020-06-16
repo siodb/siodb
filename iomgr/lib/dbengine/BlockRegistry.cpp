@@ -544,8 +544,8 @@ void BlockRegistry::createInitializationFlagFile() const
     if (!ofs.is_open()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateBlockRegistryDir,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                "can't create initialization flag file");
+                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), -1,
+                "can't create initialization flag file " + initFlagFile);
     }
     ofs.exceptions(std::ios::badbit | std::ios::failbit);
     try {
@@ -553,8 +553,8 @@ void BlockRegistry::createInitializationFlagFile() const
     } catch (std::exception& ex) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateBlockRegistryDir,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                "Can't write to initialization flag file");
+                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), -1,
+                "Can't write to initialization flag file" + initFlagFile);
     }
 }
 
