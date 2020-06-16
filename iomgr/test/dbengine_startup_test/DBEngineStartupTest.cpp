@@ -5,7 +5,7 @@
 // Project headers
 #include "dbengine/DatabaseError.h"
 #include "dbengine/Instance.h"
-#include "dbengine/crypto/ciphers/Cipher.h"
+#include "dbengine/crypto/GetCipher.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
@@ -16,6 +16,7 @@
 #include <siodb/common/utils/FsUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/StartupActions.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
 
 // CRT headers
 #include <ctime>

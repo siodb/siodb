@@ -7,7 +7,9 @@
 // Project headers
 #include "FileDataPtr.h"
 #include "NodeCache.h"
-#include "../io/File.h"
+
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/io/File.h>
 
 // STL headers
 #include <atomic>

@@ -8,7 +8,6 @@
 #include "IndexColumnPtr.h"
 #include "IndexColumnSpecification.h"
 #include "IndexPtr.h"
-#include "IndexType.h"
 #include "Table.h"
 #include "ikt/IndexKeyTraits.h"
 

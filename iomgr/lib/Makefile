@@ -17,14 +17,9 @@ CXX_SRC:= \
 	main/UniversalWorker.cpp  \
 	main/WorkerBase.cpp  \
 	\
-	dbengine/bpt/BPlusTreeIndex.cpp  \
+	dbengine/crypto/GetCipher.cpp  \
 	\
-	dbengine/crypto/ciphers/AesCipher.cpp  \
-	dbengine/crypto/ciphers/AesCipherContext.cpp  \
-	dbengine/crypto/ciphers/CamelliaCipher.cpp  \
-	dbengine/crypto/ciphers/CamelliaCipherContext.cpp  \
-	dbengine/crypto/ciphers/Cipher.cpp  \
-	dbengine/crypto/KeyGenerator.cpp  \
+	dbengine/bpt/BPlusTreeIndex.cpp  \
 	\
 	dbengine/handlers/RequestHandler_Common.cpp  \
 	dbengine/handlers/RequestHandler_DDL.cpp  \
@@ -43,19 +38,9 @@ CXX_SRC:= \
 	dbengine/ikt/UInt64IndexKeyTraits.cpp  \
 	dbengine/ikt/UInt8IndexKeyTraits.cpp  \
 	\
-	dbengine/io/EncryptedFile.cpp  \
-	dbengine/io/File.cpp  \
-	dbengine/io/NormalFile.cpp  \
-	\
-	dbengine/lob/BinaryValueBlobStream.cpp  \
-	dbengine/lob/BlobStream.cpp  \
-	dbengine/lob/BlobWrapperClobStream.cpp  \
-	dbengine/lob/ClobStream.cpp  \
-	dbengine/lob/ClobWrapperBlobStream.cpp  \
 	dbengine/lob/ColumnBlobStream.cpp  \
 	dbengine/lob/ColumnClobStream.cpp  \
 	dbengine/lob/ColumnLobStream.cpp  \
-	dbengine/lob/StringClobStream.cpp  \
 	\
 	dbengine/parser/AntlrHelpers.cpp  \
 	dbengine/parser/DBEngineRequest.cpp  \
@@ -68,6 +53,7 @@ CXX_SRC:= \
 	dbengine/parser/antlr_wrappers/SiodbListenerWrapper.cpp  \
 	dbengine/parser/antlr_wrappers/SiodbParserWrapper.cpp  \
 	dbengine/parser/antlr_wrappers/SiodbVisitorWrapper.cpp  \
+	\
 	dbengine/parser/expr/AddOperator.cpp  \
 	dbengine/parser/expr/AllColumnsExpression.cpp  \
 	dbengine/parser/expr/ArithmeticBinaryOperator.cpp  \
@@ -152,7 +138,6 @@ CXX_SRC:= \
 	dbengine/ColumnDataBlockCache.cpp  \
 	dbengine/ColumnDataBlockHeader.cpp  \
 	dbengine/ColumnDataRecord.cpp  \
-	dbengine/ColumnDataType.cpp  \
 	dbengine/ColumnDefinition.cpp  \
 	dbengine/ColumnDefinitionCache.cpp  \
 	dbengine/ColumnDefinitionConstraint.cpp  \
@@ -163,11 +148,9 @@ CXX_SRC:= \
 	dbengine/ConstraintCache.cpp  \
 	dbengine/ConstraintDefinition.cpp  \
 	dbengine/ConstraintDefinitionCache.cpp  \
-	dbengine/ConstraintType.cpp  \
 	dbengine/DataSet.cpp  \
 	dbengine/DatabaseCache.cpp  \
 	dbengine/DatabaseMetadata.cpp  \
-	dbengine/DatabaseObjectName.cpp  \
 	dbengine/Database_Common.cpp  \
 	dbengine/Database_Init.cpp  \
 	dbengine/Database_ReadObjects.cpp  \
@@ -189,17 +172,7 @@ CXX_SRC:= \
 	dbengine/UserAccessKey.cpp  \
 	dbengine/UserCache.cpp  \
 	dbengine/UserDatabase.cpp  \
-	dbengine/UserPermission.cpp  \
-	dbengine/Variant_Arithmetics.cpp  \
-	dbengine/Variant_Common.cpp  \
-	dbengine/Variant_Error.cpp  \
-	dbengine/Variant_Init.cpp  \
-	dbengine/Variant_IO.cpp  \
-	dbengine/Variant_BitwiseArithmetics.cpp  \
-	dbengine/Variant_Comparisons.cpp  \
-	dbengine/Variant_Conversions.cpp  \
-	dbengine/Variant_Serialization.cpp  \
-	dbengine/Variant_Type.cpp
+	dbengine/UserPermission.cpp
 
 CXX_HDR:= \
 	main/ClientSession.h  \
@@ -211,12 +184,7 @@ CXX_HDR:= \
 	\
 	dbengine/bpt/BPlusTreeIndex.h  \
 	\
-	dbengine/crypto/ciphers/AesCipher.h  \
-	dbengine/crypto/ciphers/AesCipherContext.h  \
-	dbengine/crypto/ciphers/CamelliaCipher.h  \
-	dbengine/crypto/ciphers/CamelliaCipherContext.h  \
-	dbengine/crypto/ciphers/Cipher.h  \
-	dbengine/crypto/KeyGenerator.h  \
+	dbengine/crypto/GetCipher.h  \
 	\
 	dbengine/handlers/RequestHandler.h  \
 	\
@@ -230,20 +198,9 @@ CXX_HDR:= \
 	dbengine/ikt/UInt64IndexKeyTraits.h  \
 	dbengine/ikt/UInt8IndexKeyTraits.h  \
 	\
-	dbengine/io/EncryptedFile.h  \
-	dbengine/io/File.h  \
-	dbengine/io/NormalFile.h  \
-	\
-	dbengine/lob/BinaryValueBlobStream.h  \
-	dbengine/lob/BlobStream.h  \
-	dbengine/lob/BlobWrapperClobStream.h  \
-	dbengine/lob/ClobStream.h  \
-	dbengine/lob/ClobWrapperBlobStream.h  \
 	dbengine/lob/ColumnBlobStream.h  \
 	dbengine/lob/ColumnClobStream.h  \
 	dbengine/lob/ColumnLobStream.h  \
-	dbengine/lob/LobStream.h  \
-	dbengine/lob/StringClobStream.h  \
 	\
 	dbengine/parser/AntlrHelpers.h  \
 	dbengine/parser/DatabaseContext.h  \
@@ -362,7 +319,6 @@ CXX_HDR:= \
 	dbengine/ColumnDataBlockPtr.h  \
 	dbengine/ColumnDataBlockState.h  \
 	dbengine/ColumnDataRecord.h  \
-	dbengine/ColumnDataType.h  \
 	dbengine/ColumnDefinition.h  \
 	dbengine/ColumnDefinitionCache.h  \
 	dbengine/ColumnDefinitionConstraint.h  \
@@ -376,26 +332,20 @@ CXX_HDR:= \
 	dbengine/ColumnSetColumnPtr.h  \
 	dbengine/ColumnSetPtr.h  \
 	dbengine/ColumnSpecification.h  \
-	dbengine/ColumnState.h  \
 	dbengine/Constraint.h  \
 	dbengine/ConstraintCache.h  \
 	dbengine/ConstraintDefinition.h  \
 	dbengine/ConstraintDefinitionCache.h  \
 	dbengine/ConstraintDefinitionPtr.h  \
 	dbengine/ConstraintPtr.h  \
-	dbengine/ConstraintState.h  \
-	dbengine/ConstraintType.h  \
 	dbengine/DataSet.h  \
 	dbengine/Database.h  \
 	dbengine/DatabaseCache.h  \
 	dbengine/DatabaseError.h  \
 	dbengine/DatabaseMetadata.h  \
-	dbengine/DatabaseObjectName.h  \
-	dbengine/DatabaseObjectType.h  \
 	dbengine/DatabasePtr.h  \
 	dbengine/Debug.h  \
 	dbengine/DefaultValueConstraint.h  \
-	dbengine/DmlOperationType.h  \
 	dbengine/FirstUserObjectId.h  \
 	dbengine/Index.h  \
 	dbengine/IndexColumn.h  \
@@ -403,13 +353,11 @@ CXX_HDR:= \
 	dbengine/IndexColumnSpecification.h  \
 	dbengine/IndexFileHeaderBase.h  \
 	dbengine/IndexPtr.h  \
-	dbengine/IndexType.h  \
 	dbengine/Instance.h  \
 	dbengine/InstancePtr.h  \
 	dbengine/LobChunkHeader.h  \
 	dbengine/MasterColumnRecord.h  \
 	dbengine/NotNullConstraint.h  \
-	dbengine/PermissionType.h  \
 	dbengine/SessionGuard.h  \
 	dbengine/SimpleColumnSpecification.h  \
 	dbengine/SystemDatabase.h  \
@@ -417,7 +365,6 @@ CXX_HDR:= \
 	dbengine/TableCache.h  \
 	dbengine/TableDataSet.h  \
 	dbengine/TablePtr.h  \
-	dbengine/TableType.h  \
 	dbengine/ThrowDatabaseError.h  \
 	dbengine/TransactionParameters.h  \
 	dbengine/UpdateUserAccessKeyParameters.h  \
@@ -428,10 +375,7 @@ CXX_HDR:= \
 	dbengine/UserCache.h  \
 	dbengine/UserDatabase.h  \
 	dbengine/UserPermission.h  \
-	dbengine/UserPtr.h  \
-	dbengine/Variant.h  \
-	dbengine/Variant_Error.h  \
-	dbengine/Variant_Type.h
+	dbengine/UserPtr.h
 
 
 CXXFLAGS+=-I$(GENERATED_FILES_ROOT) -I/usr/local/include/antlr4-runtime

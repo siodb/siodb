@@ -4,6 +4,9 @@
 
 #pragma once
 
+// STL headers
+#include <memory>
+
 namespace siodb::iomgr::dbengine::crypto {
 
 class Cipher;

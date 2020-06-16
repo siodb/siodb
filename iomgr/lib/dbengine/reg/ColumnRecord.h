@@ -4,12 +4,10 @@
 
 #pragma once
 
-// Project headers
-#include "../ColumnState.h"
-
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/utils/Uuid.h>
+#include <siodb/iomgr/shared/dbengine/ColumnState.h>
 
 // STL headers
 #include <optional>

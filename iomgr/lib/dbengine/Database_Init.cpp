@@ -10,6 +10,7 @@
 #include "ColumnSetColumn.h"
 #include "ConstraintDefinition.h"
 #include "Table.h"
+#include "crypto/GetCipher.h"
 #include "parser/expr/ConstantExpression.h"
 
 // Common project headers

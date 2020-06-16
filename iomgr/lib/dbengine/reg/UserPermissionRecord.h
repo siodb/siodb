@@ -10,9 +10,9 @@
 // CRT headers
 #include <cstdint>
 
-// Project headers
-#include "../DatabaseObjectType.h"
-#include "../PermissionType.h"
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectType.h>
+#include <siodb/iomgr/shared/dbengine/PermissionType.h>
 
 namespace siodb::iomgr::dbengine {
 

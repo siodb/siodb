@@ -15,7 +15,9 @@
 #include "IndexPtr.h"
 #include "TableColumns.h"
 #include "TablePtr.h"
-#include "Variant.h"
+
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/Variant.h>
 
 namespace siodb::iomgr::dbengine {
 

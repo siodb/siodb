@@ -6,10 +6,10 @@
 
 // Project headers
 #include "IndexColumnRegistry.h"
-#include "../IndexType.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
+#include <siodb/iomgr/shared/dbengine/IndexType.h>
 
 // STL headers
 #include <string>

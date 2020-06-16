@@ -4,11 +4,9 @@
 
 #pragma once
 
-// Project headers
-#include "../ConstraintState.h"
-
 // Common project headers
 #include <siodb/common/utils/Uuid.h>
+#include <siodb/iomgr/shared/dbengine/ConstraintState.h>
 
 // CRT headers
 #include <cstdint>

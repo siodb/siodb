@@ -6,7 +6,6 @@
 
 // Project headers
 #include "ConstantExpression.h"
-#include "../../ColumnDataType.h"
 
 namespace siodb::iomgr::dbengine::requests {
 

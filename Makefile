@@ -12,40 +12,40 @@
 all:
 	@date
 	$(MAKE) $@ -C common
-	$(MAKE) $@ -C siocli
 	$(MAKE) $@ -C siodb
 	$(MAKE) $@ -C conn_worker
 	$(MAKE) $@ -C iomgr
+	$(MAKE) $@ -C siocli
 	$(MAKE) $@ -C extra_files
 	@date
 
 debug:
 	@date
 	$(MAKE) all -C common
-	$(MAKE) all -C siocli
 	$(MAKE) all -C siodb
 	$(MAKE) all -C conn_worker
 	$(MAKE) all -C iomgr
+	$(MAKE) all -C siocli
 	$(MAKE) all -C extra_files
 	@date
 
 release:
 	@date
 	$(MAKE) DEBUG=0 all -C common
-	$(MAKE) DEBUG=0 all -C siocli
 	$(MAKE) DEBUG=0 all -C siodb
 	$(MAKE) DEBUG=0 all -C conn_worker
 	$(MAKE) DEBUG=0 all -C iomgr
+	$(MAKE) DEBUG=0 all -C siocli
 	$(MAKE) DEBUG=0 all -C extra_files
 	@date
 
 clean:
 	@date
 	$(MAKE) $@ -C common
-	$(MAKE) $@ -C siocli
 	$(MAKE) $@ -C siodb
 	$(MAKE) $@ -C conn_worker
 	$(MAKE) $@ -C iomgr
+	$(MAKE) $@ -C siocli
 	$(MAKE) $@ -C extra_files
 	@date
 

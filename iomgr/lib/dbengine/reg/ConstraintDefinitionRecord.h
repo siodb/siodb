@@ -4,12 +4,10 @@
 
 #pragma once
 
-// Project headers
-#include "../ConstraintType.h"
-
 // Common project headers
 #include <siodb/common/utils/BinaryValue.h>
 #include <siodb/common/utils/Uuid.h>
+#include <siodb/iomgr/shared/dbengine/ConstraintType.h>
 
 namespace siodb::iomgr::dbengine {
 

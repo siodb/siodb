@@ -8,7 +8,6 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "ColumnDefinitionConstraintList.h"
 #include "ColumnSetColumn.h"
-#include "DatabaseObjectName.h"
 #include "Index.h"
 #include "TableColumns.h"
 #include "ThrowDatabaseError.h"
@@ -19,6 +18,7 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FsUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 namespace siodb::iomgr::dbengine {
 

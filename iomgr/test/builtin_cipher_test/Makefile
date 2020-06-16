@@ -15,7 +15,8 @@ CXXFLAGS+=-I../../lib
 
 TARGET_OWN_LIBS:=iomgr
 
-TARGET_COMMON_LIBS:=unit_test options log net proto protobuf io sys utils data stl_ext crt_ext
+TARGET_COMMON_LIBS:=iomgr_shared unit_test options log net proto protobuf io sys utils \
+	data stl_ext crt_ext
 
 TARGET_LIBS:=-lboost_filesystem -lboost_log -lboost_thread -lboost_program_options \
 		-lboost_system -lprotobuf -lcrypto

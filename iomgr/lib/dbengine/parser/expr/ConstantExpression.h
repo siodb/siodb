@@ -6,7 +6,6 @@
 
 // Project headers
 #include "Expression.h"
-#include "../../ColumnDataType.h"
 
 namespace siodb::iomgr::dbengine::requests {
 

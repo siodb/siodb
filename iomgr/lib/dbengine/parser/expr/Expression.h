@@ -6,11 +6,13 @@
 
 // Project headers
 #include "ExpressionType.h"
-#include "../../ColumnDataType.h"
-#include "../../Variant.h"
+
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/ColumnDataType.h>
 
 // Common project headers
 #include <siodb/common/utils/MutableOrConstantString.h>
+#include <siodb/iomgr/shared/dbengine/Variant.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/ColumnDataType.pb.h>

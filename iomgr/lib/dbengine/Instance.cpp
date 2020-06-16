@@ -10,7 +10,7 @@
 #include "ThrowDatabaseError.h"
 #include "UserAccessKey.h"
 #include "UserDatabase.h"
-#include "crypto/ciphers/Cipher.h"
+#include "crypto/GetCipher.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -24,6 +24,7 @@
 #include <siodb/common/utils/FsUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
 
 // CRT headers
 #include <cstdio>

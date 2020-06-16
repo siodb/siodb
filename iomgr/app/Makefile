@@ -13,7 +13,7 @@ CXX_SRC:=IOManagerMain.cpp
 
 TARGET_OWN_LIBS:=iomgr
 
-TARGET_COMMON_LIBS:=crypto options log net proto protobuf sys utils data io stl_ext crt_ext
+TARGET_COMMON_LIBS:=iomgr_shared crypto options log net proto protobuf sys utils data io stl_ext crt_ext
 
 TARGET_LIBS:=-lboost_filesystem -lboost_log -lboost_thread -lboost_program_options \
 		-lboost_system -lprotobuf -lcrypto -lantlr4-runtime -lxxhash

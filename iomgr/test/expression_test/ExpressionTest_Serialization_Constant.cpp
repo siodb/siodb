@@ -6,12 +6,12 @@
 #include "ExpressionFactories.h"
 #include "ExpressionSerializationTest.h"
 #include "TestContext.h"
-#include "dbengine/lob/BinaryValueBlobStream.h"
-#include "dbengine/lob/StringClobStream.h"
 
 // Common project headers
 #include <siodb/common/utils/Debug.h>
 #include <siodb/common/utils/StringUtils.h>
+#include <siodb/iomgr/shared/dbengine/lob/BinaryValueBlobStream.h>
+#include <siodb/iomgr/shared/dbengine/lob/StringClobStream.h>
 
 // Google Test
 #include <gtest/gtest.h>

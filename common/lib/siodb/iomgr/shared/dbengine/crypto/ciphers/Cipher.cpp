@@ -5,10 +5,8 @@
 #include "Cipher.h"
 
 // Project headers
-#include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "AesCipher.h"
 #include "CamelliaCipher.h"
-#include "../../ThrowDatabaseError.h"
 
 // STL headers
 #include <string_view>
@@ -46,7 +44,8 @@ CipherContextPtr Cipher::createDecryptionContext(const BinaryValue& key) const
 void Cipher::validateKeyLength(const BinaryValue& key) const
 {
     if (key.size() != getKeySize() / 8)
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidCipherKey, getCipherId());
+        throw std::runtime_error(std::string("Invalid cipher key for the cipher ") + getCipherId());
+    //        throwDatabaseError(IOManagerMessageId::kErrorInvalidCipherKey, getCipherId());
 }
 
 ////////// STANDALONE FUNCTIONS ////////////////////////////////////////////////
@@ -67,12 +66,12 @@ void initializeExternalCiphers(
     // TODO: Implement later, see SIODB-163
 }
 
-CipherPtr getCipher(const std::string& cipherId)
+std::optional<CipherPtr> getCipher0(const std::string& cipherId)
 {
     if (cipherId == kNoCipherId) return nullptr;
     const auto it = g_ciphers.find(std::string_view(cipherId));
     if (it != g_ciphers.end()) return it->second;
-    throwDatabaseError(IOManagerMessageId::kErrorCipherUnknown, cipherId);
+    return std::nullopt;
 }
 
 }  // namespace siodb::iomgr::dbengine::crypto

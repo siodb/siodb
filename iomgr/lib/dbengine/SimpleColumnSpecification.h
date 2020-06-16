@@ -6,7 +6,9 @@
 
 // Project headers
 #include <siodb-generated/common/lib/siodb/common/proto/ColumnDataType.pb.h>
-#include "Variant.h"
+
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/Variant.h>
 
 // STL headers
 #include <optional>

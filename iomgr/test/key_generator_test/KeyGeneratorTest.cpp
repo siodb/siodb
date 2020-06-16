@@ -2,8 +2,8 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-// Project headers
-#include "dbengine/crypto/KeyGenerator.h"
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/crypto/KeyGenerator.h>
 
 // STL headers
 #include <iomanip>

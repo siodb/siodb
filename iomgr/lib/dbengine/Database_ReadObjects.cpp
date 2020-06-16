@@ -8,13 +8,13 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "Column.h"
 #include "Constraint.h"
-#include "DatabaseObjectName.h"
 #include "Index.h"
 #include "ThrowDatabaseError.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 // STL headers
 #include <numeric>

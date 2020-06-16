@@ -8,12 +8,10 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "../Column.h"
 #include "../Database.h"
-#include "../DatabaseObjectName.h"
 #include "../MasterColumnRecord.h"
 #include "../Table.h"
 #include "../ThrowDatabaseError.h"
 #include "../TransactionParameters.h"
-#include "../Variant.h"
 #include "../parser/DatabaseContext.h"
 #include "../parser/EmptyContext.h"
 
@@ -22,6 +20,7 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 // STL headers
 #include <functional>

@@ -5,12 +5,12 @@
 #pragma once
 
 // Project headers
-#include "ColumnDataType.h"
 #include "DataSetPtr.h"
-#include "Variant.h"
 
 // Common project headers
 #include <siodb/common/stl_ext/bitmask.h>
+#include <siodb/iomgr/shared/dbengine/ColumnDataType.h>
+#include <siodb/iomgr/shared/dbengine/Variant.h>
 
 // STL headers
 #include <optional>

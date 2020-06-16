@@ -2,6 +2,11 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/AesCipher.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/CamelliaCipher.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/CipherContext.h>
+
 // CRT headers
 #include <cstring>
 
@@ -9,11 +14,6 @@
 #include <iomanip>
 #include <iostream>
 #include <random>
-
-// Project headers
-#include "dbengine/crypto/ciphers/AesCipher.h"
-#include "dbengine/crypto/ciphers/CamelliaCipher.h"
-#include "dbengine/crypto/ciphers/CipherContext.h"
 
 // Google Test
 #include <gtest/gtest.h>

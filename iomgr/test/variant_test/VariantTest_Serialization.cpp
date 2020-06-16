@@ -2,14 +2,12 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-// Project headers
-#include "dbengine/Variant.h"
-#include "dbengine/lob/BinaryValueBlobStream.h"
-#include "dbengine/lob/StringClobStream.h"
-
 // Common project headers
 #include <siodb/common/utils/Debug.h>
 #include <siodb/common/utils/StringUtils.h>
+#include <siodb/iomgr/shared/dbengine/Variant.h>
+#include <siodb/iomgr/shared/dbengine/lob/BinaryValueBlobStream.h>
+#include <siodb/iomgr/shared/dbengine/lob/StringClobStream.h>
 
 // Google Test
 #include <gtest/gtest.h>

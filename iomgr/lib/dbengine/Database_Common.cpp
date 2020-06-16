@@ -10,16 +10,12 @@
 #include "ColumnDefinition.h"
 #include "ColumnDefinitionConstraint.h"
 #include "ColumnSet.h"
-#include "DatabaseObjectName.h"
 #include "DefaultValueConstraint.h"
 #include "Index.h"
 #include "NotNullConstraint.h"
 #include "SystemDatabase.h"
 #include "Table.h"
-#include "TableType.h"
 #include "ThrowDatabaseError.h"
-#include "io/EncryptedFile.h"
-#include "io/NormalFile.h"
 
 // Common project headers
 #include <siodb/common/io/FileIO.h>
@@ -28,6 +24,9 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FsUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
+#include <siodb/iomgr/shared/dbengine/io/EncryptedFile.h>
+#include <siodb/iomgr/shared/dbengine/io/NormalFile.h>
 
 // STL headers
 #include <iomanip>

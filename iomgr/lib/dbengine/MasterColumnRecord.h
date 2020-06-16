@@ -6,8 +6,10 @@
 
 // Project headers
 #include "ColumnDataRecord.h"
-#include "DmlOperationType.h"
 #include "MasterColumnRecordPtr.h"
+
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/DmlOperationType.h>
 
 // STL headers
 #include <vector>

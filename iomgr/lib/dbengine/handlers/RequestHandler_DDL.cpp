@@ -8,17 +8,17 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "../Column.h"
 #include "../Database.h"
-#include "../DatabaseObjectName.h"
 #include "../MasterColumnRecord.h"
 #include "../Table.h"
 #include "../ThrowDatabaseError.h"
-#include "../crypto/KeyGenerator.h"
-#include "../crypto/ciphers/Cipher.h"
+#include "../crypto/GetCipher.h"
 #include "../parser/EmptyContext.h"
 
 // Common project headers
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/SiodbProtocolTag.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
+#include <siodb/iomgr/shared/dbengine/crypto/KeyGenerator.h>
 
 namespace siodb::iomgr::dbengine {
 

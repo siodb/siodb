@@ -5,7 +5,6 @@
 // Project headers
 #include "ExpressionFactories.h"
 #include "TestContext.h"
-#include "dbengine/ColumnDataType.h"
 
 // Common project headers
 #include <siodb/common/utils/Debug.h>

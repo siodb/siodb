@@ -5,7 +5,6 @@
 // Project headers
 #include "IOMgrConnectionManager.h"
 #include "../dbengine/Instance.h"
-#include "../dbengine/crypto/ciphers/Cipher.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -24,6 +23,7 @@
 #include <siodb/common/utils/SignalHandlers.h>
 #include <siodb/common/utils/StartupActions.h>
 #include <siodb/iomgr/shared/IOManagerExitCode.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
 
 // STL headers
 #include <iostream>

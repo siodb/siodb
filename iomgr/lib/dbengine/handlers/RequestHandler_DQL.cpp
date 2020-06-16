@@ -9,7 +9,6 @@
 #include "../Column.h"
 #include "../ColumnSet.h"
 #include "../Database.h"
-#include "../DatabaseObjectName.h"
 #include "../Index.h"
 #include "../Table.h"
 #include "../TableDataSet.h"
@@ -25,6 +24,7 @@
 #include <siodb/common/stl_ext/bitmask.h>
 #include <siodb/common/utils/EmptyString.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 namespace siodb::iomgr::dbengine {
 

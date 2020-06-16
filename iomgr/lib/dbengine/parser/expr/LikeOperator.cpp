@@ -5,7 +5,6 @@
 // Project headers
 #include "LikeOperator.h"
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
-#include "../../ColumnDataType.h"
 #include "../../ThrowDatabaseError.h"
 
 #include <utf8cpp/utf8.h>

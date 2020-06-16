@@ -28,7 +28,7 @@ CXXFLAGS+=-I../../lib -I$(GENERATED_FILES_ROOT) -I/usr/local/include/antlr4-runt
 
 TARGET_OWN_LIBS:=iomgr
 
-TARGET_COMMON_LIBS:=unit_test proto utils data sys stl_ext crt_ext
+TARGET_COMMON_LIBS:=iomgr_shared unit_test proto utils data sys stl_ext crt_ext
 
 TARGET_LIBS:=-lprotobuf -lantlr4-runtime -lboost_log -lboost_system -lboost_filesystem -lxxhash
 

@@ -6,13 +6,13 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
-#include "DatabaseObjectName.h"
 #include "ThrowDatabaseError.h"
 #include "UserAccessKey.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/crypto/DigitalSignatureKey.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 namespace siodb::iomgr::dbengine {
 

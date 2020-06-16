@@ -41,6 +41,6 @@ CXXFLAGS+=-I../../lib
 
 TARGET_OWN_LIBS:=iomgr
 
-TARGET_COMMON_LIBS:=unit_test proto utils data sys stl_ext crt_ext
+TARGET_COMMON_LIBS:=iomgr_shared unit_test proto utils data sys stl_ext crt_ext
 
 include $(MK)/Main.mk

@@ -5,8 +5,10 @@
 #pragma once
 
 // Project headers
-#include "ConstraintType.h"
 #include "parser/expr/Expression.h"
+
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/ConstraintType.h>
 
 namespace siodb::iomgr::dbengine {
 

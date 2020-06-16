@@ -6,7 +6,6 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
-#include "DatabaseObjectName.h"
 #include "IndexColumn.h"
 #include "ThrowDatabaseError.h"
 
@@ -15,6 +14,7 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FsUtils.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 namespace siodb::iomgr::dbengine {
 

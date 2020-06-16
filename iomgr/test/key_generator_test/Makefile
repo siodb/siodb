@@ -11,11 +11,7 @@ TARGET_EXE:=key_generator_test
 
 CXX_SRC:=KeyGeneratorTest.cpp
 
-CXXFLAGS+=-I../../lib
-
-TARGET_OWN_LIBS:=iomgr
-
-TARGET_COMMON_LIBS:=unit_test proto utils data stl_ext crt_ext io
+TARGET_COMMON_LIBS:=iomgr_shared unit_test proto utils data stl_ext crt_ext io
 
 TARGET_LIBS:=-lcrypto
 

@@ -11,6 +11,12 @@ include ../../../mk/Prolog.mk
 include $(MK)/MainTargets.mk
 
 # List of all subdirs to recurse into
-SUBDIRS:=common iomgr
+SUBDIRS:= \
+	common  \
+	iomgr
 
-include $(MK)/ParallelRecurse.mk
+
+iomgr/.: common/.
+
+# Recurse sequentially due to some dependencies
+include $(MK)/SequentialRecurse.mk

@@ -9,6 +9,9 @@
 #include "CipherPtr.h"
 #include <siodb/common/utils/BinaryValue.h>
 
+// STL headers
+#include <optional>
+
 namespace siodb::config {
 struct ExternalCipherOptions;
 }  // namespace siodb::config
@@ -89,10 +92,9 @@ void initializeExternalCiphers(const config::ExternalCipherOptions& externaCiphe
 /**
  * Returns specified cipher object.
  * @param cipherId Cipher identification string.
- * @return Cipher object, nullptr if cipher is "none".
- * @throw DatabaseError if cipher with provided ID doesn't exist.
+ * @return Cipher object, nullptr if cipher is "none", empty object if cipher doesn't exist.
  */
-CipherPtr getCipher(const std::string& cipherId);
+std::optional<CipherPtr> getCipher0(const std::string& cipherId);
 
 /** No cipher ID */
 constexpr const char* kNoCipherId = "none";

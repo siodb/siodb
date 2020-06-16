@@ -14,11 +14,9 @@
 #include "FirstUserObjectId.h"
 #include "Instance.h"
 #include "MasterColumnRecordPtr.h"
-#include "OrderingType.h"
 #include "TableCache.h"
 #include "TransactionParameters.h"
 #include "User.h"
-#include "crypto/ciphers/Cipher.h"
 #include "parser/expr/Expression.h"
 #include "reg/ColumnDefinitionRegistry.h"
 #include "reg/ColumnRegistry.h"
@@ -28,10 +26,12 @@
 #include "reg/DatabaseRecord.h"
 #include "reg/IndexRegistry.h"
 #include "reg/TableRegistry.h"
-#include "io/File.h"
 
 // Common project headers
 #include <siodb/common/io/MemoryMappedFile.h>
+#include <siodb/iomgr/shared/dbengine/OrderingType.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
+#include <siodb/iomgr/shared/dbengine/io/File.h>
 
 // STL headers
 #include <unordered_map>

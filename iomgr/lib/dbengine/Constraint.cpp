@@ -6,11 +6,11 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
-#include "DatabaseObjectName.h"
 #include "ThrowDatabaseError.h"
 
 // Common project headers
 #include <siodb/common/utils/EmptyString.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 namespace siodb::iomgr::dbengine {
 

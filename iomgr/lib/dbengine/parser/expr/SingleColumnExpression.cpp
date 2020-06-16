@@ -4,9 +4,6 @@
 
 #include "SingleColumnExpression.h"
 
-// Project headers
-#include "../../ColumnDataType.h"
-
 // STL headers
 #include <sstream>
 

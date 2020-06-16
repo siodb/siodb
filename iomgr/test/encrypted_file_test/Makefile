@@ -11,11 +11,7 @@ TARGET_EXE:=encrypted_file_test
 
 CXX_SRC:=EncryptedFileTest.cpp
 
-CXXFLAGS+=-I../../lib
-
-TARGET_OWN_LIBS:=iomgr
-
-TARGET_COMMON_LIBS:=unit_test io sys utils data stl_ext crt_ext
+TARGET_COMMON_LIBS:=iomgr_shared unit_test io sys utils data stl_ext crt_ext
 
 TARGET_LIBS:= -lcrypto -lboost_filesystem -lboost_system
 

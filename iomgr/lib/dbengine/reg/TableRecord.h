@@ -4,11 +4,9 @@
 
 #pragma once
 
-// Project headers
-#include "../TableType.h"
-
 // Common project headers
 #include <siodb/common/utils/Uuid.h>
+#include <siodb/iomgr/shared/dbengine/TableType.h>
 
 // STL headers
 #include <optional>

@@ -2,14 +2,12 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-// Project headers
-#include "dbengine/crypto/ciphers/AesCipher.h"
-#include "dbengine/io/EncryptedFile.h"
-
 // Common project headers
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/Align.h>
 #include <siodb/common/utils/Debug.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/AesCipher.h>
+#include <siodb/iomgr/shared/dbengine/io/EncryptedFile.h>
 
 // STL headers
 #include <limits>

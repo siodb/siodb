@@ -8,7 +8,6 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "ColumnDataBlock.h"
 #include "ColumnDefinitionConstraintList.h"
-#include "DatabaseObjectName.h"
 #include "IndexColumn.h"
 #include "LobChunkHeader.h"
 #include "ThrowDatabaseError.h"
@@ -25,6 +24,7 @@
 #include <siodb/common/utils/ByteOrder.h>
 #include <siodb/common/utils/FsUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 // Boost headers
 #include <boost/format.hpp>
