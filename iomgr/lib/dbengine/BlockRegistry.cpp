@@ -540,21 +540,29 @@ std::string&& BlockRegistry::ensureDataDir(std::string&& dataDir, bool create) c
 void BlockRegistry::createInitializationFlagFile() const
 {
     const auto initFlagFile = utils::constructPath(m_dataDir, kInitializationFlagFile);
-    std::ofstream ofs(initFlagFile);
-    if (!ofs.is_open()) {
+    FdGuard fd(::open(initFlagFile.c_str(), O_CREAT | O_WRONLY | O_CLOEXEC | O_NOATIME,
+            kDataFileCreationMode));
+    if (!fd.isValidFd()) {
+        const int errorCode = errno;
+        std::ostringstream err;
+        err << "Can't create block registry initialization flag file " << initFlagFile << ": "
+            << std::strerror(errno);
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateBlockRegistryDir,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), -1,
-                "can't create initialization flag file " + initFlagFile);
+                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), errorCode,
+                err.str());
     }
-    ofs.exceptions(std::ios::badbit | std::ios::failbit);
-    try {
-        ofs << std::time(nullptr) << std::flush;
-    } catch (std::exception& ex) {
+    const auto timeStr = std::to_string(std::time(nullptr));
+    if (::writeExact(fd.getFd(), timeStr.c_str(), timeStr.length(), kIgnoreSignals)
+            != timeStr.length()) {
+        const int errorCode = errno;
+        std::ostringstream err;
+        err << "Can't write to the block registry initialization flag file " << initFlagFile << ": "
+            << std::strerror(errno);
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateBlockRegistryDir,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), -1,
-                "Can't write to initialization flag file" + initFlagFile);
+                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), errorCode,
+                err.str());
     }
 }
 

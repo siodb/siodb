@@ -626,7 +626,7 @@ void Instance::checkDataConsistency()
 int Instance::openMetadataFile() const
 {
     const auto metadataFilePath = makeMetadataFilePath();
-    int fd = ::open(metadataFilePath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME,
+    const int fd = ::open(metadataFilePath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME,
             kDataFileCreationMode);
     if (fd < 0) {
         throwDatabaseError(IOManagerMessageId::kFatalCannotOpenInstanceMetadata, metadataFilePath,
