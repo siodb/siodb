@@ -35,7 +35,9 @@ DISTRO_MAJOR:=$(call _get_major_version, $(DISTRO_VERSION))
 ifeq ($(DISTRO),CentOS)
 BOOST_VERSION:=169
 ifeq ($(DISTRO_MAJOR),7)
+ifndef OPENSSL_ROOT
 OPENSSL_ROOT:=/usr/local/ssl
+endif
 endif
 endif # CentOS
 
@@ -43,7 +45,9 @@ endif # CentOS
 ifeq ($(DISTRO),RedHatEnterpriseServer)
 ifeq ($(DISTRO_MAJOR),7)
 BOOST_VERSION:=169
+ifndef OPENSSL_ROOT
 OPENSSL_ROOT:=/usr/local/ssl
+endif
 endif
 endif # RHEL 7
 
