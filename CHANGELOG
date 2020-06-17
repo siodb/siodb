@@ -1,0 +1,12 @@
+2020-06-17 version 0.7.0
+
+- #59 Started changelog
+- #55 Fixed failing tests on the CentOS 7
+- #54 Fixed failing tests on the CentOS 7
+- #47 Fixed CentOS 7 build
+- #38 Published intial coding guidelines
+- #31 Added "description" column for databases, tables, columns, indices, users, access keys
+
+2020-05-19 version 0.6.0
+
+- Initial code publishing
