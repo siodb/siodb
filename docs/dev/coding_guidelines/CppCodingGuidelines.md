@@ -16,6 +16,10 @@ should be written in a way that maximise its readability independent of any IDE.
 Most rules listed here are applicable to the C code as well. In some cases, rules say explicitly,
 what are differences between C and C++ code regarding the certain rule.
 
+The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”,
+“RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described
+in the [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+
 ## 1. General Rules
 
 **Rule 1.1** All C++ code must use C++17 standard. Avoid intentionally writing more
@@ -2424,14 +2428,15 @@ must be refactored to match these guidelines.
 
 ## Appendix A. Useful Links
 
-1. [GeoSoft C++ Programming Style Guidelines](https://geosoft.no/development/cpppractice.html)
-2. [GeoSoft C++ Programming Practice Guidelines](https://geosoft.no/development/cpppractice.html)
-3. [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuideline)
-4. [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
-5. Criticism of the Google C++ Style Guide: [Google C++ Style Guide is No Good](
+1. [RFC 2119 Key words for use in RFCs to Indicate Requirement Levels](https://www.ietf.org/rfc/rfc2119.txt)
+2. [GeoSoft C++ Programming Style Guidelines](https://geosoft.no/development/cpppractice.html)
+3. [GeoSoft C++ Programming Practice Guidelines](https://geosoft.no/development/cpppractice.html)
+4. [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuideline)
+5. [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
+6. Criticism of the Google C++ Style Guide: [Google C++ Style Guide is No Good](
     https://eyakubovich.github.io/2018-11-27-google-cpp-style-guide-is-no-good/)
-6. [Windows Coding Style Convention](
+7. [Windows Coding Style Convention](
     https://docs.microsoft.com/en-us/windows/win32/stg/coding-style-conventions)
-7. [Linux Kernel Coding Style](https://www.kernel.org/doc/html/v4.10/process/coding-style.html)
-8. [Doxygen documentation system](https://www.doxygen.nl/index.html)
-9. [ClangFormat code formatting utility](https://clang.llvm.org/docs/ClangFormat.html)
+8. [Linux Kernel Coding Style](https://www.kernel.org/doc/html/v4.10/process/coding-style.html)
+9. [Doxygen documentation system](https://www.doxygen.nl/index.html)
+10. [ClangFormat code formatting utility](https://clang.llvm.org/docs/ClangFormat.html)
