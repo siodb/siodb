@@ -1,5 +1,6 @@
 2020-06-17 version 0.7.0
 
+- #60 Added guidelines for commit messages
 - #59 Started changelog
 - #55 Fixed failing tests on the CentOS 7
 - #54 Fixed failing tests on the CentOS 7
