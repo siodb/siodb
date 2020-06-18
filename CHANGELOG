@@ -1,3 +1,7 @@
+2020-06-18 version 0.7.1
+
+- Build: Added 3rd party library settings
+
 2020-06-17 version 0.7.0
 
 - #60 Added guidelines for commit messages
