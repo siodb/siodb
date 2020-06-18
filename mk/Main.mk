@@ -84,7 +84,6 @@ LD:=clang++-10
 endif
 
 AR:=ar
-PROTOC:=protoc
 
 ##### BUILD SETTINGS #####
 
@@ -111,12 +110,14 @@ INCLUDE+=-I$(COMMON_LIB_ROOT) -I$(GENERATED_FILES_COMMON_LIB_ROOT)
 C_INCLUDE+=
 CXX_INCLUDE+=
 
+# Custom Google Test
 ifdef GTEST_ROOT
 CXX_INCLUDE+=-I$(GTEST_ROOT)/include
 else
 CXX_INCLUDE+=-I/usr/local/include/gtest-gmock-1.8.1
 endif
 
+# Custom Boost
 ifdef BOOST_ROOT
 CXX_INCLUDE+=-I$(BOOST_ROOT)/include
 LDFLAGS+=-L$(BOOST_ROOT)/lib -Wl, -rpath -Wl,$(BOOST_ROOT)/lib
@@ -127,27 +128,41 @@ LDFLAGS+=-L/usr/lib64/boost$(BOOST_VERSION)
 endif
 endif
 
+# Custom ANTLR4 Runtime
 ifdef ANTLR4_RUNTIME_ROOT
 CXX_INCLUDE+=-I$(ANTLR4_RUNTIME_ROOT)/include
 LDFLAGS+=-L$(ANTLR4_RUNTIME_ROOT)/lib -Wl,-rpath -Wl,$(ANTLR4_RUNTIME_ROOT)/lib
 endif
 
+# Custom OpenSSL
 ifdef OPENSSL_ROOT
 C_INCLUDE+=-I$(OPENSSL_ROOT)/include
 CXX_INCLUDE+=-I$(OPENSSL_ROOT)/include
 LDFLAGS+=-L$(OPENSSL_ROOT)/lib -Wl,-rpath -Wl,$(OPENSSL_ROOT)/lib
 endif
 
+# Custom libdate
 ifdef DATE_ROOT
 CXX_INCLUDE+=-I$(DATE_ROOT)/include
-LDFLAGS+=-L$(DATE_ROOT)/lib -Wl,-rpath -Wl,$(UTF8CPP_ROOT)/lib
+LDFLAGS+=-L$(DATE_ROOT)/lib -Wl,-rpath -Wl,$(DATE_ROOT)/lib
 endif
 
+# Custom Protocol Buffers
+ifdef PROTOBUF_ROOT
+PROTOC:=$(PROTOBUF_ROOT)/bin/protoc
+CXX_INCLUDE+=-I$(PROTOBUF_ROOT)/include
+LDFLAGS+=-L$(PROTOBUF_ROOT)/lib -Wl,-rpath -Wl,$(PROTOBUF_ROOT)/lib
+else
+PROTOC:=protoc
+endif
+
+# Custom utf8cpp
 ifdef UTF8CPP_ROOT
 CXX_INCLUDE+=-I$(UTF8CPP_ROOT)/include
 LDFLAGS+=-L$(UTF8CPP_ROOT)/lib -Wl,-rpath -Wl,$(UTF8CPP_ROOT)/lib
 endif
 
+# Custom xxHash
 ifdef XXHASH_ROOT
 C_INCLUDE+=-I$(XXHASH_ROOT)/include
 CXX_INCLUDE+=-I$(XXHASH_ROOT)/include
