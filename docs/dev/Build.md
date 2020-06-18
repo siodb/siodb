@@ -2,11 +2,12 @@
 
 - [Environment Preparation](#environment-preparation)
   - [Ubuntu 18.04 LTS](#ubuntu-1804-lts)
+  - [Ubuntu 20.04 LTS](#ubuntu-2004-lts)
   - [CentOS 7](#centos-7)
   - [CentOS 8](#centos-8)
   - [RHEL 7](#rhel-7)
   - [RHEL 8](#rhel-8)
-- [Third-Party Libraries](#third-party-libraries)
+- [Building Third-Party Libraries](#building-third-party-libraries)
 - [System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)](#system-setup-debian-ubuntu-centos-rhel-suse-sles)
 - [Compiling Siodb](#compiling-siodb)
 - [Running Siodb](#running-siodb)
@@ -23,6 +24,30 @@ cd $HOME
 # Required tools and libraries
 sudo apt install build-essential cmake doxygen gdb graphviz gcc-8 g++-8 libboost1.65-dev \
     libboost-log1.65-dev libboost-program-options1.65-dev libcurl4-openssl-dev \
+    libssl-dev openjdk-8-jdk-headless pkg-config uuid-dev clang-format-8 \
+    ubuntu-dbgsym-keyring
+
+# Set up alternatives for the clang-format
+sudo update-alternatives --install /usr/bin/clang-format clang-format \
+    /usr/lib/llvm-8/bin/clang-format 1
+sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
+    /usr/lib/llvm-8/bin/git-clang-format 1
+sudo update-alternatives --set clang-format /usr/lib/llvm-8/bin/clang-format
+sudo update-alternatives --set git-clang-format /usr/lib/llvm-8/bin/git-clang-format
+```
+
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+
+### Ubuntu 20.04 LTS
+
+Run following commands:
+
+```shell
+cd $HOME
+
+# Required tools and libraries
+sudo apt install build-essential cmake doxygen gdb graphviz gcc-8 g++-8 libboost1.67-dev \
+    libboost-log1.67-dev libboost-program-options1.67-dev libcurl4-openssl-dev \
     libssl-dev openjdk-8-jdk-headless pkg-config uuid-dev clang-format-8 \
     ubuntu-dbgsym-keyring
 
