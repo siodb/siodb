@@ -10,7 +10,6 @@ include ../../../../../mk/Prolog.mk
 TARGET_LIB:=siodb_common_config
 
 C_HDR:= \
-	CompilerDefs.h  \
 	Config.h  \
 	SiodbVersion.h
 

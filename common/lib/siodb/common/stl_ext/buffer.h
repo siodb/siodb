@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "../config/CompilerDefs.h"
+#include "../crt_ext/compiler_defs.h"
 
 // CRT headers
 #include <cstring>

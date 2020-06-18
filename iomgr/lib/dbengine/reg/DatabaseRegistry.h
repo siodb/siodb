@@ -8,7 +8,7 @@
 #include "DatabaseRecord.h"
 
 // Common project headers
-#include <siodb/common/config/CompilerDefs.h>
+#include <siodb/common/crt_ext/compiler_defs.h>
 
 // Boost headers
 #include <boost/multi_index/hashed_index.hpp>
