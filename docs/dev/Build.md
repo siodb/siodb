@@ -33,12 +33,6 @@ sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
     /usr/lib/llvm-8/bin/git-clang-format 1
 sudo update-alternatives --set clang-format /usr/lib/llvm-8/bin/clang-format
 sudo update-alternatives --set git-clang-format /usr/lib/llvm-8/bin/git-clang-format
-
-# Recommended supplementary installs for everyone
-sudo apt install curl mc p7zip-full vim wget zip
-
-# Recommended supplementary installs for GUI machines
-sudo apt install gitk kdiff3 okular openjdk-8-jdk
 ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
@@ -68,7 +62,7 @@ sudo yum remove git*
 sudo yum install git
 
 # Install required tools and libraries
-sudo yum -y install cmake3 gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
+sudo yum -y install cmake3 curl gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
     libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
     wget zlib-devel python
 
@@ -95,12 +89,6 @@ sudo ldconfig
 sudo mandb
 cd $HOME
 rm -rf /tmp/getllvm
-
-# Recommended supplementary installs for everyone
-sudo yum install -y curl mc p7zip vim zip
-
-# Recommended supplementary installs for GUI machines
-sudo yum install -y gitk kdiff3 java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
@@ -161,7 +149,7 @@ sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.
 sudo yum -y update
 
 # Install required tools and libraries
-sudo yum -y install cmake gcc gcc-c++ boost-devel libcurl-devel \
+sudo yum -y install cmake curl gcc gcc-c++ boost-devel libcurl-devel \
           libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb \
           wget zlib-devel python2
 
@@ -176,12 +164,6 @@ sudo ldconfig
 sudo mandb
 cd $HOME
 rm -rf /tmp/getllvm
-
-# Recommended supplementary installs for everyone
-sudo yum install -y curl mc p7zip vim zip
-
-# Recommended supplementary installs for GUI machines
-sudo yum install -y gitk java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
@@ -218,7 +200,7 @@ sudo yum remove git*
 sudo yum install git
 
 # Install required tools and libraries
-sudo yum -y install cmake3 gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
+sudo yum -y install cmake3 curl gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
           libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
           wget zlib-devel python
 
@@ -245,12 +227,6 @@ sudo ldconfig
 sudo mandb
 cd $HOME
 rm -rf /tmp/getllvm
-
-# Recommended supplementary installs for everyone
-sudo yum install -y curl mc p7zip vim zip
-
-# Recommended supplementary installs for GUI machines
-sudo yum install -y gitk kdiff3 java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
@@ -311,7 +287,7 @@ sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.
 sudo yum -y update
 
 # Install required tools and libraries
-sudo yum -y install cmake gcc gcc-c++ boost-devel libcurl-devel \
+sudo yum -y install cmake curl gcc gcc-c++ boost-devel libcurl-devel \
           libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb \
           wget zlib-devel python2
 
@@ -326,12 +302,6 @@ sudo ldconfig
 sudo mandb
 cd $HOME
 rm -rf /tmp/getllvm
-
-# Recommended supplementary installs for everyone
-sudo yum install -y curl mc p7zip vim zip
-
-# Recommended supplementary installs for GUI machines
-sudo yum install -y gitk java-1.8.0-openjdk
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
@@ -351,15 +321,15 @@ Change current directory to the root of siodb Git repository and execute followi
 
 ```shell
 
-# Clone Siodb repository or your Siodb fork, for example:
+# Clone Siodb repository or your Siodb fork, like this:
 mkdir ~/projects
 cd ~/projects
 git clone git@github.com:siodb/siodb.git
 
-# Enter repository directiry
+# Enter repository root directory
 cd siodb
 
-# CENTOS 7 ONLY: Enable devtoolset-8
+# CentOS 7/RHEL 7 ONLY: Enable devtoolset-8
 scl enable devtoolset-8 bash
 
 # Install source code formatting hook for git
