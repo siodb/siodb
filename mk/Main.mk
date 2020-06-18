@@ -109,16 +109,49 @@ GENERATED_FILES_DIRS:=$(addsuffix .,$(sort $(dir $(PROTO_CXX_SRC))))
 
 INCLUDE+=-I$(COMMON_LIB_ROOT) -I$(GENERATED_FILES_COMMON_LIB_ROOT)
 C_INCLUDE+=
-CXX_INCLUDE+=-I/usr/local/include/gtest-gmock-1.8.1
+CXX_INCLUDE+=
 
+ifdef GTEST_ROOT
+CXX_INCLUDE+=-I$(GTEST_ROOT)/include
+else
+CXX_INCLUDE+=-I/usr/local/include/gtest-gmock-1.8.1
+endif
+
+ifdef BOOST_ROOT
+CXX_INCLUDE+=-I$(BOOST_ROOT)/include
+LDFLAGS+=-L$(BOOST_ROOT)/lib -Wl, -rpath -Wl,$(BOOST_ROOT)/lib
+else
 ifdef BOOST_VERSION
 CXX_INCLUDE+=-I/usr/include/boost$(BOOST_VERSION)
-LIBS+=-L/usr/lib64/boost$(BOOST_VERSION)
+LDFLAGS+=-L/usr/lib64/boost$(BOOST_VERSION)
+endif
+endif
+
+ifdef ANTLR4_RUNTIME_ROOT
+CXX_INCLUDE+=-I$(ANTLR4_RUNTIME_ROOT)/include
+LDFLAGS+=-L$(ANTLR4_RUNTIME_ROOT)/lib -Wl,-rpath -Wl,$(ANTLR4_RUNTIME_ROOT)/lib
 endif
 
 ifdef OPENSSL_ROOT
+C_INCLUDE+=-I$(OPENSSL_ROOT)/include
 CXX_INCLUDE+=-I$(OPENSSL_ROOT)/include
 LDFLAGS+=-L$(OPENSSL_ROOT)/lib -Wl,-rpath -Wl,$(OPENSSL_ROOT)/lib
+endif
+
+ifdef DATE_ROOT
+CXX_INCLUDE+=-I$(DATE_ROOT)/include
+LDFLAGS+=-L$(DATE_ROOT)/lib -Wl,-rpath -Wl,$(UTF8CPP_ROOT)/lib
+endif
+
+ifdef UTF8CPP_ROOT
+CXX_INCLUDE+=-I$(UTF8CPP_ROOT)/include
+LDFLAGS+=-L$(UTF8CPP_ROOT)/lib -Wl,-rpath -Wl,$(UTF8CPP_ROOT)/lib
+endif
+
+ifdef XXHASH_ROOT
+C_INCLUDE+=-I$(XXHASH_ROOT)/include
+CXX_INCLUDE+=-I$(XXHASH_ROOT)/include
+LDFLAGS+=-L$(XXHASH_ROOT)/lib -Wl,-rpath -Wl,$(XXHASH_ROOT)/lib
 endif
 
 DEFS+=-D_GNU_SOURCE $(TARGET_DEFS)
