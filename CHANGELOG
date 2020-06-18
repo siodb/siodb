@@ -1,6 +1,6 @@
 2020-06-18 version 0.7.1
 
-- Build: Added 3rd party library settings
+- Build: Support custom locations of the 3rd party libraries
 
 2020-06-17 version 0.7.0
 
