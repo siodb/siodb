@@ -112,7 +112,7 @@ CXX_INCLUDE+=
 
 # Custom Google Test
 ifdef GTEST_ROOT
-CXX_INCLUDE+=-isystem $(GTEST_ROOT)/include
+CXX_INCLUDE+=-isystem $(GTEST_ROOT)/include/gtest-gmock-1.8.1
 else
 CXX_INCLUDE+=-I/usr/local/include/gtest-gmock-1.8.1
 endif
