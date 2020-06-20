@@ -130,8 +130,10 @@ endif
 
 # Custom ANTLR4 Runtime
 ifdef ANTLR4_RUNTIME_ROOT
-CXX_INCLUDE+=-isystem $(ANTLR4_RUNTIME_ROOT)/include
+CXX_INCLUDE+=-isystem $(ANTLR4_RUNTIME_ROOT)/include/antlr4-runtime
 LDFLAGS+=-L$(ANTLR4_RUNTIME_ROOT)/lib -Wl,-rpath -Wl,$(ANTLR4_RUNTIME_ROOT)/lib
+else
+CXX_INCLUDE+=-I/usr/local/include/antlr4-runtime
 endif
 
 # Custom OpenSSL

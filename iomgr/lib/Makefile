@@ -378,7 +378,7 @@ CXX_HDR:= \
 	dbengine/UserPtr.h
 
 
-CXXFLAGS+=-I$(GENERATED_FILES_ROOT) -I/usr/local/include/antlr4-runtime
+CXXFLAGS+=-I$(GENERATED_FILES_ROOT)
 
 ANTLR_GRAMMAR:=dbengine/parser/Siodb.g4
 

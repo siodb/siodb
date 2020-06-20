@@ -24,7 +24,7 @@ CXX_SRC:= \
 CXX_HDR:= \
 	TestContext.h
 
-CXXFLAGS+=-I../../lib -I$(GENERATED_FILES_ROOT) -I/usr/local/include/antlr4-runtime
+CXXFLAGS+=-I../../lib -I$(GENERATED_FILES_ROOT)
 
 TARGET_OWN_LIBS:=iomgr
 
