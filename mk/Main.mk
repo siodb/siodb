@@ -120,7 +120,7 @@ endif
 # Custom Boost
 ifdef BOOST_ROOT
 CXX_INCLUDE+=-isystem $(BOOST_ROOT)/include
-LDFLAGS+=-L$(BOOST_ROOT)/lib -Wl, -rpath -Wl,$(BOOST_ROOT)/lib
+LDFLAGS+=-L$(BOOST_ROOT)/lib -Wl,-rpath -Wl,$(BOOST_ROOT)/lib
 else
 ifdef BOOST_VERSION
 CXX_INCLUDE+=-I/usr/include/boost$(BOOST_VERSION)
