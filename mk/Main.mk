@@ -9,24 +9,16 @@
 
 #### TOOLCHAIN SELECTION #####
 
-# CentOS
-ifeq ($(DISTRO),CentOS)
-TOOLCHAIN:=gcc
-endif
-
-# RHEL 7
-ifeq ($(DISTRO),RedHatEnterpriseServer)
-TOOLCHAIN:=gcc
-endif
-
-# RHEL 8
-ifeq ($(DISTRO),RedHatEnterprise)
-TOOLCHAIN:=gcc
-endif
-
-# Default choice (Ubuntu, Debian, Mint, etc.)
-ifndef TOOLCHAIN
+# Ubuntu 18.04
+ifeq ($(DISTRO),Ubuntu)
+ifeq ($(DISTRO_MAJOR),18)
 TOOLCHAIN:=gcc8
+endif
+endif
+
+# Default choice
+ifndef TOOLCHAIN
+TOOLCHAIN:=gcc
 endif
 
 ifeq ($(TOOLCHAIN),gcc)

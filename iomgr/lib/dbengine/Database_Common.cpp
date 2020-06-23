@@ -830,15 +830,17 @@ std::string Database::ensureDataDir(bool create) const
         }
     } else {
         // Check that database is initialized
-        if (!boost::filesystem::exists(dataDir))
+        if (!boost::filesystem::exists(dataDir)) {
             throwDatabaseError(
                     IOManagerMessageId::kErrorDatabaseDataFolderDoesNotExist, m_name, dataDir);
+        }
 
-        if (!initFlagFileExists)
+        if (!initFlagFileExists) {
             throwDatabaseError(
                     IOManagerMessageId::kErrorDatabaseInitFileDoesNotExist, m_name, initFlagFile);
+        }
     }
-    return std::move(dataDir);
+    return dataDir;
 }
 
 }  // namespace siodb::iomgr::dbengine
