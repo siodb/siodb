@@ -834,6 +834,33 @@ struct RenameTableRequest : public DBEngineRequest {
     const bool m_ifExists;
 };
 
+/** ALTER TABLE SET attributes request */
+struct SetTableAttributesRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class SetTableAttributesRequest.
+     * @param database Database name.
+     * @param table Table name.
+     * @param nextTrid Next TRID attribute.
+     */
+    SetTableAttributesRequest(std::string&& database, std::string&& table,
+            std::optional<std::uint64_t>&& nextTrid) noexcept
+        : DBEngineRequest(DBEngineRequestType::kSetTableAttributes)
+        , m_database(std::move(database))
+        , m_table(std::move(table))
+        , m_nextTrid(std::move(nextTrid))
+    {
+    }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
+
+    /** Next TRID attribute */
+    const std::optional<std::uint64_t> m_nextTrid;
+};
+
 /** ALTER TABLE ADD COLUMN request */
 struct AddColumnRequest : public DBEngineRequest {
     /**

@@ -154,6 +154,14 @@ private:
     void executeRenameTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::RenameTableRequest& request);
 
+    /**
+     * Executes SQL set table attributes request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeSetTableAttributesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::SetTableAttributesRequest& request);
+
     //** DML queries */
 
     /**

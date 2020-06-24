@@ -83,11 +83,12 @@ alter_table_stmt:
 		K_RENAME (K_IF K_EXISTS)? K_TO new_table_name
 		| K_ADD K_COLUMN? column_def
 		| K_DROP K_COLUMN? (K_IF K_EXISTS)? column_name
+		| K_SET table_attr_list
 	);
 
 alter_user_stmt:
 	K_ALTER K_USER user_name (
-		| K_SET user_option_list
+		| K_SET user_attr_list
 		| K_ADD K_ACCESS K_KEY user_access_key_name STRING_LITERAL user_access_key_option_list?
 		| K_DROP K_ACCESS K_KEY user_access_key_name
 		| K_ALTER K_ACCESS K_KEY user_access_key_name K_SET user_access_key_option_list
@@ -119,16 +120,16 @@ compound_select_stmt: (
 		K_LIMIT simple_expr (( K_OFFSET | ',') simple_expr)?
 	)?;
 
-create_database_option:
+create_database_attr:
 	K_CIPHER_ID '=' simple_expr
 	| K_CIPHER_KEY_SEED '=' simple_expr;
 
-create_database_option_list:
-	create_database_option (',' create_database_option)*;
+create_database_attr_list:
+	create_database_attr (',' create_database_attr)*;
 
 create_database_stmt:
 	K_CREATE (K_TEMP | K_TEMPORARY)? K_DATABASE database_name (
-		K_WITH create_database_option_list
+		K_WITH create_database_attr_list
 	)?;
 
 create_index_stmt:
@@ -166,7 +167,7 @@ create_trigger_stmt:
 	)+ K_END;
 
 create_user_stmt:
-	K_CREATE K_USER user_name (K_WITH user_option_list)?;
+	K_CREATE K_USER user_name (K_WITH user_attr_list)?;
 
 create_view_stmt:
 	K_CREATE (K_TEMP | K_TEMPORARY)? K_VIEW (K_IF K_NOT K_EXISTS)? (
@@ -245,6 +246,10 @@ pragma_stmt:
 		'=' pragma_value
 		| '(' pragma_value ')'
 	)?;
+
+table_attr: K_NEXT_TRID '=' NUMERIC_LITERAL;
+
+table_attr_list: table_attr (',' table_attr)*;
 
 reindex_stmt:
 	K_REINDEX (
@@ -333,12 +338,12 @@ user_access_key_option:
 user_access_key_option_list:
 	user_access_key_option (',' user_access_key_option)*;
 
-user_option:
+user_attr:
 	K_STATE '=' (K_ACTIVE | K_INACTIVE)
 	| K_REAL_NAME '=' (STRING_LITERAL | K_NULL)
 	| K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
 
-user_option_list: user_option (',' user_option)*;
+user_attr_list: user_attr (',' user_attr)*;
 
 type_name:
 	IDENTIFIER+ (
@@ -574,8 +579,6 @@ keyword:
 	| K_CASCADE
 	| K_CASE
 	| K_CAST
-	| K_CIPHER_ID
-	| K_CIPHER_KEY_SEED
 	| K_CHECK
 	| K_COLLATE
 	| K_COLUMN
@@ -665,7 +668,6 @@ keyword:
 	| K_SAVEPOINT
 	| K_SELECT
 	| K_SET
-	| K_STATE
 	| K_TABLE
 	| K_TEMP
 	| K_TEMPORARY
@@ -689,7 +691,13 @@ keyword:
 	| K_WITH
 	| K_WITHOUT;
 
-attribute: K_DESCRIPTION | K_REAL_NAME;
+attribute:
+	K_CIPHER_ID
+	| K_CIPHER_KEY_SEED
+	| K_DESCRIPTION
+	| K_NEXT_TRID
+	| K_REAL_NAME
+	| K_STATE;
 
 name: any_name;
 
@@ -762,6 +770,14 @@ EQ: '==';
 NOT_EQ1: '!=';
 NOT_EQ2: '<>';
 
+// Attributes
+K_CIPHER_ID: C I P H E R '_' I D;
+K_CIPHER_KEY_SEED: C I P H E R '_' K E Y '_' S E E D;
+K_DESCRIPTION: D E S C R I P T I O N;
+K_NEXT_TRID: N E X T '_' T R I D;
+K_STATE: S T A T E;
+K_REAL_NAME: R E A L '_' N A M E;
+
 // http://www.sqlite.org/lang_keywords.html
 K_ABORT: A B O R T;
 K_ACCESS: A C C E S S;
@@ -784,8 +800,6 @@ K_BY: B Y;
 K_CASCADE: C A S C A D E;
 K_CASE: C A S E;
 K_CAST: C A S T;
-K_CIPHER_ID: C I P H E R '_' I D;
-K_CIPHER_KEY_SEED: C I P H E R '_' K E Y '_' S E E D;
 K_CHECK: C H E C K;
 K_COLLATE: C O L L A T E;
 K_COLUMN: C O L U M N;
@@ -804,7 +818,6 @@ K_DEFERRABLE: D E F E R R A B L E;
 K_DEFERRED: D E F E R R E D;
 K_DELETE: D E L E T E;
 K_DESC: D E S C;
-K_DESCRIPTION: D E S C R I P T I O N;
 K_DETACH: D E T A C H;
 K_DISTINCT: D I S T I N C T;
 K_DROP: D R O P;
@@ -862,7 +875,6 @@ K_PRAGMA: P R A G M A;
 K_PRIMARY: P R I M A R Y;
 K_QUERY: Q U E R Y;
 K_RAISE: R A I S E;
-K_REAL_NAME: R E A L '_' N A M E;
 K_RECURSIVE: R E C U R S I V E;
 K_REFERENCES: R E F E R E N C E S;
 K_REGEXP: R E G E X P;
@@ -878,7 +890,6 @@ K_SAVEPOINT: S A V E P O I N T;
 K_SELECT: S E L E C T;
 K_SET: S E T;
 K_SHOW: S H O W;
-K_STATE: S T A T E;
 K_TABLE: T A B L E;
 K_TEMP: T E M P;
 K_TEMPORARY: T E M P O R A R Y;

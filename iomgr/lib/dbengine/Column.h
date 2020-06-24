@@ -380,6 +380,13 @@ public:
     void setLastSystemTrid(std::uint64_t lastSystemTrid);
 
     /**
+     * Sets last system TRID value. Used by ALTER TABLE SET NEXT_TRID.
+     * @param lastSystemTrid Last system TRID value.
+     * @throw DatabaseError if new value is less or equal to the current value.
+     */
+    void setLastUserTrid(std::uint64_t lastUserTrid);
+
+    /**
      * Generates next block ID.
      * @return Next block ID.
      */

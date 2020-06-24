@@ -583,3 +583,51 @@ TEST(DDL, CreateTable)
         ASSERT_EQ(rowLength, 0U);
     }
 }
+
+TEST(DDL, SetTableAttributes_NextTrid)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    const std::string statement1("CREATE TABLE DDL_TEST_TABLE_444 (TEST_INTEGER INTEGER)");
+    parser_ns::SqlParser parser1(statement1);
+    parser1.parse();
+
+    const auto createTableRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser1.findStatement(0));
+
+    requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response1;
+    siodb::protobuf::CustomProtobufInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response1, inputStream);
+
+    EXPECT_EQ(response1.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response1.message_size(), 0);
+    EXPECT_FALSE(response1.has_affected_row_count());
+    EXPECT_EQ(response1.response_id(), 0U);
+    EXPECT_EQ(response1.response_count(), 1U);
+
+    /// ----------- ALTER TABLE -----------
+    const std::string statement2("ALTER TABLE DDL_TEST_TABLE_444 SET NEXT_TRID=222");
+    parser_ns::SqlParser parser2(statement2);
+    parser2.parse();
+
+    const auto alterTableRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser2.findStatement(0));
+
+    requestHandler->executeRequest(*alterTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response2;
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response2, inputStream);
+    EXPECT_EQ(response2.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response2.message_size(), 0);
+    EXPECT_FALSE(response2.has_affected_row_count());
+    EXPECT_EQ(response2.response_id(), 0U);
+    EXPECT_EQ(response2.response_count(), 1U);
+}

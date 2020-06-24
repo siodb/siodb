@@ -473,6 +473,13 @@ public:
     void setLastSystemTrid(std::uint64_t lastSystemTrid);
 
     /**
+     * Sets last user TRID value. Used by ALTER TABLE SET NEXT_TRID.
+     * @param lastUserTrid Last user TRID value.
+     * @throw DatabaseError if new value is less or equal to the current value.
+     */
+    void setLastUserTrid(std::uint64_t lastUserTrid);
+
+    /**
      * Returns existing column definition object.
      * @param columnDefinitionId Column definition ID.
      * @throw DatabaseError if column definition doesn't exist.

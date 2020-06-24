@@ -297,4 +297,39 @@ void RequestHandler::executeRenameTableRequest(iomgr_protocol::DatabaseEngineRes
     sendNotImplementedYet(response);
 }
 
+void RequestHandler::executeSetTableAttributesRequest(
+        iomgr_protocol::DatabaseEngineResponse& response,
+        [[maybe_unused]] const requests::SetTableAttributesRequest& request)
+{
+    response.set_has_affected_row_count(false);
+
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
+
+    if (!isValidDatabaseObjectName(request.m_table))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
+
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    const auto table = database->findTableChecked(request.m_table);
+
+    if (request.m_nextTrid) {
+        const auto nextTrid = *request.m_nextTrid;
+        if (nextTrid == 0) {
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidNextUserTrid, database->getName(),
+                    table->getName(), nextTrid);
+        }
+        try {
+            table->setLastUserTrid(nextTrid - 1);
+        } catch (std::exception& ex) {
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidNextUserTrid, database->getName(),
+                    table->getName(), nextTrid);
+        }
+    }
+
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+}
+
 }  // namespace siodb::iomgr::dbengine

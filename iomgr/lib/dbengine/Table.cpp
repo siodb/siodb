@@ -445,6 +445,12 @@ void Table::setLastSystemTrid(std::uint64_t lastSystemTrid)
     m_masterColumn->setLastSystemTrid(lastSystemTrid);
 }
 
+void Table::setLastUserTrid(std::uint64_t lastUserTrid)
+{
+    // NOTE: This function cannot be moved to header or inlined due to compilation dependencies.
+    m_masterColumn->setLastUserTrid(lastUserTrid);
+}
+
 ColumnDefinitionPtr Table::findColumnDefinitionChecked(std::uint64_t columnDefinitionId)
 {
     const auto columnDefinitionRecord = m_database.findColumnDefinitionRecord(columnDefinitionId);

@@ -170,6 +170,9 @@ MSG Error SessionDoesNotExist  Session '%1%' doesn't exist
 MSG Error ConstraintNotSupported   Constraint type #%4% is not supported (constraint definition '%1%'.%2% (%3%.%2%)
 MSG Error ConstraintNotSupported2  Constraint type #%4% is not supported
 
+# INVALID ATTRIBUTES
+MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2%'
+
 ##########################################
 # INTERNAL MESSAGES
 ##########################################
@@ -412,5 +415,8 @@ MSG Error InvalidIndexColumns  Index '%1%'.'%2%'.'%3%' has empty column list
 # User
 ID -107000
 MSG Error InvalidUserForUserAccessKey Invalid user #%1% for the user access key #%2%
+
+# Invalid attributes
+MSG Error InvalidLastUserTrid Invalid last user TRID %5% for the table '%1%'.'%2%' (%3%.%4%)
 
 # END

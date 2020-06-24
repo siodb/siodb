@@ -268,6 +268,26 @@ TEST(DDL, AlterTableRenameToIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
+TEST(DDL, AlterTableSetTableAttributes)
+{
+    // Parse statement and prepare request
+    const std::string statement("ALTER TABLE my_database.my_table SET next_trid=288449");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSetTableAttributes);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::SetTableAttributesRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_table, "MY_TABLE");
+    ASSERT_TRUE(request.m_nextTrid.has_value());
+    EXPECT_EQ(*request.m_nextTrid, 288449U);
+}
+
 TEST(DDL, AlterTableAddColumn)
 {
     // Parse statement and prepare request

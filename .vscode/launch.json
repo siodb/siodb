@@ -94,7 +94,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=*"
+                "--gtest_filter=DDL.SetTableAttributes_NextTrid"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

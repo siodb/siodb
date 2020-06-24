@@ -157,6 +157,21 @@ private:
     static requests::DBEngineRequestPtr createDropTableRequest(antlr4::tree::ParseTree* node);
 
     /**
+     * Creates a ALTER TABLE RENAME request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER TABLE RENAME request.
+     */
+    static requests::DBEngineRequestPtr createRenameTableRequest(antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates a ALTER TABLE SET attributes request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER TABLE SET attributes request.
+     */
+    static requests::DBEngineRequestPtr createSetTableAttributesRequest(
+            antlr4::tree::ParseTree* node);
+
+    /**
      * Creates a ALTER TABLE request.
      * @param node Parse tree node with SQL statement.
      * @return ALTER TABLE request.
@@ -197,13 +212,6 @@ private:
      * @return ALTER TABLE ALTER COLUMN request.
      */
     static requests::DBEngineRequestPtr createAlterColumnRequest(antlr4::tree::ParseTree* node);
-
-    /**
-     * Creates a ALTER TABLE RENAME request.
-     * @param node Parse tree node with SQL statement.
-     * @return ALTER TABLE RENAME request.
-     */
-    static requests::DBEngineRequestPtr createRenameTableRequest(antlr4::tree::ParseTree* node);
 
     /**
      * Creates a CREATE USER request.

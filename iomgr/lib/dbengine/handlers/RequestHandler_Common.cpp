@@ -153,6 +153,11 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::RenameTableRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kSetTableAttributes: {
+                executeSetTableAttributesRequest(response,
+                        dynamic_cast<const requests::SetTableAttributesRequest&>(request));
+                break;
+            }
             case requests::DBEngineRequestType::kAddColumn: {
                 executeAddColumnRequest(
                         response, dynamic_cast<const requests::AddColumnRequest&>(request));

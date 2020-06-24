@@ -20,7 +20,12 @@ namespace helpers {
  * @param s A string.
  * @return Same string.
  */
-std::string& unquoteString(std::string& s);
+inline std::string& unquoteString(std::string& s)
+{
+    s.pop_back();
+    s.erase(0, 1);
+    return s;
+}
 
 /**
  * Removes leading and trailing quotes from string.
@@ -28,7 +33,12 @@ std::string& unquoteString(std::string& s);
  * @param s A string.
  * @return Same string.
  */
-std::string&& unquoteString(std::string&& s);
+inline std::string&& unquoteString(std::string&& s)
+{
+    s.pop_back();
+    s.erase(0, 1);
+    return std::move(s);
+}
 
 /**
  * The recursive part of the numberOfStatements() method.
@@ -68,7 +78,7 @@ antlr4::tree::ParseTree* findNonTerminal(antlr4::tree::ParseTree* node, std::siz
  * Finds the first terminal from a given point of the tree
  * under a non-terminal node of a given type.
  * @param node Place where we start the search.
- * @param nonTerminalType nnnn
+ * @param nonTerminalType Type of the upper-level non-terminal.
  * @param type Type of the terminal as it is defined in the SQLiteParser class.
  * @return Node of the terminal, if found, nullptr otherwise.
  */

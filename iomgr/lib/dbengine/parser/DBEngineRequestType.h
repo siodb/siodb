@@ -26,6 +26,7 @@ enum class DBEngineRequestType {
     kCreateTable,
     kDropTable,
     kRenameTable,
+    kSetTableAttributes,
     kAddColumn,
     kDropColumn,
     kAlterColumn,
