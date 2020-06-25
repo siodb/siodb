@@ -271,8 +271,10 @@ all: \
 print-config:
 	@echo -e "\n================================================================================\n"\
 	"Build Settings:\n"\
-	"\nDISTRO=$(DISTRO) $(DISTRO_VERSION)\n"\
-	"CC=$(CC)\n"\
+	"\nDistro: $(DISTRO) $(DISTRO_VERSION)\n"\
+	"Debug build: $(DEBUG)\n"\
+	"Build unit tests: $(BUILD_UNIT_TESTS)\n"\
+	"\nCC=$(CC)\n"\
 	"CXX=$(LD)\n"\
 	"LD=$(LD)\n"\
 	"\nCFLAGS=$(CFLAGS)\n\n"\

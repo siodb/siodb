@@ -7,7 +7,17 @@
 include ../mk/Prolog.mk
 include $(MK)/MainTargets.mk
 
+ifeq ($(BUILD_UNIT_TESTS),1)
+
 $(MAIN_TARGETS):
 	$(MAKE) $(MAKECMDGOALS) -C lib
 	$(MAKE) $(MAKECMDGOALS) -C app
 	$(MAKE) $(MAKECMDGOALS) -C test
+
+else
+
+$(MAIN_TARGETS):
+	$(MAKE) $(MAKECMDGOALS) -C lib
+	$(MAKE) $(MAKECMDGOALS) -C app
+
+endif

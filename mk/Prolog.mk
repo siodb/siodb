@@ -4,8 +4,11 @@
 
 # Initial definitions
 
-# debug build by default
+# Debug build by default
 DEBUG:=1
+
+# Build unit tests by default
+BUILD_UNIT_TESTS:=1
 
 # Makefile dir
 MK:=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
