@@ -3,6 +3,7 @@
 - [Environment Preparation](#environment-preparation)
   - [Ubuntu 18.04 LTS](#ubuntu-1804-lts)
   - [Ubuntu 20.04 LTS](#ubuntu-2004-lts)
+  - [Debian 10](#debian-10)
   - [CentOS 7](#centos-7)
   - [CentOS 8](#centos-8)
   - [RHEL 7](#rhel-7)
@@ -58,6 +59,43 @@ sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
     /usr/lib/llvm-10/bin/git-clang-format 1
 sudo update-alternatives --set clang-format /usr/lib/llvm-10/bin/clang-format
 sudo update-alternatives --set git-clang-format /usr/lib/llvm-10/bin/git-clang-format
+
+# Link Python 2 (required by Google Test fuse script)
+sudo ln -s /usr/bin/python2 /usr/bin/python
+```
+
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+
+### Debian 10
+
+Run following commands:
+
+```shell
+cd $HOME
+
+# Required tools and libraries
+sudo apt install -y build-essential cmake doxygen gdb git graphviz libboost1.67-dev \
+    libboost-log1.67-dev libboost-program-options1.67-dev libcurl4-openssl-dev \
+    libssl-dev openjdk-11-jdk-headless pkg-config python2 uuid-dev wget
+
+# Install clang-9. This one is for SLES, but works on the Debian 10 too.
+sudo apt install -y libncurses5
+mkdir /tmp/getllvm
+cd /tmp/getllvm
+wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+sudo mkdir -p /usr/local/lib
+sudo mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3 /usr/local/lib
+cd $HOME
+rm -rf /tmp/getllvm
+
+# Set up alternatives for the clang-format
+sudo update-alternatives --install /usr/bin/clang-format clang-format \
+    /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format 1
+sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
+    /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format 1
+sudo update-alternatives --set clang-format /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format
+sudo update-alternatives --set git-clang-format /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format
 
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
