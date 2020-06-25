@@ -360,6 +360,12 @@ cd siodb
 # CentOS 7/RHEL 7 ONLY: Enable devtoolset-8
 scl enable devtoolset-8 bash
 
+# Ubuntu 18.04 ONLY: Set compiler to gcc-8
+CC=gcc-8
+export CC
+CXX=g++-8
+export CXX
+
 # Install source code formatting hook for git
 cp -fv tools/git_hooks/siodb-clang-format.hook .git/hooks/pre-commit
 
