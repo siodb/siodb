@@ -423,7 +423,7 @@ tar xaf utfcpp-3.1.tar.xz
 cd utfcpp-3.1
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DUTF8_TESTS=Off ..
+cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUTF8_TESTS=Off ..
 make -j4
 sudo make install
 sudo ldconfig
@@ -440,7 +440,7 @@ tar xaf antlr4-cpp-runtime-4.8-source.tar.xz
 cd antlr4-cpp-runtime-4.8-source
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
 make -j4
 sudo make install
 sudo ldconfig
@@ -460,17 +460,18 @@ tar xaf date-20190911.tar.xz
 cd date-20190911
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_TZ_DB=ON \
+cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUSE_SYSTEM_TZ_DB=ON \
       -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
 make -j4
 sudo make install
+sudo ldconfig
 cd ../../..
 
 # Build and install xxHash library
 cd xxHash
 tar xaf xxHash-0.7.2.tar.xz
 cd xxHash-0.7.2
-make -j4
+CFLAGS=-g3 LDFLAGS=-g3 make -j4
 sudo make install
 sudo ldconfig
 cd ../..

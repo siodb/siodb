@@ -791,18 +791,24 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
             // Check for UNIQUE constraint
             terminal = helpers::findTerminal(constraintNode, SiodbParser::K_UNIQUE);
             if (terminal) {
-                // TODO(102): Parse columns
                 std::vector<std::string> columns;
+                columns.push_back(columnName);
                 constraints.emplace_back(std::make_unique<requests::UniqueConstraint>(
                         std::move(constraintName), std::move(columns)));
                 continue;
             }
 
             // Check for DEFAULT constraint
-            terminal = helpers::findTerminal(constraintNode, SiodbParser::K_DEFAULT);
-            if (terminal) {
-                // TODO(102): Parse default value
-                requests::ExpressionPtr defaultValue;
+            auto terminalAndIndex = helpers::findTerminalAndIndex(constraintNode,
+                    std::numeric_limits<std::size_t>::max(), SiodbParser::K_DEFAULT);
+            if (terminalAndIndex.first) {
+                const auto& nodes = terminalAndIndex.first->parent->children;
+                //DBG_LOG_DEBUG("Parsing default value for column " << columnName);
+                auto expressionIndex = terminalAndIndex.second + 1;
+                const auto terminalType = helpers::getTerminalType(nodes[expressionIndex]);
+                if (terminalType == SiodbParser::OPEN_PAR) ++expressionIndex;
+                ExpressionFactory exprFactory(false);
+                auto defaultValue = exprFactory.createExpression(nodes[expressionIndex]);
                 constraints.emplace_back(std::make_unique<requests::DefaultValueConstraint>(
                         std::move(constraintName), std::move(defaultValue)));
                 continue;
@@ -831,7 +837,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
             terminal = helpers::findTerminal(constraintNode, SiodbParser::K_CHECK);
             if (terminal) {
                 // TODO(102): Parse CHECK expression
-                std::string expression;
+                requests::ExpressionPtr expression;
                 constraints.emplace_back(std::make_unique<requests::CheckConstraint>(
                         std::move(constraintName), std::move(expression)));
                 continue;

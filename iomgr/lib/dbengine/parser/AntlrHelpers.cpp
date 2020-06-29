@@ -86,6 +86,28 @@ antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* node, std::size_t
     return nullptr;
 }
 
+std::pair<antlr4::tree::ParseTree*, std::size_t> findTerminalAndIndex(
+        antlr4::tree::ParseTree* node, std::size_t index, std::size_t type) noexcept
+{
+    constexpr auto kMaxIndex = std::numeric_limits<std::size_t>::max();
+    // If this node is a terminal, check its type.
+    // If type doesn't match, there is no way forward.
+    if (!node) return std::make_pair(nullptr, kMaxIndex);
+    const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
+    if (terminal) {
+        const auto symbol = terminal->getSymbol();
+        return (symbol && symbol->getType() == type) ? std::make_pair(node, index)
+                                                     : std::make_pair(nullptr, kMaxIndex);
+    }
+
+    // Search for the terminal recursively.
+    for (std::size_t i = 0, n = node->children.size(); i < n; ++i) {
+        const auto result1 = findTerminalAndIndex(node->children[i], i, type);
+        if (result1.first) return result1;
+    }
+    return std::make_pair(nullptr, kMaxIndex);
+}
+
 std::size_t getNonTerminalType(antlr4::tree::ParseTree* node) noexcept
 {
     const auto context = dynamic_cast<const antlr4::RuleContext*>(node);

@@ -15,8 +15,8 @@ class DBEngineRequestFactory {
 public:
     /**
      * Creates database engine request from a statement.
-     * @param mode A statement node.
-     * @return DBE request filled with the parsed data.
+     * @param node A statement node.
+     * @return Database engine request filled with the parsed data.
      */
     static requests::DBEngineRequestPtr createRequest(antlr4::tree::ParseTree* node);
 

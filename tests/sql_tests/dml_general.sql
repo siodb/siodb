@@ -236,5 +236,11 @@ alter table attr_test set next_trid=222;
 insert into attr_test values (2);
 select * from attr_test;
 
+create table default_value_test(a integer not null default 100, b integer not null);
+insert into default_value_test values(1, 1);
+-- doesn't work yet
+-- insert into default_value_test(b) values(2);
+select * from default_value_test;
+
 use database sys ;
 drop database erp_camellia128 ;

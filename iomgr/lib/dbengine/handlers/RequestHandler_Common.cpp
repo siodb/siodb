@@ -483,7 +483,7 @@ ColumnSpecification RequestHandler::convertTableColumnDefinition(
             case ConstraintType::kDefaultValue: {
                 const auto& src =
                         dynamic_cast<const requests::DefaultValueConstraint&>(*constraint);
-                constraintSpecs.emplace_back(std::string(src.m_name), ConstraintType::kNotNull,
+                constraintSpecs.emplace_back(std::string(src.m_name), ConstraintType::kDefaultValue,
                         requests::ExpressionPtr(src.m_value->clone()), std::nullopt);
                 break;
             }

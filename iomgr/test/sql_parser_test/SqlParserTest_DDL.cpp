@@ -152,7 +152,43 @@ TEST(DDL, DropDatabaseIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
-TEST(DDL, CreateTable)
+TEST(DDL, CreateTable1)
+{
+    // Parse statement and prepare request
+    const std::string statement(
+            "CREATE TABLE my_database.my_table (\n"
+            "  TEXT_COL TEXT DEFAULT 'Hello, World!!!',\n"
+            "  NUMERIC_COL1 DOUBLE DEFAULT 5.0,\n"
+            "  NUMERIC_COL2 DOUBLE DEFAULT -5.0,\n"
+            "  NUMERIC_COL3 DOUBLE DEFAULT (5.0 + 10.0)\n"
+            ");");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+    //parser.dump(std::cout);
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateTable);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::CreateTableRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_table, "MY_TABLE");
+
+    // Check columns
+    ASSERT_EQ(request.m_columns.size(), 4U);
+    EXPECT_EQ(request.m_columns[0].m_name, "TEXT_COL");
+    EXPECT_EQ(request.m_columns[1].m_name, "NUMERIC_COL1");
+    EXPECT_EQ(request.m_columns[2].m_name, "NUMERIC_COL2");
+    EXPECT_EQ(request.m_columns[3].m_name, "NUMERIC_COL3");
+    EXPECT_EQ(request.m_columns[0].m_dataType, siodb::COLUMN_DATA_TYPE_TEXT);
+    EXPECT_EQ(request.m_columns[1].m_dataType, siodb::COLUMN_DATA_TYPE_DOUBLE);
+    EXPECT_EQ(request.m_columns[2].m_dataType, siodb::COLUMN_DATA_TYPE_DOUBLE);
+    EXPECT_EQ(request.m_columns[3].m_dataType, siodb::COLUMN_DATA_TYPE_DOUBLE);
+}
+
+TEST(DDL, CreateTable2)
 {
     // Parse statement and prepare request
     const std::string statement(
@@ -165,6 +201,7 @@ TEST(DDL, CreateTable)
             ");");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+    //parser.dump(std::cout);
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 

@@ -67,6 +67,19 @@ antlr4::tree::ParseTree* findStatement(const antlr4::tree::ParseTree* node,
 antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* node, std::size_t type) noexcept;
 
 /**
+ * Finds the first terminal from a given point of the tree and its index in the parent.
+ * @param node Place where we start the search.
+ * @param index Node index.
+ * @param type Type of the terminal.
+ * @return Pair, consisting of:
+ *         - first: node of the terminal, if found, nullptr otherwise.
+ *         - second: terminal index in the parent, or index if node is terminal itself
+ *           or std::numeric_limits<std::size_t>::max() if not found
+ */
+std::pair<antlr4::tree::ParseTree*, std::size_t> findTerminalAndIndex(
+        antlr4::tree::ParseTree* node, std::size_t index, std::size_t type) noexcept;
+
+/**
  * Finds the first non-terminal from a given point of the tree.
  * @param node Place where we start the search.
  * @param type Type of the non-terminal.

@@ -678,14 +678,14 @@ struct CheckConstraint : public Constraint {
      * @param name Constraint name.
      * @param expression Expression to be checked.
      */
-    explicit CheckConstraint(std::string&& name, std::string&& expression) noexcept
+    explicit CheckConstraint(std::string&& name, ExpressionPtr&& expression) noexcept
         : Constraint(ConstraintType::kCheck, std::move(name))
         , m_expression(std::move(expression))
     {
     }
 
     /** Expression to be checked */
-    const std::string m_expression;
+    const ExpressionPtr m_expression;
 };
 
 /** Collation types */

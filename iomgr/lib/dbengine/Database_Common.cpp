@@ -521,7 +521,7 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
         // Check that each type of constraint is specified only once
         for (const auto& e : constraintCounts) {
             if (e.second > 1) {
-                DBG_LOG_DEBUG("Column: " << columnSpec.m_name);
+                DBG_LOG_DEBUG("Errors in the column " << columnSpec.m_name);
                 errors.push_back(makeDatabaseError(
                         IOManagerMessageId::kErrorCreateTableDuplicateColumnConstraintType,
                         getConstaintTypeName(static_cast<ConstraintType>(e.first)),

@@ -584,6 +584,64 @@ TEST(DDL, CreateTable)
     }
 }
 
+TEST(DDL, CreateTableWithDefaultValue)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    const std::string statement(
+            "CREATE TABLE DDL_TEST_TABLE_WITH_DEFAULT_VALUE (id INTEGER DEFAULT 5)");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto createTableRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::CustomProtobufInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response.message_size(), 0);
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+}
+
+TEST(DDL, CreateTableWithNotNullAndDefaultValue)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    const std::string statement(
+            "CREATE TABLE DEFAULT_VALUE_TEST(A integer not null default 100, B integer not null)");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto createTableRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::CustomProtobufInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response.message_size(), 0);
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+}
+
 TEST(DDL, SetTableAttributes_NextTrid)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();

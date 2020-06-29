@@ -191,11 +191,11 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
                 m_name, columnValues.size(), columnCount - 1);
     }
 
-    auto columns = getColumnsOrderedByPosition();
-    std::vector<Variant> orderedColumnValues(columns.size() - 1);
+    const auto& columnsByPosition = m_currentColumns.byPosition();
+    std::vector<Variant> orderedColumnValues(columnCount - 1);
 
     // vector<bool> was always suboptimal, so use vector<char>
-    std::vector<char> columnPresent(columns.size());
+    std::vector<char> columnPresent(columnCount);
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
     const auto& columnsByName = m_currentColumns.byName();
 
@@ -210,9 +210,9 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
 
         const auto it = columnsByName.find(columnName);
         if (it == columnsByName.end()) {
+            const auto column = columnsByPosition.find(0)->m_column;
             errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorColumnDoesNotExist,
-                    columns[0]->getTable().getDatabaseName(), columns[0]->getTableName(),
-                    columnName));
+                    column->getTable().getDatabaseName(), column->getTableName(), columnName));
             continue;
         }
 
@@ -234,6 +234,12 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
     }
 
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
+
+    for (std::size_t i = 0; i < columnCount; ++i) {
+        if (columnPresent[i]) continue;
+        const auto column = columnsByPosition.find(i)->m_column;
+        // TODO: put default value here
+    }
 
     return doInsertRowUnlocked(orderedColumnValues, transactionParameters, customTrid);
 }
@@ -597,8 +603,8 @@ std::optional<std::uint32_t> Table::getColumnPositionUnlocked(uint64_t columnId)
     return result;
 }
 
-std::optional<std::uint32_t> Table::getColumnPositionUnlocked(const std::string& columnName) const
-        noexcept
+std::optional<std::uint32_t> Table::getColumnPositionUnlocked(
+        const std::string& columnName) const noexcept
 {
     std::optional<std::uint32_t> result;
     const auto& index = m_currentColumns.byName();

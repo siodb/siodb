@@ -57,7 +57,7 @@ function _prepare {
 function _StartSiodb {
   _log "INFO" "Starting default Siodb instance..."
   ${SIODB_PATH}/siodb --instance siodb --daemon
-  sleep 25
+  sleep 30
 }
 
 function _StopSiodb {

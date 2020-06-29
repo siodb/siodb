@@ -14,7 +14,7 @@
 namespace dbengine = siodb::iomgr::dbengine;
 namespace parser_ns = dbengine::parser;
 
-TEST(SqlParser_Query, UseDatabase)
+TEST(Query, UseDatabase)
 {
     // Parse statement and prepare request
     const std::string statement("USE DATABASE my_database");
@@ -31,7 +31,7 @@ TEST(SqlParser_Query, UseDatabase)
     ASSERT_EQ(request.m_database, "MY_DATABASE");
 }
 
-TEST(SqlParser_Query, ShowDatabases)
+TEST(Query, ShowDatabases)
 {
     // Parse statement and prepare request
     const std::string statement("SHOW DATABASES");

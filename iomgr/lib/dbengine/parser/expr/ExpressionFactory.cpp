@@ -26,12 +26,22 @@ ExpressionFactory::ExpressionFactory(bool allowColumnExpressions) noexcept
 
 requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseTree* node) const
 {
-    auto rule = helpers::getNonTerminalType(node);
+    const auto rule = helpers::getNonTerminalType(node);
+    const auto childCount = node->children.size();
 
     // Expect literal or column name
     switch (rule) {
+        case SiodbParser::RuleSigned_number: {
+            std::size_t literalNodeIndex = 0;
+            bool negate = false;
+            if (childCount > 1) {
+                literalNodeIndex = 1;
+                negate = helpers::getTerminalType(node->children[0]) == SiodbParser::MINUS;
+            }
+            return createConstant(node, literalNodeIndex, negate);
+        }
+        case SiodbParser::RuleLiteral_value: return createConstant(node);
         case SiodbParser::RuleExpr: {
-            const auto childCount = node->children.size();
             if (childCount == 1) {
                 // Only simple expression could be in this case
                 return createSimpleExpression(node->children[0]);
@@ -73,25 +83,27 @@ requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseT
     }
 
     throw std::invalid_argument("Node is not valid expression or not supported");
-}
+}  // namespace siodb::iomgr::dbengine::parser
 
-requests::ExpressionPtr ExpressionFactory::createNumericConstant(const antlr4::Token* token) const
+requests::ExpressionPtr ExpressionFactory::createNumericConstant(
+        const antlr4::Token* token, bool negate)
 {
-    auto value = token->getText();
+    const auto text = token->getText();
     try {
         std::size_t end = 0;
-        const auto n = std::stoull(value, &end);
-        if (value.size() == end) {
-            Variant value;
+        auto n = std::stoull(text, &end);
+        if (text.size() == end) {
+            Variant v;
+            if (negate) n = -n;
             if (n > std::numeric_limits<std::uint32_t>::max())
-                value = static_cast<std::uint64_t>(n);
+                v = static_cast<std::uint64_t>(n);
             else if (n > std::numeric_limits<std::uint16_t>::max())
-                value = static_cast<std::uint32_t>(n);
+                v = static_cast<std::uint32_t>(n);
             else if (n > std::numeric_limits<std::uint8_t>::max())
-                value = static_cast<std::uint16_t>(n);
+                v = static_cast<std::uint16_t>(n);
             else
-                value = static_cast<std::uint8_t>(n);
-            return std::make_unique<requests::ConstantExpression>(std::move(value));
+                v = static_cast<std::uint8_t>(n);
+            return std::make_unique<requests::ConstantExpression>(std::move(v));
         }
     } catch (...) {
         // Ignore errors, try more variants
@@ -100,22 +112,22 @@ requests::ExpressionPtr ExpressionFactory::createNumericConstant(const antlr4::T
     // Try signed integer
     try {
         std::size_t end = 0;
-        const auto n = std::stoll(value, &end);
-        if (value.size() == end) {
-            Variant value;
+        auto n = std::stoll(text, &end);
+        if (text.size() == end) {
+            Variant v;
+            if (negate) n = -n;
             if (n < std::numeric_limits<std::int32_t>::min()
                     || n > std::numeric_limits<std::int32_t>::max())
-                value = static_cast<std::int64_t>(n);
+                v = static_cast<std::int64_t>(n);
             else if (n < std::numeric_limits<std::int16_t>::min()
                      || n > std::numeric_limits<std::int16_t>::max())
-                value = static_cast<std::int32_t>(n);
+                v = static_cast<std::int32_t>(n);
             else if (n < std::numeric_limits<std::int8_t>::min()
                      || n > std::numeric_limits<std::int8_t>::max())
-                value = static_cast<std::int16_t>(n);
+                v = static_cast<std::int16_t>(n);
             else
-                value = static_cast<std::int8_t>(n);
-
-            return std::make_unique<requests::ConstantExpression>(std::move(value));
+                v = static_cast<std::int8_t>(n);
+            return std::make_unique<requests::ConstantExpression>(std::move(v));
         }
     } catch (...) {
         // Ignore errors, try more variants
@@ -125,7 +137,8 @@ requests::ExpressionPtr ExpressionFactory::createNumericConstant(const antlr4::T
 
     // Try double
     try {
-        const auto n = std::stod(value);
+        auto n = std::stod(text);
+        if (negate) n = -n;
         return std::make_unique<requests::ConstantExpression>(n);
     } catch (...) {
         // No more variants to try, report error
@@ -133,13 +146,12 @@ requests::ExpressionPtr ExpressionFactory::createNumericConstant(const antlr4::T
     }
 }
 
-requests::ExpressionPtr ExpressionFactory::createStringConstant(const antlr4::Token* token) const
+requests::ExpressionPtr ExpressionFactory::createStringConstant(const antlr4::Token* token)
 {
-    return std::make_unique<requests::ConstantExpression>(
-            Variant(helpers::unquoteString(token->getText())));
+    return std::make_unique<requests::ConstantExpression>(helpers::unquoteString(token->getText()));
 }
 
-requests::ExpressionPtr ExpressionFactory::createBinaryConstant(const antlr4::Token* token) const
+requests::ExpressionPtr ExpressionFactory::createBinaryConstant(const antlr4::Token* token)
 {
     const auto hexLiteral = token->getText();
     // Exclude leading "x'" and trailing "'"
@@ -150,15 +162,14 @@ requests::ExpressionPtr ExpressionFactory::createBinaryConstant(const antlr4::To
         boost::algorithm::unhex(hexLiteral.data() + 2, hexLiteral.data() + hexLiteral.length() - 1,
                 binaryValue.data());
     }
-    return std::make_unique<requests::ConstantExpression>(Variant(std::move(binaryValue)));
+    return std::make_unique<requests::ConstantExpression>(std::move(binaryValue));
 }
 
-requests::ExpressionPtr ExpressionFactory::createConstant(const antlr4::Token* token) const
+requests::ExpressionPtr ExpressionFactory::createConstant(const antlr4::Token* token, bool negate)
 {
-    auto tokenType = token->getType();
-
+    const auto tokenType = token->getType();
     switch (tokenType) {
-        case SiodbParser::NUMERIC_LITERAL: return createNumericConstant(token);
+        case SiodbParser::NUMERIC_LITERAL: return createNumericConstant(token, negate);
         case SiodbParser::STRING_LITERAL: return createStringConstant(token);
         case SiodbParser::BLOB_LITERAL: return createBinaryConstant(token);
         case SiodbParser::K_NULL: return std::make_unique<requests::ConstantExpression>();
@@ -174,25 +185,28 @@ requests::ExpressionPtr ExpressionFactory::createConstant(const antlr4::Token* t
             return std::make_unique<requests::ConstantExpression>(std::move(value));
         }
         case SiodbParser::K_TRUE:
-        case SiodbParser::K_FALSE:
+        case SiodbParser::K_FALSE: {
             return std::make_unique<requests::ConstantExpression>(tokenType == SiodbParser::K_TRUE);
+        }
         default: throw std::invalid_argument("Invalid constant type");
     }
 }
 
-requests::ExpressionPtr ExpressionFactory::createConstant(const antlr4::tree::ParseTree* node) const
+requests::ExpressionPtr ExpressionFactory::createConstant(
+        const antlr4::tree::ParseTree* node, std::size_t literalNodeIndex, bool negate)
 {
-    const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node->children.front());
-    if (!terminal) {
-        throw std::invalid_argument(
-                "Expression malformed: Literal node has no terminal after 2 childs deep");
+    const auto terminal =
+            dynamic_cast<antlr4::tree::TerminalNode*>(node->children.at(literalNodeIndex));
+    if (terminal) {
+        const auto symbol = terminal->getSymbol();
+        if (symbol) return createConstant(symbol, negate);
+        throw std::invalid_argument("Expression malformed: terminal has no symbol");
     }
-    const auto symbol = terminal->getSymbol();
-    if (!symbol) throw std::invalid_argument("Expression malformed: terminal has no symbol");
-    return createConstant(symbol);
+    throw std::invalid_argument(
+            "Expression malformed: Literal node has no terminal after 2 childs deep");
 }
 
-bool ExpressionFactory::isNonLogicalBinaryOperator(std::size_t terminalType) const noexcept
+bool ExpressionFactory::isNonLogicalBinaryOperator(std::size_t terminalType) noexcept
 {
     switch (terminalType) {
         case SiodbParser::LT:
@@ -220,7 +234,7 @@ bool ExpressionFactory::isNonLogicalBinaryOperator(std::size_t terminalType) con
     }
 }
 
-bool ExpressionFactory::isLogicalBinaryOperator(std::size_t terminalType) const noexcept
+bool ExpressionFactory::isLogicalBinaryOperator(std::size_t terminalType) noexcept
 {
     switch (terminalType) {
         case SiodbParser::K_AND:
@@ -238,11 +252,10 @@ requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
     }
 
     std::string tableName;
-    std::string columnName;
-
     if (tableNode)
         tableName = boost::to_upper_copy(helpers::getAnyNameText(tableNode->children.at(0)));
 
+    std::string columnName;
     if (columnNode)
         columnName = boost::to_upper_copy(helpers::getAnyNameText(columnNode->children.at(0)));
     else
@@ -391,7 +404,7 @@ requests::ExpressionPtr ExpressionFactory::createNonLogicalBinaryOperator(
     }
 }
 
-bool ExpressionFactory::checkInOperator(const antlr4::tree::ParseTree* node) const noexcept
+bool ExpressionFactory::isInOperator(const antlr4::tree::ParseTree* node) noexcept
 {
     if (node->children.size() < 5) return false;
 
@@ -455,7 +468,7 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
         antlr4::tree::ParseTree* node) const
 {
     const auto childCount = node->children.size();
-    if (checkInOperator(node))
+    if (isInOperator(node))
         return createInOperator(node);
     else if (childCount == 1) {
         const auto childNode = node->children[0];
