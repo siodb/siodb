@@ -11,11 +11,13 @@ TARGET_LIB:=siocli
 
 CXX_SRC:= \
 	Client.cpp  \
-	Siocli.cpp
+	Siocli.cpp \
+	SqlDump.cpp
 
 CXX_HDR:= \
 	Client.h  \
 	Siocli.h  \
-	internal/ClientInternal.h
+	internal/ClientInternal.h  \
+	SqlDump.h
 
 include $(MK)/Main.mk

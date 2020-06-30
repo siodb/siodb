@@ -6,6 +6,7 @@
 
 // Project headers
 #include "Client.h"
+#include "SqlDump.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -96,8 +97,14 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()("user,u",
                 boost::program_options::value<std::string>()->default_value(osUserName),
                 "User name");
+        desc.add_options()("verify-certificates,V",
+                boost::program_options::value<std::string>()->default_value(osUserName),
+                "Verify sertificates");
         desc.add_options()("plaintext,P", "Use plaintext connection");
         desc.add_options()("no-echo,N", "Do not commands if not on the terminal");
+        desc.add_options()("export,e", boost::program_options::value<std::string>(),
+                "Export selected database SQL dump");
+        desc.add_options()("export-all,E", "Export all databases SQL dump");
         desc.add_options()("help,h", "Produce help message");
 
         // Parse options
@@ -112,6 +119,14 @@ extern "C" int siocliMain(int argc, char** argv)
             return 0;
         }
 
+        const auto exportDatabase = vm.count("export") > 0;
+        const auto exportAllDatabases = vm.count("export-all") > 0;
+
+        if (exportDatabase && exportAllDatabases) {
+            std::cout << "Having both '--export' and '--export-all' is invalid" << std::endl;
+            return 1;
+        }
+
         // Handle options
         ClientParameters params;
         params.m_instance = vm["admin"].as<std::string>();
@@ -123,6 +138,9 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_identityKey = loadUserIdentityKey(identityFile.c_str());
         params.m_stdinIsTerminal = stdinIsTerminal;
         params.m_echoCommandsWhenNotOnATerminal = vm.count("no-echo") == 0;
+        params.m_verifyCertificates = vm.count("verify-certificates") > 0;
+
+        if (exportDatabase) params.m_exportDatabaseName = vm["export"].as<std::string>();
 
         if (vm.count("plaintext") > 0)
             params.m_encryption = false;
@@ -131,6 +149,8 @@ extern "C" int siocliMain(int argc, char** argv)
             // Default admin connection - non secure
             params.m_encryption = params.m_instance.empty();
         }
+
+        if (exportDatabase || exportAllDatabases) return exportSqlDump(params);
 
         // Print logo
         std::cout << "Siodb client v." << SIODB_VERSION_MAJOR << '.' << SIODB_VERSION_MINOR << '.'
@@ -170,6 +190,44 @@ std::string loadUserIdentityKey(const char* path)
         stdext::throw_system_error("Can't read user identity key");
 
     return key;
+}
+
+int exportSqlDump(const ClientParameters& params)
+{
+    std::unique_ptr<siodb::io::IoBase> connectionIo;
+    std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
+    if (params.m_instance.empty()) {
+        auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
+
+        if (params.m_encryption) {
+            tlsClient = std::make_unique<siodb::crypto::TlsClient>();
+
+            if (params.m_verifyCertificates) tlsClient->enableCertificateVerification();
+
+            auto tlsConnection = tlsClient->connectToServer(connectionFd);
+
+            auto x509Certificate = SSL_get_peer_certificate(tlsConnection->getSsl());
+            if (x509Certificate == nullptr)
+                throw siodb::crypto::OpenSslError("SSL_get_peer_certificate failed");
+
+            connectionIo = std::move(tlsConnection);
+        } else
+            connectionIo = std::make_unique<siodb::io::FdIo>(connectionFd, true);
+    } else {
+        // Admin connection is always non-secure
+        const auto instanceSocketPath = siodb::composeInstanceSocketPath(params.m_instance);
+        auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
+        connectionIo = std::make_unique<siodb::io::FdIo>(connectionFd, true);
+    }
+
+    authenticate(params.m_identityKey, params.m_user, *connectionIo);
+
+    if (params.m_exportDatabaseName.empty())
+        siodb::siocli::sqlDumpAllDatabases(*connectionIo, std::cout);
+    else
+        siodb::siocli::sqlDumpDatabase(*connectionIo, std::cout, params.m_exportDatabaseName);
+
+    return 0;
 }
 
 int commandPrompt(const ClientParameters& params)
@@ -274,9 +332,8 @@ int commandPrompt(const ClientParameters& params)
 
                     if (params.m_encryption) {
                         tlsClient = std::make_unique<siodb::crypto::TlsClient>();
-                        // Code below is for the certificate verification.
-                        // Uncommenting it will lead to refusing self-signed certificates
-                        // tlsClient->enableCertificateVerification();
+
+                        if (params.m_verifyCertificates) tlsClient->enableCertificateVerification();
 
                         auto tlsConnection = tlsClient->connectToServer(connectionFd);
 

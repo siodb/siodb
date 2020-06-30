@@ -26,7 +26,7 @@ const std::array<const char*, COLUMN_DATA_TYPE_MAX> kColumnDataTypeNames {
         "UINT32",
         "INT64",
         "UINT64",
-        "REAL",
+        "FLOAT",
         "DOUBLE",
         "TEXT",
         "NTEXT",

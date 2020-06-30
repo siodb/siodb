@@ -392,11 +392,11 @@ std::string RawDateTime::formatDefault() const
     int size;
     if (m_datePart.m_hasTimePart) {
         // String date month and day starts from 1. Internal format starts from 0
-        size = std::snprintf(buffer, kMaxDateTimeStringLength, kDefaultDateTimeScanString,
+        size = std::snprintf(buffer, kMaxDateTimeStringLength, kDefaultDateTimePrintString,
                 m_datePart.m_year, m_datePart.m_month + 1, m_datePart.m_dayOfMonth + 1,
                 m_timePart.m_hours, m_timePart.m_minutes, m_timePart.m_seconds, m_timePart.m_nanos);
     } else {
-        size = std::snprintf(buffer, kMaxDateStringLength, kDefaultDateScanString,
+        size = std::snprintf(buffer, kMaxDateStringLength, kDefaultDatePrintString,
                 m_datePart.m_year, m_datePart.m_month + 1, m_datePart.m_dayOfMonth + 1);
     }
     return std::string(buffer, size);

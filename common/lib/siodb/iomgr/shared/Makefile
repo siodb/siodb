@@ -75,6 +75,7 @@ CXX_HDR:= \
 	dbengine/Variant.h  \
 	dbengine/Variant_Error.h  \
 	dbengine/Variant_Type.h  \
+	dbengine/SystemObjectNames.h \
 	\
 	IOManagerExitCode.h
 

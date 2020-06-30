@@ -37,6 +37,12 @@ struct ClientParameters {
 
     /** Echo commands if not on a terminal */
     bool m_echoCommandsWhenNotOnATerminal = true;
+
+    /** Indicates that siocli should verify siodb certificates */
+    bool m_verifyCertificates = false;
+
+    /** Database name to export. Empty string means export all databases */
+    std::string m_exportDatabaseName;
 };
 
 /**
@@ -45,6 +51,13 @@ struct ClientParameters {
  * @return User's private key.
  */
 std::string loadUserIdentityKey(const char* path);
+
+/**
+ * Exporting SQL dump of current instance.
+ * @param params Client parameters.
+ * @return Exit code.
+ */
+int exportSqlDump(const ClientParameters& params);
 
 /**
  * Runs command line prompt.
