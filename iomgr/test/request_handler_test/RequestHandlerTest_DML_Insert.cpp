@@ -21,7 +21,7 @@ namespace parser_ns = dbengine::parser;
 
 // INSERT INTO SYS.TEST_ITEMS values ('TEST', 123.0)
 // SELECT NAME, PRICE AS PRICE_ALIAS FROM SYS.TEST_ITEMS
-TEST(DML_Insert, InsertSingleRecordToItems)
+TEST(DML_Insert, InsertSingleRecord)
 {
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
@@ -103,9 +103,9 @@ TEST(DML_Insert, InsertSingleRecordToItems)
     }
 }
 
-// INSERT INTO SYS.TEST_ITEMS_2(name) values ('TEST')
-// SELECT NAME, PRICE AS PRICE_ALIAS FROM SYS.TEST_ITEMS_2
-TEST(DML_Insert, DISABLED_InsertSingleRecordToItemsWithDefaultValue)
+// INSERT INTO SYS.TEST_ITEMS_DV_1(name) values ('TEST')
+// SELECT NAME, PRICE AS PRICE_ALIAS FROM SYS.TEST_ITEMS_DV_1
+TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
 {
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
@@ -116,13 +116,13 @@ TEST(DML_Insert, DISABLED_InsertSingleRecordToItemsWithDefaultValue)
             {"PRICE", siodb::COLUMN_DATA_TYPE_DOUBLE, true, 123.0},
     };
 
-    instance->findDatabase("SYS")->createUserTable("TEST_ITEMS_2", dbengine::TableType::kDisk,
+    instance->findDatabase("SYS")->createUserTable("TEST_ITEMS_DV_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
     /// ----------- INSERT -----------
-    const std::string statement("INSERT INTO SYS.TEST_ITEMS_2(name) values ('TEST')");
+    const std::string statement("INSERT INTO SYS.TEST_ITEMS_DV_1(name) values ('TEST')");
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -146,7 +146,91 @@ TEST(DML_Insert, DISABLED_InsertSingleRecordToItemsWithDefaultValue)
     /// ----------- SELECT -----------
 
     {
-        const std::string statement("SELECT name, price as price_alias FROM sys.test_items_2");
+        const std::string statement("SELECT name, price as price_alias FROM sys.TEST_ITEMS_DV_1");
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        const auto selectRequest =
+                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        ASSERT_EQ(response.column_description_size(), 2);
+        ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_TEXT);
+        ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_DOUBLE);
+        EXPECT_EQ(response.column_description(0).name(), "NAME");
+        EXPECT_EQ(response.column_description(1).name(), "PRICE_ALIAS");
+
+        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+
+        std::uint64_t rowLength = 0;
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_EQ(rowLength, 13u);
+
+        std::uint32_t nameLength = 0;
+        ASSERT_TRUE(codedInput.ReadVarint32(&nameLength));
+        ASSERT_EQ(nameLength, 4U);
+        std::string name(4, '\0');
+        ASSERT_TRUE(codedInput.ReadRaw(name.data(), nameLength));
+        double priceValue = 0.0;
+        ASSERT_TRUE(codedInput.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&priceValue)));
+        EXPECT_DOUBLE_EQ(priceValue, 123.0);
+
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        EXPECT_EQ(rowLength, 0U);
+    }
+}
+
+// INSERT INTO SYS.TEST_ITEMS_DV_2(name) values ('TEST')
+// SELECT NAME, PRICE AS PRICE_ALIAS FROM SYS.TEST_ITEMS_DV_2
+TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
+{
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+
+    // create table
+    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
+            {"NAME", siodb::COLUMN_DATA_TYPE_TEXT, true},
+            {"PRICE", siodb::COLUMN_DATA_TYPE_DOUBLE, true, 123.0},
+    };
+
+    instance->findDatabase("SYS")->createUserTable("TEST_ITEMS_DV_2", dbengine::TableType::kDisk,
+            tableColumns, dbengine::User::kSuperUserId, {});
+
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- INSERT -----------
+    const std::string statement("INSERT INTO SYS.TEST_ITEMS_DV_2 values ('TEST')");
+
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto insertRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::CustomProtobufInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response.message_size(), 0);
+    EXPECT_TRUE(response.has_affected_row_count());
+    ASSERT_EQ(response.affected_row_count(), 1U);
+
+    /// ----------- SELECT -----------
+
+    {
+        const std::string statement("SELECT name, price as price_alias FROM sys.TEST_ITEMS_DV_2");
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
@@ -190,7 +274,7 @@ TEST(DML_Insert, DISABLED_InsertSingleRecordToItemsWithDefaultValue)
 // INSERT INTO SYS.TEST_CUSTOMERS (LAST_NAME, FIRST_NAME) values ('TEST0', 'TEST1'), ('TEST2', 'TEST'3), ..., ('TEST8,
 // 'TEST9')
 // SELECT * FROM SYS.TEST_CUSTOMERS
-TEST(DML_Insert, InsertMultipleRecordsToItems)
+TEST(DML_Insert, InsertMultipleRecords)
 {
     constexpr std::size_t kInsertRows = 5;
     const auto instance = TestEnvironment::getInstance();
@@ -607,7 +691,7 @@ TEST(DML_Insert, InsertMinMaxValues)
 
 // 1) Inserts 2 rows with dates into TEST_CONTRACTS
 // 2) Selects and check added dates
-TEST(DML_Insert, DateTimeTest)
+TEST(DML_Insert, InsertDateTime)
 {
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
@@ -741,7 +825,7 @@ TEST(DML_Insert, DateTimeTest)
     EXPECT_EQ(rowLength, 0U);
 }
 
-TEST(DML_Insert, NullValueTest)
+TEST(DML_Insert, InsertNullValue)
 {
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
@@ -835,7 +919,7 @@ TEST(DML_Insert, NullValueTest)
     }
 }
 
-TEST(DML_Insert, InsertDefaultNullValueTest)
+TEST(DML_Insert, InsertDefaultNullValue)
 {
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);

@@ -235,10 +235,13 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
 
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
-    for (std::size_t i = 0; i < columnCount; ++i) {
+    // Start from column [1], skip TRID
+    for (std::size_t i = 1; i < columnCount; ++i) {
         if (columnPresent[i]) continue;
         const auto column = columnsByPosition.find(i)->m_column;
-        // TODO: put default value here
+        // NOTE: For now, always use current column definition.
+        const auto columnDefinition = column->getCurrentColumnDefinition();
+        orderedColumnValues.at(i - 1) = columnDefinition->getDefaultValue();
     }
 
     return doInsertRowUnlocked(orderedColumnValues, transactionParameters, customTrid);
@@ -262,14 +265,15 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
     const auto requiredValueCount = columnCount - 1;
     if (currentValueCount < requiredValueCount) {
         columnValues.resize(requiredValueCount);
-        // Place a copy of a default value, if defined,
-        // into the added elements of columnValues.
+        // Place a copy of a default value, if defined, into the added elements of columnValues.
         const auto& columns = m_currentColumnSet->getColumns();
         for (std::size_t i = currentValueCount; i < requiredValueCount; ++i) {
             const auto& columnSetColumn = columns.at(i + 1);
             const auto column = findColumnChecked(columnSetColumn->getColumnId());
-            const auto columnDefinition =
-                    column->findColumnDefinitionChecked(columnSetColumn->getColumnDefinitionId());
+            //const auto columnDefinition =
+            //        column->findColumnDefinitionChecked(columnSetColumn->getColumnDefinitionId());
+            // NOTE: For now, always use current column definition.
+            const auto columnDefinition = column->getCurrentColumnDefinition();
             columnValues.at(i) = columnDefinition->getDefaultValue();
         }
     }
