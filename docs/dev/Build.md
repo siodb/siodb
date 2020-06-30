@@ -23,10 +23,10 @@ Run following commands:
 cd $HOME
 
 # Required tools and libraries
-sudo apt install -y build-essential cmake doxygen gdb git graphviz gcc-8 g++-8 libboost1.65-dev \
-    libboost-log1.65-dev libboost-program-options1.65-dev libcurl4-openssl-dev \
-    libssl-dev openjdk-11-jdk-headless pkg-config uuid-dev clang-format-10 \
-    ubuntu-dbgsym-keyring
+sudo apt install -y build-essential cmake doxygen gdb git graphviz gcc-8 g++-8 \
+    libboost1.65-dev libboost-log1.65-dev libboost-program-options1.65-dev \
+    libcurl4-openssl-dev libssl-dev openjdk-11-jdk-headless pkg-config \
+    uuid-dev clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
@@ -34,7 +34,8 @@ sudo update-alternatives --install /usr/bin/clang-format clang-format \
 sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
     /usr/lib/llvm-10/bin/git-clang-format 1
 sudo update-alternatives --set clang-format /usr/lib/llvm-10/bin/clang-format
-sudo update-alternatives --set git-clang-format /usr/lib/llvm-10/bin/git-clang-format
+sudo update-alternatives --set git-clang-format \
+    /usr/lib/llvm-10/bin/git-clang-format
 ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
@@ -47,10 +48,10 @@ Run following commands:
 cd $HOME
 
 # Required tools and libraries
-sudo apt install -y build-essential cmake doxygen gdb git graphviz libboost1.71-dev \
-    libboost-log1.71-dev libboost-program-options1.71-dev libcurl4-openssl-dev \
-    libssl-dev openjdk-11-jdk-headless pkg-config python2 uuid-dev clang-format-10 \
-    ubuntu-dbgsym-keyring
+sudo apt install -y build-essential cmake doxygen gdb git graphviz \
+    libboost1.71-dev libboost-log1.71-dev libboost-program-options1.71-dev \
+    libcurl4-openssl-dev libssl-dev openjdk-11-jdk-headless pkg-config python2 \
+    uuid-dev clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
@@ -74,9 +75,10 @@ Run following commands:
 cd $HOME
 
 # Required tools and libraries
-sudo apt install -y build-essential cmake doxygen gdb git graphviz libboost1.67-dev \
-    libboost-log1.67-dev libboost-program-options1.67-dev libcurl4-openssl-dev \
-    libssl-dev openjdk-11-jdk-headless pkg-config python2 uuid-dev wget
+sudo apt install -y build-essential cmake doxygen gdb git graphviz \
+    libboost1.67-dev libboost-log1.67-dev libboost-program-options1.67-dev \
+    libcurl4-openssl-dev libssl-dev openjdk-11-jdk-headless pkg-config python2 \
+    uuid-dev wget
 
 # Install clang-9. This one is for SLES, but works on the Debian 10 too.
 sudo apt install -y libncurses5
@@ -94,8 +96,10 @@ sudo update-alternatives --install /usr/bin/clang-format clang-format \
     /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format 1
 sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
     /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format 1
-sudo update-alternatives --set clang-format /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format
-sudo update-alternatives --set git-clang-format /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format
+sudo update-alternatives --set clang-format \
+  /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format
+sudo update-alternatives --set git-clang-format \
+  /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format
 
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
@@ -111,12 +115,12 @@ Run following commands:
 cd $HOME
 
 # Enable additional repositories
-sudo yum -y install \
+sudo yum install -y \
     https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.8-1.x86_64.rpm \
     https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 
 # Enable software collections
-sudo yum -y install centos-release-scl
+sudo yum install -y centos-release-scl
 
 # Update your system
 sudo yum -y update
@@ -125,12 +129,12 @@ sudo yum -y update
 sudo yum remove git*
 
 # Install latest git
-sudo yum install git
+sudo yum install -y git
 
 # Install required tools and libraries
-sudo yum -y install cmake3 curl gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
-    libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
-    wget zlib-devel python
+sudo yum install -y cmake3 curl gcc gcc-c++ devtoolset-8-toolchain libatomic \
+    boost169-devel libcurl-devel libuuid-devel openssl-devel \
+    java-1.8.0-openjdk-headless redhat-lsb uuid-devel wget zlib-devel python
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -179,7 +183,7 @@ export LATEST_OPENSSL_VERSION=1.1.1g
 cd /usr/local/src
 sudo wget https://www.openssl.org/source/openssl-${LATEST_OPENSSL_VERSION}.tar.gz
 sudo yum update -y
-sudo yum install yum install perl-core libtemplate-perl zlib-devel
+sudo yum install -y perl-core libtemplate-perl zlib-devel
 sudo tar xaf openssl-${LATEST_OPENSSL_VERSION}.tar.gz
 cd openssl-${LATEST_OPENSSL_VERSION}
 sudo ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
@@ -209,15 +213,15 @@ Run following commands:
 cd $HOME
 
 # Enable additional repositories
-sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
 # Update your system
 sudo yum -y update
 
 # Install required tools and libraries
-sudo yum -y install cmake curl gcc gcc-c++ boost-devel libcurl-devel \
-          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb \
-          wget zlib-devel python2
+sudo yum install -y cmake curl gcc gcc-c++ boost-devel libatomic libcurl-devel \
+    libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb wget \
+    zlib-devel python2
 
 # Install clang-9. This one is for SLES, but works on the CentOS 8 too.
 mkdir /tmp/getllvm
@@ -249,7 +253,7 @@ Run following commands:
 cd $HOME
 
 # Enable additional repositories
-sudo yum -y install \
+sudo yum install -y \
     https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.7-1.x86_64.rpm \
     https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 
@@ -263,12 +267,12 @@ sudo yum -y update
 sudo yum remove git*
 
 # Install latest git
-sudo yum install git
+sudo yum install -y git
 
 # Install required tools and libraries
-sudo yum -y install cmake3 curl gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
-          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
-          wget zlib-devel python
+sudo yum install -y cmake3 curl gcc gcc-c++ devtoolset-8-toolchain \
+    boost169-devel libatomic libcurl-devel libuuid-devel openssl-devel \
+    java-1.8.0-openjdk-headless redhat-lsb uuid-devel wget zlib-devel python
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -317,7 +321,7 @@ export LATEST_OPENSSL_VERSION=1.1.1g
 cd /usr/local/src
 sudo wget https://www.openssl.org/source/openssl-${LATEST_OPENSSL_VERSION}.tar.gz
 sudo yum update -y
-sudo yum install yum install perl-core libtemplate-perl zlib-devel
+sudo yum install -y perl-core libtemplate-perl zlib-devel
 sudo tar xaf openssl-${LATEST_OPENSSL_VERSION}.tar.gz
 cd openssl-${LATEST_OPENSSL_VERSION}
 sudo ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
@@ -347,15 +351,15 @@ Run following commands:
 cd $HOME
 
 # Enable additional repositories
-sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
 # Update your system
 sudo yum -y update
 
 # Install required tools and libraries
-sudo yum -y install cmake curl gcc gcc-c++ boost-devel libcurl-devel \
-          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb \
-          wget zlib-devel python2
+sudo yum install -y cmake curl gcc gcc-c++ boost-devel libatomic libcurl-devel \
+    libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb wget \
+    zlib-devel python2
 
 # Install clang-9. This one is for SLES, but works on the CentOS 8 too.
 mkdir /tmp/getllvm
@@ -407,27 +411,8 @@ export CXX
 # Install source code formatting hook for git
 cp -fv tools/git_hooks/siodb-clang-format.hook .git/hooks/pre-commit
 
-# Build and install Google Protobuf library
-cd thirdparty/protobuf
-tar xaf protobuf-all-3.11.4.tar.xz
-cd protobuf-3.11.4
-./configure
-make -j4
-sudo make install
-sudo ldconfig
-cd ../..
-
-# Build and install Utf8cpp library
-cd utf8cpp
-tar xaf utfcpp-3.1.tar.xz
-cd utfcpp-3.1
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUTF8_TESTS=Off ..
-make -j4
-sudo make install
-sudo ldconfig
-cd ../../..
+# Enter third party libraries directory
+cd thirdparty
 
 # Install ANTLR4 executables
 cd antlr4
@@ -446,14 +431,6 @@ sudo make install
 sudo ldconfig
 cd ../../..
 
-# Build and install Google Test library
-cd googletest
-tar xaf googletest-release-1.8.1.tar.xz
-cd googletest-release-1.8.1/googlemock/scripts
-./fuse_gmock_files.py gtest-gmock-1.8.1
-sudo cp -Rf gtest-gmock-1.8.1 /usr/local/include
-cd ../../../..
-
 # Build and install date library
 cd date
 tar xaf date-20190911.tar.xz
@@ -462,6 +439,47 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUSE_SYSTEM_TZ_DB=ON \
       -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
+make -j4
+sudo make install
+sudo ldconfig
+cd ../../..
+
+# Build and install Google Test library
+cd googletest
+tar xaf googletest-release-1.8.1.tar.xz
+cd googletest-release-1.8.1/googlemock/scripts
+./fuse_gmock_files.py gtest-gmock-1.8.1
+sudo cp -Rf gtest-gmock-1.8.1 /usr/local/include
+cd ../../../..
+
+# Build and install Oat++ library
+cd oatpp
+tar xaf oatpp-1.1.0.tar.xz
+cd oatpp-1.1.0
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
+make -j4
+sudo make install
+sudo ldconfig
+
+# Build and install Google Protobuf library
+cd protobuf
+tar xaf protobuf-all-3.11.4.tar.xz
+cd protobuf-3.11.4
+./configure
+make -j4
+sudo make install
+sudo ldconfig
+cd ../..
+
+# Build and install Utf8cpp library
+cd utf8cpp
+tar xaf utfcpp-3.1.tar.xz
+cd utfcpp-3.1
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUTF8_TESTS=Off ..
 make -j4
 sudo make install
 sudo ldconfig

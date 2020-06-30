@@ -102,11 +102,12 @@ INCLUDE+=-I$(COMMON_LIB_ROOT) -I$(GENERATED_FILES_COMMON_LIB_ROOT)
 C_INCLUDE+=
 CXX_INCLUDE+=
 
-# Custom Google Test
-ifdef GTEST_ROOT
-CXX_INCLUDE+=-isystem $(GTEST_ROOT)/include/gtest-gmock-1.8.1
+# Custom ANTLR4 Runtime
+ifdef ANTLR4_RUNTIME_ROOT
+CXX_INCLUDE+=-isystem $(ANTLR4_RUNTIME_ROOT)/include/antlr4-runtime
+LDFLAGS+=-L$(ANTLR4_RUNTIME_ROOT)/lib -Wl,-rpath -Wl,$(ANTLR4_RUNTIME_ROOT)/lib
 else
-CXX_INCLUDE+=-I/usr/local/include/gtest-gmock-1.8.1
+CXX_INCLUDE+=-I/usr/local/include/antlr4-runtime
 endif
 
 # Custom Boost
@@ -120,12 +121,25 @@ LDFLAGS+=-L/usr/lib64/boost$(BOOST_VERSION)
 endif
 endif
 
-# Custom ANTLR4 Runtime
-ifdef ANTLR4_RUNTIME_ROOT
-CXX_INCLUDE+=-isystem $(ANTLR4_RUNTIME_ROOT)/include/antlr4-runtime
-LDFLAGS+=-L$(ANTLR4_RUNTIME_ROOT)/lib -Wl,-rpath -Wl,$(ANTLR4_RUNTIME_ROOT)/lib
+# Custom libdate
+ifdef DATE_ROOT
+CXX_INCLUDE+=-isystem $(DATE_ROOT)/include
+LDFLAGS+=-L$(DATE_ROOT)/lib -Wl,-rpath -Wl,$(DATE_ROOT)/lib
+endif
+
+# Custom Google Test
+ifdef GTEST_ROOT
+CXX_INCLUDE+=-isystem $(GTEST_ROOT)/include/gtest-gmock-1.8.1
 else
-CXX_INCLUDE+=-I/usr/local/include/antlr4-runtime
+CXX_INCLUDE+=-I/usr/local/include/gtest-gmock-1.8.1
+endif
+
+# Custom Oat++
+ifdef OATPP_ROOT
+CXX_INCLUDE+=-isystem $(OATPP_ROOT)/include/oatpp-$(OATPP_VERSION)
+LDFLAGS+=-L$(OATPP_ROOT)/lib -Wl,-rpath -Wl,$(OATPP_ROOT)/lib
+else
+CXX_INCLUDE+=-I/usr/local/include/oatpp-$(OATPP_VERSION)
 endif
 
 # Custom OpenSSL
@@ -133,12 +147,6 @@ ifdef OPENSSL_ROOT
 C_INCLUDE+=-isystem $(OPENSSL_ROOT)/include
 CXX_INCLUDE+=-isystem $(OPENSSL_ROOT)/include
 LDFLAGS+=-L$(OPENSSL_ROOT)/lib -Wl,-rpath -Wl,$(OPENSSL_ROOT)/lib
-endif
-
-# Custom libdate
-ifdef DATE_ROOT
-CXX_INCLUDE+=-isystem $(DATE_ROOT)/include
-LDFLAGS+=-L$(DATE_ROOT)/lib -Wl,-rpath -Wl,$(DATE_ROOT)/lib
 endif
 
 # Custom Protocol Buffers
