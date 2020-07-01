@@ -7,6 +7,7 @@
 // Project headers
 #include "Client.h"
 #include "SqlDump.h"
+#include "SqlQueryException.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -123,7 +124,7 @@ extern "C" int siocliMain(int argc, char** argv)
         const auto exportAllDatabases = vm.count("export-all") > 0;
 
         if (exportDatabase && exportAllDatabases) {
-            std::cout << "Having both '--export' and '--export-all' is invalid" << std::endl;
+            std::cerr << "Having both '--export' and '--export-all' is invalid" << std::endl;
             return 1;
         }
 
@@ -222,10 +223,19 @@ int exportSqlDump(const ClientParameters& params)
 
     authenticate(params.m_identityKey, params.m_user, *connectionIo);
 
-    if (params.m_exportDatabaseName.empty())
-        siodb::siocli::sqlDumpAllDatabases(*connectionIo, std::cout);
-    else
-        siodb::siocli::sqlDumpDatabase(*connectionIo, std::cout, params.m_exportDatabaseName);
+    try {
+        if (params.m_exportDatabaseName.empty())
+            siodb::siocli::dumpAllDatabases(*connectionIo, std::cout);
+        else
+            siodb::siocli::dumpDatabase(*connectionIo, std::cout, params.m_exportDatabaseName);
+    } catch (const siodb::SqlQueryException& sqlQueryException) {
+        std::cerr << sqlQueryException.what() << ":\n";
+        for (const auto& errMsg : sqlQueryException.getErrors())
+            std::cerr << "code: " << errMsg.status_code() << ", message: " << errMsg.text() << '\n';
+
+        std::cerr << std::flush;
+        return 2;
+    }
 
     return 0;
 }

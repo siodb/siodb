@@ -18,6 +18,7 @@ CXX_HDR:= \
 	Client.h  \
 	Siocli.h  \
 	internal/ClientInternal.h  \
-	SqlDump.h
+	SqlDump.h  \
+	SqlQueryException.h
 
 include $(MK)/Main.mk
