@@ -15,17 +15,17 @@ namespace siodb::siocli {
 /**
  * Dumps table definitions and data from all databases.
  * @param connectionIo Connection.
- * @param os Output stream for SQL data.
- * @throw runtime_error In case of connection error.
+ * @param os Output stream.
+ * @throw std::runtime_error if I/O error occurs.
  */
 void dumpAllDatabases(siodb::io::IoBase& connectionIo, std::ostream& os);
 
 /**
  * Dumps table definitions and data from the specified database.
  * @param connectionIo Connection.
- * @param os Output stream for SQL data.
- * @param databaseName Specified database to dump.
- * @throw runtime_error In case of connection error.
+ * @param os Output stream.
+ * @param databaseName Database to dump.
+ * @throw std::runtime_error if I/O error occurs.
  */
 void dumpDatabase(
         siodb::io::IoBase& connectionIo, std::ostream& os, const std::string& databaseName);

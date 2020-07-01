@@ -32,7 +32,7 @@ public:
      * @param buffer Input buffer.
      * @param size Buffer size
      */
-    explicit CustomCodedInputStream(const std::uint8_t* buffer, int size)
+    CustomCodedInputStream(const std::uint8_t* buffer, int size)
         : google::protobuf::io::CodedInputStream(buffer, size)
     {
     }

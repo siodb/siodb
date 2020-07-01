@@ -141,7 +141,6 @@ std::string formCreateTableQuery(const std::string& databaseName, const TableInf
             ss << " " << column.m_name << " " << getColumnDataTypeName(column.m_dataType);
             for (const auto& constraint : column.m_constraints)
                 ss << " " << constraintToString(constraint);
-
             ss << ',';
         }
 
@@ -195,7 +194,6 @@ std::string readValue(
         }
         case ColumnDataType::COLUMN_DATA_TYPE_TEXT: {
             std::ostringstream ss;
-
             const std::string str = customCodedInputStream.readString();
             ss << '\'';
             for (const auto symbol : str) {
@@ -204,9 +202,7 @@ std::string readValue(
                 else
                     ss << symbol;
             }
-
             ss << '\'';
-
             return ss.str();
         }
         case ColumnDataType::COLUMN_DATA_TYPE_BINARY: {
@@ -219,7 +215,6 @@ std::string readValue(
                 ss << std::setw(2) << v;
             }
             ss << '\'';
-
             return ss.str();
         }
         case ColumnDataType::COLUMN_DATA_TYPE_TIMESTAMP: {
@@ -227,7 +222,6 @@ std::string readValue(
             siodb::RawDateTime dateTime;
             if (!siodb::protobuf::readRawDateTime(customCodedInputStream, dateTime))
                 throw std::runtime_error("Read timestamp value failed");
-
             ss << '\'' << dateTime.formatDefault() << '\'';
             return ss.str();
         }
@@ -253,7 +247,6 @@ void checkResponse(const client_protocol::ServerResponse& response)
             const auto& message = response.message(i);
             if (message.status_code() != 0) errors.push_back(message);
         }
-
         if (!errors.empty()) throw SqlQueryException(std::move(errors));
     }
 }
@@ -513,10 +506,9 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
         }
     }
 
-    std::sort(
-            columns.begin(), columns.end(), [](const auto& left, const auto& right) noexcept {
-                return left.m_columnDefinitionId < right.m_columnDefinitionId;
-            });
+    std::sort(columns.begin(), columns.end(), [](const auto& left, const auto& right) noexcept {
+        return left.m_columnDefinitionId < right.m_columnDefinitionId;
+    });
 
     for (auto& column : columns) {
         column.m_constraints = receiveColumnConstraintsList(
