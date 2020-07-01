@@ -38,24 +38,37 @@ bool parseStateNode(antlr4::tree::ParseTree* node, const char* errorMessage)
 
 const std::unordered_map<std::string, siodb::ColumnDataType>
         DBEngineRequestFactory::m_siodbDataTypeMap {
+                {"BOOLEAN", siodb::COLUMN_DATA_TYPE_BOOL},
                 {"INTEGER", siodb::COLUMN_DATA_TYPE_INT32},
                 {"INT", siodb::COLUMN_DATA_TYPE_INT32},
+                {"INT32", siodb::COLUMN_DATA_TYPE_INT32},
                 {"UINT", siodb::COLUMN_DATA_TYPE_UINT32},
+                {"UINT32", siodb::COLUMN_DATA_TYPE_UINT32},
+                {"INT8", siodb::COLUMN_DATA_TYPE_INT8},
                 {"TINYINT", siodb::COLUMN_DATA_TYPE_INT8},
+                {"UINT8", siodb::COLUMN_DATA_TYPE_UINT8},
                 {"TINYUINT", siodb::COLUMN_DATA_TYPE_UINT8},
+                {"INT16", siodb::COLUMN_DATA_TYPE_INT16},
                 {"SMALLINT", siodb::COLUMN_DATA_TYPE_INT16},
+                {"UINT16", siodb::COLUMN_DATA_TYPE_UINT16},
                 {"SMALLUINT", siodb::COLUMN_DATA_TYPE_UINT16},
+                {"INT64", siodb::COLUMN_DATA_TYPE_INT64},
                 {"BIGINT", siodb::COLUMN_DATA_TYPE_INT64},
+                {"UINT64", siodb::COLUMN_DATA_TYPE_UINT64},
                 {"BIGUINT", siodb::COLUMN_DATA_TYPE_UINT64},
                 {"SMALLREAL", siodb::COLUMN_DATA_TYPE_FLOAT},
                 {"REAL", siodb::COLUMN_DATA_TYPE_DOUBLE},
                 {"FLOAT", siodb::COLUMN_DATA_TYPE_FLOAT},
                 {"DOUBLE", siodb::COLUMN_DATA_TYPE_DOUBLE},
                 {"TEXT", siodb::COLUMN_DATA_TYPE_TEXT},
+                {"NTEXT", siodb::COLUMN_DATA_TYPE_TEXT},
                 {"CHAR", siodb::COLUMN_DATA_TYPE_TEXT},
                 {"VARCHAR", siodb::COLUMN_DATA_TYPE_TEXT},
                 {"BLOB", siodb::COLUMN_DATA_TYPE_BINARY},
+                {"BINARY", siodb::COLUMN_DATA_TYPE_BINARY},
                 {"TIMESTAMP", siodb::COLUMN_DATA_TYPE_TIMESTAMP},
+                {"XML", siodb::COLUMN_DATA_TYPE_XML},
+                {"JSON", siodb::COLUMN_DATA_TYPE_JSON},
         };
 
 requests::DBEngineRequestPtr DBEngineRequestFactory::createRequest(antlr4::tree::ParseTree* node)

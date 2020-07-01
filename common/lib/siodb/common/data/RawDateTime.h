@@ -212,8 +212,14 @@ struct RawDateTime {
     /** Default Datetime scan string format */
     static constexpr const char* kDefaultDateTimeScanString = "%6d-%02d-%02d %02d:%02d:%02d.%d";
 
-    /** Default Datetime scan string format */
+    /** Default Datetime print string format */
+    static constexpr const char* kDefaultDateTimePrintString = "%d-%02d-%02d %02d:%02d:%02d.%d";
+
+    /** Default Date scan string format */
     static constexpr const char* kDefaultDateScanString = "%6d-%02d-%02d";
+
+    /** Default Date print string format */
+    static constexpr const char* kDefaultDatePrintString = "%d-%02d-%02d";
 
     /* Initializes structure RawDateTime. */
     RawDateTime() noexcept = default;
