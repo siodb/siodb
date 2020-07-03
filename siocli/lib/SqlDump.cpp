@@ -42,7 +42,7 @@ struct DatabaseInfo {
     BinaryValue m_cipherKey;
 };
 
-struct ColumnConstaint {
+struct ColumnConstraint {
     ConstraintType m_type;
     std::string m_name;
     std::uint64_t m_constraintDefinitionId;
@@ -55,7 +55,7 @@ struct ColumnInfo {
     ColumnDataType m_dataType;
     std::uint64_t m_columnDefinitionId;
 
-    std::vector<ColumnConstaint> m_constraints;
+    std::vector<ColumnConstraint> m_constraints;
 };
 
 struct ColumnSetInfo {
@@ -76,7 +76,7 @@ struct TableInfo {
     std::vector<ColumnInfo> m_columns;
 };
 
-std::string constraintToString(const ColumnConstaint& constraint)
+std::string constraintToString(const ColumnConstraint& constraint)
 {
     // Only NOT NULL constraint is supported for now
     if (constraint.m_type != ConstraintType::kNotNull) return std::string();
@@ -306,7 +306,7 @@ std::vector<DatabaseInfo> dumpDatabasesList(
     return databases;
 }
 
-std::vector<ColumnConstaint> receiveColumnConstraintsList(io::IoBase& connectionIo,
+std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectionIo,
         protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
         std::int64_t columnSetId)
 {
@@ -337,7 +337,7 @@ std::vector<ColumnConstaint> receiveColumnConstraintsList(io::IoBase& connection
         constaintIds.push_back(constaintId);
     }
 
-    if (constaintIds.empty()) return std::vector<ColumnConstaint>();
+    if (constaintIds.empty()) return std::vector<ColumnConstraint>();
 
     //  SELECT NAME, CONSTRAINT_DEF_ID FROM .SYS_CONSTRAINTS
     //  WHERE TRID IN (list of selected above CONSTRAINT_ID)
@@ -353,7 +353,7 @@ std::vector<ColumnConstaint> receiveColumnConstraintsList(io::IoBase& connection
 
     query = ss.str();
     response = sendCommand(std::move(query), connectionIo, input);
-    std::vector<ColumnConstaint> constraints;
+    std::vector<ColumnConstraint> constraints;
     while (true) {
         std::uint64_t rowLength = 0;
         if (!codedInput.ReadVarint64(&rowLength))
@@ -362,7 +362,7 @@ std::vector<ColumnConstaint> receiveColumnConstraintsList(io::IoBase& connection
 
         if (rowLength == 0) break;
 
-        ColumnConstaint constraint;
+        ColumnConstraint constraint = ColumnConstraint();
         constraint.m_name = codedInput.readString();
         constraint.m_constraintDefinitionId = codedInput.readUInt64();
         constraints.push_back(std::move(constraint));
