@@ -60,9 +60,7 @@ struct ColumnConstraint {
     /** Initializes structure ColumnConstraint. */
     ColumnConstraint() noexcept
         : m_type(ConstraintType::kNotNull)
-        , m_name()
         , m_constraintDefinitionId(0)
-        , m_expression()
     {
     }
 
@@ -86,10 +84,8 @@ struct ColumnInfo {
     /** Initializes structure ColumnInfo. */
     ColumnInfo() noexcept
         : m_trid(0)
-        , m_name()
         , m_dataType(ColumnDataType::COLUMN_DATA_TYPE_BOOL)
         , m_columnDefinitionId(0)
-        , m_constraints()
     {
     }
 
@@ -153,8 +149,6 @@ struct TableInfo {
     TableInfo() noexcept
         : m_trid(0)
         , m_currentColumnSetId(0)
-        , m_name()
-        , m_columns()
     {
     }
 
@@ -399,6 +393,45 @@ std::vector<DatabaseInfo> dumpDatabasesList(
     }
 
     return databases;
+}
+
+void dumpSpecificDatabase(io::IoBase& connectionIo, std::ostream& os,
+        protobuf::CustomProtobufInputStream& input, const std::string& databaseName)
+{
+    std::ostringstream ss;
+    ss << formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
+            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName,
+                    kSysDatabases_CipherKey_ColumnName})
+       << " WHERE " << kSysDatabases_Name_ColumnName << " = '" << databaseName << '\'';
+
+    std::string query = ss.str();
+    const auto response = sendCommand(std::move(query), connectionIo, input);
+
+    // Create CodedInputStream only if row data is available to read
+    // otherwise codedInput constructor will be stucked on waiting on buffering data
+    protobuf::CustomCodedInputStream codedInput(&input);
+
+    std::uint64_t rowLength = 0;
+    if (!codedInput.ReadVarint64(&rowLength))
+        std::runtime_error("dumpSpecificDatabase: Read row length failed");
+
+    if (rowLength == 0) std::runtime_error("dumpSpecificDatabase: Database does not exist");
+
+    // nulls are dissalowed, read values
+    DatabaseInfo database;
+    database.m_name = codedInput.readString();
+    database.m_cipherId = codedInput.readString();
+    database.m_cipherKey = codedInput.readBinary();
+
+    if (database.m_name != kSystemDatabaseName) {
+        os << formCreateDatabaseQuery(database) << ';' << '\n';
+    }
+
+    if (!codedInput.ReadVarint64(&rowLength))
+        std::runtime_error("dumpSpecificDatabase: Read row length failed");
+
+    if (rowLength != 0)
+        std::runtime_error("dumpSpecificDatabase: Unexpected database row with database received");
 }
 
 std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectionIo,
@@ -732,18 +765,24 @@ void dumpTableData(io::IoBase& connectionIo, std::ostream& os,
     }
 }
 
+void dumpDatabaseData(io::IoBase& connectionIo, std::ostream& os, const std::string& databaseName,
+        protobuf::CustomProtobufInputStream& input)
+{
+    auto tables = dumpTablesList(connectionIo, os, input, databaseName);
+    for (const auto& table : tables)
+        dumpTableData(connectionIo, os, input, databaseName, table);
+}
+
 }  // namespace
 
 void dumpAllDatabases(io::IoBase& connectionIo, std::ostream& os)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-
-    client_protocol::ServerResponse response;
     protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
 
     auto databases = dumpDatabasesList(connectionIo, os, input);
     for (const auto& database : databases)
-        dumpDatabase(connectionIo, os, database.m_name);
+        dumpDatabaseData(connectionIo, os, database.m_name, input);
 
     os << std::flush;
 }
@@ -751,13 +790,10 @@ void dumpAllDatabases(io::IoBase& connectionIo, std::ostream& os)
 void dumpDatabase(io::IoBase& connectionIo, std::ostream& os, const std::string& databaseName)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-
-    client_protocol::ServerResponse response;
     protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
 
-    auto tables = dumpTablesList(connectionIo, os, input, databaseName);
-    for (const auto& table : tables)
-        dumpTableData(connectionIo, os, input, databaseName, table);
+    dumpSpecificDatabase(connectionIo, os, input, databaseName);
+    dumpDatabaseData(connectionIo, os, databaseName, input);
 
     os << std::flush;
 }

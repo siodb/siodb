@@ -39,6 +39,7 @@
 // STL headers
 #include <algorithm>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -56,7 +57,6 @@
 #include <boost/program_options/variables_map.hpp>
 
 namespace {
-
 const std::string kDefaultHost(siodb::kLocalhost);
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
 const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
@@ -139,7 +139,8 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_echoCommandsWhenNotOnATerminal = vm.count("no-echo") == 0;
         params.m_verifyCertificates = vm.count("verify-certificates") > 0;
 
-        if (exportDatabase) params.m_exportDatabaseName = vm["export"].as<std::string>();
+        if (exportDatabase)
+            params.m_exportDatabaseName = boost::to_upper_copy(vm["export"].as<std::string>());
 
         if (vm.count("plaintext") > 0)
             params.m_encryption = false;
@@ -222,6 +223,17 @@ int exportSqlDump(const ClientParameters& params)
     authenticate(params.m_identityKey, params.m_user, *connectionIo);
 
     try {
+        auto currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::cout << "-- Siodb SQL dump\n"
+                  << "-- Hostname: " << params.m_host << '\n'
+                  << "-- Instance: " << params.m_instance << '\n';
+
+        if (!params.m_exportDatabaseName.empty())
+            std::cout << "-- Database: " << params.m_exportDatabaseName << '\n';
+
+        std::cout << "-- Timestamp: "
+                  << std::put_time(std::localtime(&currentTime), "%Y.%m.%d %H:%M:%S") << '\n';
+
         if (params.m_exportDatabaseName.empty())
             siodb::siocli::dumpAllDatabases(*connectionIo, std::cout);
         else

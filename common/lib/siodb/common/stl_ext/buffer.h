@@ -41,7 +41,6 @@ public:
 public:
     /**
      * Initializes object of class buffer.
-     * @param size Buffer size.
      */
     explicit buffer() noexcept
         : m_data(nullptr)
