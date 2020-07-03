@@ -36,43 +36,111 @@ namespace {
 
 using namespace siodb::iomgr::dbengine;
 
+/**
+ * Database information
+ */
 struct DatabaseInfo {
+    /** Initializes structure DatabaseInfo. */
+    DatabaseInfo() = default;
+
+    /** Database name */
     std::string m_name;
+
+    /** Cipher ID of the database */
     std::string m_cipherId;
+
+    /** Cipher key of the database */
     BinaryValue m_cipherKey;
 };
 
+/**
+ * Column constraint information
+ */
 struct ColumnConstraint {
+    /** Initializes structure ColumnConstraint. */
+    ColumnConstraint() = default;
+
+    /** Constraint type */
     ConstraintType m_type;
+
+    /** Constraint name */
     std::string m_name;
+
+    /** Constraint definition id */
     std::uint64_t m_constraintDefinitionId;
+
+    /** Constraint expression */
     BinaryValue m_expression;
 };
 
+/**
+ * Table column information
+ */
 struct ColumnInfo {
+    /** Initializes structure ColumnInfo. */
+    ColumnInfo() = default;
+
+    /** Column TRID */
     std::uint64_t m_trid;
+
+    /** Column name */
     std::string m_name;
+
+    /** Column data type */
     ColumnDataType m_dataType;
+
+    /** Column definition ID */
     std::uint64_t m_columnDefinitionId;
 
+    /** Constraints of this column */
     std::vector<ColumnConstraint> m_constraints;
 };
 
+/**
+ * Column set information
+ */
 struct ColumnSetInfo {
+    /** Initializes structure ColumnInfo. */
+    ColumnSetInfo() noexcept = default;
+
+    /** Column set TRID */
     std::uint64_t m_trid;
+
+    /** Column definition ID */
     std::uint64_t m_columnDefinitionId;
 };
 
+/**
+ * Column definition information
+ */
 struct ColumnDefInfo {
+    /** Initializes structure ColumnDefInfo. */
+    ColumnDefInfo() noexcept = default;
+
+    /** Column definition TRID */
     std::uint64_t m_trid;
+
+    /** Column ID */
     std::uint64_t m_columnId;
 };
 
+/**
+ * Table information
+ */
 struct TableInfo {
+    /** Initializes structure TableInfo. */
+    TableInfo() = default;
+
+    /** Table TRID */
     std::uint64_t m_trid;
+
+    /** Current column set ID */
     std::uint64_t m_currentColumnSetId;
 
+    /** Table name */
     std::string m_name;
+
+    /** Columns related to this table */
     std::vector<ColumnInfo> m_columns;
 };
 
@@ -362,7 +430,7 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectio
 
         if (rowLength == 0) break;
 
-        ColumnConstraint constraint = ColumnConstraint();
+        ColumnConstraint constraint;
         constraint.m_name = codedInput.readString();
         constraint.m_constraintDefinitionId = codedInput.readUInt64();
         constraints.push_back(std::move(constraint));

@@ -98,7 +98,7 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()("user,u",
                 boost::program_options::value<std::string>()->default_value(osUserName),
                 "User name");
-        desc.add_options()("verify-certificates,V", "Verify sertificates");
+        desc.add_options()("verify-certificates,V", "Verify certificates");
         desc.add_options()("plaintext,P", "Use plaintext connection");
         desc.add_options()("no-echo,N", "Do not commands if not on the terminal");
         desc.add_options()("export,e", boost::program_options::value<std::string>(),
