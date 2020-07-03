@@ -41,7 +41,7 @@ using namespace siodb::iomgr::dbengine;
  */
 struct DatabaseInfo {
     /** Initializes structure DatabaseInfo. */
-    DatabaseInfo() = default;
+    DatabaseInfo() noexcept = default;
 
     /** Database name */
     std::string m_name;
@@ -58,7 +58,13 @@ struct DatabaseInfo {
  */
 struct ColumnConstraint {
     /** Initializes structure ColumnConstraint. */
-    ColumnConstraint() = default;
+    ColumnConstraint() noexcept
+        : m_type(ConstraintType::kNotNull)
+        , m_name()
+        , m_constraintDefinitionId(0)
+        , m_expression()
+    {
+    }
 
     /** Constraint type */
     ConstraintType m_type;
@@ -78,7 +84,14 @@ struct ColumnConstraint {
  */
 struct ColumnInfo {
     /** Initializes structure ColumnInfo. */
-    ColumnInfo() = default;
+    ColumnInfo() noexcept
+        : m_trid(0)
+        , m_name()
+        , m_dataType(ColumnDataType::COLUMN_DATA_TYPE_BOOL)
+        , m_columnDefinitionId(0)
+        , m_constraints()
+    {
+    }
 
     /** Column TRID */
     std::uint64_t m_trid;
@@ -101,7 +114,11 @@ struct ColumnInfo {
  */
 struct ColumnSetInfo {
     /** Initializes structure ColumnInfo. */
-    ColumnSetInfo() noexcept = default;
+    ColumnSetInfo() noexcept
+        : m_trid(0)
+        , m_columnDefinitionId(0)
+    {
+    }
 
     /** Column set TRID */
     std::uint64_t m_trid;
@@ -113,9 +130,13 @@ struct ColumnSetInfo {
 /**
  * Column definition information
  */
-struct ColumnDefInfo {
-    /** Initializes structure ColumnDefInfo. */
-    ColumnDefInfo() noexcept = default;
+struct ColumnDefinitionInfo {
+    /** Initializes structure ColumnDefinitionInfo. */
+    ColumnDefinitionInfo() noexcept
+        : m_trid(0)
+        , m_columnId(0)
+    {
+    }
 
     /** Column definition TRID */
     std::uint64_t m_trid;
@@ -129,7 +150,13 @@ struct ColumnDefInfo {
  */
 struct TableInfo {
     /** Initializes structure TableInfo. */
-    TableInfo() = default;
+    TableInfo() noexcept
+        : m_trid(0)
+        , m_currentColumnSetId(0)
+        , m_name()
+        , m_columns()
+    {
+    }
 
     /** Table TRID */
     std::uint64_t m_trid;
@@ -524,7 +551,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
     response = sendCommand(std::move(query), connectionIo, input);
 
     std::unordered_map<std::uint64_t, std::uint64_t> columnIdToColumnDefIdMap;
-    std::vector<ColumnDefInfo> columnDefInfos;
+    std::vector<ColumnDefinitionInfo> columnDefInfos;
     while (true) {
         std::uint64_t rowLength = 0;
         if (!codedInput.ReadVarint64(&rowLength))
@@ -533,7 +560,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
         if (rowLength == 0) break;
 
         // nulls are dissalowed, read values
-        ColumnDefInfo columnDefInfo;
+        ColumnDefinitionInfo columnDefInfo;
         columnDefInfo.m_trid = codedInput.readUInt64();
         columnDefInfo.m_columnId = codedInput.readUInt64();
 

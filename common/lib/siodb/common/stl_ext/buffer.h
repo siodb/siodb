@@ -43,7 +43,17 @@ public:
      * Initializes object of class buffer.
      * @param size Buffer size.
      */
-    explicit buffer(size_type size = 0)
+    explicit buffer() noexcept
+        : m_data(nullptr)
+        , m_end(nullptr)
+    {
+    }
+
+    /**
+     * Initializes object of class buffer.
+     * @param size Buffer size.
+     */
+    explicit buffer(size_type size)
         : m_data(size > 0 ? new value_type[size] : nullptr)
         , m_end(m_data.get() + size)
     {
