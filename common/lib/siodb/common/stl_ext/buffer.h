@@ -42,7 +42,7 @@ public:
     /**
      * Initializes object of class buffer.
      */
-    explicit buffer() noexcept
+    buffer() noexcept
         : m_data(nullptr)
         , m_end(nullptr)
     {

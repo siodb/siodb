@@ -41,7 +41,9 @@ using namespace siodb::iomgr::dbengine;
  */
 struct DatabaseInfo {
     /** Initializes structure DatabaseInfo. */
-    DatabaseInfo() noexcept = default;
+    DatabaseInfo() noexcept
+    {
+    }
 
     /** Database name */
     std::string m_name;
