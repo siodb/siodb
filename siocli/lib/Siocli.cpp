@@ -223,7 +223,8 @@ int exportSqlDump(const ClientParameters& params)
     authenticate(params.m_identityKey, params.m_user, *connectionIo);
 
     try {
-        auto currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        const auto currentTime =
+                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         std::cout << "-- Siodb SQL dump\n"
                   << "-- Hostname: " << params.m_host << '\n'
                   << "-- Instance: " << params.m_instance << '\n';

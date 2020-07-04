@@ -369,8 +369,6 @@ std::vector<DatabaseInfo> dumpDatabasesList(
     std::vector<DatabaseInfo> databases;
     databases.reserve(16);
 
-    // Create CodedInputStream only if row data is available to read
-    // otherwise codedInput constructor will be stucked on waiting on buffering data
     protobuf::CustomCodedInputStream codedInput(&input);
 
     while (true) {
@@ -407,8 +405,6 @@ void dumpSpecificDatabase(io::IoBase& connectionIo, std::ostream& os,
     std::string query = ss.str();
     const auto response = sendCommand(std::move(query), connectionIo, input);
 
-    // Create CodedInputStream only if row data is available to read
-    // otherwise codedInput constructor will be stucked on waiting on buffering data
     protobuf::CustomCodedInputStream codedInput(&input);
 
     std::uint64_t rowLength = 0;
@@ -664,8 +660,6 @@ std::vector<TableInfo> dumpTablesList(io::IoBase& connectionIo, std::ostream& os
     std::vector<TableInfo> tableInfos;
     tableInfos.reserve(32);
 
-    // Create CodedInputStream only if row data is available to read
-    // otherwise codedInput constructor will be stucked on waiting on buffering data
     protobuf::CustomCodedInputStream codedInput(&input);
 
     while (true) {
