@@ -36,47 +36,138 @@ namespace {
 
 using namespace siodb::iomgr::dbengine;
 
+/**
+ * Database information
+ */
 struct DatabaseInfo {
+    /** Initializes structure DatabaseInfo. */
+    DatabaseInfo() noexcept
+    {
+    }
+
+    /** Database name */
     std::string m_name;
+
+    /** Cipher ID of the database */
     std::string m_cipherId;
+
+    /** Cipher key of the database */
     BinaryValue m_cipherKey;
 };
 
-struct ColumnConstaint {
+/**
+ * Column constraint information
+ */
+struct ColumnConstraint {
+    /** Initializes structure ColumnConstraint. */
+    ColumnConstraint() noexcept
+        : m_type(ConstraintType::kNotNull)
+        , m_constraintDefinitionId(0)
+    {
+    }
+
+    /** Constraint type */
     ConstraintType m_type;
+
+    /** Constraint name */
     std::string m_name;
+
+    /** Constraint definition id */
     std::uint64_t m_constraintDefinitionId;
+
+    /** Constraint expression */
     BinaryValue m_expression;
 };
 
+/**
+ * Table column information
+ */
 struct ColumnInfo {
+    /** Initializes structure ColumnInfo. */
+    ColumnInfo() noexcept
+        : m_trid(0)
+        , m_dataType(ColumnDataType::COLUMN_DATA_TYPE_BOOL)
+        , m_columnDefinitionId(0)
+    {
+    }
+
+    /** Column TRID */
     std::uint64_t m_trid;
+
+    /** Column name */
     std::string m_name;
+
+    /** Column data type */
     ColumnDataType m_dataType;
+
+    /** Column definition ID */
     std::uint64_t m_columnDefinitionId;
 
-    std::vector<ColumnConstaint> m_constraints;
+    /** Constraints of this column */
+    std::vector<ColumnConstraint> m_constraints;
 };
 
+/**
+ * Column set information
+ */
 struct ColumnSetInfo {
+    /** Initializes structure ColumnInfo. */
+    ColumnSetInfo() noexcept
+        : m_trid(0)
+        , m_columnDefinitionId(0)
+    {
+    }
+
+    /** Column set TRID */
     std::uint64_t m_trid;
+
+    /** Column definition ID */
     std::uint64_t m_columnDefinitionId;
 };
 
-struct ColumnDefInfo {
+/**
+ * Column definition information
+ */
+struct ColumnDefinitionInfo {
+    /** Initializes structure ColumnDefinitionInfo. */
+    ColumnDefinitionInfo() noexcept
+        : m_trid(0)
+        , m_columnId(0)
+    {
+    }
+
+    /** Column definition TRID */
     std::uint64_t m_trid;
+
+    /** Column ID */
     std::uint64_t m_columnId;
 };
 
+/**
+ * Table information
+ */
 struct TableInfo {
+    /** Initializes structure TableInfo. */
+    TableInfo() noexcept
+        : m_trid(0)
+        , m_currentColumnSetId(0)
+    {
+    }
+
+    /** Table TRID */
     std::uint64_t m_trid;
+
+    /** Current column set ID */
     std::uint64_t m_currentColumnSetId;
 
+    /** Table name */
     std::string m_name;
+
+    /** Columns related to this table */
     std::vector<ColumnInfo> m_columns;
 };
 
-std::string constraintToString(const ColumnConstaint& constraint)
+std::string constraintToString(const ColumnConstraint& constraint)
 {
     // Only NOT NULL constraint is supported for now
     if (constraint.m_type != ConstraintType::kNotNull) return std::string();
@@ -280,8 +371,6 @@ std::vector<DatabaseInfo> dumpDatabasesList(
     std::vector<DatabaseInfo> databases;
     databases.reserve(16);
 
-    // Create CodedInputStream only if row data is available to read
-    // otherwise codedInput constructor will be stucked on waiting on buffering data
     protobuf::CustomCodedInputStream codedInput(&input);
 
     while (true) {
@@ -306,7 +395,44 @@ std::vector<DatabaseInfo> dumpDatabasesList(
     return databases;
 }
 
-std::vector<ColumnConstaint> receiveColumnConstraintsList(io::IoBase& connectionIo,
+void dumpSpecificDatabase(io::IoBase& connectionIo, std::ostream& os,
+        protobuf::CustomProtobufInputStream& input, const std::string& databaseName)
+{
+    std::ostringstream ss;
+    ss << formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
+            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName,
+                    kSysDatabases_CipherKey_ColumnName})
+       << " WHERE " << kSysDatabases_Name_ColumnName << " = '" << databaseName << '\'';
+
+    std::string query = ss.str();
+    const auto response = sendCommand(std::move(query), connectionIo, input);
+
+    protobuf::CustomCodedInputStream codedInput(&input);
+
+    std::uint64_t rowLength = 0;
+    if (!codedInput.ReadVarint64(&rowLength))
+        std::runtime_error("dumpSpecificDatabase: Read row length failed");
+
+    if (rowLength == 0) std::runtime_error("dumpSpecificDatabase: Database does not exist");
+
+    // nulls are dissalowed, read values
+    DatabaseInfo database;
+    database.m_name = codedInput.readString();
+    database.m_cipherId = codedInput.readString();
+    database.m_cipherKey = codedInput.readBinary();
+
+    if (database.m_name != kSystemDatabaseName) {
+        os << formCreateDatabaseQuery(database) << ';' << '\n';
+    }
+
+    if (!codedInput.ReadVarint64(&rowLength))
+        std::runtime_error("dumpSpecificDatabase: Read row length failed");
+
+    if (rowLength != 0)
+        std::runtime_error("dumpSpecificDatabase: Unexpected database row with database received");
+}
+
+std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectionIo,
         protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
         std::int64_t columnSetId)
 {
@@ -337,7 +463,7 @@ std::vector<ColumnConstaint> receiveColumnConstraintsList(io::IoBase& connection
         constaintIds.push_back(constaintId);
     }
 
-    if (constaintIds.empty()) return std::vector<ColumnConstaint>();
+    if (constaintIds.empty()) return std::vector<ColumnConstraint>();
 
     //  SELECT NAME, CONSTRAINT_DEF_ID FROM .SYS_CONSTRAINTS
     //  WHERE TRID IN (list of selected above CONSTRAINT_ID)
@@ -353,7 +479,7 @@ std::vector<ColumnConstaint> receiveColumnConstraintsList(io::IoBase& connection
 
     query = ss.str();
     response = sendCommand(std::move(query), connectionIo, input);
-    std::vector<ColumnConstaint> constraints;
+    std::vector<ColumnConstraint> constraints;
     while (true) {
         std::uint64_t rowLength = 0;
         if (!codedInput.ReadVarint64(&rowLength))
@@ -362,7 +488,7 @@ std::vector<ColumnConstaint> receiveColumnConstraintsList(io::IoBase& connection
 
         if (rowLength == 0) break;
 
-        ColumnConstaint constraint;
+        ColumnConstraint constraint;
         constraint.m_name = codedInput.readString();
         constraint.m_constraintDefinitionId = codedInput.readUInt64();
         constraints.push_back(std::move(constraint));
@@ -456,7 +582,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
     response = sendCommand(std::move(query), connectionIo, input);
 
     std::unordered_map<std::uint64_t, std::uint64_t> columnIdToColumnDefIdMap;
-    std::vector<ColumnDefInfo> columnDefInfos;
+    std::vector<ColumnDefinitionInfo> columnDefInfos;
     while (true) {
         std::uint64_t rowLength = 0;
         if (!codedInput.ReadVarint64(&rowLength))
@@ -465,7 +591,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
         if (rowLength == 0) break;
 
         // nulls are dissalowed, read values
-        ColumnDefInfo columnDefInfo;
+        ColumnDefinitionInfo columnDefInfo;
         columnDefInfo.m_trid = codedInput.readUInt64();
         columnDefInfo.m_columnId = codedInput.readUInt64();
 
@@ -536,8 +662,6 @@ std::vector<TableInfo> dumpTablesList(io::IoBase& connectionIo, std::ostream& os
     std::vector<TableInfo> tableInfos;
     tableInfos.reserve(32);
 
-    // Create CodedInputStream only if row data is available to read
-    // otherwise codedInput constructor will be stucked on waiting on buffering data
     protobuf::CustomCodedInputStream codedInput(&input);
 
     while (true) {
@@ -637,18 +761,24 @@ void dumpTableData(io::IoBase& connectionIo, std::ostream& os,
     }
 }
 
+void dumpDatabaseData(io::IoBase& connectionIo, std::ostream& os, const std::string& databaseName,
+        protobuf::CustomProtobufInputStream& input)
+{
+    auto tables = dumpTablesList(connectionIo, os, input, databaseName);
+    for (const auto& table : tables)
+        dumpTableData(connectionIo, os, input, databaseName, table);
+}
+
 }  // namespace
 
 void dumpAllDatabases(io::IoBase& connectionIo, std::ostream& os)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-
-    client_protocol::ServerResponse response;
     protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
 
     auto databases = dumpDatabasesList(connectionIo, os, input);
     for (const auto& database : databases)
-        dumpDatabase(connectionIo, os, database.m_name);
+        dumpDatabaseData(connectionIo, os, database.m_name, input);
 
     os << std::flush;
 }
@@ -656,13 +786,10 @@ void dumpAllDatabases(io::IoBase& connectionIo, std::ostream& os)
 void dumpDatabase(io::IoBase& connectionIo, std::ostream& os, const std::string& databaseName)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-
-    client_protocol::ServerResponse response;
     protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
 
-    auto tables = dumpTablesList(connectionIo, os, input, databaseName);
-    for (const auto& table : tables)
-        dumpTableData(connectionIo, os, input, databaseName, table);
+    dumpSpecificDatabase(connectionIo, os, input, databaseName);
+    dumpDatabaseData(connectionIo, os, databaseName, input);
 
     os << std::flush;
 }
