@@ -48,7 +48,6 @@ constexpr const char* kIOManagerExecutable = "siodb_iomgr";
 
 /** Siodb internal time intervals */
 constexpr int kUserConnectionWorkerShutdownTimeoutMs = 5 * 1000;
-constexpr int kDeadConnectionRecyclingPeriodMs = 30 * 1000;
 constexpr auto kIomgrInitializationCheckPeriod = std::chrono::seconds(1);
 
 /** Siocli editor history size */

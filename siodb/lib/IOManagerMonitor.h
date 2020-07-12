@@ -3,7 +3,7 @@
 // in the LICENSE file.
 
 // Common project headers
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/SignalHandlers.h>
 
@@ -22,18 +22,18 @@
 namespace siodb {
 
 /** IO manager monitor */
-class IOMgrMonitor final {
+class IOManagerMonitor final {
 public:
     /**
-     * Initialized object of class IOMgrMonitor.
+     * Initialized object of class IOManagerMonitor.
      * @param instanceOptions Database options.
      */
-    IOMgrMonitor(const config::ConstInstaceOptionsPtr& instanceOptions);
+    IOManagerMonitor(const config::ConstInstaceOptionsPtr& instanceOptions);
 
     /** Cleans up object */
-    ~IOMgrMonitor();
+    ~IOManagerMonitor();
 
-    DECLARE_NONCOPYABLE(IOMgrMonitor);
+    DECLARE_NONCOPYABLE(IOManagerMonitor);
 
     /**
      * Returns indication that monitor thread and IO manager should run.
@@ -53,7 +53,7 @@ private:
     void stopIOManager();
 
     /** Stops IO Manager monitor thread */
-    void stopMonitorThread();
+    void stopThread();
 
     /** IO Manage monitor thread function. */
     void threadMain();
@@ -99,7 +99,7 @@ private:
     static constexpr std::size_t kIoManagerHistorySize = 3;
 
     /** Log message prefix */
-    static constexpr const char* kLogPrefix = "IOMgrMonitor: ";
+    static constexpr const char* kLogPrefix = "IOManagerMonitor: ";
 };
 
 }  // namespace siodb

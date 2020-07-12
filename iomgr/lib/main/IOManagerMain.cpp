@@ -3,15 +3,15 @@
 // in the LICENSE file.
 
 // Project headers
-#include "IOMgrConnectionManager.h"
+#include "IOManagerConnectionManager.h"
 #include "../dbengine/Instance.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/config/SiodbVersion.h>
 #include <siodb/common/log/Log.h>
-#include <siodb/common/options/DatabaseInstance.h>
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbInstance.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
@@ -45,7 +45,7 @@ extern "C" int iomgrMain(int argc, char** argv)
     siodb::utils::performCommonStartupActions();
 
     std::string instanceName;
-    auto instanceOptions = std::make_shared<siodb::config::InstanceOptions>();
+    auto instanceOptions = std::make_shared<siodb::config::SiodbOptions>();
 
     // Parse and validate command-line options
     try {
@@ -64,7 +64,7 @@ extern "C" int iomgrMain(int argc, char** argv)
 
         if (vm.count("help") > 0) {
             std::cout << desc << std::endl;
-            return siodb::kIOManagerExitCode_Success;
+            return siodb::iomgr::kIOManagerExitCode_Success;
         }
 
         instanceName = vm["instance"].as<std::string>();
@@ -80,7 +80,7 @@ extern "C" int iomgrMain(int argc, char** argv)
         instanceOptions->m_generalOptions.m_executablePath = executableFullPath.data();
     } catch (std::exception& ex) {
         std::cerr << "Fatal: " << ex.what() << '.' << std::endl;
-        return siodb::kIOManagerExitCode_InvalidConfig;
+        return siodb::iomgr::kIOManagerExitCode_InvalidConfig;
     }
 
     siodb::utils::setupSignalHandlers();
@@ -92,65 +92,56 @@ extern "C" int iomgrMain(int argc, char** argv)
                     std::make_unique<siodb::log::LogSubsystemGuard>(instanceOptions->m_logOptions);
         } catch (std::exception& ex) {
             std::cerr << "Fatal: " << ex.what() << '.' << std::endl;
-            return siodb::kIOManagerExitCode_LogInitializationFailed;
+            return siodb::iomgr::kIOManagerExitCode_LogInitializationFailed;
         }
 
         LOG_INFO << "Siodb IO Manager v." << SIODB_VERSION_MAJOR << '.' << SIODB_VERSION_MINOR
-                 << '.' << SIODB_VERSION_PATCH << '.';
+                 << '.' << SIODB_VERSION_PATCH
+#ifdef _DEBUG
+                 << " (debug build)"
+#endif
+                ;
+        LOG_INFO << "Compiled on " << __DATE__ << ' ' << __TIME__;
         LOG_INFO << "Copyright (C) " << SIODB_COPYRIGHT_YEARS
                  << " Siodb GmbH. All rights reserved.";
 
+        siodb::iomgr::dbengine::InstancePtr instance;
+        std::unique_ptr<siodb::iomgr::IOManagerRequestDispatcher> requestDispatcher;
+        std::unique_ptr<siodb::iomgr::IOManagerConnectionManager> ipv4ConnectionManager;
+        std::unique_ptr<siodb::iomgr::IOManagerConnectionManager> ipv6ConnectionManager;
+
         try {
-            // Initialize DB message catalog.
             LOG_INFO << "Initializing database message catalog...";
             siodb::utils::MessageCatalog::initDefaultCatalog(siodb::utils::constructPath(
                     instanceOptions->getExecutableDir(), "iomgr_messages.txt"));
-        } catch (std::exception& ex) {
-            LOG_ERROR << ex.what() << '.' << std::endl;
-            return siodb::kIOManagerExitCode_InitializationFailed;
-        }
 
-        try {
-            // Initialize ciphers
             LOG_INFO << "Initializing built-in ciphers...";
             siodb::iomgr::dbengine::crypto::initializeBuiltInCiphers();
+
             LOG_INFO << "Initializing external ciphers...";
             siodb::iomgr::dbengine::crypto::initializeExternalCiphers(
                     instanceOptions->m_encryptionOptions.m_externalCipherOptions);
-        } catch (std::exception& ex) {
-            LOG_FATAL << ex.what() << '.' << std::endl;
-            return siodb::kIOManagerExitCode_InitializationFailed;
-        }
 
-        siodb::iomgr::dbengine::InstancePtr instance;
-        try {
+            LOG_INFO << "Initializing database engine...";
             instance = std::make_shared<siodb::iomgr::dbengine::Instance>(*instanceOptions);
-        } catch (std::exception& ex) {
-            LOG_FATAL << ex.what() << '.' << std::endl;
-            return siodb::kIOManagerExitCode_DatabaseEngineIntializationFailed;
-        }
 
-        std::unique_ptr<siodb::iomgr::IOMgrConnectionManager> ipv4UserConnectionManager;
-        std::unique_ptr<siodb::iomgr::IOMgrConnectionManager> ipv6UserConnectionManager;
+            LOG_INFO << "Initializing request dispatcher and executors...";
+            requestDispatcher = std::make_unique<siodb::iomgr::IOManagerRequestDispatcher>(
+                    *instanceOptions, *instance);
 
-        try {
-            // Initialize IPv4 listener
             if (instanceOptions->m_ioManagerOptions.m_ipv4port != 0) {
-                ipv4UserConnectionManager = std::make_unique<siodb::iomgr::IOMgrConnectionManager>(
-                        AF_INET, instanceOptions, instance);
+                LOG_INFO << "Initializing IPv4 connection manager...";
+                ipv4ConnectionManager = std::make_unique<siodb::iomgr::IOManagerConnectionManager>(
+                        AF_INET, instanceOptions, *requestDispatcher);
             }
 
-            // Initialize IPv6 listener
             if (instanceOptions->m_ioManagerOptions.m_ipv6port != 0) {
-                ipv6UserConnectionManager = std::make_unique<siodb::iomgr::IOMgrConnectionManager>(
-                        AF_INET6, instanceOptions, instance);
+                LOG_INFO << "Initializing IPv6 connection manager...";
+                ipv6ConnectionManager = std::make_unique<siodb::iomgr::IOManagerConnectionManager>(
+                        AF_INET6, instanceOptions, *requestDispatcher);
             }
-        } catch (std::exception& ex) {
-            LOG_FATAL << ex.what() << '.' << std::endl;
-            return siodb::kIOManagerExitCode_ConnectionCreationFailed;
-        }
 
-        try {
+            LOG_INFO << "Creating initialization flag file...";
             const auto initFlagFilePath = siodb::composeIomgrInitializionFlagFilePath(
                     instanceOptions->m_generalOptions.m_name);
             if (!fs::exists(initFlagFilePath)) {
@@ -161,17 +152,35 @@ extern "C" int iomgrMain(int argc, char** argv)
                     stdext::throw_system_error("Can't create iomgr initialization file");
             }
         } catch (std::exception& ex) {
-            LOG_FATAL << ex.what() << '.' << std::endl;
-            return siodb::kIOManagerExitCode_InitializationFailed;
+            LOG_ERROR << ex.what() << '.' << std::endl;
+            return siodb::iomgr::kIOManagerExitCode_InitializationFailed;
         }
 
         LOG_INFO << "IO Manager initialized";
 
         siodb::utils::waitForExitEvent();
+
         const int exitSignal = siodb::utils::getExitSignal();
         LOG_INFO << "IO Manager is shutting down due to signal #" << exitSignal << " ("
                  << strsignal(exitSignal) << ").";
+
+        // Make shutdown process more detailed in the log
+        if (ipv6ConnectionManager) {
+            LOG_INFO << "Shutting down IPv6 connection manager...";
+            ipv6ConnectionManager.reset();
+        }
+
+        if (ipv4ConnectionManager) {
+            LOG_INFO << "Shutting down IPv4 connection manager...";
+            ipv4ConnectionManager.reset();
+        }
+
+        LOG_INFO << "Shutting down request dispatcher...";
+        requestDispatcher.reset();
+
+        LOG_INFO << "Shutting down database engine...";
+        instance.reset();
     }
 
-    return siodb::kIOManagerExitCode_Success;
+    return siodb::iomgr::kIOManagerExitCode_Success;
 }

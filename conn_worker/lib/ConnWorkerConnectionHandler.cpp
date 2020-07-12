@@ -225,12 +225,12 @@ void ConnWorkerConnectionHandler::closeConnection()
 // ----- internals -----
 
 void ConnWorkerConnectionHandler::responseToClientWithError(
-        int requestId, const char* text, int errCode)
+        int requestId, const char* text, int errorCode)
 {
     client_protocol::ServerResponse response;
     response.set_request_id(requestId);
     const auto message = response.add_message();
-    message->set_status_code(errCode);
+    message->set_status_code(errorCode);
     message->set_text(text);
     protobuf::writeMessage(protobuf::ProtocolMessageType::kServerResponse, response, *m_clientIo);
 }

@@ -3,14 +3,14 @@
 // in the LICENSE file.
 
 // Project headers
-#include "IOMgrMonitor.h"
+#include "IOManagerMonitor.h"
 #include "SiodbConnectionManager.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbVersion.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/UnixServer.h>
-#include <siodb/common/options/DatabaseInstance.h>
+#include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
@@ -52,7 +52,7 @@ extern "C" int siodbMain(int argc, char** argv)
     }
 
     bool runAsDaemon = false;
-    auto instanceOptions = std::make_shared<siodb::config::InstanceOptions>();
+    auto instanceOptions = std::make_shared<siodb::config::SiodbOptions>();
 
     try {
         siodb::utils::checkUserBelongsToSiodbAdminGroup(geteuid(), getegid());
@@ -129,7 +129,12 @@ extern "C" int siodbMain(int argc, char** argv)
         }
 
         LOG_INFO << "Siodb v." << SIODB_VERSION_MAJOR << '.' << SIODB_VERSION_MINOR << '.'
-                 << SIODB_VERSION_PATCH << '.';
+                 << SIODB_VERSION_PATCH
+#ifdef _DEBUG
+                 << " (debug build)"
+#endif
+                ;
+        LOG_INFO << "Compiled on " << __DATE__ << ' ' << __TIME__;
         LOG_INFO << "Copyright (C) " << SIODB_COPYRIGHT_YEARS
                  << " Siodb GmbH. All rights reserved.";
 
@@ -157,7 +162,7 @@ extern "C" int siodbMain(int argc, char** argv)
                 }
             }
 
-            siodb::IOMgrMonitor monitor(instanceOptions);
+            siodb::IOManagerMonitor monitor(instanceOptions);
             // Wait for IO Manager to initialize database
             while (!fs::exists(iomgrInitFlagFilePath) && monitor.shouldRun()) {
                 std::this_thread::sleep_for(siodb::kIomgrInitializationCheckPeriod);

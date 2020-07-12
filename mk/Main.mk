@@ -424,6 +424,7 @@ endif
 ifdef TARGET_LIB
 $(MAIN_TARGET): $(OBJ) | $(LIB_DIR)
 	@echo AR $@
+	-$(NOECHO)rm -f $@
 	$(NOECHO)$(AR) rcs $@ $^
 	@echo DONE $@
 endif

@@ -6,9 +6,10 @@
 
 // Common project headers
 #include <siodb/common/log/Log.h>
+#include <siodb/common/net/SocketDomain.h>
 #include <siodb/common/net/TcpServer.h>
 #include <siodb/common/net/UnixServer.h>
-#include <siodb/common/options/DatabaseInstanceSocket.h>
+#include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
@@ -17,6 +18,7 @@
 
 // STL headers
 #include <chrono>
+#include <sstream>
 
 // System headers
 #include <arpa/inet.h>
@@ -31,20 +33,17 @@ namespace siodb {
 
 SiodbConnectionManager::SiodbConnectionManager(
         int socketDomain, bool checkUser, const config::ConstInstaceOptionsPtr& instanceOptions)
-    : m_socketDomain(checkSocketDomain(socketDomain))
-    , m_socketTypeName(
-              socketDomain == AF_UNIX ? "UNIX" : (socketDomain == AF_INET ? "IPv4" : "IPv6"))
+    : m_socketDomain(net::checkSocketDomain(socketDomain))
+    , m_logContext(createLogContextName())
     , m_checkUser(checkUser)
     , m_dbOptions(instanceOptions)
     , m_workerExecutablePath(instanceOptions->getExecutableDir() + fs::path::preferred_separator
                              + kUserConnectionWorkerExecutable)
     , m_exitRequested(false)
-    , m_deadConnectionRecyclingPeriod(kDeadConnectionRecyclingPeriodMs)
-    , m_deadConnectionRecyclerThreadAwakeCondition()
+    , m_deadConnectionCleanupThreadAwakeCondition()
     // IMPORTANT: all next class members must be declared and initialized
     // exactly in this order and after all other members
-    , m_deadConnectionRecyclerThread(
-              &SiodbConnectionManager::deadConnectionRecyclerThreadMain, this)
+    , m_deadConnectionCleanupThread(&SiodbConnectionManager::deadConnectionCleanupThreadMain, this)
     , m_connectionListenerThread(&SiodbConnectionManager::connectionListenerThreadMain, this)
 {
 }
@@ -63,21 +62,19 @@ SiodbConnectionManager::~SiodbConnectionManager()
     // Signal dead connection recycler thread and wait for it to finish
     {
         std::lock_guard lock(m_connectionHandlersMutex);
-        m_deadConnectionRecyclerThreadAwakeCondition.notify_one();
+        m_deadConnectionCleanupThreadAwakeCondition.notify_one();
     }
-    m_deadConnectionRecyclerThread.join();
+    m_deadConnectionCleanupThread.join();
 
     // Stop remaining child processes
     if (!m_connectionHandlers.empty()) {
-        LOG_INFO << kLogContext << "Shutting down active connection handlers...";
+        LOG_INFO << m_logContext << "Shutting down active connection handlers...";
         for (auto pid : m_connectionHandlers) {
-            LOG_INFO << m_socketTypeName << kLogContext << "Sending interrupt signal to PID "
-                     << pid;
+            LOG_INFO << m_logContext << "Sending interrupt signal to PID " << pid;
             ::kill(pid, SIGTERM);
         }
 
-        LOG_INFO << m_socketTypeName << kLogContext
-                 << "Waiting for connection handler processes to shut down...";
+        LOG_INFO << m_logContext << "Waiting for connection handler processes to shut down...";
         removeDeadConnections(true);
         const auto startTime = std::chrono::steady_clock::now();
         while (!m_connectionHandlers.empty()
@@ -90,9 +87,9 @@ SiodbConnectionManager::~SiodbConnectionManager()
         }
 
         if (!m_connectionHandlers.empty()) {
-            LOG_INFO << kLogContext << "Killing remaining active connection handlers...";
+            LOG_INFO << m_logContext << "Killing remaining active connection handlers...";
             for (auto pid : m_connectionHandlers) {
-                LOG_INFO << kLogContext << "Sending kill signal to PID " << pid;
+                LOG_INFO << m_logContext << "Sending kill signal to PID " << pid;
                 ::kill(pid, SIGKILL);
             }
             removeDeadConnections(true);
@@ -101,7 +98,7 @@ SiodbConnectionManager::~SiodbConnectionManager()
                 std::this_thread::sleep_for(kTerminateConnectionsCheckPeriod);
             }
         }
-        LOG_INFO << m_socketTypeName << kLogContext << "All connection handler processes finished.";
+        LOG_INFO << m_logContext << "All connection handler processes finished.";
     }
 }
 
@@ -126,10 +123,10 @@ void SiodbConnectionManager::connectionListenerThreadMain()
         // Check socket
         if (!server.isValidFd()) {
             const int errorCode = errno;
-            LOG_FATAL << m_socketTypeName << kLogContext << "Can't create " << m_socketTypeName
+            LOG_FATAL << m_logContext << "Can't create " << net::getSocketDomainName(m_socketDomain)
                       << " connection listener socket: " << std::strerror(errorCode) << '.';
             if (::kill(::getpid(), SIGTERM) < 0) {
-                LOG_ERROR << kLogContext << "Sending SIGTERM to Siodb process failed: "
+                LOG_ERROR << m_logContext << "Sending SIGTERM to Siodb process failed: "
                           << std::strerror(errorCode);
             }
             return;
@@ -137,10 +134,10 @@ void SiodbConnectionManager::connectionListenerThreadMain()
 
         // Report successful opening of listener socket
         if (m_socketDomain == AF_UNIX) {
-            LOG_INFO << m_socketTypeName << kLogContext << "Listening for UNIX connections on the "
-                     << socketPath << '.';
+            LOG_INFO << m_logContext << "Listening for UNIX connections on the " << socketPath
+                     << '.';
         } else {
-            LOG_INFO << m_socketTypeName << kLogContext << "Listening for TCP connections via "
+            LOG_INFO << m_logContext << "Listening for TCP connections via "
                      << (m_socketDomain == AF_INET ? "IPv4" : "IPv6") << " on the port " << port
                      << '.';
         }
@@ -148,8 +145,8 @@ void SiodbConnectionManager::connectionListenerThreadMain()
         LOG_ERROR << ex.what();
         if (::kill(::getpid(), SIGTERM) < 0) {
             const int errorCode = errno;
-            LOG_ERROR << kLogContext
-                      << "Sending SIGTERM to Siodb process failed: " << std::strerror(errorCode);
+            LOG_ERROR << m_logContext << "Sending SIGTERM to Siodb process failed: [" << errorCode
+                      << "] " << std::strerror(errorCode);
         }
         return;
     }
@@ -186,8 +183,7 @@ void SiodbConnectionManager::connectionListenerThreadMain()
         if (pid < 0) {
             // Error occurred
             const int errorCode = errno;
-            LOG_ERROR << m_socketTypeName << kLogContext
-                      << "Can't create new process: " << std::strerror(errorCode);
+            LOG_ERROR << m_logContext << "Can't create new process: " << std::strerror(errorCode);
             continue;
         }
 
@@ -197,7 +193,7 @@ void SiodbConnectionManager::connectionListenerThreadMain()
                 std::lock_guard lock(m_connectionHandlersMutex);
                 m_connectionHandlers.insert(pid);
             }
-            LOG_INFO << kLogContext << "Started new user connection worker, PID " << pid;
+            LOG_INFO << m_logContext << "Started new user connection worker, PID " << pid;
             continue;
         }
 
@@ -208,13 +204,13 @@ void SiodbConnectionManager::connectionListenerThreadMain()
     }
 }
 
-void SiodbConnectionManager::deadConnectionRecyclerThreadMain()
+void SiodbConnectionManager::deadConnectionCleanupThreadMain()
 {
     while (!m_exitRequested) {
         {
             std::unique_lock lock(m_connectionHandlersMutex);
-            const auto waitResult = m_deadConnectionRecyclerThreadAwakeCondition.wait_for(
-                    lock, m_deadConnectionRecyclingPeriod);
+            const auto waitResult = m_deadConnectionCleanupThreadAwakeCondition.wait_for(
+                    lock, m_dbOptions->m_generalOptions.m_deadConnectionCleanupPeriod);
             if (waitResult != std::cv_status::timeout) continue;
         }
         removeDeadConnections();
@@ -223,10 +219,10 @@ void SiodbConnectionManager::deadConnectionRecyclerThreadMain()
 
 void SiodbConnectionManager::removeDeadConnections(bool ignoreExitRequested)
 {
-    LOG_DEBUG << m_socketTypeName << kLogContext << "Recycling dead connections...";
+    LOG_DEBUG << m_logContext << "Cleaning up dead connections...";
     std::lock_guard lock(m_connectionHandlersMutex);
-    LOG_DEBUG << m_socketTypeName << kLogContext << "Starting with " << m_connectionHandlers.size()
-              << " tracked connections.";
+    LOG_DEBUG << m_logContext
+              << "Number of connections before cleanup: " << m_connectionHandlers.size();
     auto it = m_connectionHandlers.begin();
     while (it != m_connectionHandlers.end()) {
         if (!ignoreExitRequested && m_exitRequested) return;
@@ -238,22 +234,21 @@ void SiodbConnectionManager::removeDeadConnections(bool ignoreExitRequested)
         if (pid == 0) {
             // Process still running
             ++it;
-            LOG_DEBUG << m_socketTypeName << kLogContext << "Child PID " << childPid
-                      << " still running.";
+            LOG_DEBUG << m_logContext << "Child PID " << childPid << " still running";
         } else if (pid == childPid || errorCode == ECHILD) {
             // Process exited or doesn't exist.
             it = m_connectionHandlers.erase(it);
-            LOG_INFO << m_socketTypeName << kLogContext << "Child PID " << childPid << " exited.";
+            LOG_INFO << m_logContext << "Child PID " << childPid << " exited with code "
+                     << WEXITSTATUS(status);
         } else {
             // Other error occurred, ignore by now.
             ++it;
-            LOG_WARNING << m_socketTypeName << kLogContext << "Check child PID " << childPid
-                        << " status failed: error " << errorCode << ": "
-                        << std::strerror(errorCode);
+            LOG_WARNING << m_logContext << "Check child PID " << childPid << " status failed: ["
+                        << errorCode << "] " << std::strerror(errorCode);
         }
     }
-    LOG_INFO << m_socketTypeName << kLogContext << "There are " << m_connectionHandlers.size()
-             << " active connections.";
+    LOG_INFO << m_logContext
+             << "Number of connections after cleanup: " << m_connectionHandlers.size();
 }
 
 int SiodbConnectionManager::acceptTcpConnection(int serverFd)
@@ -272,11 +267,10 @@ int SiodbConnectionManager::acceptTcpConnection(int serverFd)
     if (!client.isValidFd()) {
         const int errorCode = errno;
         if (errorCode == EINTR && m_exitRequested) {
-            LOG_INFO << m_socketTypeName << kLogContext
-                     << "TCP connection listener thread is exiting"
+            LOG_INFO << m_logContext << "TCP connection listener thread is exiting"
                      << " because database is shutting down.";
         } else {
-            LOG_ERROR << m_socketTypeName << kLogContext
+            LOG_ERROR << m_logContext
                       << "Can't accept user client connection: " << std::strerror(errorCode) << '.';
         }
         return -1;
@@ -285,8 +279,7 @@ int SiodbConnectionManager::acceptTcpConnection(int serverFd)
     char addrBuffer[std::max(INET6_ADDRSTRLEN, INET_ADDRSTRLEN) + 1];
     *addrBuffer = '\0';
     inet_ntop(m_socketDomain, &addr, addrBuffer, addrLength);
-    LOG_INFO << m_socketTypeName << kLogContext << "Accepted new user connection from "
-             << addrBuffer << '.';
+    LOG_INFO << m_logContext << "Accepted new user connection from " << addrBuffer << '.';
     return client.release();
 }
 
@@ -299,17 +292,17 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
     if (!client.isValidFd()) {
         const int errorCode = errno;
         if (errorCode == EINTR && m_exitRequested) {
-            LOG_INFO << m_socketTypeName << kLogContext
+            LOG_INFO << m_logContext
                      << "UNIX connection listener thread"
                         " is exiting because database is shutting down.";
         } else {
-            LOG_ERROR << m_socketTypeName << kLogContext
+            LOG_ERROR << m_logContext
                       << "Can't accept UNIX client connection: " << std::strerror(errorCode) << '.';
         }
         return -1;
     }
 
-    LOG_INFO << m_socketTypeName << kLogContext << "Accepted new UNIX connection.";
+    LOG_INFO << m_logContext << "Accepted new UNIX connection.";
 
     // Authenticate admin user - must be member of administrative UNIX group.
     // See https://stackoverflow.com/a/18946355/1540501
@@ -320,14 +313,12 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
     socklen_t len = sizeof(peerCredentials);
     if (::getsockopt(client.getFd(), SOL_SOCKET, SO_PEERCRED, &peerCredentials, &len) != 0) {
         const int errorCode = errno;
-        LOG_ERROR << m_socketTypeName << kLogContext
-                  << "Can't get peer credentials for incoming UNIX connection: "
+        LOG_ERROR << m_logContext << "Can't get peer credentials for incoming UNIX connection: "
                   << std::strerror(errorCode) << '.';
         return -1;
     }
     if (len != sizeof(peerCredentials)) {
-        LOG_ERROR << m_socketTypeName << kLogContext
-                  << "Peer credentials information differs in length: expected "
+        LOG_ERROR << m_logContext << "Peer credentials information differs in length: expected "
                   << sizeof(peerCredentials) << " but received " << len << '.';
         return -1;
     }
@@ -344,24 +335,17 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
     }
 
     // Report that admin connection accepted.
-    LOG_INFO << m_socketTypeName << kLogContext << "UNIX connection from user #"
-             << peerCredentials.uid << " (" << peerUserName << ") accepted.";
+    LOG_INFO << m_logContext << "UNIX connection from user #" << peerCredentials.uid << " ("
+             << peerUserName << ") accepted.";
 
     return client.release();
 }
 
-int SiodbConnectionManager::checkSocketDomain(int socketDomain)
+std::string SiodbConnectionManager::createLogContextName() const
 {
-    switch (socketDomain) {
-        case AF_INET:
-        case AF_INET6:
-        case AF_UNIX: return socketDomain;
-        default: {
-            throw std::invalid_argument(
-                    "Invalid connection listener socket domain,"
-                    " only IPv4, IPv6 and Unix sockets are supported");
-        }
-    }
+    std::ostringstream oss;
+    oss << net::getSocketDomainName(m_socketDomain) << kLogContextBase << ": ";
+    return oss.str();
 }
 
 }  // namespace siodb

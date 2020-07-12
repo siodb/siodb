@@ -2,14 +2,10 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#pragma once
+#include "IOManagerRequest.h"
 
 namespace siodb::iomgr {
 
-/** IO request */
-class IORequest {
-    // just something for now
-    int dummy;
-};
+std::atomic<std::uint64_t> IOManagerRequest::s_idCounter(0);
 
 }  // namespace siodb::iomgr

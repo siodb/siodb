@@ -11,6 +11,7 @@
 #include "../utils/BinaryValue.h"
 
 // STL headers
+#include <chrono>
 #include <stdexcept>
 
 namespace siodb::config {
@@ -32,6 +33,7 @@ constexpr const char* kGeneralOptionMaxAdminConnections = "max_admin_connections
 constexpr const char* kGeneralOptionUserConnectionListenerBacklog =
         "user_connection_listener_backlog";
 constexpr const char* kGeneralOptionMaxUserConnections = "max_user_connections";
+constexpr const char* kGeneralOptionDeadConnectionCleanupPeriod = "dead_connection_cleanup_period";
 
 // IO Manager options
 constexpr const char* kIOManagerOptionIpv4Port = "iomgr.ipv4_port";
@@ -42,6 +44,8 @@ constexpr const char* kIOManagerOptionUserCacheCapacity = "iomgr.user_cache_capa
 constexpr const char* kIOManagerOptionDatabaseCacheCapacity = "iomgr.database_cache_capacity";
 constexpr const char* kIOManagerOptionTableCacheCapacity = "iomgr.table_cache_capacity";
 constexpr const char* kIOManagerOptionBlockCacheCapacity = "iomgr.block_cache_capacity";
+constexpr const char* kIOManagerOptionDeadConnectionCleanupPeriod =
+        "iomgr.dead_connection_cleanup_period";
 
 // Encryption options
 constexpr const char* kEncryptionOptionDefaultCipherId = "encryption.default_cipher_id";
@@ -83,30 +87,40 @@ constexpr int kMaxUserConnectionListenerBacklog = 32768;
 constexpr unsigned kDefaultMaxUserConnections = 10;
 constexpr unsigned kMaxMaxUserConnections = 32768;
 
+// Siodb dead connection cleanup period in seconds
+constexpr unsigned kMinOptionDeadConnectionCleanupPeriod = 3;
+constexpr unsigned kMaxOptionDeadConnectionCleanupPeriod = 3600;
+constexpr unsigned kDefaultOptionDeadConnectionCleanupPeriod = 30;
+
 // Default number of IO Manager worker threads
 constexpr const unsigned kDefaultIOManagerWorkerThreadNumber = 2;
 constexpr const unsigned kDefaultIOManagerWriterThreadNumber = 2;
 
-// Default IOManager ports
+// Default IO Manager ports
 constexpr auto kDefaultIOManagerIpv4PortNumber = 50001;
 constexpr auto kDefaultIOManagerIpv6PortNumber = 0;
 
-// IOManager user cache capacity
+// IO Manager user cache capacity
 constexpr std::size_t kMinIOManagerUserCacheCapacity = 2;
 constexpr std::size_t kDefaultIOManagerUserCacheCapacity = 100;
 
-// IOManager database cache capacity
+// IO Manager database cache capacity
 constexpr std::size_t kMinIOManagerDatabaseCacheCapacity = 2;
 constexpr std::size_t kDefaultIOManagerDatabaseCacheCapacity = 100;
 
-// IOManager table cache capacity
-constexpr std::size_t kMaxNumberOfSystemTables = 4;
+// IO Manager table cache capacity
+constexpr std::size_t kMaxNumberOfSystemTables = 99;
 constexpr std::size_t kMinIOManagerTableCacheCapacity = kMaxNumberOfSystemTables + 1;
-constexpr std::size_t kDefaultIOManagerTableCacheCapacity = 100;
+constexpr std::size_t kDefaultIOManagerTableCacheCapacity = kMinIOManagerTableCacheCapacity;
 
-// IOManager block cache capacity
+// IO Manager block cache capacity
 constexpr std::size_t kMinIOManagerBlockCacheCapacity = 50;
 constexpr std::size_t kDefaultIOManagerBlockCacheCapacity = 103;
+
+// IO Manager dead connection cleanup period in seconds
+constexpr unsigned kMinIOManagerOptionDeadConnectionCleanupPeriod = 3;
+constexpr unsigned kMaxIOManagerOptionDeadConnectionCleanupPeriod = 3600;
+constexpr unsigned kDefaultIOManagerOptionDeadConnectionCleanupPeriod = 30;
 
 /** Default cipher */
 constexpr const char* kDefaultCipherId = "aes128";
@@ -146,6 +160,10 @@ struct GeneralOptions {
     /** Maximum number of user connections */
     unsigned m_maxUserConnections = kDefaultMaxUserConnections;
 
+    /** Dead connection cleanup period */
+    std::chrono::seconds m_deadConnectionCleanupPeriod =
+            std::chrono::seconds(kDefaultOptionDeadConnectionCleanupPeriod);
+
     /**
      * Explicit superuser's initial access key. Needed only when creating new instance.
      * Use this one only for unit tests.
@@ -184,6 +202,10 @@ struct IOManagerOptions {
 
     /** Block cache capacity */
     std::size_t m_blockCacheCapacity = kDefaultIOManagerBlockCacheCapacity;
+
+    /** Dead connection cleanup period */
+    std::chrono::seconds m_deadConnectionCleanupPeriod =
+            std::chrono::seconds(kDefaultIOManagerOptionDeadConnectionCleanupPeriod);
 };
 
 /** Extenal cipher options */
@@ -223,7 +245,7 @@ struct ClientOptions {
 };
 
 /** Whole database options */
-struct InstanceOptions {
+struct SiodbOptions {
     /** Instance options */
     GeneralOptions m_generalOptions;
 
@@ -256,9 +278,9 @@ struct InstanceOptions {
 };
 
 /** Instance options shared pointer shortcut type */
-using InstaceOptionsPtr = std::shared_ptr<InstanceOptions>;
+using InstaceOptionsPtr = std::shared_ptr<SiodbOptions>;
 
 /** Constant instance options shared pointer shortcut type */
-using ConstInstaceOptionsPtr = std::shared_ptr<const InstanceOptions>;
+using ConstInstaceOptionsPtr = std::shared_ptr<const SiodbOptions>;
 
 }  // namespace siodb::config

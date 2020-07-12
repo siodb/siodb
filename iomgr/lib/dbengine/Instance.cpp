@@ -17,8 +17,8 @@
 #include <siodb/common/crypto/DigitalSignatureKey.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
-#include <siodb/common/options/DatabaseInstance.h>
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbInstance.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FsUtils.h>
@@ -43,7 +43,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-Instance::Instance(const config::InstanceOptions& options)
+Instance::Instance(const config::SiodbOptions& options)
     : m_uuid(utils::getZeroUuid())
     , m_name(options.m_generalOptions.m_name)
     , m_dataDir(options.m_generalOptions.m_dataDirectory)
@@ -397,7 +397,7 @@ void Instance::beginUserAuthentication(const std::string& userName)
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
 }
 
-std::pair<std::uint32_t, Uuid> Instance::authenticateUser(
+AuthenticationResult Instance::authenticateUser(
         const std::string& userName, const std::string& signature, const std::string& challenge)
 {
     const auto user = findUserChecked(userName);
@@ -425,7 +425,7 @@ std::pair<std::uint32_t, Uuid> Instance::authenticateUser(
 
     LOG_INFO << "Instance: User '" << userName << "' authenticated.";
 
-    return std::make_pair(user->getId(), beginSession());
+    return AuthenticationResult(user->getId(), beginSession());
 }
 
 void Instance::endSession(const Uuid& sessionUuid)

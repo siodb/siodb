@@ -2,13 +2,13 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "InstanceOptions.h"
+#include "SiodbOptions.h"
 
 // Internal headers
 #include "detail/DatabaseOptionsDetail.h"
 
 // Project headers
-#include "DatabaseInstance.h"
+#include "SiodbInstance.h"
 #include "../net/NetConstants.h"
 #include "../stl_wrap/filesystem_wrapper.h"
 
@@ -52,88 +52,121 @@ struct BoolTranslator {
 
 }  // namespace
 
-std::string InstanceOptions::getExecutableDir() const
+std::string SiodbOptions::getExecutableDir() const
 {
     const fs::path path(m_generalOptions.m_executablePath);
     return path.parent_path().native();
 }
 
-void InstanceOptions::load(const std::string& instanceName)
+void SiodbOptions::load(const std::string& instanceName)
 {
     const auto config = detail::readConfiguration(instanceName);
-    InstanceOptions tmpOptions;
+    SiodbOptions tmpOptions;
 
     // Instance options
 
     tmpOptions.m_generalOptions.m_name = instanceName;
 
     // Parse IPv4 port number
-    tmpOptions.m_generalOptions.m_ipv4port =
-            config.get<int>(constructOptionPath(kGeneralOptionIpv4Port), kDefaultIpv4PortNumber);
-    if (tmpOptions.m_generalOptions.m_ipv4port != 0
-            && (tmpOptions.m_generalOptions.m_ipv4port < kMinPortNumber
-                    || tmpOptions.m_generalOptions.m_ipv4port > kMaxPortNumber))
-        throw InvalidConfigurationOptionError("Invalid IPv4 server port number");
+    {
+        tmpOptions.m_generalOptions.m_ipv4port = config.get<int>(
+                constructOptionPath(kGeneralOptionIpv4Port), kDefaultIpv4PortNumber);
+        if (tmpOptions.m_generalOptions.m_ipv4port != 0
+                && (tmpOptions.m_generalOptions.m_ipv4port < kMinPortNumber
+                        || tmpOptions.m_generalOptions.m_ipv4port > kMaxPortNumber))
+            throw InvalidConfigurationOptionError("Invalid IPv4 server port number");
+    }
 
     // Parse IPv6 port number
-    tmpOptions.m_generalOptions.m_ipv6port =
-            config.get<int>(constructOptionPath(kGeneralOptionIpv6Port), kDefaultIpv6PortNumber);
-    if (tmpOptions.m_generalOptions.m_ipv6port != 0
-            && (tmpOptions.m_generalOptions.m_ipv6port < kMinPortNumber
-                    || tmpOptions.m_generalOptions.m_ipv6port > kMaxPortNumber))
-        throw InvalidConfigurationOptionError("Invalid IPv6 server port number");
+    {
+        tmpOptions.m_generalOptions.m_ipv6port = config.get<int>(
+                constructOptionPath(kGeneralOptionIpv6Port), kDefaultIpv6PortNumber);
+        if (tmpOptions.m_generalOptions.m_ipv6port != 0
+                && (tmpOptions.m_generalOptions.m_ipv6port < kMinPortNumber
+                        || tmpOptions.m_generalOptions.m_ipv6port > kMaxPortNumber))
+            throw InvalidConfigurationOptionError("Invalid IPv6 server port number");
+    }
 
+    // Ensure that at least one of IPv4 or IPv6 ports is specified
     if (tmpOptions.m_generalOptions.m_ipv6port == 0 && tmpOptions.m_generalOptions.m_ipv4port == 0)
         throw InvalidConfigurationOptionError("Both IPv4 and IPv6 are disabled");
 
     // Parse data directory
-    tmpOptions.m_generalOptions.m_dataDirectory = boost::trim_copy(
-            config.get<std::string>(constructOptionPath(kGeneralOptionDataDirectory), ""));
-    while (!tmpOptions.m_generalOptions.m_dataDirectory.empty()
-            && tmpOptions.m_generalOptions.m_dataDirectory.back() == '/') {
-        tmpOptions.m_generalOptions.m_dataDirectory.erase(
-                tmpOptions.m_generalOptions.m_dataDirectory.length() - 1);
+    {
+        tmpOptions.m_generalOptions.m_dataDirectory = boost::trim_copy(
+                config.get<std::string>(constructOptionPath(kGeneralOptionDataDirectory), ""));
+        while (!tmpOptions.m_generalOptions.m_dataDirectory.empty()
+                && tmpOptions.m_generalOptions.m_dataDirectory.back() == '/') {
+            tmpOptions.m_generalOptions.m_dataDirectory.erase(
+                    tmpOptions.m_generalOptions.m_dataDirectory.length() - 1);
+        }
+        if (tmpOptions.m_generalOptions.m_dataDirectory.empty())
+            throw InvalidConfigurationOptionError("Data directory not specified or empty");
     }
-    if (tmpOptions.m_generalOptions.m_dataDirectory.empty())
-        throw InvalidConfigurationOptionError("Data directory not specified or empty");
 
     // Parse admin connection listener backlog
-    const auto adminConnectionListenerBacklog =
-            config.get<int>(constructOptionPath(kGeneralOptionAdminConnectionListenerBacklog),
-                    kDefaultAdminConnectionListenerBacklog);
-    if (adminConnectionListenerBacklog < 1
-            || adminConnectionListenerBacklog > kMaxAdminConnectionListenerBacklog) {
-        throw InvalidConfigurationOptionError(
-                "Admin connection listener backlog value is out of range");
+    {
+        const auto adminConnectionListenerBacklog =
+                config.get<int>(constructOptionPath(kGeneralOptionAdminConnectionListenerBacklog),
+                        kDefaultAdminConnectionListenerBacklog);
+        if (adminConnectionListenerBacklog < 1
+                || adminConnectionListenerBacklog > kMaxAdminConnectionListenerBacklog) {
+            throw InvalidConfigurationOptionError(
+                    "Admin connection listener backlog value is out of range");
+        }
+        tmpOptions.m_generalOptions.m_adminConnectionListenerBacklog =
+                adminConnectionListenerBacklog;
     }
-    tmpOptions.m_generalOptions.m_adminConnectionListenerBacklog = adminConnectionListenerBacklog;
 
     // Parse max number of admin connections
-    const auto maxAdminConnections = config.get<unsigned>(
-            constructOptionPath(kGeneralOptionMaxAdminConnections), kDefaultMaxAdminConnections);
-    if (maxAdminConnections < 1 || maxAdminConnections > kMaxMaxAdminConnections) {
-        throw InvalidConfigurationOptionError("Max. number of admin connections is out of range");
+    {
+        const auto maxAdminConnections =
+                config.get<unsigned>(constructOptionPath(kGeneralOptionMaxAdminConnections),
+                        kDefaultMaxAdminConnections);
+        if (maxAdminConnections < 1 || maxAdminConnections > kMaxMaxAdminConnections) {
+            throw InvalidConfigurationOptionError(
+                    "Max. number of admin connections is out of range");
+        }
+        tmpOptions.m_generalOptions.m_maxAdminConnections = maxAdminConnections;
     }
-    tmpOptions.m_generalOptions.m_maxAdminConnections = maxAdminConnections;
 
     // Parse user connection listener backlog
-    const auto userConnectionListenerBacklog =
-            config.get<int>(constructOptionPath(kGeneralOptionUserConnectionListenerBacklog),
-                    kDefaultUserConnectionListenerBacklog);
-    if (userConnectionListenerBacklog < 1
-            || userConnectionListenerBacklog > kMaxUserConnectionListenerBacklog) {
-        throw InvalidConfigurationOptionError(
-                "User connection listener backlog value is out of range");
+    {
+        const auto userConnectionListenerBacklog =
+                config.get<int>(constructOptionPath(kGeneralOptionUserConnectionListenerBacklog),
+                        kDefaultUserConnectionListenerBacklog);
+        if (userConnectionListenerBacklog < 1
+                || userConnectionListenerBacklog > kMaxUserConnectionListenerBacklog) {
+            throw InvalidConfigurationOptionError(
+                    "User connection listener backlog value is out of range");
+        }
+        tmpOptions.m_generalOptions.m_userConnectionListenerBacklog = userConnectionListenerBacklog;
     }
-    tmpOptions.m_generalOptions.m_userConnectionListenerBacklog = userConnectionListenerBacklog;
 
     // Parse max number of user connections
-    const auto maxUserConnections = config.get<unsigned>(
-            constructOptionPath(kGeneralOptionMaxUserConnections), kDefaultMaxUserConnections);
-    if (maxUserConnections < 1 || maxUserConnections > kMaxMaxUserConnections) {
-        throw InvalidConfigurationOptionError("Max. number of user connections is out of range");
+    {
+        const auto maxUserConnections = config.get<unsigned>(
+                constructOptionPath(kGeneralOptionMaxUserConnections), kDefaultMaxUserConnections);
+        if (maxUserConnections < 1 || maxUserConnections > kMaxMaxUserConnections) {
+            throw InvalidConfigurationOptionError(
+                    "Max. number of user connections is out of range");
+        }
+        tmpOptions.m_generalOptions.m_maxUserConnections = maxUserConnections;
     }
-    tmpOptions.m_generalOptions.m_maxUserConnections = maxUserConnections;
+
+    // Parse dead connection cleanup period in seconds
+    {
+        const auto value =
+                config.get<unsigned>(constructOptionPath(kGeneralOptionDeadConnectionCleanupPeriod),
+                        kDefaultOptionDeadConnectionCleanupPeriod);
+        if (value < kMinOptionDeadConnectionCleanupPeriod) {
+            throw InvalidConfigurationOptionError("Dead connection cleanup period is too small");
+        }
+        if (value > kMaxOptionDeadConnectionCleanupPeriod) {
+            throw InvalidConfigurationOptionError("Dead connection cleanup period is too big");
+        }
+        tmpOptions.m_generalOptions.m_deadConnectionCleanupPeriod = std::chrono::seconds(value);
+    }
 
     // Log options
 
@@ -344,28 +377,6 @@ void InstanceOptions::load(const std::string& instanceName)
 
     // IOManager options
 
-    // Parse worker thread number
-    {
-        tmpOptions.m_ioManagerOptions.m_workerThreadNumber =
-                config.get<unsigned>(constructOptionPath(kIOManagerOptionWorkerThreadNumber),
-                        kDefaultIOManagerWorkerThreadNumber);
-        if (tmpOptions.m_ioManagerOptions.m_workerThreadNumber < 1) {
-            throw InvalidConfigurationOptionError(
-                    "Number of IO Manager worker threads is out of range");
-        }
-    }
-
-    // Parse writer thread number
-    {
-        tmpOptions.m_ioManagerOptions.m_writerThreadNumber =
-                config.get<unsigned>(constructOptionPath(kIOManagerOptionWriterThreadNumber),
-                        kDefaultIOManagerWriterThreadNumber);
-        if (tmpOptions.m_ioManagerOptions.m_writerThreadNumber < 1) {
-            throw InvalidConfigurationOptionError(
-                    "Number of IO Manager writer threads is out of range");
-        }
-    }
-
     // Parse IPv4 port number
     {
         tmpOptions.m_ioManagerOptions.m_ipv4port = config.get<int>(
@@ -400,17 +411,31 @@ void InstanceOptions::load(const std::string& instanceName)
         }
     }
 
+    // Ensure that at least one of IPv4 or IPv6 port is specified
     if (tmpOptions.m_ioManagerOptions.m_ipv6port == 0
-            && tmpOptions.m_ioManagerOptions.m_ipv4port == 0)
+            && tmpOptions.m_ioManagerOptions.m_ipv4port == 0) {
         throw InvalidConfigurationOptionError("Both IPv4 and IPv6 are disabled for IO Manager");
+    }
 
-    // Parse block cache capacity
+    // Parse worker thread number
     {
-        tmpOptions.m_ioManagerOptions.m_blockCacheCapacity =
-                config.get<unsigned>(constructOptionPath(kIOManagerOptionBlockCacheCapacity),
-                        kDefaultIOManagerBlockCacheCapacity);
-        if (tmpOptions.m_ioManagerOptions.m_blockCacheCapacity < kMinIOManagerBlockCacheCapacity) {
-            throw InvalidConfigurationOptionError("IO Manager block cache capacity is too small");
+        tmpOptions.m_ioManagerOptions.m_workerThreadNumber =
+                config.get<unsigned>(constructOptionPath(kIOManagerOptionWorkerThreadNumber),
+                        kDefaultIOManagerWorkerThreadNumber);
+        if (tmpOptions.m_ioManagerOptions.m_workerThreadNumber < 1) {
+            throw InvalidConfigurationOptionError(
+                    "Number of IO Manager worker threads is out of range");
+        }
+    }
+
+    // Parse writer thread number
+    {
+        tmpOptions.m_ioManagerOptions.m_writerThreadNumber =
+                config.get<unsigned>(constructOptionPath(kIOManagerOptionWriterThreadNumber),
+                        kDefaultIOManagerWriterThreadNumber);
+        if (tmpOptions.m_ioManagerOptions.m_writerThreadNumber < 1) {
+            throw InvalidConfigurationOptionError(
+                    "Number of IO Manager writer threads is out of range");
         }
     }
 
@@ -444,6 +469,32 @@ void InstanceOptions::load(const std::string& instanceName)
         if (tmpOptions.m_ioManagerOptions.m_tableCacheCapacity < kMinIOManagerTableCacheCapacity) {
             throw InvalidConfigurationOptionError("IO Manager table cache capacity is too small");
         }
+    }
+
+    // Parse block cache capacity
+    {
+        tmpOptions.m_ioManagerOptions.m_blockCacheCapacity =
+                config.get<unsigned>(constructOptionPath(kIOManagerOptionBlockCacheCapacity),
+                        kDefaultIOManagerBlockCacheCapacity);
+        if (tmpOptions.m_ioManagerOptions.m_blockCacheCapacity < kMinIOManagerBlockCacheCapacity) {
+            throw InvalidConfigurationOptionError("IO Manager block cache capacity is too small");
+        }
+    }
+
+    // Parse dead connection cleanup period in seconds
+    {
+        const auto value = config.get<unsigned>(
+                constructOptionPath(kIOManagerOptionDeadConnectionCleanupPeriod),
+                kDefaultIOManagerOptionDeadConnectionCleanupPeriod);
+        if (value < kMinIOManagerOptionDeadConnectionCleanupPeriod) {
+            throw InvalidConfigurationOptionError(
+                    "IO Manager dead connection cleanup period is too small");
+        }
+        if (value > kMaxIOManagerOptionDeadConnectionCleanupPeriod) {
+            throw InvalidConfigurationOptionError(
+                    "IO Manager dead connection cleanup period is too big");
+        }
+        tmpOptions.m_ioManagerOptions.m_deadConnectionCleanupPeriod = std::chrono::seconds(value);
     }
 
     // Encryption options

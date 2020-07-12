@@ -8,7 +8,7 @@
 #include <siodb/common/crypto/TlsConnection.h>
 #include <siodb/common/crypto/TlsServer.h>
 #include <siodb/common/io/IoBase.h>
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/CustomProtobufInputStream.h>
 #include <siodb/common/protobuf/CustomProtobufOutputStream.h>
 #include <siodb/common/utils/FdGuard.h>
@@ -45,13 +45,13 @@ private:
      * Response to client with error code
      * @param requestId id of request for response
      * @param text Text of error
-     * @param errCode Error code
+     * @param errorCode Error code
      * @param ioMgrInputStream Input steam
      * @return Database engine response from IO manager
      * @throw std::system_error when I/O error happens.
      * @throw SiodbProtocolError when protocol error happens.
      */
-    void responseToClientWithError(int requestId, const char* text, int errCode);
+    void responseToClientWithError(int requestId, const char* text, int errorCode);
 
     /**
      * Receives row data from IO manager and sends to client

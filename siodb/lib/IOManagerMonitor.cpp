@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "IOMgrMonitor.h"
+#include "IOManagerMonitor.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -12,6 +12,9 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/iomgr/shared/IOManagerExitCode.h>
 
+// STL headers
+#include <iostream>
+
 // System headers
 #include <sys/wait.h>
 #include <unistd.h>
@@ -19,31 +22,29 @@
 namespace siodb {
 
 namespace {
-const IOManagerExitCode kFatalErrorCodes[] = {
-        kIOManagerExitCode_InvalidConfig,
-        kIOManagerExitCode_DatabaseEngineIntializationFailed,
-        kIOManagerExitCode_ConnectionCreationFailed,
-        kIOManagerExitCode_LogInitializationFailed,
-        kIOManagerExitCode_InitializationFailed,
+const iomgr::IOManagerExitCode kFatalErrorCodes[] = {
+        iomgr::kIOManagerExitCode_InvalidConfig,
+        iomgr::kIOManagerExitCode_LogInitializationFailed,
+        iomgr::kIOManagerExitCode_InitializationFailed,
 };
 }  // namespace
 
 /** IO Manager monitor */
-IOMgrMonitor::IOMgrMonitor(const config::ConstInstaceOptionsPtr& instanceOptions)
+IOManagerMonitor::IOManagerMonitor(const config::ConstInstaceOptionsPtr& instanceOptions)
     : m_dbOptions(instanceOptions)
     , m_iomgrPid(-1)
     , m_running(true)
     , m_startsHistory(kIoManagerHistorySize)
     // IMPORTANT: Thread initialization must be in the end
-    , m_thread(&IOMgrMonitor::threadMain, this)
+    , m_thread(&IOManagerMonitor::threadMain, this)
 {
 }
 
-IOMgrMonitor::~IOMgrMonitor()
+IOManagerMonitor::~IOManagerMonitor()
 {
     try {
         LOG_INFO << kLogPrefix << "Shutting down.";
-        stopMonitorThread();
+        stopThread();
     } catch (std::exception& ex) {
         try {
             LOG_ERROR << kLogPrefix << "Shutdown error: " << ex.what();
@@ -53,7 +54,7 @@ IOMgrMonitor::~IOMgrMonitor()
     }
 }
 
-void IOMgrMonitor::startIOManager()
+void IOManagerMonitor::startIOManager()
 {
     LOG_INFO << kLogPrefix << "Starting IO Manager";
     m_iomgrPid = ::fork();
@@ -77,19 +78,23 @@ void IOMgrMonitor::startIOManager()
         // Child process
         ::execve(execArgs.front(), execArgs.data(), envp);
         // If we have reached here, execve() failed.
+        const int errorCode = errno;
+        const char* errorMessage = std::strerror(errno);
+        std::cerr << "Can't execute IO Manager: (" << errorCode << "): " << errorMessage
+                  << std::endl;
         _exit(-1);
 
     } else if (m_iomgrPid < 0) {
-        stdext::throw_system_error(errno, "Can't fork for IO Manager process");
+        stdext::throw_system_error(errno, "Can't fork");
     } else {
         m_startsHistory.push_back(std::chrono::steady_clock::now());
         LOG_INFO << kLogPrefix << "Started IO Manager";
     }
 }
 
-void IOMgrMonitor::stopIOManager()
+void IOManagerMonitor::stopIOManager()
 {
-    LOG_INFO << kLogPrefix << "Stopping IO Manager.";
+    LOG_INFO << kLogPrefix << "Stopping IO Manager";
     if (m_iomgrPid > 0) {
         bool needSigKill = false;
         if (::kill(m_iomgrPid, SIGTERM) < 0) {
@@ -101,17 +106,14 @@ void IOMgrMonitor::stopIOManager()
 
         auto remainingTime = kIOManagerTerminatonTimeout;
         if (!needSigKill) {
-            int status = 0;
+            int status = 0, waitResult = 0;
             while (remainingTime > std::chrono::milliseconds(0)) {
-                const int waitpidResult = waitpid(!m_iomgrPid, &status, WNOHANG);
-                if (waitpidResult != 0)
-                    break;
-                else {
-                    std::this_thread::sleep_for(kIOManagerStatusCheckPeriod);
-                    remainingTime -= kIOManagerStatusCheckPeriod;
-                }
+                waitResult = ::waitpid(!m_iomgrPid, &status, WNOHANG);
+                if (waitResult != 0) break;
+                std::this_thread::sleep_for(kIOManagerStatusCheckPeriod);
+                remainingTime -= kIOManagerStatusCheckPeriod;
             }
-            needSigKill = remainingTime <= std::chrono::milliseconds(0);
+            needSigKill = waitResult == 0 && remainingTime <= std::chrono::milliseconds(0);
         }
 
         if (needSigKill) {
@@ -123,7 +125,7 @@ void IOMgrMonitor::stopIOManager()
     }
 }
 
-void IOMgrMonitor::stopMonitorThread()
+void IOManagerMonitor::stopThread()
 {
     LOG_INFO << kLogPrefix << "Stopping IO Manager monitor thread";
     // Signal monitor thread to wake it up and finish
@@ -136,13 +138,13 @@ void IOMgrMonitor::stopMonitorThread()
     LOG_INFO << kLogPrefix << "IO Manager monitor thread stopped.";
 }
 
-void IOMgrMonitor::threadMain()
+void IOManagerMonitor::threadMain()
 {
     while (shouldRun() && m_iomgrPid <= 0) {
         try {
             startIOManager();
         } catch (std::exception& ex) {
-            LOG_ERROR << "Can't start IO manager: " << ex.what();
+            LOG_ERROR << "Can't start IO Manager: " << ex.what();
         }
         if (m_iomgrPid <= 0) std::this_thread::sleep_for(kWaitPeriod);
     }
@@ -182,7 +184,7 @@ void IOMgrMonitor::threadMain()
                                   << "IO Manager has been restarted too many times in a period of "
                                   << timeBetweenStarts.count()
                                   << " seconds. This may indicate a persistent issue."
-                                  << " Giving up on restarting iomgr.";
+                                  << " Giving up on restarting IO Manager.";
                     }
                 }
 

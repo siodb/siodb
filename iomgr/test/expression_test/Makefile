@@ -39,7 +39,7 @@ CXX_HDR:= \
 
 CXXFLAGS+=-I../../lib
 
-TARGET_OWN_LIBS:=iomgr
+TARGET_OWN_LIBS:=iomgr_dbengine
 
 TARGET_COMMON_LIBS:=iomgr_shared unit_test proto utils data sys stl_ext crt_ext
 

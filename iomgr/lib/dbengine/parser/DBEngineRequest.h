@@ -5,6 +5,7 @@
 #pragma once
 
 // Project headers
+#include "DBEngineRequestPtr.h"
 #include "DBEngineRequestType.h"
 #include "expr/Expression.h"
 #include "../UpdateUserAccessKeyParameters.h"
@@ -36,9 +37,6 @@ public:
     /** Request type */
     const DBEngineRequestType m_requestType;
 };
-
-/** DB engine request unique pointer shortcut type */
-using DBEngineRequestPtr = std::unique_ptr<DBEngineRequest>;
 
 /** Join type for tables */
 enum class TableJoinType {

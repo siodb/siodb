@@ -18,8 +18,8 @@
 #include <siodb/common/net/NetConstants.h>
 #include <siodb/common/net/TcpConnection.h>
 #include <siodb/common/net/UnixConnection.h>
-#include <siodb/common/options/DatabaseInstanceSocket.h>
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbInstance.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
@@ -154,8 +154,12 @@ extern "C" int siocliMain(int argc, char** argv)
 
         // Print logo
         std::cout << "Siodb client v." << SIODB_VERSION_MAJOR << '.' << SIODB_VERSION_MINOR << '.'
-                  << SIODB_VERSION_PATCH << "\nCopyright (C) " << SIODB_COPYRIGHT_YEARS
-                  << " Siodb GmbH. All rights reserved." << std::endl;
+                  << SIODB_VERSION_PATCH
+#ifdef _DEBUG
+                  << " (debug build)"
+#endif
+                  << "\nCompiled on " << __DATE__ << ' ' << __TIME__ << "\nCopyright (C) "
+                  << SIODB_COPYRIGHT_YEARS << " Siodb GmbH. All rights reserved." << std::endl;
 
         // Ignore SIGPIPE
         signal(SIGPIPE, SIG_IGN);

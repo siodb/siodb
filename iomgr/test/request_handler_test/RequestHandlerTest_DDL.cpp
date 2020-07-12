@@ -13,8 +13,8 @@
 
 // Common project headers
 #include <siodb/common/log/Log.h>
-#include <siodb/common/options/DatabaseInstance.h>
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbInstance.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/string_builder.h>
 

@@ -11,7 +11,7 @@ TARGET_EXE:=siodb_iomgr
 
 CXX_SRC:=IOManagerMain.cpp
 
-TARGET_OWN_LIBS:=iomgr
+TARGET_OWN_LIBS:=iomgr_main iomgr_dbengine
 
 TARGET_COMMON_LIBS:=iomgr_shared crypto options log net proto protobuf sys utils data io stl_ext crt_ext
 

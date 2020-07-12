@@ -11,6 +11,7 @@ TARGET_LIB:=siodb_common_net
 
 CXX_SRC:= \
 	EpollHelpers.cpp  \
+	SocketDomain.cpp  \
 	TcpConnection.cpp  \
 	TcpServer.cpp  \
 	UnixConnection.cpp  \
@@ -24,6 +25,7 @@ CXX_HDR:= \
 	ConnectionError.h  \
 	EpollHelpers.h  \
 	NetConstants.h  \
+	SocketDomain.h  \
 	TcpConnection.h  \
 	TcpServer.h  \
 	UnixConnection.h  \

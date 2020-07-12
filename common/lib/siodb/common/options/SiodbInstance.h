@@ -71,4 +71,11 @@ std::string composeInstanceInitializationLockFilePath(const std::string& instanc
  */
 std::string composeIomgrInitializionFlagFilePath(const std::string& instanceName);
 
+/**
+ * Compose database instance socket path.
+ * @param instanceName Database instance name.
+ * @return Database instance configuration file path.
+ */
+std::string composeInstanceSocketPath(const std::string& instanceName);
+
 }  // namespace siodb

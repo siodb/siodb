@@ -5,6 +5,7 @@
 #pragma once
 
 // Project headers
+#include "AuthenticationResult.h"
 #include "DatabaseCache.h"
 #include "InstancePtr.h"
 #include "UpdateUserAccessKeyParameters.h"
@@ -17,7 +18,6 @@
 // Common project headers
 #include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
-#include <siodb/common/utils/Uuid.h>
 
 // STL headers
 #include <mutex>
@@ -25,7 +25,7 @@
 
 namespace siodb::config {
 
-struct InstanceOptions;
+struct SiodbOptions;
 
 }  // namespace siodb::config
 
@@ -41,7 +41,7 @@ public:
      * Reads existing on-disk instance definition or creates new ones.
      * @param options Instance options.
      */
-    explicit Instance(const config::InstanceOptions& options);
+    explicit Instance(const config::SiodbOptions& options);
 
     DECLARE_NONCOPYABLE(Instance);
 
@@ -268,8 +268,8 @@ public:
      * @return Pair (user ID, new session UUID).
      * @throw DatabaseError if some error has occurrred.
      */
-    std::pair<std::uint32_t, Uuid> authenticateUser(const std::string& userName,
-            const std::string& signature, const std::string& challenge);
+    AuthenticationResult authenticateUser(const std::string& userName, const std::string& signature,
+            const std::string& challenge);
 
     /**
      * Closes session.

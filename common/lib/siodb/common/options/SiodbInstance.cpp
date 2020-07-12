@@ -2,10 +2,10 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "DatabaseInstance.h"
+#include "SiodbInstance.h"
 
 // Project headers
-#include "InstanceOptions.h"
+#include "SiodbOptions.h"
 #include "../stl_wrap/filesystem_wrapper.h"
 #include "../utils/CheckOSUser.h"
 
@@ -232,6 +232,13 @@ std::string composeIomgrInitializionFlagFilePath(const std::string& instanceName
     std::ostringstream str;
     str << kIoManagerInitaliationFlagFileDir << instanceName
         << kIomgrInitializationFlagFileExtension;
+    return str.str();
+}
+
+std::string composeInstanceSocketPath(const std::string& instanceName)
+{
+    std::ostringstream str;
+    str << kInstanceSocketPrefix << instanceName << ".socket";
     return str.str();
 }
 

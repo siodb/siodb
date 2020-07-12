@@ -10,15 +10,13 @@ include ../../../../../mk/Prolog.mk
 TARGET_LIB:=siodb_common_options
 
 CXX_SRC:= \
-	DatabaseInstance.cpp  \
-	DatabaseInstanceSocket.cpp  \
-	InstanceOptions.cpp
+	SiodbInstance.cpp  \
+	SiodbOptions.cpp
 
 CXX_HDR:= \
 	detail/DatabaseOptionsDetail.h  \
-	DatabaseInstance.h  \
-	DatabaseInstanceSocket.h  \
-	InstanceOptions.h  \
+	SiodbInstance.h  \
+	SiodbOptions.h  \
 	InvalidConfigurationOptionError.h  \
 	LogOptions.h
 

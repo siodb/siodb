@@ -1,11 +1,12 @@
 #!/bin/bash
+
 # Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-trap _testfails ERR
 set -x
 set -e
+trap _testfails ERR
 
 ## Parameters
 DATAFILE_DIR=$(cat /etc/siodb/instances/siodb/config  | egrep '^data_dir' | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
@@ -57,7 +58,7 @@ function _prepare {
 function _StartSiodb {
   _log "INFO" "Starting default Siodb instance..."
   ${SIODB_PATH}/siodb --instance siodb --daemon
-  sleep 30
+  sleep 20
 }
 
 function _StopSiodb {
@@ -92,7 +93,7 @@ function _log {
   fi
 }
 
-function _CallUnitTests {
+function _RunSqlScript {
   _log "INFO" "Executing script ${1} in siocli..."
   ${SIODB_PATH}/siocli --admin siodb -u root -i ${SCRIPTPATH}/unencrypted_rsa < ${1}
 }
@@ -112,7 +113,21 @@ if [[ -z "${SIODB_PATH}" ]]; then
   fi
 fi
 
-if [ ! -d "${SIODB_PATH}" ]; then
+if [[ "${SIODB_PATH}" == "debug" ]]; then
+  SIODB_PATH=build/debug/bin
+  SHORT_TEST=0
+elif [[ "${SIODB_PATH}" == "release" ]]; then
+  SIODB_PATH=build/release/bin
+  SHORT_TEST=0
+elif [[ "${SIODB_PATH}" == "sdebug" ]]; then
+  SIODB_PATH=build/debug/bin
+  SHORT_TEST=1
+elif [[ "${SIODB_PATH}" == "srelease" ]]; then
+  SIODB_PATH=build/release/bin
+  SHORT_TEST=1
+fi
+
+if [[ ! -d "${SIODB_PATH}" ]]; then
   _log "ERROR" "Invalid directory."
 fi
 
@@ -120,18 +135,30 @@ _log "INFO" "Tests start"
 _prepare
 _StartSiodb
 _CheckLogFileError
-_CallUnitTests ${SCRIPTPATH}/query_sys_tables.sql
-_CheckLogFileError
-_CallUnitTests ${SCRIPTPATH}/ddl_database.sql
-_CheckLogFileError
-_CallUnitTests ${SCRIPTPATH}/ddl_user.sql
-_CheckLogFileError
-_CallUnitTests ${SCRIPTPATH}/ddl_general.sql
-_CheckLogFileError
-_CallUnitTests ${SCRIPTPATH}/dml_general.sql
-_CheckLogFileError
-_CallUnitTests ${SCRIPTPATH}/dml_datetime.sql
-_CheckLogFileError
+
+if [[ "${SHORT_TEST}" == "1" ]]; then
+  _RunSqlScript "${SCRIPTPATH}/query_sys_tables_short.sql"
+  _CheckLogFileError
+else
+  _RunSqlScript "${SCRIPTPATH}/query_sys_tables.sql"
+  _CheckLogFileError
+
+  _RunSqlScript "${SCRIPTPATH}/ddl_database.sql"
+  _CheckLogFileError
+
+  _RunSqlScript "${SCRIPTPATH}/ddl_user.sql"
+  _CheckLogFileError
+
+  _RunSqlScript "${SCRIPTPATH}/ddl_general.sql"
+  _CheckLogFileError
+
+  _RunSqlScript "${SCRIPTPATH}/dml_general.sql"
+  _CheckLogFileError
+
+  _RunSqlScript "${SCRIPTPATH}/dml_datetime.sql"
+  _CheckLogFileError
+fi
+
 _StopSiodb
 _CheckLogFileError
 _log "INFO" "All SQL tests passed successfully!"
