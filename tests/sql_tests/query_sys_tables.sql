@@ -1,3 +1,7 @@
+-- Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+-- Use of this source code is governed by a license that can be found
+-- in the LICENSE file.
+
 -- Test: Query all system tables.
 -- Ensures that all required columns are present.
 
