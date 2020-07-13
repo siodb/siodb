@@ -47,9 +47,9 @@ void IOManagerRequestHandlerBase::threadMain()
         IOManagerRequestPtr request;
         {
             std::unique_lock lock(m_mutex);
-            m_cond.wait(lock);
+            while (m_shouldRun && m_requestQueue.empty())
+                m_cond.wait(lock);
             if (!m_shouldRun) break;
-            if (m_requestQueue.empty()) continue;
             request = m_requestQueue.front();
             m_requestQueue.pop_front();
         }
