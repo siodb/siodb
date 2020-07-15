@@ -25,8 +25,8 @@ cd $HOME
 # Required tools and libraries
 sudo apt install -y build-essential cmake doxygen gdb git graphviz gcc-8 g++-8 \
     libboost1.65-dev libboost-log1.65-dev libboost-program-options1.65-dev \
-    libcurl4-openssl-dev libssl-dev openjdk-11-jdk-headless pkg-config \
-    uuid-dev clang-format-10 ubuntu-dbgsym-keyring
+    libcurl4-openssl-dev libssl-dev lsb-release openjdk-11-jdk-headless python \
+    pkg-config uuid-dev clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
@@ -50,8 +50,8 @@ cd $HOME
 # Required tools and libraries
 sudo apt install -y build-essential cmake doxygen gdb git graphviz \
     libboost1.71-dev libboost-log1.71-dev libboost-program-options1.71-dev \
-    libcurl4-openssl-dev libssl-dev openjdk-11-jdk-headless pkg-config python2 \
-    uuid-dev clang-format-10 ubuntu-dbgsym-keyring
+    libcurl4-openssl-dev libssl-dev lsb-release openjdk-11-jdk-headless \
+    pkg-config python2 uuid-dev clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
@@ -77,8 +77,8 @@ cd $HOME
 # Required tools and libraries
 sudo apt install -y build-essential cmake doxygen gdb git graphviz \
     libboost1.67-dev libboost-log1.67-dev libboost-program-options1.67-dev \
-    libcurl4-openssl-dev libssl-dev openjdk-11-jdk-headless pkg-config python2 \
-    uuid-dev wget
+    libcurl4-openssl-dev libssl-dev lsb-release openjdk-11-jdk-headless \
+    pkg-config python2 uuid-dev wget
 
 # Install clang-9. This one is for SLES, but works on the Debian 10 too.
 sudo apt install -y libncurses5
@@ -132,9 +132,9 @@ sudo yum remove git*
 sudo yum install -y git
 
 # Install required tools and libraries
-sudo yum install -y cmake3 curl gcc gcc-c++ devtoolset-8-toolchain libatomic \
-    boost169-devel libcurl-devel libuuid-devel openssl-devel \
-    java-1.8.0-openjdk-headless redhat-lsb uuid-devel wget zlib-devel python
+sudo yum install -y boost169-devel cmake3 curl devtoolset-8-toolchain doxygen \
+    gcc gcc-c++ java-1.8.0-openjdk-headless libatomic libcurl-devel libuuid-devel \
+    openssl-devel pkgconfig python redhat-lsb uuid-devel wget zlib-devel
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -163,44 +163,10 @@ rm -rf /tmp/getllvm
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
-```
 
-Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
-
-- You can check what is latest version here: [OpenSSL Downloads](https://www.openssl.org/source/)
-  (for example, latest version is 1.1.1g at the moment of writing this).
-- You can get detailed installation instructions, for example, on the following web pages:
-  - [How To Install OpenSSL 1.1.1d in CentOS](https://www.hostnextra.com/kb/how-to-install-openssl-1-1-1d-in-centos/)
-  - [Installing OpenSSL on CentOS 7](https://cloudwafer.com/blog/installing-openssl-on-centos-7/)
-
-Below instructions are based on the mentioned above sources:
-
-```bash
-# Define lastest OpenSSL version
-export LATEST_OPENSSL_VERSION=1.1.1g
-
-# Download, build, test install
-cd /usr/local/src
-sudo wget https://www.openssl.org/source/openssl-${LATEST_OPENSSL_VERSION}.tar.gz
-sudo yum update -y
-sudo yum install -y perl-core libtemplate-perl zlib-devel
-sudo tar xaf openssl-${LATEST_OPENSSL_VERSION}.tar.gz
-cd openssl-${LATEST_OPENSSL_VERSION}
-sudo ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
-sudo make -j4
-sudo make -j4 test
-sudo make -j4 install
-sudo /bin/sh -c 'echo "/usr/local/ssl/lib" > /etc/ld.so.conf.d/openssl-'${LATEST_OPENSSL_VERSION}'.conf'
-sudo ldconfig -v
-sudo mv /bin/openssl /bin/openssl.backup
-sudo /bin/sh -c 'echo "OPENSSL_PATH=/usr/local/ssl/bin" > /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "export OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "PATH=\$PATH:\$OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "export PATH" >> /etc/profile.d/openssl.sh'
-sudo chmod +x /etc/profile.d/openssl.sh
-source /etc/profile.d/openssl.sh
-which openssl
-openssl version -a
+# Create links for the libatomic - required by Oat++
+sudo ln -s /usr/lib/libatomic.so.1.0.0 /usr/lib/libatomic.so
+sudo ln -s /usr/lib64/libatomic.so.1.0.0 /usr/lib64/libatomic.so
 ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
@@ -219,9 +185,9 @@ sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.
 sudo yum -y update
 
 # Install required tools and libraries
-sudo yum install -y cmake curl gcc gcc-c++ boost-devel libatomic libcurl-devel \
-    libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb wget \
-    zlib-devel python2
+sudo yum install -y boost-devel cmake curl gcc gcc-c++ java-1.8.0-openjdk-headless \
+    libatomic libcurl-devel libuuid-devel openssl-devel python2 pkgconfig \
+    redhat-lsb wget zlib-devel
 
 # Install clang-9. This one is for SLES, but works on the CentOS 8 too.
 mkdir /tmp/getllvm
@@ -270,9 +236,9 @@ sudo yum remove git*
 sudo yum install -y git
 
 # Install required tools and libraries
-sudo yum install -y cmake3 curl gcc gcc-c++ devtoolset-8-toolchain \
-    boost169-devel libatomic libcurl-devel libuuid-devel openssl-devel \
-    java-1.8.0-openjdk-headless redhat-lsb uuid-devel wget zlib-devel python
+sudo yum install -y boost169-devel cmake3 curl devtoolset-8-toolchain doxygen \
+    gcc gcc-c++ java-1.8.0-openjdk-headless libatomic libcurl-devel libuuid-devel \
+    openssl-devel pkgconfig python redhat-lsb uuid-devel wget zlib-devel
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -301,44 +267,10 @@ rm -rf /tmp/getllvm
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
-```
 
-Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
-
-- You can check what is latest version here: [OpenSSL Downloads](https://www.openssl.org/source/)
-  (for example, latest version is 1.1.1g at the moment of writing this).
-- You can get detailed installation instructions, for example, on the following web pages:
-  - [How To Install OpenSSL 1.1.1d in CentOS](https://www.hostnextra.com/kb/how-to-install-openssl-1-1-1d-in-centos/)
-  - [Installing OpenSSL on CentOS 7](https://cloudwafer.com/blog/installing-openssl-on-centos-7/)
-
-Below instructions are based on the mentioned above sources:
-
-```bash
-# Define lastest OpenSSL version
-export LATEST_OPENSSL_VERSION=1.1.1g
-
-# Download, build, test install
-cd /usr/local/src
-sudo wget https://www.openssl.org/source/openssl-${LATEST_OPENSSL_VERSION}.tar.gz
-sudo yum update -y
-sudo yum install -y perl-core libtemplate-perl zlib-devel
-sudo tar xaf openssl-${LATEST_OPENSSL_VERSION}.tar.gz
-cd openssl-${LATEST_OPENSSL_VERSION}
-sudo ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
-sudo make -j4
-sudo make -j4 test
-sudo make -j4 install
-sudo /bin/sh -c 'echo "/usr/local/ssl/lib" > /etc/ld.so.conf.d/openssl-'${LATEST_OPENSSL_VERSION}'.conf'
-sudo ldconfig -v
-sudo mv /bin/openssl /bin/openssl.backup
-sudo /bin/sh -c 'echo "OPENSSL_PATH=/usr/local/ssl/bin" > /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "export OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "PATH=$PATH:$OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "export $PATH" >> /etc/profile.d/openssl.sh'
-sudo chmod +x /etc/profile.d/openssl.sh
-source /etc/profile.d/openssl.sh
-which openssl
-openssl version -a
+# Create links for the libatomic - required by Oat++
+sudo ln -s /usr/lib/libatomic.so.1.0.0 /usr/lib/libatomic.so
+sudo ln -s /usr/lib64/libatomic.so.1.0.0 /usr/lib64/libatomic.so
 ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
@@ -357,9 +289,9 @@ sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.
 sudo yum -y update
 
 # Install required tools and libraries
-sudo yum install -y cmake curl gcc gcc-c++ boost-devel libatomic libcurl-devel \
-    libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb wget \
-    zlib-devel python2
+sudo yum install -y boost-devel cmake curl doxygen gcc gcc-c++ \
+    java-1.8.0-openjdk-headless libatomic libcurl-devel libuuid-devel \
+    openssl-devel pkgconfig python2 redhat-lsb wget zlib-devel
 
 # Install clang-9. This one is for SLES, but works on the CentOS 8 too.
 mkdir /tmp/getllvm
@@ -426,108 +358,152 @@ export SIODB_TP_CXXFLAGS="-pipe -fexceptions -fasynchronous-unwind-tables \
     -fcf-protection=full -O2 -D_FORTIFY_SOURCE=2 -fPIC -g3 ${RHEL_DTS8_CXXFLAGS} \
     -D_GLIBCXX_ASSERTIONS"
 export SIODB_TP_LDFLAGS="-Wl,-z,defs -Wl,-z,now -Wl,-z,relro -g3"
+export SIODB_TP_ROOT=/opt/siodb/lib
 
 # Enter third party libraries directory
 cd thirdparty
 
+# CentOS 7/RHEL7 ONLY:
+# Install newer version of the OpenSSL
+export OPENSSL_VERSION=1.1.1g
+export OPENSSL_PREFIX=${SIODB_TP_ROOT}/openssl-${OPENSSL_VERSION}
+sudo yum install -y perl-core libtemplate-perl zlib-devel
+cd openssl
+tar xaf openssl-${OPENSSL_VERSION}.tar.xz
+cd openssl-${OPENSSL_VERSION}
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    ./config --prefix=${OPENSSL_PREFIX} --openssldir=${OPENSSL_PREFIX} shared zlib
+make -j4
+make -j4 test
+sudo make -j4 install
+cd ../..
+
 # Install ANTLR4 executables
+export ANTLR4_VERSION=4.8
+export ANTLR4_PREFIX=${SIODB_TP_ROOT}/antlr-${ANTLR4_VERSION}
 cd antlr4
-sudo ./install.sh
+sudo ./install.sh ${ANTLR4_PREFIX}
 cd ..
 
 # Build and isntall ANTLR4 runtime library
+export ANTLR4_CPP_RUNTIME_VERSION=4.8
+export ANTLR4_CPP_RUNTIME_PREFIX=${SIODB_TP_ROOT}/antlr4-cpp-runtime-${ANTLR4_CPP_RUNTIME_VERSION}
 cd antlr4-cpp-runtime
-tar xaf antlr4-cpp-runtime-4.8-source.tar.xz
-cd antlr4-cpp-runtime-4.8-source
+tar xaf antlr4-cpp-runtime-${ANTLR4_CPP_RUNTIME_VERSION}-source.tar.xz
+cd antlr4-cpp-runtime-${ANTLR4_CPP_RUNTIME_VERSION}-source
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
+    cmake -DCMAKE_INSTALL_PREFIX=${ANTLR4_CPP_RUNTIME_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
 make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
 
 # Build and install date library
+export LIBDATE_VERSION=20190911
+export LIBDATE_PREFIX=${SIODB_TP_ROOT}/date-${LIBDATE_VERSION}
 cd date
-tar xaf date-20190911.tar.xz
-cd date-20190911
+tar xaf date-${LIBDATE_VERSION}.tar.xz
+cd date-${LIBDATE_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUSE_SYSTEM_TZ_DB=ON \
-        -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
+    cmake -DCMAKE_INSTALL_PREFIX=${LIBDATE_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          -DUSE_SYSTEM_TZ_DB=ON -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
 make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
 
 # Build and install Google Test library
+export GTEST_VERSION=1.8.1
+export GTEST_PREFIX=${SIODB_TP_ROOT}/gtest-gmock-${GTEST_VERSION}
 cd googletest
-tar xaf googletest-release-1.8.1.tar.xz
-cd googletest-release-1.8.1/googlemock/scripts
-./fuse_gmock_files.py gtest-gmock-1.8.1
-sudo cp -Rf gtest-gmock-1.8.1 /usr/local/include
+tar xaf googletest-release-${GTEST_VERSION}.tar.xz
+cd googletest-release-${GTEST_VERSION}/googlemock/scripts
+./fuse_gmock_files.py include
+sudo mkdir -p "${GTEST_PREFIX}"
+sudo cp -Rf include "${GTEST_PREFIX}"
 cd ../../../..
 
 # Build and install Oat++ library
+export OATPP_VERSION=1.1.0
+export OATPP_PREFIX=${SIODB_TP_ROOT}/oatpp-${OATPP_VERSION}
 cd oatpp
-tar xaf oatpp-1.1.0.tar.xz
-cd oatpp-1.1.0
+tar xaf oatpp-${OATPP_VERSION}.tar.xz
+cd oatpp-${OATPP_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
+    cmake -DCMAKE_INSTALL_PREFIX=${OATPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
 make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
 
 # Build and install Google Protobuf library
+export PROTOBUF_VERSION=3.11.4
+export PROTOBUF_PREFIX=${SIODB_TP_ROOT}/protobuf-${PROTOBUF_VERSION}
 cd protobuf
-tar xaf protobuf-all-3.11.4.tar.xz
-cd protobuf-3.11.4
+tar xaf protobuf-all-${PROTOBUF_VERSION}.tar.xz
+cd protobuf-${PROTOBUF_VERSION}
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    ./configure
+    ./configure "--prefix=${PROTOBUF_PREFIX}"
 make -j4
 sudo make install
 sudo ldconfig
-# protoc somehow gets linked against wrong libraries
+
+# Sometimes protoc somehow gets linked against wrong libraries
 # and we have to fix that manually: patch protoc wrapper script and force
 # relinking of the protoc executable with correct libraries
-cd src
-cp -f protoc protoc.tmp
-sed -i 's+./.libs/libprotobuf.so+-lprotobuf+g' protoc.tmp
-sed -i 's+./.libs/libprotoc.so+-lprotoc+g' protoc.tmp
-rm -f ./.libs/protoc ./.libs/lt-protoc
-./protoc.tmp
-rm -f protoc.tmp
-cp -f ./.libs/lt-protoc ./.libs/protoc
-sudo install -T ./.libs/protoc /usr/local/bin/protoc
-cd ..
-# Just check
-ldd /usr/local/bin/protoc
+export PROTOC_CORRECT_LIB_COUNT=$(ldd "${PROTOBUF_PREFIX}/bin/protoc" | grep ${PROTOBUF_PREFIX}/lib | wc -l
+)
+if [[ PROTOC_CORRECT_LIB_COUNT != 2 ]]; then
+    cd src
+    cp -f protoc protoc.tmp
+    sed -i "s+./.libs/libprotobuf.so+-L${PROTOBUF_PREFIX} -lprotobuf -Wl,-rpath -Wl,${PROTOBUF_PREFIX}/lib+g" protoc.tmp
+    sed -i "s+./.libs/libprotoc.so+-L${PROTOBUF_PREFIX} -lprotoc -Wl,-rpath -Wl,${PROTOBUF_PREFIX}/lib+g" protoc.tmp
+    rm -f ./.libs/protoc ./.libs/lt-protoc
+    ./protoc.tmp
+    rm -f protoc.tmp
+    cp -f ./.libs/lt-protoc ./.libs/protoc
+    ldd ./.libs/protoc
+    sudo install -t "${PROTOBUF_PREFIX}/bin" ./.libs/protoc
+    cd ..
+fi
+
 cd ../..
 
 # Build and install Utf8cpp library
+export UTF8CPP_VERSION=3.1
+export UTF8CPP_PREFIX=${SIODB_TP_ROOT}/utf8cpp-${UTF8CPP_VERSION}
 cd utf8cpp
-tar xaf utfcpp-3.1.tar.xz
-cd utfcpp-3.1
+tar xaf utfcpp-${UTF8CPP_VERSION}.tar.xz
+cd utfcpp-${UTF8CPP_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUTF8_TESTS=Off ..
+    cmake -DCMAKE_INSTALL_PREFIX=${UTF8CPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          -DUTF8_TESTS=Off ..
 make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
 
 # Build and install xxHash library
+export XXHASH_VERSION=0.7.2
+export XXHASH_PREFIX=${SIODB_TP_ROOT}/xxHash-${XXHASH_VERSION}
 cd xxHash
-tar xaf xxHash-0.7.2.tar.xz
-cd xxHash-0.7.2
+tar xaf xxHash-${XXHASH_VERSION}.tar.xz
+cd xxHash-${XXHASH_VERSION}
+mkdir build
+cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    make -j4
+    cmake -DCMAKE_INSTALL_PREFIX=${XXHASH_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          ../cmake_unofficial
+sudo make -j4
 sudo make install
 sudo ldconfig
 cd ../..

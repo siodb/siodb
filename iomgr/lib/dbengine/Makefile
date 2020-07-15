@@ -410,7 +410,8 @@ $(MESSAGES_HDR): ../messages/iomgr.msg | $$(@D)/.
 .PRECIOUS: $(MESSAGES_HDR) $(ANTLR_GENERATED_FILES)
 
 # ANTLR build rules
-ANTLR:=antlr4
+ANTLR4_ROOT:=$(THIRD_PARTY_ROOT)/antlr-$(ANTLR4_VERSION)
+ANTLR:=$(ANTLR4_ROOT)/bin/antlr4
 ANTLR_FLAGS:=-Dlanguage=Cpp -Xexact-output-dir -visitor
 
 $(ANTLR_GENERATED_FILES): $(ANTLR_GRAMMAR)

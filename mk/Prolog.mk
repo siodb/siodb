@@ -52,11 +52,6 @@ endif
 # CentOS/RHEL specific
 ifeq ($(RHEL),1)
 BOOST_VERSION:=169
-ifeq ($(DISTRO_MAJOR),7)
-ifndef OPENSSL_ROOT
-OPENSSL_ROOT:=/usr/local/ssl
-endif
-endif
 endif # CentOS
 
 
@@ -102,3 +97,5 @@ THIS_GENERATED_FILES_DIR:=$(GENERATED_FILES_DIR)$(SRC_DIR_OFFSET)
 GENERATED_FILES_COMMON_LIB_ROOT:=$(GENERATED_FILES_DIR)/$(COMMON_SUBDIR)/lib
 
 SIODBMC:=siodbmc.$(SIODBMC_VERSION)
+
+include $(MK)/ThirdParty.mk

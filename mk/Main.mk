@@ -102,13 +102,10 @@ INCLUDE+=-I$(COMMON_LIB_ROOT) -I$(GENERATED_FILES_COMMON_LIB_ROOT)
 C_INCLUDE+=
 CXX_INCLUDE+=
 
-# Custom ANTLR4 Runtime
-ifdef ANTLR4_RUNTIME_ROOT
+# ANTLR4 Runtime
+ANTLR4_RUNTIME_ROOT:=$(THIRD_PARTY_ROOT)/antlr4-cpp-runtime-$(ANTLR4_CPP_RUNTIME_VERSION)
 CXX_INCLUDE+=-isystem $(ANTLR4_RUNTIME_ROOT)/include/antlr4-runtime
 LDFLAGS+=-L$(ANTLR4_RUNTIME_ROOT)/lib -Wl,-rpath -Wl,$(ANTLR4_RUNTIME_ROOT)/lib
-else
-CXX_INCLUDE+=-I/usr/local/include/antlr4-runtime
-endif
 
 # Custom Boost
 ifdef BOOST_ROOT
@@ -121,55 +118,47 @@ LDFLAGS+=-L/usr/lib64/boost$(BOOST_VERSION)
 endif
 endif
 
-# Custom libdate
-ifdef DATE_ROOT
-CXX_INCLUDE+=-isystem $(DATE_ROOT)/include
-LDFLAGS+=-L$(DATE_ROOT)/lib -Wl,-rpath -Wl,$(DATE_ROOT)/lib
-endif
+# libdate
+LIBDATE_ROOT:=$(THIRD_PARTY_ROOT)/date-$(LIBDATE_VERSION)
+CXX_INCLUDE+=-isystem $(LIBDATE_ROOT)/include
+LDFLAGS+=-L$(LIBDATE_ROOT)/lib64 -Wl,-rpath -Wl,$(LIBDATE_ROOT)/lib64
 
-# Custom Google Test
-ifdef GTEST_ROOT
-CXX_INCLUDE+=-isystem $(GTEST_ROOT)/include/gtest-gmock-1.8.1
-else
-CXX_INCLUDE+=-I/usr/local/include/gtest-gmock-1.8.1
-endif
+# Google Test
+GTEST_ROOT:=$(THIRD_PARTY_ROOT)/gtest-gmock-$(GTEST_VERSION)
+CXX_INCLUDE+=-isystem $(GTEST_ROOT)/include
 
-# Custom Oat++
-ifdef OATPP_ROOT
+# Oat++
+OATPP_ROOT:=$(THIRD_PARTY_ROOT)/oatpp-$(OATPP_VERSION)
 CXX_INCLUDE+=-isystem $(OATPP_ROOT)/include/oatpp-$(OATPP_VERSION)
-LDFLAGS+=-L$(OATPP_ROOT)/lib -Wl,-rpath -Wl,$(OATPP_ROOT)/lib
-else
-CXX_INCLUDE+=-I/usr/local/include/oatpp-$(OATPP_VERSION)
-endif
+LDFLAGS+=-L$(OATPP_ROOT)/lib64/oatpp-$(OATPP_VERSION) \
+	 -Wl,-rpath -Wl,$(OATPP_ROOT)/lib64/oatpp-$(OATPP_VERSION)
 
 # Custom OpenSSL
+ifdef OPENSSL_VERSION
+OPENSSL_ROOT:=$(THIRD_PARTY_ROOT)/openssl-$(OPENSSL_VERSION)
+endif
 ifdef OPENSSL_ROOT
 C_INCLUDE+=-isystem $(OPENSSL_ROOT)/include
 CXX_INCLUDE+=-isystem $(OPENSSL_ROOT)/include
 LDFLAGS+=-L$(OPENSSL_ROOT)/lib -Wl,-rpath -Wl,$(OPENSSL_ROOT)/lib
 endif
 
-# Custom Protocol Buffers
-ifdef PROTOBUF_ROOT
+# Protocol Buffers
+PROTOBUF_ROOT:=$(THIRD_PARTY_ROOT)/protobuf-$(PROTOBUF_VERSION)
 PROTOC:=$(PROTOBUF_ROOT)/bin/protoc
 CXX_INCLUDE+=-isystem $(PROTOBUF_ROOT)/include
 LDFLAGS+=-L$(PROTOBUF_ROOT)/lib -Wl,-rpath -Wl,$(PROTOBUF_ROOT)/lib
-else
-PROTOC:=protoc
-endif
 
-# Custom utf8cpp
-ifdef UTF8CPP_ROOT
+# utf8cpp
+UTF8CPP_ROOT:=$(THIRD_PARTY_ROOT)/utf8cpp-$(UTF8CPP_VERSION)
 CXX_INCLUDE+=-isystem $(UTF8CPP_ROOT)/include
 LDFLAGS+=-L$(UTF8CPP_ROOT)/lib -Wl,-rpath -Wl,$(UTF8CPP_ROOT)/lib
-endif
 
-# Custom xxHash
-ifdef XXHASH_ROOT
+# xxHash
+XXHASH_ROOT:=$(THIRD_PARTY_ROOT)/xxHash-$(XXHASH_VERSION)
 C_INCLUDE+=-isystem $(XXHASH_ROOT)/include
 CXX_INCLUDE+=-isystem $(XXHASH_ROOT)/include
-LDFLAGS+=-L$(XXHASH_ROOT)/lib -Wl,-rpath -Wl,$(XXHASH_ROOT)/lib
-endif
+LDFLAGS+=-L$(XXHASH_ROOT)/lib64 -Wl,-rpath -Wl,$(XXHASH_ROOT)/lib64
 
 DEFS+=-D_GNU_SOURCE $(TARGET_DEFS)
 C_DEFS+=$(TARGET_C_DEFS)
