@@ -449,7 +449,8 @@ export PROTOBUF_PREFIX=${SIODB_TP_ROOT}/protobuf-${PROTOBUF_VERSION}
 cd protobuf
 tar xaf protobuf-all-${PROTOBUF_VERSION}.tar.xz
 cd protobuf-${PROTOBUF_VERSION}
-CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -L${PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${PROTOBUF_PREFIX}/lib" \
     ./configure "--prefix=${PROTOBUF_PREFIX}"
 make -j4
 sudo make install
@@ -460,11 +461,11 @@ sudo ldconfig
 # relinking of the protoc executable with correct libraries
 export PROTOC_CORRECT_LIB_COUNT=$(ldd "${PROTOBUF_PREFIX}/bin/protoc" | grep ${PROTOBUF_PREFIX}/lib | wc -l
 )
+echo "PROTOC_CORRECT_LIB_COUNT=${PROTOC_CORRECT_LIB_COUNT}"
 if [[ PROTOC_CORRECT_LIB_COUNT != 2 ]]; then
     cd src
     cp -f protoc protoc.tmp
-    sed -i "s+./.libs/libprotobuf.so+-L${PROTOBUF_PREFIX} -lprotobuf -Wl,-rpath -Wl,${PROTOBUF_PREFIX}/lib+g" protoc.tmp
-    sed -i "s+./.libs/libprotoc.so+-L${PROTOBUF_PREFIX} -lprotoc -Wl,-rpath -Wl,${PROTOBUF_PREFIX}/lib+g" protoc.tmp
+    sed -i "s+./.libs/libprotobuf.so ./.libs/libprotoc.so+-L${PROTOBUF_PREFIX}/lib -lprotobuf -lprotoc -Wl,-rpath -Wl,${PROTOBUF_PREFIX}/lib+g" protoc.tmp
     rm -f ./.libs/protoc ./.libs/lt-protoc
     ./protoc.tmp
     rm -f protoc.tmp
@@ -506,7 +507,7 @@ CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_
 sudo make -j4
 sudo make install
 sudo ldconfig
-cd ../..
+cd ../../..
 
 # Build and install message compiler
 cd ../tools/message_compiler
