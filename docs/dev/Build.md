@@ -358,58 +358,52 @@ export SIODB_TP_CXXFLAGS="-pipe -fexceptions -fasynchronous-unwind-tables \
     -fcf-protection=full -O2 -D_FORTIFY_SOURCE=2 -fPIC -g3 ${RHEL_DTS8_CXXFLAGS} \
     -D_GLIBCXX_ASSERTIONS"
 export SIODB_TP_LDFLAGS="-Wl,-z,defs -Wl,-z,now -Wl,-z,relro -g3"
-export SIODB_TP_ROOT=/opt/siodb/lib
 
 # Enter third party libraries directory
 cd thirdparty
 
+# Source third-party library versions and directory paths
+source tp_versions.sh
+
 # CentOS 7/RHEL7 ONLY:
 # Install newer version of the OpenSSL
-export OPENSSL_VERSION=1.1.1g
-export OPENSSL_PREFIX=${SIODB_TP_ROOT}/openssl-${OPENSSL_VERSION}
 sudo yum install -y perl-core libtemplate-perl zlib-devel
 cd openssl
-tar xaf openssl-${OPENSSL_VERSION}.tar.xz
-cd openssl-${OPENSSL_VERSION}
+tar xaf openssl-${SIODB_OPENSSL_VERSION}.tar.xz
+cd openssl-${SIODB_OPENSSL_VERSION}
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    ./config --prefix=${OPENSSL_PREFIX} --openssldir=${OPENSSL_PREFIX} shared zlib
+    ./config --prefix=${SIODB_OPENSSL_PREFIX} --openssldir=${SIODB_OPENSSL_PREFIX} shared zlib
 make -j4
 make -j4 test
 sudo make -j4 install
 cd ../..
 
 # Install ANTLR4 executables
-export ANTLR4_VERSION=4.8
-export ANTLR4_PREFIX=${SIODB_TP_ROOT}/antlr-${ANTLR4_VERSION}
 cd antlr4
-sudo ./install.sh ${ANTLR4_PREFIX}
+sudo ./install.sh ${SIODB_ANTLR4_PREFIX}
 cd ..
 
 # Build and isntall ANTLR4 runtime library
-export ANTLR4_CPP_RUNTIME_VERSION=4.8
-export ANTLR4_CPP_RUNTIME_PREFIX=${SIODB_TP_ROOT}/antlr4-cpp-runtime-${ANTLR4_CPP_RUNTIME_VERSION}
 cd antlr4-cpp-runtime
-tar xaf antlr4-cpp-runtime-${ANTLR4_CPP_RUNTIME_VERSION}-source.tar.xz
-cd antlr4-cpp-runtime-${ANTLR4_CPP_RUNTIME_VERSION}-source
+tar xaf antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source.tar.xz
+cd antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_INSTALL_PREFIX=${ANTLR4_CPP_RUNTIME_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_ANTLR4_CPP_RUNTIME_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
 make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
 
 # Build and install date library
-export LIBDATE_VERSION=20190911
-export LIBDATE_PREFIX=${SIODB_TP_ROOT}/date-${LIBDATE_VERSION}
 cd date
-tar xaf date-${LIBDATE_VERSION}.tar.xz
-cd date-${LIBDATE_VERSION}
+tar xaf date-${SIODB_LIBDATE_VERSION}.tar.xz
+cd date-${SIODB_LIBDATE_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_INSTALL_PREFIX=${LIBDATE_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_LIBDATE_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
           -DUSE_SYSTEM_TZ_DB=ON -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
 make -j4
 sudo make install
@@ -417,41 +411,35 @@ sudo ldconfig
 cd ../../..
 
 # Build and install Google Test library
-export GTEST_VERSION=1.8.1
-export GTEST_PREFIX=${SIODB_TP_ROOT}/gtest-gmock-${GTEST_VERSION}
 cd googletest
-tar xaf googletest-release-${GTEST_VERSION}.tar.xz
-cd googletest-release-${GTEST_VERSION}/googlemock/scripts
+tar xaf googletest-release-${SIODB_GTEST_VERSION}.tar.xz
+cd googletest-release-${SIODB_GTEST_VERSION}/googlemock/scripts
 ./fuse_gmock_files.py include
-sudo mkdir -p "${GTEST_PREFIX}"
-sudo cp -Rf include "${GTEST_PREFIX}"
+sudo mkdir -p "${SIODB_GTEST_PREFIX}"
+sudo cp -Rf include "${SIODB_GTEST_PREFIX}"
 cd ../../../..
 
 # Build and install Oat++ library
-export OATPP_VERSION=1.1.0
-export OATPP_PREFIX=${SIODB_TP_ROOT}/oatpp-${OATPP_VERSION}
 cd oatpp
-tar xaf oatpp-${OATPP_VERSION}.tar.xz
-cd oatpp-${OATPP_VERSION}
+tar xaf oatpp-${SIODB_OATPP_VERSION}.tar.xz
+cd oatpp-${SIODB_OATPP_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_INSTALL_PREFIX=${OATPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
-          -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_OATPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          -DBUILD_SHARED_LIBS=ON -DSIODB_OATPP_BUILD_TESTS=OFF ..
 make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
 
 # Build and install Google Protobuf library
-export PROTOBUF_VERSION=3.11.4
-export PROTOBUF_PREFIX=${SIODB_TP_ROOT}/protobuf-${PROTOBUF_VERSION}
 cd protobuf
-tar xaf protobuf-all-${PROTOBUF_VERSION}.tar.xz
-cd protobuf-${PROTOBUF_VERSION}
+tar xaf protobuf-all-${SIODB_PROTOBUF_VERSION}.tar.xz
+cd protobuf-${SIODB_PROTOBUF_VERSION}
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
-LDFLAGS="${SIODB_TP_LDFLAGS} -L${PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${PROTOBUF_PREFIX}/lib" \
-    ./configure "--prefix=${PROTOBUF_PREFIX}"
+LDFLAGS="${SIODB_TP_LDFLAGS} -L${SIODB_PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib" \
+    ./configure "--prefix=${SIODB_PROTOBUF_PREFIX}"
 make -j4
 sudo make install
 sudo ldconfig
@@ -459,34 +447,32 @@ sudo ldconfig
 # Sometimes protoc somehow gets linked against wrong libraries
 # and we have to fix that manually: patch protoc wrapper script and force
 # relinking of the protoc executable with correct libraries
-export PROTOC_CORRECT_LIB_COUNT=$(ldd "${PROTOBUF_PREFIX}/bin/protoc" | grep ${PROTOBUF_PREFIX}/lib | wc -l
+export PROTOC_CORRECT_LIB_COUNT=$(ldd "${SIODB_PROTOBUF_PREFIX}/bin/protoc" | grep ${SIODB_PROTOBUF_PREFIX}/lib | wc -l
 )
 echo "PROTOC_CORRECT_LIB_COUNT=${PROTOC_CORRECT_LIB_COUNT}"
 if [[ PROTOC_CORRECT_LIB_COUNT != 2 ]]; then
     cd src
     cp -f protoc protoc.tmp
-    sed -i "s+./.libs/libprotobuf.so ./.libs/libprotoc.so+-L${PROTOBUF_PREFIX}/lib -lprotobuf -lprotoc -Wl,-rpath -Wl,${PROTOBUF_PREFIX}/lib+g" protoc.tmp
+    sed -i "s+./.libs/libprotobuf.so ./.libs/libprotoc.so+-L${SIODB_PROTOBUF_PREFIX}/lib -lprotobuf -lprotoc -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib+g" protoc.tmp
     rm -f ./.libs/protoc ./.libs/lt-protoc
     ./protoc.tmp
     rm -f protoc.tmp
     cp -f ./.libs/lt-protoc ./.libs/protoc
     ldd ./.libs/protoc
-    sudo install -t "${PROTOBUF_PREFIX}/bin" ./.libs/protoc
+    sudo install -t "${SIODB_PROTOBUF_PREFIX}/bin" ./.libs/protoc
     cd ..
 fi
 
 cd ../..
 
 # Build and install Utf8cpp library
-export UTF8CPP_VERSION=3.1
-export UTF8CPP_PREFIX=${SIODB_TP_ROOT}/utf8cpp-${UTF8CPP_VERSION}
 cd utf8cpp
-tar xaf utfcpp-${UTF8CPP_VERSION}.tar.xz
-cd utfcpp-${UTF8CPP_VERSION}
+tar xaf utfcpp-${SIODB_UTF8CPP_VERSION}.tar.xz
+cd utfcpp-${SIODB_UTF8CPP_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_INSTALL_PREFIX=${UTF8CPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_UTF8CPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
           -DUTF8_TESTS=Off ..
 make -j4
 sudo make install
@@ -494,15 +480,13 @@ sudo ldconfig
 cd ../../..
 
 # Build and install xxHash library
-export XXHASH_VERSION=0.7.2
-export XXHASH_PREFIX=${SIODB_TP_ROOT}/xxHash-${XXHASH_VERSION}
 cd xxHash
-tar xaf xxHash-${XXHASH_VERSION}.tar.xz
-cd xxHash-${XXHASH_VERSION}
+tar xaf xxHash-${SIODB_XXHASH_VERSION}.tar.xz
+cd xxHash-${SIODB_XXHASH_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_INSTALL_PREFIX=${XXHASH_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_XXHASH_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
           ../cmake_unofficial
 sudo make -j4
 sudo make install

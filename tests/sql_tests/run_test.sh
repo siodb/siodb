@@ -5,7 +5,7 @@
 # in the LICENSE file.
 
 # Uncomment for debugging this script
-set -x
+# set -x
 
 set -e
 trap _testfails ERR
