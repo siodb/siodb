@@ -4,9 +4,6 @@
 
 #include "SiodbOptions.h"
 
-// Internal headers
-#include "detail/DatabaseOptionsDetail.h"
-
 // Project headers
 #include "SiodbInstance.h"
 #include "../net/NetConstants.h"
@@ -21,6 +18,7 @@
 
 // Boost headers
 #include <boost/algorithm/string.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 
 namespace siodb::config {
 
@@ -60,7 +58,14 @@ std::string SiodbOptions::getExecutableDir() const
 
 void SiodbOptions::load(const std::string& instanceName)
 {
-    const auto config = detail::readConfiguration(instanceName);
+    load(instanceName, composeInstanceConfigFilePath(instanceName));
+}
+
+void SiodbOptions::load(const std::string& instanceName, const std::string& configPath)
+{
+    boost::property_tree::ptree config;
+    boost::property_tree::read_ini(configPath, config);
+
     SiodbOptions tmpOptions;
 
     // Instance options
@@ -74,7 +79,7 @@ void SiodbOptions::load(const std::string& instanceName)
         if (tmpOptions.m_generalOptions.m_ipv4port != 0
                 && (tmpOptions.m_generalOptions.m_ipv4port < kMinPortNumber
                         || tmpOptions.m_generalOptions.m_ipv4port > kMaxPortNumber))
-            throw InvalidConfigurationOptionError("Invalid IPv4 server port number");
+            throw InvalidConfigurationError("Invalid IPv4 server port number");
     }
 
     // Parse IPv6 port number
@@ -84,12 +89,12 @@ void SiodbOptions::load(const std::string& instanceName)
         if (tmpOptions.m_generalOptions.m_ipv6port != 0
                 && (tmpOptions.m_generalOptions.m_ipv6port < kMinPortNumber
                         || tmpOptions.m_generalOptions.m_ipv6port > kMaxPortNumber))
-            throw InvalidConfigurationOptionError("Invalid IPv6 server port number");
+            throw InvalidConfigurationError("Invalid IPv6 server port number");
     }
 
     // Ensure that at least one of IPv4 or IPv6 ports is specified
     if (tmpOptions.m_generalOptions.m_ipv6port == 0 && tmpOptions.m_generalOptions.m_ipv4port == 0)
-        throw InvalidConfigurationOptionError("Both IPv4 and IPv6 are disabled");
+        throw InvalidConfigurationError("Both IPv4 and IPv6 are disabled");
 
     // Parse data directory
     {
@@ -101,7 +106,7 @@ void SiodbOptions::load(const std::string& instanceName)
                     tmpOptions.m_generalOptions.m_dataDirectory.length() - 1);
         }
         if (tmpOptions.m_generalOptions.m_dataDirectory.empty())
-            throw InvalidConfigurationOptionError("Data directory not specified or empty");
+            throw InvalidConfigurationError("Data directory not specified or empty");
     }
 
     // Parse admin connection listener backlog
@@ -111,7 +116,7 @@ void SiodbOptions::load(const std::string& instanceName)
                         kDefaultAdminConnectionListenerBacklog);
         if (adminConnectionListenerBacklog < 1
                 || adminConnectionListenerBacklog > kMaxAdminConnectionListenerBacklog) {
-            throw InvalidConfigurationOptionError(
+            throw InvalidConfigurationError(
                     "Admin connection listener backlog value is out of range");
         }
         tmpOptions.m_generalOptions.m_adminConnectionListenerBacklog =
@@ -124,8 +129,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 config.get<unsigned>(constructOptionPath(kGeneralOptionMaxAdminConnections),
                         kDefaultMaxAdminConnections);
         if (maxAdminConnections < 1 || maxAdminConnections > kMaxMaxAdminConnections) {
-            throw InvalidConfigurationOptionError(
-                    "Max. number of admin connections is out of range");
+            throw InvalidConfigurationError("Max. number of admin connections is out of range");
         }
         tmpOptions.m_generalOptions.m_maxAdminConnections = maxAdminConnections;
     }
@@ -137,7 +141,7 @@ void SiodbOptions::load(const std::string& instanceName)
                         kDefaultUserConnectionListenerBacklog);
         if (userConnectionListenerBacklog < 1
                 || userConnectionListenerBacklog > kMaxUserConnectionListenerBacklog) {
-            throw InvalidConfigurationOptionError(
+            throw InvalidConfigurationError(
                     "User connection listener backlog value is out of range");
         }
         tmpOptions.m_generalOptions.m_userConnectionListenerBacklog = userConnectionListenerBacklog;
@@ -148,8 +152,7 @@ void SiodbOptions::load(const std::string& instanceName)
         const auto maxUserConnections = config.get<unsigned>(
                 constructOptionPath(kGeneralOptionMaxUserConnections), kDefaultMaxUserConnections);
         if (maxUserConnections < 1 || maxUserConnections > kMaxMaxUserConnections) {
-            throw InvalidConfigurationOptionError(
-                    "Max. number of user connections is out of range");
+            throw InvalidConfigurationError("Max. number of user connections is out of range");
         }
         tmpOptions.m_generalOptions.m_maxUserConnections = maxUserConnections;
     }
@@ -160,13 +163,18 @@ void SiodbOptions::load(const std::string& instanceName)
                 config.get<unsigned>(constructOptionPath(kGeneralOptionDeadConnectionCleanupPeriod),
                         kDefaultOptionDeadConnectionCleanupPeriod);
         if (value < kMinOptionDeadConnectionCleanupPeriod) {
-            throw InvalidConfigurationOptionError("Dead connection cleanup period is too small");
+            throw InvalidConfigurationError("Dead connection cleanup period is too small");
         }
         if (value > kMaxOptionDeadConnectionCleanupPeriod) {
-            throw InvalidConfigurationOptionError("Dead connection cleanup period is too big");
+            throw InvalidConfigurationError("Dead connection cleanup period is too big");
         }
         tmpOptions.m_generalOptions.m_deadConnectionCleanupPeriod = std::chrono::seconds(value);
     }
+
+    // Parse allow group permission of config files
+    tmpOptions.m_generalOptions.m_allowGroupPermissionsOnConfigFiles =
+            config.get<bool>(constructOptionPath(kGeneralOptionAllowGroupPermissionsOnConfigFiles),
+                    kDefaultOptionAllowGroupPermissionsOnConfigFiles);
 
     // Log options
 
@@ -180,18 +188,17 @@ void SiodbOptions::load(const std::string& instanceName)
             boost::split(channels, value, boost::is_any_of(","));
             for (auto& v : channels) {
                 boost::trim(v);
-                if (v.empty())
-                    throw InvalidConfigurationOptionError("Empty log channel name detected");
+                if (v.empty()) throw InvalidConfigurationError("Empty log channel name detected");
                 if (!knownChannels.insert(v).second) {
                     std::ostringstream err;
                     err << "Duplicate log channel name " << v;
-                    throw InvalidConfigurationOptionError(err.str());
+                    throw InvalidConfigurationError(err.str());
                 }
             }
         }
 
         // Check that we have at least one log channel
-        if (channels.empty()) throw InvalidConfigurationOptionError("No log channels defined");
+        if (channels.empty()) throw InvalidConfigurationError("No log channels defined");
 
         // Parse log channel options
         for (const auto& logChannelName : channels) {
@@ -207,7 +214,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 if (channelType.empty()) {
                     std::ostringstream err;
                     err << "Type not defined for the log channel " << logChannelName;
-                    throw InvalidConfigurationOptionError(err.str());
+                    throw InvalidConfigurationError(err.str());
                 }
                 if (channelType == "console") {
                     channelOptions.m_type = LogChannelType::kConsole;
@@ -217,7 +224,7 @@ void SiodbOptions::load(const std::string& instanceName)
                     std::ostringstream err;
                     err << "Unsupported channel type '" << channelType
                         << "' specified for the log channel " << logChannelName;
-                    throw InvalidConfigurationOptionError(err.str());
+                    throw InvalidConfigurationError(err.str());
                 }
             }
 
@@ -229,7 +236,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 if (channelOptions.m_destination.empty()) {
                     std::ostringstream err;
                     err << "Destination not defined for the log channel " << logChannelName;
-                    throw InvalidConfigurationOptionError(err.str());
+                    throw InvalidConfigurationError(err.str());
                 }
             }
 
@@ -276,7 +283,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 std::ostringstream err;
                 err << "Invalid value of max. file size for the log channel " << logChannelName
                     << ": " << ex.what();
-                throw InvalidConfigurationOptionError(err.str());
+                throw InvalidConfigurationError(err.str());
             }
 
             // Max.number of files
@@ -292,7 +299,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 std::ostringstream err;
                 err << "Invalid value of max. number of log files for the log channel "
                     << logChannelName << ": " << ex.what();
-                throw InvalidConfigurationOptionError(err.str());
+                throw InvalidConfigurationError(err.str());
             }
 
             // Expiration time
@@ -344,7 +351,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 std::ostringstream err;
                 err << "Invalid value of expiration time for the log channel " << logChannelName
                     << ": " << ex.what();
-                throw InvalidConfigurationOptionError(err.str());
+                throw InvalidConfigurationError(err.str());
             }
 
             // Severity
@@ -365,7 +372,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 if (i == logLevelNames.size()) {
                     std::ostringstream err;
                     err << "Invalid log severity level for the log channel " << logChannelName;
-                    throw InvalidConfigurationOptionError(err.str());
+                    throw InvalidConfigurationError(err.str());
                 }
                 channelOptions.m_severity = static_cast<boost::log::trivial::severity_level>(i);
             }
@@ -384,12 +391,12 @@ void SiodbOptions::load(const std::string& instanceName)
         if (tmpOptions.m_ioManagerOptions.m_ipv4port != 0
                 && (tmpOptions.m_ioManagerOptions.m_ipv4port < kMinPortNumber
                         || tmpOptions.m_ioManagerOptions.m_ipv4port > kMaxPortNumber))
-            throw InvalidConfigurationOptionError("Invalid IO Manager IPv4 port number");
+            throw InvalidConfigurationError("Invalid IO Manager IPv4 port number");
 
         if (tmpOptions.m_ioManagerOptions.m_ipv4port != 0
                 && tmpOptions.m_ioManagerOptions.m_ipv4port
                            == tmpOptions.m_generalOptions.m_ipv4port) {
-            throw InvalidConfigurationOptionError(
+            throw InvalidConfigurationError(
                     "IO Manager and database use the same IPv4 port number");
         }
     }
@@ -401,12 +408,12 @@ void SiodbOptions::load(const std::string& instanceName)
         if (tmpOptions.m_ioManagerOptions.m_ipv6port != 0
                 && (tmpOptions.m_ioManagerOptions.m_ipv6port < kMinPortNumber
                         || tmpOptions.m_ioManagerOptions.m_ipv6port > kMaxPortNumber))
-            throw InvalidConfigurationOptionError("Invalid IO Manager IPv6 port number");
+            throw InvalidConfigurationError("Invalid IO Manager IPv6 port number");
 
         if (tmpOptions.m_ioManagerOptions.m_ipv6port != 0
                 && tmpOptions.m_ioManagerOptions.m_ipv6port
                            == tmpOptions.m_generalOptions.m_ipv6port) {
-            throw InvalidConfigurationOptionError(
+            throw InvalidConfigurationError(
                     "IO Manager and database use the same IPv6 port number");
         }
     }
@@ -414,7 +421,7 @@ void SiodbOptions::load(const std::string& instanceName)
     // Ensure that at least one of IPv4 or IPv6 port is specified
     if (tmpOptions.m_ioManagerOptions.m_ipv6port == 0
             && tmpOptions.m_ioManagerOptions.m_ipv4port == 0) {
-        throw InvalidConfigurationOptionError("Both IPv4 and IPv6 are disabled for IO Manager");
+        throw InvalidConfigurationError("Both IPv4 and IPv6 are disabled for IO Manager");
     }
 
     // Parse worker thread number
@@ -423,8 +430,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 config.get<unsigned>(constructOptionPath(kIOManagerOptionWorkerThreadNumber),
                         kDefaultIOManagerWorkerThreadNumber);
         if (tmpOptions.m_ioManagerOptions.m_workerThreadNumber < 1) {
-            throw InvalidConfigurationOptionError(
-                    "Number of IO Manager worker threads is out of range");
+            throw InvalidConfigurationError("Number of IO Manager worker threads is out of range");
         }
     }
 
@@ -434,8 +440,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 config.get<unsigned>(constructOptionPath(kIOManagerOptionWriterThreadNumber),
                         kDefaultIOManagerWriterThreadNumber);
         if (tmpOptions.m_ioManagerOptions.m_writerThreadNumber < 1) {
-            throw InvalidConfigurationOptionError(
-                    "Number of IO Manager writer threads is out of range");
+            throw InvalidConfigurationError("Number of IO Manager writer threads is out of range");
         }
     }
 
@@ -445,7 +450,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 config.get<unsigned>(constructOptionPath(kIOManagerOptionUserCacheCapacity),
                         kDefaultIOManagerUserCacheCapacity);
         if (tmpOptions.m_ioManagerOptions.m_userCacheCapacity < kMinIOManagerUserCacheCapacity) {
-            throw InvalidConfigurationOptionError("IO Manager user cache capacity is too small");
+            throw InvalidConfigurationError("IO Manager user cache capacity is too small");
         }
     }
 
@@ -456,8 +461,7 @@ void SiodbOptions::load(const std::string& instanceName)
                         kDefaultIOManagerDatabaseCacheCapacity);
         if (tmpOptions.m_ioManagerOptions.m_databaseCacheCapacity
                 < kMinIOManagerDatabaseCacheCapacity) {
-            throw InvalidConfigurationOptionError(
-                    "IO Manager database cache capacity is too small");
+            throw InvalidConfigurationError("IO Manager database cache capacity is too small");
         }
     }
 
@@ -467,7 +471,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 config.get<unsigned>(constructOptionPath(kIOManagerOptionTableCacheCapacity),
                         kDefaultIOManagerTableCacheCapacity);
         if (tmpOptions.m_ioManagerOptions.m_tableCacheCapacity < kMinIOManagerTableCacheCapacity) {
-            throw InvalidConfigurationOptionError("IO Manager table cache capacity is too small");
+            throw InvalidConfigurationError("IO Manager table cache capacity is too small");
         }
     }
 
@@ -477,7 +481,7 @@ void SiodbOptions::load(const std::string& instanceName)
                 config.get<unsigned>(constructOptionPath(kIOManagerOptionBlockCacheCapacity),
                         kDefaultIOManagerBlockCacheCapacity);
         if (tmpOptions.m_ioManagerOptions.m_blockCacheCapacity < kMinIOManagerBlockCacheCapacity) {
-            throw InvalidConfigurationOptionError("IO Manager block cache capacity is too small");
+            throw InvalidConfigurationError("IO Manager block cache capacity is too small");
         }
     }
 
@@ -487,12 +491,11 @@ void SiodbOptions::load(const std::string& instanceName)
                 constructOptionPath(kIOManagerOptionDeadConnectionCleanupPeriod),
                 kDefaultIOManagerOptionDeadConnectionCleanupPeriod);
         if (value < kMinIOManagerOptionDeadConnectionCleanupPeriod) {
-            throw InvalidConfigurationOptionError(
+            throw InvalidConfigurationError(
                     "IO Manager dead connection cleanup period is too small");
         }
         if (value > kMaxIOManagerOptionDeadConnectionCleanupPeriod) {
-            throw InvalidConfigurationOptionError(
-                    "IO Manager dead connection cleanup period is too big");
+            throw InvalidConfigurationError("IO Manager dead connection cleanup period is too big");
         }
         tmpOptions.m_ioManagerOptions.m_deadConnectionCleanupPeriod = std::chrono::seconds(value);
     }
@@ -540,18 +543,5 @@ void SiodbOptions::load(const std::string& instanceName)
     // All options valid, save them
     *this = std::move(tmpOptions);
 }
-
-namespace detail {
-
-boost::property_tree::ptree readConfiguration(const std::string& instanceName)
-{
-    validateInstance(instanceName);
-    const auto instanceConfigFile = composeInstanceConfigFilePath(instanceName);
-    boost::property_tree::ptree config;
-    boost::property_tree::read_ini(instanceConfigFile, config);
-    return config;
-}
-
-}  // namespace detail
 
 }  // namespace siodb::config

@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "InvalidConfigurationOptionError.h"
+#include "InvalidConfigurationError.h"
 #include "LogOptions.h"
 #include "../config/SiodbDefs.h"
 #include "../utils/BinaryValue.h"
@@ -34,6 +34,8 @@ constexpr const char* kGeneralOptionUserConnectionListenerBacklog =
         "user_connection_listener_backlog";
 constexpr const char* kGeneralOptionMaxUserConnections = "max_user_connections";
 constexpr const char* kGeneralOptionDeadConnectionCleanupPeriod = "dead_connection_cleanup_period";
+constexpr const char* kGeneralOptionAllowGroupPermissionsOnConfigFiles =
+        "allow_group_permissions_on_config_files";
 
 // IO Manager options
 constexpr const char* kIOManagerOptionIpv4Port = "iomgr.ipv4_port";
@@ -91,6 +93,9 @@ constexpr unsigned kMaxMaxUserConnections = 32768;
 constexpr unsigned kMinOptionDeadConnectionCleanupPeriod = 3;
 constexpr unsigned kMaxOptionDeadConnectionCleanupPeriod = 3600;
 constexpr unsigned kDefaultOptionDeadConnectionCleanupPeriod = 30;
+
+// Allow group permission of config files
+constexpr bool kDefaultOptionAllowGroupPermissionsOnConfigFiles = false;
 
 // Default number of IO Manager worker threads
 constexpr const unsigned kDefaultIOManagerWorkerThreadNumber = 2;
@@ -163,6 +168,9 @@ struct GeneralOptions {
     /** Dead connection cleanup period */
     std::chrono::seconds m_deadConnectionCleanupPeriod =
             std::chrono::seconds(kDefaultOptionDeadConnectionCleanupPeriod);
+
+    /** Allow group permission of config files */
+    bool m_allowGroupPermissionsOnConfigFiles = kDefaultOptionAllowGroupPermissionsOnConfigFiles;
 
     /**
      * Explicit superuser's initial access key. Needed only when creating new instance.
@@ -246,6 +254,56 @@ struct ClientOptions {
 
 /** Whole database options */
 struct SiodbOptions {
+    /** Initializes object of class SiodbOptions */
+    SiodbOptions() noexcept
+    {
+        // Make GCC-8 happy
+    }
+
+    /**
+     * Initializes object of class SiodbOptions.
+     * @param instanceName Siodb instance name.
+     */
+    SiodbOptions(const std::string& instanceName)
+    {
+        load(instanceName);
+    }
+
+    /**
+     * Initializes object of class SiodbOptions.
+     * @param instanceName Siodb instance name.
+     * @param configPath Configuration file path.
+     */
+    SiodbOptions(const std::string& instanceName, const std::string& configPath)
+    {
+        load(instanceName, configPath);
+    }
+
+    /**
+     * Returns executable directory path.
+     * @return Directory path.
+     */
+    std::string getExecutableDir() const;
+
+    /**
+     * Reads options for given instance.
+     * @param instanceName Siodb instance name.
+     * @throw InvalidConfigurationError
+     *        - If configuration file cannot be read.
+     *        - If value of some configuration options is invalid.
+     */
+    void load(const std::string& instanceName);
+
+    /**
+     * Reads options for given instance.
+     * @param instanceName Siodb instance name.
+     * @param configPath Configuration file path.
+     * @throw InvalidConfigurationError
+     *        - If configuration file cannot be read.
+     *        - If value of some configuration options is invalid.
+     */
+    void load(const std::string& instanceName, const std::string& configPath);
+
     /** Instance options */
     GeneralOptions m_generalOptions;
 
@@ -260,21 +318,6 @@ struct SiodbOptions {
 
     /** Client options */
     ClientOptions m_clientOptions;
-
-    /**
-     * Returns executable directory path.
-     * @return Directory path.
-     */
-    std::string getExecutableDir() const;
-
-    /**
-     * Reads options for given instance.
-     * @param instanceName instance name.
-     * @throw InvalidConfigurationOptionError
-     *         - if database instance name is invalid or not known.
-     *         - if value of some configuration options is invalid.
-     */
-    void load(const std::string& instanceName);
 };
 
 /** Instance options shared pointer shortcut type */

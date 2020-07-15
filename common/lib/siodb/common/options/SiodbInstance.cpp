@@ -37,9 +37,12 @@ namespace {
  *   - Owner user has read access to those file.
  *   - Other users and groups don't have any access to those files.
  *   - Owner group members don't have any access to those files
- * @param file instance file path
+ * @param file File path
+ * @param allowGroupPermissions Indicates that group permissions are allowed.
+ * @throw std::runtime_error if file permissions are invalid
  */
-[[maybe_unused]] void checkInstanceFilePermissions(const std::string& file)
+[[maybe_unused]] void checkInstanceFilePermissions(
+        const std::string& file, bool allowGroupPermissions)
 {
     struct stat st;
     if (::stat(file.c_str(), &st) < 0) {
@@ -84,22 +87,30 @@ namespace {
         throw std::runtime_error(err.str());
     }
 
-    bool hasInvalidPermissions =
-            // Noone must have execute permission
-            (st.st_mode & S_IXGRP) || (st.st_mode & S_IXGRP)
-            || (st.st_mode & S_IXOTH)
-            // Others must not have any access
-            || (st.st_mode & S_IROTH)
-            || (st.st_mode & S_IWOTH)
-            // User must have read permission
-            || !(st.st_mode & S_IRUSR);
+    std::vector<const char*> invalidPermissions;
+    invalidPermissions.reserve(8);
 
-    hasInvalidPermissions =
-            hasInvalidPermissions || (st.st_mode & S_IRGRP) || (st.st_mode & S_IWGRP);
+    // User and group must not have execute permission
+    if (st.st_mode & S_IXUSR) invalidPermissions.push_back("u+x");
+    if (st.st_mode & S_IXGRP) invalidPermissions.push_back("g+x");
+    // Others must not have any permissions
+    if (st.st_mode & S_IROTH) invalidPermissions.push_back("o+r");
+    if (st.st_mode & S_IWOTH) invalidPermissions.push_back("o+w");
+    if (st.st_mode & S_IXOTH) invalidPermissions.push_back("o+x");
+    // User must have read permission
+    if (!(st.st_mode & S_IRUSR)) invalidPermissions.push_back("u-r");
 
-    if (hasInvalidPermissions) {
+    if (!allowGroupPermissions) {
+        // Group must not have read and wite permissions
+        if (st.st_mode & S_IRGRP) invalidPermissions.push_back("g+r");
+        if (st.st_mode & S_IWGRP) invalidPermissions.push_back("g+w");
+    }
+
+    if (!invalidPermissions.empty()) {
         std::ostringstream err;
-        err << "Configuration file '" << file << "' has invalid permissions";
+        err << "Configuration file '" << file << "' has invalid permissions:";
+        for (const auto s : invalidPermissions)
+            err << ' ' << s;
         throw std::runtime_error(err.str());
     }
 }
@@ -158,21 +169,25 @@ void validateInstance(const std::string& instanceName)
         throw std::invalid_argument(err.str());
     }
 
-    // Check instance config file
-    const auto configFile = composeInstanceConfigFilePath(instanceName);
-    if (!fs::exists(configFile)) {
+    // Check instance configuration file
+    const auto configPath = composeInstanceConfigFilePath(instanceName);
+    if (!fs::exists(configPath)) {
         std::ostringstream err;
         err << "Instance '" << instanceName << "' is unknown";
         throw std::invalid_argument(err.str());
     }
 
+    config::SiodbOptions options(instanceName);
+
 #if !defined(_DEBUG)
     // Check permissions only in release version
-    checkInstanceFilePermissions(configFile);
+    checkInstanceFilePermissions(
+            configPath, options.m_generalOptions.m_allowGroupPermissionsOnConfigFiles);
 #endif
+
     // Check system database encryption key file
-    const auto encryptionKeyFile = composeInstanceSysDbEncryptionKeyFilePath(instanceName);
-    if (!fs::exists(encryptionKeyFile)) {
+    const auto encryptionKeyPath = composeInstanceSysDbEncryptionKeyFilePath(instanceName);
+    if (!fs::exists(encryptionKeyPath)) {
         std::ostringstream err;
         err << "Missing system database encryption key for the instance '" << instanceName << "'";
         throw std::invalid_argument(err.str());
@@ -180,7 +195,8 @@ void validateInstance(const std::string& instanceName)
 
 #if !defined(_DEBUG)
     // Check permissions only in release version
-    checkInstanceFilePermissions(encryptionKeyFile);
+    checkInstanceFilePermissions(
+            encryptionKeyPath, options.m_generalOptions.m_allowGroupPermissionsOnConfigFiles);
 #endif
 }
 

@@ -7,7 +7,7 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../../../../mk/Prolog.mk
 
-TARGET_LIB:=siodb_common_crt_ext
+TARGET_COMMON_LIB:=siodb_common_crt_ext
 
 C_SRC:= \
 	string_ext.c

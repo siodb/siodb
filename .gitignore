@@ -1,5 +1,6 @@
 _exp/
 build/
+build_*/
 .vscode/
 iomgr/lib/dbengine/parser/.antlr/
 *.o

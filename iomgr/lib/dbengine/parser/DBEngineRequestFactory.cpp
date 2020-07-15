@@ -179,7 +179,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForSimpl
                     if (i >= node->children.size())
                         throw std::runtime_error("SELECT: LIMIT does not contain expression");
 
-                    if (node->children.size() + 2 > i
+                    if (node->children.size() > i + 2
                             && helpers::getTerminalType(node->children[i + 1])
                                        == SiodbParser::COMMA) {
                         // '... LIMIT <OFFSET> , <LIMIT> ...' case

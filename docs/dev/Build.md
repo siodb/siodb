@@ -19,7 +19,7 @@
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Required tools and libraries
@@ -44,7 +44,7 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Required tools and libraries
@@ -71,7 +71,7 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Required tools and libraries
@@ -111,7 +111,7 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Enable additional repositories
@@ -175,7 +175,7 @@ Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
 
 Below instructions are based on the mentioned above sources:
 
-```shell
+```bash
 # Define lastest OpenSSL version
 export LATEST_OPENSSL_VERSION=1.1.1g
 
@@ -209,7 +209,7 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Enable additional repositories
@@ -249,7 +249,7 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Enable additional repositories
@@ -313,7 +313,7 @@ Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
 
 Below instructions are based on the mentioned above sources:
 
-```shell
+```bash
 # Define lastest OpenSSL version
 export LATEST_OPENSSL_VERSION=1.1.1g
 
@@ -347,7 +347,7 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Enable additional repositories
@@ -389,7 +389,7 @@ Change current directory to the root of siodb Git repository and execute followi
 
 **NOTE:** Adjust make parameter `-j4` to number of CPUs/cores available on the your build machine.
 
-```shell
+```bash
 
 # Clone Siodb repository or your Siodb fork, like this:
 mkdir ~/projects
@@ -399,17 +399,33 @@ git clone git@github.com:siodb/siodb.git
 # Enter repository root directory
 cd siodb
 
-# CentOS 7/RHEL 7 ONLY: Enable devtoolset-8
-scl enable devtoolset-8 bash
-
-# Ubuntu 18.04 ONLY: Set compiler to gcc-8
-CC=gcc-8
-export CC
-CXX=g++-8
-export CXX
-
 # Install source code formatting hook for git
 cp -fv tools/git_hooks/siodb-clang-format.hook .git/hooks/pre-commit
+
+# CentOS 7/RHEL 7 ONLY: Enable devtoolset-8
+scl enable devtoolset-8 bash
+export RHEL_DTS8_CFLAGS=-mcet
+export RHEL_DTS8_CXXFLAGS=-mcet
+
+# Ubuntu 18.04 ONLY: Set compiler to gcc-8
+export CC=gcc-8
+export CXX=g++-8
+export LD=g++-8
+
+# All other sustems (except Ubuntu 18.04)
+export CC=gcc
+export CXX=g++
+export LD=g++
+
+# All systems
+export SIODB_TP_CFLAGS="-pipe -fexceptions -fasynchronous-unwind-tables \
+    -fstack-clash-protection -fstack-protector-strong -grecord-gcc-switches \
+    -fcf-protection=full -O2 -D_FORTIFY_SOURCE=2 -fPIC -g3 ${RHEL_DTS8_CFLAGS}"
+export SIODB_TP_CXXFLAGS="-pipe -fexceptions -fasynchronous-unwind-tables \
+    -fstack-clash-protection -fstack-protector-strong -grecord-gcc-switches \
+    -fcf-protection=full -O2 -D_FORTIFY_SOURCE=2 -fPIC -g3 ${RHEL_DTS8_CXXFLAGS} \
+    -D_GLIBCXX_ASSERTIONS"
+export SIODB_TP_LDFLAGS="-Wl,-z,defs -Wl,-z,now -Wl,-z,relro -g3"
 
 # Enter third party libraries directory
 cd thirdparty
@@ -425,7 +441,8 @@ tar xaf antlr4-cpp-runtime-4.8-source.tar.xz
 cd antlr4-cpp-runtime-4.8-source
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
 make -j4
 sudo make install
 sudo ldconfig
@@ -437,8 +454,9 @@ tar xaf date-20190911.tar.xz
 cd date-20190911
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUSE_SYSTEM_TZ_DB=ON \
-      -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUSE_SYSTEM_TZ_DB=ON \
+        -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
 make -j4
 sudo make install
 sudo ldconfig
@@ -458,19 +476,37 @@ tar xaf oatpp-1.1.0.tar.xz
 cd oatpp-1.1.0
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
 make -j4
 sudo make install
 sudo ldconfig
+cd ../../..
 
 # Build and install Google Protobuf library
 cd protobuf
 tar xaf protobuf-all-3.11.4.tar.xz
 cd protobuf-3.11.4
-./configure
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    ./configure
 make -j4
 sudo make install
 sudo ldconfig
+# protoc somehow gets linked against wrong libraries
+# and we have to fix that manually: patch protoc wrapper script and force
+# relinking of the protoc executable with correct libraries
+cd src
+cp -f protoc protoc.tmp
+sed -i 's+./.libs/libprotobuf.so+-lprotobuf+g' protoc.tmp
+sed -i 's+./.libs/libprotoc.so+-lprotoc+g' protoc.tmp
+rm -f ./.libs/protoc ./.libs/lt-protoc
+./protoc.tmp
+rm -f protoc.tmp
+cp -f ./.libs/lt-protoc ./.libs/protoc
+sudo install -T ./.libs/protoc /usr/local/bin/protoc
+cd ..
+# Just check
+ldd /usr/local/bin/protoc
 cd ../..
 
 # Build and install Utf8cpp library
@@ -479,7 +515,8 @@ tar xaf utfcpp-3.1.tar.xz
 cd utfcpp-3.1
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUTF8_TESTS=Off ..
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo -DUTF8_TESTS=Off ..
 make -j4
 sudo make install
 sudo ldconfig
@@ -489,7 +526,8 @@ cd ../../..
 cd xxHash
 tar xaf xxHash-0.7.2.tar.xz
 cd xxHash-0.7.2
-CFLAGS=-g3 LDFLAGS=-g3 make -j4
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    make -j4
 sudo make install
 sudo ldconfig
 cd ../..
@@ -505,41 +543,88 @@ cd ../..
 
 One-time system setup commands (with explanation):
 
-```shell
-sudo useradd -M siodb
+```bash
+# Change to siodb repository root, CHANGE THIS to actua directory
+cd siodb
+
+# Add Siodb user and group
+sudo useradd -s /sbin/nologin -d /var/lib/siodb siodb
 sudo usermod -L siodb
 
+# Create Siodb instance configuration directory
+sudo mkdir -p /etc/siodb/instances
+sudo chown -R siodb:siodb /etc/siodb
+sudo chmod -R 0770 /etc/siodb
+
+# Create default instance configuration
+sudo -u siodb /etc/siodb/instances/siodb
+sudo cp config/siodb.conf /etc/siodb/instances/siodb/config
+sudo chmod 0600 /etc/siodb/instances/siodb/config
+sudo chown siodb:siodb /etc/siodb/instances/siodb/config
+sudo -u siodb dd if=/dev/urandom of=/etc/siodb/instances/siodb/system_db_key bs=16 count=1
+sudo chmod 0600 /etc/siodb/instances/siodb/system_db_key
+sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/initial_access_key
+sudo chmod 0600 /etc/siodb/instances/siodb/initial_access_key
+sudo chown siodb:siodb /etc/siodb/instances/siodb/initial_access_key
+
+# Create default data directory
 sudo mkdir -p /var/lib/siodb
 sudo chown -R siodb:siodb /var/lib/siodb
 sudo chmod -R 0770 /var/lib/siodb
 
+# Create default log directory
 sudo mkdir -p /var/log/siodb
 sudo chown -R siodb:siodb /var/log/siodb
 sudo chmod -R 0770 /var/log/siodb
 
+# Create UNIX socket directory
 sudo mkdir -p /run/siodb/
 sudo chown -R siodb:siodb /run/siodb
 sudo chmod -R 0770 /run/siodb
 
+# Make UNIX socket directory persistent across reboots
+sudo /bin/sh -c 'echo "d /run/siodb 0770 siodb siodb -" >/usr/lib/tmpfiles.d/siodb.conf'
+
+# Create lock file directory
 sudo mkdir -p /run/lock/siodb/
 sudo chown -R siodb:siodb /run/lock/siodb
 sudo chmod -R 0770 /run/lock/siodb
 
-sudo /bin/sh -c 'echo "d /run/siodb 0770 siodb siodb -" >/usr/lib/tmpfiles.d/siodb.conf'
+# Make lock file directory persistent across reboots
 sudo /bin/sh -c 'echo "d /run/lock/siodb 0770 siodb siodb -" >>/usr/lib/tmpfiles.d/siodb.conf'
+
+# Adjust file descriptor limits for the user siodb
 sudo /bin/sh -c 'echo "siodb hard nofile 524288" >>/etc/security/limits.conf'
 sudo /bin/sh -c 'echo "siodb soft nofile 524288" >>/etc/security/limits.conf'
 ```
 
-To allow your own user run siodb:
+To allow running Siodb under your own user instead of user `siodb`:
 
-```shell
+```bash
+# Add self to the group siodb
 sudo usermod -a -G siodb `whoami`
+
+# Adjust file descriptor limits
 sudo /bin/sh -c 'echo "'`whoami`' hard nofile 524288" >>/etc/security/limits.conf'
 sudo /bin/sh -c 'echo "'`whoami`' soft nofile 524288" >>/etc/security/limits.conf'
 ```
 
 and re-login.
+
+To allow running SQL tests under your own user (may be required on the CentOS and RHEL):
+
+```bash
+# 1. Performs above steps to allow running Siodb under your own user.
+
+# 2. Adjust Siodb defult instance configuration file permissions
+sudo chmod 0660 /etc/siodb/instances/siodb/config
+sudo chmod 0660 /etc/siodb/instances/siodb/system_db_key
+sudo chmod 0660 /etc/siodb/instances/siodb/initial_access_key
+
+# 3. Edit default instance configuration file /etc/siodb/instances/siodb/config
+#    set following parameter to "true"
+allow_group_permissions_on_config_files = true
+```
 
 ## Compiling Siodb
 

@@ -25,6 +25,9 @@
 #include <siodb/iomgr/shared/IOManagerExitCode.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
 
+// CRT headers
+#include <ctime>
+
 // STL headers
 #include <iostream>
 
@@ -38,6 +41,8 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+
+void writeInitializationFailureLog(int exitCode, const char* errorMessage);
 
 extern "C" int iomgrMain(int argc, char** argv)
 {
@@ -80,6 +85,7 @@ extern "C" int iomgrMain(int argc, char** argv)
         instanceOptions->m_generalOptions.m_executablePath = executableFullPath.data();
     } catch (std::exception& ex) {
         std::cerr << "Fatal: " << ex.what() << '.' << std::endl;
+        writeInitializationFailureLog(siodb::iomgr::kIOManagerExitCode_InvalidConfig, ex.what());
         return siodb::iomgr::kIOManagerExitCode_InvalidConfig;
     }
 
@@ -153,6 +159,8 @@ extern "C" int iomgrMain(int argc, char** argv)
             }
         } catch (std::exception& ex) {
             LOG_ERROR << ex.what() << '.' << std::endl;
+            writeInitializationFailureLog(
+                    siodb::iomgr::kIOManagerExitCode_InitializationFailed, ex.what());
             return siodb::iomgr::kIOManagerExitCode_InitializationFailed;
         }
 
@@ -183,4 +191,24 @@ extern "C" int iomgrMain(int argc, char** argv)
     }
 
     return siodb::iomgr::kIOManagerExitCode_Success;
+}
+
+void writeInitializationFailureLog(int exitCode, const char* errorMessage)
+{
+    std::string logPath;
+    {
+        std::ostringstream oss;
+        oss << "/tmp/siodb_iomgr_init_failure_" << std::time(nullptr) << '_' << ::getpid()
+            << ".log";
+        logPath = oss.str();
+    }
+    std::ofstream ofs(logPath);
+    if (ofs.is_open()) {
+        ofs << "Exit code: " << exitCode << '\n';
+        ofs << "Fatal: " << errorMessage << ".\n";
+        ofs << std::flush;
+        ofs.close();
+    } else {
+        std::cerr << "Warning: Can't open log file " << logPath << std::endl;
+    }
 }

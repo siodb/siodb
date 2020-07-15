@@ -7,7 +7,7 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../../../../mk/Prolog.mk
 
-TARGET_LIB:=siodb_common_protobuf
+TARGET_COMMON_LIB:=siodb_common_protobuf
 
 CXX_SRC:= \
 	CustomCodedInputStream.cpp  \

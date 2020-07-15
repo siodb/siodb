@@ -43,6 +43,7 @@ struct DatabaseInfo {
     /** Initializes structure DatabaseInfo. */
     DatabaseInfo() noexcept
     {
+        // Make GCC-8 happy
     }
 
     /** Database name */

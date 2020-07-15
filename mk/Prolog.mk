@@ -37,9 +37,20 @@ DISTRO=$(shell lsb_release -is)
 DISTRO_VERSION=$(shell lsb_release -rs)
 DISTRO_MAJOR:=$(call _get_major_version, $(DISTRO_VERSION))
 
-
-# CentOS specific
 ifeq ($(DISTRO),CentOS)
+RHEL:=1
+endif
+
+ifeq ($(DISTRO),RedHatEnterpriseServer)
+RHEL:=1
+endif
+
+ifeq ($(DISTRO),RedHatEnterprise)
+RHEL:=1
+endif
+
+# CentOS/RHEL specific
+ifeq ($(RHEL),1)
 BOOST_VERSION:=169
 ifeq ($(DISTRO_MAJOR),7)
 ifndef OPENSSL_ROOT
@@ -48,15 +59,6 @@ endif
 endif
 endif # CentOS
 
-# RHEL 7 specific
-ifeq ($(DISTRO),RedHatEnterpriseServer)
-ifeq ($(DISTRO_MAJOR),7)
-BOOST_VERSION:=169
-ifndef OPENSSL_ROOT
-OPENSSL_ROOT:=/usr/local/ssl
-endif
-endif
-endif # RHEL 7
 
 # Various options
 
@@ -77,7 +79,13 @@ endif
 
 SRC_DIR_OFFSET:=$(subst $(ROOT),,$(SRC_DIR))
 
-BUILD_ROOT:=$(ROOT)/build
+ifeq ("$(BUILD_NAME)","")
+BUILD_DIR:=build
+else
+BUILD_DIR:=build_$(BUILD_NAME)
+endif
+
+BUILD_ROOT:=$(ROOT)/$(BUILD_DIR)
 
 BUILD_CFG_DIR:=$(BUILD_ROOT)/$(BUILDCFG)
 

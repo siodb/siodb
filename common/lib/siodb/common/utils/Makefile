@@ -7,7 +7,7 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../../../../mk/Prolog.mk
 
-TARGET_LIB:=siodb_common_utils
+TARGET_COMMON_LIB:=siodb_common_utils
 
 CXX_SRC:= \
 	CheckOSUser.cpp  \
