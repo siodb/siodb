@@ -83,12 +83,12 @@ bool CompilerOptions::parse(int argc, char** argv)
     }
 
     if (m_inputFileName.empty()) {
-        std::cerr << "error: Input file name not specified." << std::endl;
+        std::cerr << "error: Input file not specified." << std::endl;
         return false;
     }
 
     if (m_outputFileName.empty()) {
-        std::cerr << "error: Output file name not specified." << std::endl;
+        std::cerr << "error: Output file not specified." << std::endl;
         return false;
     }
 

@@ -7,93 +7,25 @@
 
 .PHONY: all clean full-clean check-headers print-config
 
-#### TOOLCHAIN SELECTION #####
-
-# Ubuntu 18.04
-ifeq ($(DISTRO),Ubuntu)
-ifeq ($(DISTRO_MAJOR),18)
-TOOLCHAIN:=gcc8
-endif
-endif
-
-# Default choice
-ifndef TOOLCHAIN
-TOOLCHAIN:=gcc
-endif
-
-ifeq ($(TOOLCHAIN),gcc)
-CC:=gcc
-CXX:=g++
-LD:=g++
-endif
-
-ifeq ($(TOOLCHAIN),gcc7)
-CC:=gcc-7
-CXX:=g++-7
-LD:=g++-7
-endif
-
-ifeq ($(TOOLCHAIN),gcc8)
-CC:=gcc-8
-CXX:=g++-8
-LD:=g++-8
-endif
-
-ifeq ($(TOOLCHAIN),gcc9)
-CC:=gcc-9
-CXX:=g++-9
-LD:=g++-9
-endif
-
-ifeq ($(TOOLCHAIN),gcc10)
-CC:=gcc-10
-CXX:=g++-10
-LD:=g++-10
-endif
-
-ifeq ($(TOOLCHAIN),clang)
-CC:=clang
-CXX:=clang++
-LD:=clang++
-endif
-
-ifeq ($(TOOLCHAIN),clang8)
-CC:=clang-8
-CXX:=clang++-8
-LD:=clang++-8
-endif
-
-ifeq ($(TOOLCHAIN),clang9)
-CC:=clang-9
-CXX:=clang++-9
-LD:=clang++-9
-endif
-
-ifeq ($(TOOLCHAIN),clang10)
-CC:=clang-10
-CXX:=clang++-10
-LD:=clang++-10
-endif
-
-AR:=ar
+include $(MK)/Toolchain.mk
 
 ##### BUILD SETTINGS #####
 
+# Sources
 PROTO_CXX_SRC_N:=$(PROTO_SRC:.proto=.pb.cc)
 PROTO_CXX_HDR_N:=$(PROTO_SRC:.proto=.pb.h)
 PROTO_CXX_SRC:=$(addprefix $(THIS_GENERATED_FILES_DIR), $(PROTO_CXX_SRC_N))
 PROTO_CXX_HDR:=$(addprefix $(THIS_GENERATED_FILES_DIR), $(PROTO_CXX_HDR_N))
 
-
+# Obejcts
 OBJ:=$(addprefix $(THIS_OBJ_DIR),$(PROTO_CXX_SRC_N:.pb.cc=.pb.o) $(C_SRC:.c=.o) $(CXX_SRC:.cpp=.o))
 
+# Generated dependencies
 DEP:=$(OBJ:.o=.d)
 
+# Header check
 CXX_CHK:=$(addprefix $(THIS_OBJ_DIR), $(CXX_HDR:.h=.cxx-hdr-check))
 C_CHK:=$(addprefix $(THIS_OBJ_DIR), $(C_HDR:.h=.c-hdr-check))
-
-CXX_CHK_TMP:=$(addsuffix .tmp, $(CXX_CHK))
-C_CHK_TMP:=$(addsuffix .tmp, $(C_CHK))
 
 OBJ_DIRS:=$(addsuffix .,$(sort $(dir $(OBJ))))
 GENERATED_FILES_DIRS:=$(addsuffix .,$(sort $(dir $(PROTO_CXX_SRC))))
@@ -102,63 +34,7 @@ INCLUDE+=-I$(COMMON_LIB_ROOT) -I$(GENERATED_FILES_COMMON_LIB_ROOT)
 C_INCLUDE+=
 CXX_INCLUDE+=
 
-# ANTLR4 Runtime
-ANTLR4_RUNTIME_ROOT:=$(THIRD_PARTY_ROOT)/antlr4-cpp-runtime-$(ANTLR4_CPP_RUNTIME_VERSION)
-CXX_INCLUDE+=-isystem $(ANTLR4_RUNTIME_ROOT)/include/antlr4-runtime
-LDFLAGS+=-L$(ANTLR4_RUNTIME_ROOT)/lib -Wl,-rpath -Wl,$(ANTLR4_RUNTIME_ROOT)/lib
-
-# Custom Boost
-ifdef BOOST_ROOT
-CXX_INCLUDE+=-isystem $(BOOST_ROOT)/include
-LDFLAGS+=-L$(BOOST_ROOT)/lib -Wl,-rpath -Wl,$(BOOST_ROOT)/lib
-else
-ifdef BOOST_VERSION
-CXX_INCLUDE+=-I/usr/include/boost$(BOOST_VERSION)
-LDFLAGS+=-L/usr/lib64/boost$(BOOST_VERSION)
-endif
-endif
-
-# libdate
-LIBDATE_ROOT:=$(THIRD_PARTY_ROOT)/date-$(LIBDATE_VERSION)
-CXX_INCLUDE+=-isystem $(LIBDATE_ROOT)/include
-LDFLAGS+=-L$(LIBDATE_ROOT)/lib64 -Wl,-rpath -Wl,$(LIBDATE_ROOT)/lib64
-
-# Google Test
-GTEST_ROOT:=$(THIRD_PARTY_ROOT)/gtest-gmock-$(GTEST_VERSION)
-CXX_INCLUDE+=-isystem $(GTEST_ROOT)/include
-
-# Oat++
-OATPP_ROOT:=$(THIRD_PARTY_ROOT)/oatpp-$(OATPP_VERSION)
-CXX_INCLUDE+=-isystem $(OATPP_ROOT)/include/oatpp-$(OATPP_VERSION)
-LDFLAGS+=-L$(OATPP_ROOT)/lib64/oatpp-$(OATPP_VERSION) \
-	 -Wl,-rpath -Wl,$(OATPP_ROOT)/lib64/oatpp-$(OATPP_VERSION)
-
-# Custom OpenSSL
-ifdef OPENSSL_VERSION
-OPENSSL_ROOT:=$(THIRD_PARTY_ROOT)/openssl-$(OPENSSL_VERSION)
-endif
-ifdef OPENSSL_ROOT
-C_INCLUDE+=-isystem $(OPENSSL_ROOT)/include
-CXX_INCLUDE+=-isystem $(OPENSSL_ROOT)/include
-LDFLAGS+=-L$(OPENSSL_ROOT)/lib -Wl,-rpath -Wl,$(OPENSSL_ROOT)/lib
-endif
-
-# Protocol Buffers
-PROTOBUF_ROOT:=$(THIRD_PARTY_ROOT)/protobuf-$(PROTOBUF_VERSION)
-PROTOC:=$(PROTOBUF_ROOT)/bin/protoc
-CXX_INCLUDE+=-isystem $(PROTOBUF_ROOT)/include
-LDFLAGS+=-L$(PROTOBUF_ROOT)/lib -Wl,-rpath -Wl,$(PROTOBUF_ROOT)/lib
-
-# utf8cpp
-UTF8CPP_ROOT:=$(THIRD_PARTY_ROOT)/utf8cpp-$(UTF8CPP_VERSION)
-CXX_INCLUDE+=-isystem $(UTF8CPP_ROOT)/include
-LDFLAGS+=-L$(UTF8CPP_ROOT)/lib -Wl,-rpath -Wl,$(UTF8CPP_ROOT)/lib
-
-# xxHash
-XXHASH_ROOT:=$(THIRD_PARTY_ROOT)/xxHash-$(XXHASH_VERSION)
-C_INCLUDE+=-isystem $(XXHASH_ROOT)/include
-CXX_INCLUDE+=-isystem $(XXHASH_ROOT)/include
-LDFLAGS+=-L$(XXHASH_ROOT)/lib64 -Wl,-rpath -Wl,$(XXHASH_ROOT)/lib64
+include $(MK)/ThirdpartyLibs.mk
 
 DEFS+=-D_GNU_SOURCE $(TARGET_DEFS)
 C_DEFS+=$(TARGET_C_DEFS)
@@ -187,6 +63,9 @@ DEFAULT_CXXFLAGS:=-pthread -g3 \
 	-ffunction-sections -fdata-sections
 
 DEFAULT_LDFLAGS:=-pthread -g3 -rdynamic -Wl,--gc-sections
+
+CHECK_HEADERS_CFLAGS:=-Wno-unused-function
+CHECK_HEADERS_CXXFLAGS:=-Wno-unused-function
 
 # PIE flags
 ifdef TARGET_SO
@@ -360,9 +239,7 @@ clean:
 	-$(NOECHO)rm -rf $(PROTO_CXX_HDR) $(PROTO_CXX_SRC)
 	-$(NOECHO)rm -rf $(EXTRA_C_DEPS) $(EXTRA_CXX_DEPS)
 	-$(NOECHO)rm -rf $(CXX_CHK)
-	-$(NOECHO)rm -rf $(CXX_CHK_TMP)
 	-$(NOECHO)rm -rf $(C_CHK)
-	-$(NOECHO)rm -rf $(C_CHK_TMP)
 
 full-clean:
 	@echo RM $(BUILD_CFG_DIR)
@@ -435,20 +312,20 @@ $(OBJ_DIR)/%.o : $(ROOT)/%.cpp $(PROTO_CXX_HDR) $(EXTRA_CXX_DEPS) $(CXX_PCH_DEP)
 
 $(OBJ_DIR)/%.c-hdr-check : $(ROOT)/%.h $(EXTRA_C_DEPS) | $$(@D)/.
 	@echo C_HEADER_CHECK $@
-	$(NOECHO)echo "#include \"$<\"" >"$@.h"
-	$(NOECHO)echo "#include <stdlib.h>" >>"$@.h"
-	$(NOECHO)echo "static inline int test() { return rand(); }" >>"$@.h"
-	$(NOECHO)$(CC) -o $@.o $(CFLAGS) $(CPPFLAGS) -c "$@.h"
-	$(NOECHO)rm -f $@.h $@.o
+	$(NOECHO)echo "#include \"$<\"" >"$@.c"
+	$(NOECHO)echo "int c_header_check_dummy(void);" >>"$@.c"
+	$(NOECHO)echo "int test() { return c_header_check_dummy() + 1; }" >>"$@.c"
+	$(NOECHO)$(CC) -o $@.o $(CFLAGS) $(CHECK_HEADERS_CFLAGS) $(CPPFLAGS) -c "$@.c"
+	$(NOECHO)rm -f $@.c $@.o
 	$(NOECHO)touch $@
 
 $(OBJ_DIR)/%.cxx-hdr-check : $(ROOT)/%.h $(PROTO_CXX_HDR) $(EXTRA_CXX_DEPS) | $$(@D)/.
 	@echo CXX_HEADER_CHECK $@
-	$(NOECHO)echo "#include \"$<\"" >"$@.h"
-	$(NOECHO)echo "#include <cstdlib>" >>"$@.h"
-	$(NOECHO)echo "static inline int test() { return rand(); }" >>"$@.h"
-	$(NOECHO)$(CXX) -o $@.o $(CXXFLAGS) $(CPPFLAGS) -c "$@.h"
-	$(NOECHO)rm -f $@.h $@.o
+	$(NOECHO)echo "#include \"$<\"" >"$@.cpp"
+	$(NOECHO)echo "int cxx_header_check_dummy(void);" >>"$@.cpp"
+	$(NOECHO)echo "int test() { return cxx_header_check_dummy() + 1; }" >>"$@.cpp"
+	$(NOECHO)$(CXX) -o $@.o $(CXXFLAGS) $(CHECK_HEADERS_CXXFLAGS) $(CPPFLAGS) -c "$@.cpp"
+	$(NOECHO)rm -f $@.cpp $@.o
 	$(NOECHO)touch $@
 
 

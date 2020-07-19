@@ -98,4 +98,4 @@ GENERATED_FILES_COMMON_LIB_ROOT:=$(GENERATED_FILES_DIR)/$(COMMON_SUBDIR)/lib
 
 SIODBMC:=siodbmc.$(SIODBMC_VERSION)
 
-include $(MK)/ThirdParty.mk
+include $(MK)/ThirdpartyLibVersions.mk

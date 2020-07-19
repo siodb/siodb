@@ -85,7 +85,7 @@ sudo apt install -y libncurses5
 mkdir /tmp/getllvm
 cd /tmp/getllvm
 wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+tar --no-same-owner -xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
 sudo mkdir -p /usr/local/lib
 sudo mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3 /usr/local/lib
 cd $HOME
@@ -148,17 +148,20 @@ sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
 --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
 --family cmake
 
-# Install clang-9. This one is for SLES, but works on the CentOS 7 too.
+# Install clang-9. This one is for SLES, but works for the CentOS 7 too.
 mkdir /tmp/getllvm
 cd /tmp/getllvm
 wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
-sudo cp -Rf local /usr
-sudo ldconfig
-sudo mandb
+tar --no-same-owner -xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+rm -f clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3 /usr/local/lib64
+sudo alternatives --install /usr/local/bin/clang-format clang-format \
+    /usr/local/lib64/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format 20 \
+    --slave /usr/local/bin/git-clang-format git-clang-format \
+    /usr/local/lib64/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format
 cd $HOME
 rm -rf /tmp/getllvm
+
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
@@ -179,31 +182,15 @@ Run following commands:
 cd $HOME
 
 # Enable additional repositories
-sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
 # Update your system
-sudo yum -y update
+sudo dnf -y update
 
 # Install required tools and libraries
-sudo yum install -y boost-devel cmake curl gcc gcc-c++ java-1.8.0-openjdk-headless \
-    libatomic libcurl-devel libuuid-devel openssl-devel python2 pkgconfig \
-    redhat-lsb wget zlib-devel
-
-# Install clang-9. This one is for SLES, but works on the CentOS 8 too.
-mkdir /tmp/getllvm
-cd /tmp/getllvm
-wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
-sudo cp -Rf local /usr
-sudo ldconfig
-sudo mandb
-cd $HOME
-rm -rf /tmp/getllvm
-
-# Permanently tell ldconfig to scan /usr/local/lib when updating cache
-sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
-sudo ldconfig
+sudo dnf install -y boost-devel clang cmake curl gcc gcc-c++ git-clang-format \
+    java-11-openjdk-headless libatomic libcurl-devel libuuid-devel \
+    openssl-devel python2 pkgconfig redhat-lsb wget zlib-devel
 
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
@@ -252,15 +239,17 @@ sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
 --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
 --family cmake
 
-# Install clang-9. This one is for SLES, but works on the CentOS 7 too.
+# Install clang-9. This one is for SLES, but works for the RHEL 7 too.
 mkdir /tmp/getllvm
 cd /tmp/getllvm
 wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
-sudo cp -Rf local /usr
-sudo ldconfig
-sudo mandb
+tar --no-same-owner -xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+rm -f clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3 /usr/local/lib64
+sudo alternatives --install /usr/local/bin/clang-format clang-format \
+    /usr/local/lib64/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format 20 \
+    --slave /usr/local/bin/git-clang-format git-clang-format \
+    /usr/local/lib64/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format
 cd $HOME
 rm -rf /tmp/getllvm
 
@@ -289,27 +278,12 @@ sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.
 sudo yum -y update
 
 # Install required tools and libraries
-sudo yum install -y boost-devel cmake curl doxygen gcc gcc-c++ \
-    java-1.8.0-openjdk-headless libatomic libcurl-devel libuuid-devel \
-    openssl-devel pkgconfig python2 redhat-lsb wget zlib-devel
+# Install required tools and libraries
+sudo dnf install -y boost-devel clang cmake curl gcc gcc-c++ git-clang-format \
+    java-11-openjdk-headless libatomic libcurl-devel libuuid-devel \
+    openssl-devel python2 pkgconfig redhat-lsb wget zlib-devel
 
-# Install clang-9. This one is for SLES, but works on the CentOS 8 too.
-mkdir /tmp/getllvm
-cd /tmp/getllvm
-wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
-sudo cp -Rf local /usr
-sudo ldconfig
-sudo mandb
-cd $HOME
-rm -rf /tmp/getllvm
-
-# Permanently tell ldconfig to scan /usr/local/lib when updating cache
-sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
-sudo ldconfig
-
-# Link python 2
+# Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
@@ -344,7 +318,7 @@ export CC=gcc-8
 export CXX=g++-8
 export LD=g++-8
 
-# All other sustems (except Ubuntu 18.04)
+# All other systems (except Ubuntu 18.04)
 export CC=gcc
 export CXX=g++
 export LD=g++
@@ -367,11 +341,12 @@ source tp_versions.sh
 
 # CentOS 7/RHEL7 ONLY:
 # Install newer version of the OpenSSL
-sudo yum install -y perl-core libtemplate-perl zlib-devel
+sudo yum install -y perl-core zlib-devel
 cd openssl
-tar xaf openssl-${SIODB_OPENSSL_VERSION}.tar.xz
+tar --no-same-owner -xaf openssl-${SIODB_OPENSSL_VERSION}.tar.xz
 cd openssl-${SIODB_OPENSSL_VERSION}
-CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -Wl,-rpath -Wl,${SIODB_OPENSSL_PREFIX}/lib" \
     ./config --prefix=${SIODB_OPENSSL_PREFIX} --openssldir=${SIODB_OPENSSL_PREFIX} shared zlib
 make -j4
 make -j4 test
@@ -385,7 +360,7 @@ cd ..
 
 # Build and isntall ANTLR4 runtime library
 cd antlr4-cpp-runtime
-tar xaf antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source.tar.xz
+tar --no-same-owner -xaf antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source.tar.xz
 cd antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source
 mkdir build
 cd build
@@ -398,7 +373,7 @@ cd ../../..
 
 # Build and install date library
 cd date
-tar xaf date-${SIODB_LIBDATE_VERSION}.tar.xz
+tar --no-same-owner -xaf date-${SIODB_LIBDATE_VERSION}.tar.xz
 cd date-${SIODB_LIBDATE_VERSION}
 mkdir build
 cd build
@@ -412,7 +387,7 @@ cd ../../..
 
 # Build and install Google Test library
 cd googletest
-tar xaf googletest-release-${SIODB_GTEST_VERSION}.tar.xz
+tar --no-same-owner -xaf googletest-release-${SIODB_GTEST_VERSION}.tar.xz
 cd googletest-release-${SIODB_GTEST_VERSION}/googlemock/scripts
 ./fuse_gmock_files.py include
 sudo mkdir -p "${SIODB_GTEST_PREFIX}"
@@ -421,13 +396,13 @@ cd ../../../..
 
 # Build and install Oat++ library
 cd oatpp
-tar xaf oatpp-${SIODB_OATPP_VERSION}.tar.xz
+tar --no-same-owner -xaf oatpp-${SIODB_OATPP_VERSION}.tar.xz
 cd oatpp-${SIODB_OATPP_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
     cmake -DCMAKE_INSTALL_PREFIX=${SIODB_OATPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
-          -DBUILD_SHARED_LIBS=ON -DSIODB_OATPP_BUILD_TESTS=OFF ..
+          -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
 make -j4
 sudo make install
 sudo ldconfig
@@ -435,7 +410,7 @@ cd ../../..
 
 # Build and install Google Protobuf library
 cd protobuf
-tar xaf protobuf-all-${SIODB_PROTOBUF_VERSION}.tar.xz
+tar --no-same-owner -xaf protobuf-all-${SIODB_PROTOBUF_VERSION}.tar.xz
 cd protobuf-${SIODB_PROTOBUF_VERSION}
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
 LDFLAGS="${SIODB_TP_LDFLAGS} -L${SIODB_PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib" \
@@ -467,7 +442,7 @@ cd ../..
 
 # Build and install Utf8cpp library
 cd utf8cpp
-tar xaf utfcpp-${SIODB_UTF8CPP_VERSION}.tar.xz
+tar --no-same-owner -xaf utfcpp-${SIODB_UTF8CPP_VERSION}.tar.xz
 cd utfcpp-${SIODB_UTF8CPP_VERSION}
 mkdir build
 cd build
@@ -481,13 +456,23 @@ cd ../../..
 
 # Build and install xxHash library
 cd xxHash
-tar xaf xxHash-${SIODB_XXHASH_VERSION}.tar.xz
+tar --no-same-owner -xaf xxHash-${SIODB_XXHASH_VERSION}.tar.xz
 cd xxHash-${SIODB_XXHASH_VERSION}
 mkdir build
 cd build
-CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+
+# CentOS and RHEL
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -Wl,-rpath -Wl,${SIODB_XXHASH_PREFIX}/lib64" \
     cmake -DCMAKE_INSTALL_PREFIX=${SIODB_XXHASH_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
           ../cmake_unofficial
+
+# Ubuntu, Debian
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -Wl,-rpath -Wl,${SIODB_XXHASH_PREFIX}/lib" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_XXHASH_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          ../cmake_unofficial
+
 sudo make -j4
 sudo make install
 sudo ldconfig
