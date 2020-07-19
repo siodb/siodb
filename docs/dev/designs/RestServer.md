@@ -1,58 +1,58 @@
 # REST server
 
-Siodb must provide an integrated REST server that can work in parallel with the SQL front-end.
-The server will be a distinct process called `siodb_rest_server`.
-There will be new parameters to indicate the ports numbers on which the process will
-listen:
+## Overview
 
-- `rest_server.ipv4_http_port`. Default port `50080`. `0` means do not listen.
-- `rest_server.ipv4_https_port`. Default port `50443`. `0` means do not listen.
-- `rest_server.ipv6_http_port`. Default port `50080`. `0` means do not listen.
-- `rest_server.ipv6_https_port`. Default port `50443`. `0` means do not listen.
-
-The process will convert the REST queries into the IOMgr engine protobuf
-message (From REST to SQL).
-
-It would only work per table and allow users to push/retrieve data through REST.
-
-## Third-party libraries
-
-Siodb will use Oat++ (https://github.com/oatpp/oatpp) for the implementation of the REST server
-in the `siodb_rest_server` process.
-
-Also, we would leverage the JSON API from Protobuf as much as possible for conversion between
-message to JSON. E.g. when sending the IOMgr response to the client.
+Siodb must to provide an integrated REST server that can work in parallel with theSQL front-end.
+It would only work per table and allow users to push/retrieve data through REST. The server will
+operate as a distinct process called `siodb_rest_server`. The server will convert REST queries
+into the IOMgr engine requests, send them to IOMgr, receive response, convert it to JSON and send
+back to HTTP client. REST server will support both HTTP and HTTPS protocols.
 
 ## Authentication
 
-Siodb must provide a new table `sys_user_tokens` linked with `sys_users.trid`. In that table
-the columns `name` (text) and `value` (text) must store the token information for each user.
-There must also be a column `description` (text) as Siodb allows descriptions for all object types.
+Siodb must provide a new table `sys_user_tokens` with following columns:
+|Column Name|Data type|Mandatory|Description|
+|---|---|---|---|
+|TRID|UINT64|Yes|Token ID|
+|USER_ID|UINT64|Yes|User ID|
+|NAME|TEXT|Yes|Token name|
+|VALUE|TEXT|Yes|Token value|
+|DESCRIPTION|TEXT|No|Token description|
 
-It is then possible to generate a token with an SQL command:
+New token is generated using SQL command:
 
 ```sql
-ALTER USER <user_name> CREATE TOKEN '<token_name>';
+ALTER USER <user_name> CREATE TOKEN <token_name>;
 ```
 
-It is possible to delete a token with this SQL commands:
+It is possible to delete a token with following SQL commands:
 
 ```sql
-ALTER USER <user_name> DROP TOKEN '<token_name>';
+ALTER USER <user_name> DROP TOKEN <token_name>;
 ```
 
-A user must provide the Siodb user name plus a valid token to access and manipulate the data:
+Generated tokens are guaranteed at least to be unique among all currently existing tokes.
 
-```curl --user "Siodb_user_name"  https://siodb-srv:50443/<path>```
+Client must provide a valid token to access and manipulate the data. For example:
+
+```curl -H "Authorization: Bearer xxxxxxxxxxxxxx" https://siodb-srv:50443/<path>```
 
 ## REST Paths (for the first version)
 
 ### GET
 
-`/databases/<database_name>/tables/<table_name>/rows`: Return all rows.
-`/databases/<database_name>/tables/<table_name>/rows/<trid>`: returns row with specified trid:
+URLs:
 
-- Return the JSON Response:
+- `/databases/<database_name>/tables/<table_name>/rows`: for all rows.
+- `/databases/<database_name>/tables/<table_name>/rows/<trid>`: for a specific row.
+
+Action:
+
+- Find all matching rows.
+
+Result:
+
+- Returns JSON response:
 
 ```json
 // HTTP OK = 200
@@ -74,40 +74,70 @@ A user must provide the Siodb user name plus a valid token to access and manipul
 
 ### POST
 
-`/databases/<database_name>/tables/<table_name>/rows`: Create a new row
+URL:
 
-- Body: the name of the columns and their values: `{ "col1": "ValCol1", "col2": "ValCol2", ...}`.
-- Create the row with specified trid.
-- Return the JSON Response.
+- `/databases/<database_name>/tables/<table_name>/rows`
+
+Content:
+
+- Body: column name-value pairs: `{ "col1": "Val1", "col2": "Val2", ...}`.
+
+Action:
+
+- Creates one or more new rows.
+
+Result:
+
+- Returns JSON response.
 
 ### PUT
 
-`/databases/<database_name>/tables/<table_name>/rows/<trid>`:
+URL:
 
-- Body: the name of the columns and their values: `{ "col1": "ValCol1", "col2": "ValCol2", ...}`.
-- Update the row with specified trid.
-- Return the JSON Response.
+- `/databases/<database_name>/tables/<table_name>/rows/<trid>`
+
+Content:
+
+- Body: column name-value pairs: `{ "col1": "Val1", "col2": "Val2", ...}`.
+
+Actions:
+
+- Updates row with specified TRID.
+
+Result:
+
+- Return JSON response.
 
 ### DELETE
 
-`/databases/<database_name>/tables/<table_name>/rows/<trid>`:
+URL:
 
-- Body: none.
-- Delete the row with specified trid.
-- Return the JSON Response.
+- `/databases/<database_name>/tables/<table_name>/rows/<trid>`
 
-### POST/DELETE/UPDATE success response
+Content:
+
+- None.
+
+Actions:
+
+- Deletes row with specified TRID.
+
+Result:
+
+- Return JSON response.
+
+### POST/PUT/DELETE Success Response
 
 ```json
 // HTTP OK = 200
 {
     "status": 200,
-    "affected_rows": <affected_rows>,
-    "trid": [ "<trid_1>", "...", "<trid_N>" ]
+    "affectedRowCount": <affected_rows>,
+    "trids": [ <trid_1>, ..., <trid_N> ]
 }
 ```
 
-### Error response
+### GET/POST/PUT/DELETE Error Response
 
 ```json
 // HTTP BAD_REQUEST = 400
@@ -130,48 +160,50 @@ A user must provide the Siodb user name plus a valid token to access and manipul
 
 ### GET
 
-1. A client sends a query to the server:
-`curl --user "Siodb_user_name"  https://siodb-srv:50443/<path>`
-2. `siodb_rest_server` receives the request and queries the IOMgr to see if the token is valid.
-    - If valid: it goes to step 3
-    - If not valid, it return the message `Status::CODE_401, "Unauthorized"`
-3. `siodb_rest_server` receives the request.
-4. `siodb_rest_server` converts the request into a `DatabaseEngineRestRequest`.
-5. `siodb_rest_server` sends the command to the IOMgr.
-6. IOMgr get the `DatabaseEngineRestRequest`, process the JSON and send the `DatabaseEngineResponse`
-along with the raw data as it would for a standard SQL.
-7. `siodb_rest_server` writes into a JSON the response converted from `DatabaseEngineResponse`.
-Send the HTTP 1.1 header `Transfer-Encoding: chunked` + the JSON response.
-8. `siodb_rest_server` receives raw data and forms the resultset in a JSON form.
-Send the HTTP 1.1 chunks, chunked per `N`* rows. Stop when raw data lenth == 0.
-9. `siodb_rest_server` sends the JSON response to the client.
+1. A client sends a query to the server, for example:
+`curl -H "Authorization: Bearer XXXXXXXXXXXX" https://siodb-srv:50443/request-path`
+2. REST server receives the request headers and queries the IOMgr to see
+    if the token is valid.
+    - If valid: continues to the step 3
+    - If invalid: returns HTTP status `401 Unauthorized`
+3. REST server receives the request body.
+4. REST server converts the request into a `DatabaseEngineRestRequest`.
+5. REST server sends the command to the IOMgr.
+6. IOMgr receives the `DatabaseEngineRestRequest`, process the JSON and sends the `DatabaseEngineResponse`
+along with the raw data the same way as for the SQL query.
+7. REST server converts `DatabaseEngineResponse` to JSON and
+ sends the HTTP 1.1 header `Transfer-Encoding: chunked` and part of the JSON response.
+8. REST server receives N rows of the raw data, converts it to JSON and sends it to the client in the HTTP 1.1 chunks, chunked per N rows.
+9. Finally REST server sends zero-length chunk to indicate end of data.
 
 NOTE: All values from IOMgr would be converted into UTF-8 JSON.
-
-* N is configurable with the parameter `rest_server.rows_per_http_chunk`.
 
 ### POST, PUT, DELETE
 
 1. A client sends a query to the server:
-`curl --user "Siodb_user_name"  https://siodb-srv:50443/<path>`
-2. `siodb_rest_server` receives the request and queries the IOMgr to see if the token is valid.
+`curl -H "Authorization: Bearer XXXXXXXXXXXX" https://siodb-srv:50443/<path>`
+2. REST server receives the request and queries the IOMgr to see if the token is valid.
     - If valid: it goes to step 3
     - If not valid, it return the message `Status::CODE_401, "Unauthorized"`
-3. `siodb_rest_server` receives the request.
-4. `siodb_rest_server` converts the request into a `DatabaseEngineRestRequest`.
-5. `siodb_rest_server` sends the command to the IOMgr.
-6. IOMgr get the `DatabaseEngineRestRequest`, process the JSON and send the `DatabaseEngineResponse`.
-7. `siodb_rest_server` writes into a JSON the response converted from `DatabaseEngineResponse`.
-8. `siodb_rest_server` sends the JSON response to the client.
+3. REST server receives the request.
+4. REST server converts the request into a `DatabaseEngineRestRequest`.
+5. REST server sends the command to the IOMgr.
+6. IOMgr receives the request, process the JSON and send the `DatabaseEngineResponse`.
+7. REST server writes into a JSON the response converted from `DatabaseEngineResponse`.
+8. REST server sends the JSON response to the client.
 
-## Security
+## Configuration Parameters
 
-The REST server in the `siodb_rest_server` process must support HTTPS. For HTTPS, it should use
-the following parameters:
-
-```ini
-rest_server.enable_encryption = yes
-rest_server.tls_certificate = /etc/siodb/instances/siodb/cert.pem
-rest_server.tls_certificate_chain = /etc/siodb/instances/siodb/certChain.pem
-rest_server.tls_private_key = /etc/siodb/instances/siodb/key.pem
-```
+- `rest_server.ipv4_http_port` - IPv4 HTTP port number. Default value `50080`.
+  `0` means do not listen.
+- `rest_server.ipv4_https_port` - IPv4 HTTPS port number. Default value `50443`.
+  `0` means do not listen.
+- `rest_server.ipv6_http_port` - IPv6 HTTP port number. Default value `50080`.
+  `0` means do not listen.
+- `rest_server.ipv6_https_port` - IPv6 HTTPS port number. Default value `50443`.
+  `0` means do not listen.
+- `rest_server.tls_certificate` - path to the TLS certificate file.
+- `rest_server.tls_certificate_chain` - path to the TLS certificate chain file.
+- `rest_server.tls_private_key` - path to the TLS private key file.
+- `rest_server.rows_per_http_chunk` - number of rows per HTTP chunk. Default value `0`.
+  `0` means do not use chunks.
