@@ -166,7 +166,7 @@ Database::Database(Instance& instance, std::string&& name, const std::string& ci
     , m_cipherKey(std::move(cipherKey))
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
     , m_decryptionContext(m_cipher ? m_cipher->createDecryptionContext(m_cipherKey) : nullptr)
-    , m_metadataFile(createMetadataFile())
+    , m_metadataFile(createMetadataFile(makeMetadataFilePath().c_str()))
     , m_metadata(static_cast<DatabaseMetadata*>(m_metadataFile->getMappingAddress()))
     , m_createTransactionParams(User::kSuperUserId, generateNextTransactionId())
     , m_tableCache(m_name,
@@ -194,7 +194,7 @@ Database::Database(
     , m_cipherKey(dbRecord.m_cipherKey)
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
     , m_decryptionContext(m_cipher ? m_cipher->createDecryptionContext(m_cipherKey) : nullptr)
-    , m_metadataFile(openMetadataFile())
+    , m_metadataFile(openMetadataFile(makeMetadataFilePath().c_str()))
     , m_metadata(static_cast<DatabaseMetadata*>(m_metadataFile->getMappingAddress()))
     , m_tableCache(m_name,
               tableCacheCapacity > 0 ? tableCacheCapacity : instance.getTableCacheCapacity())

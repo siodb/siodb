@@ -652,16 +652,15 @@ void Database::checkDataConsistency()
     }
 }
 
-std::unique_ptr<MemoryMappedFile> Database::createMetadataFile() const
+std::unique_ptr<MemoryMappedFile> Database::createMetadataFile(const char* path) const
 {
     // Create metadata file
-    const auto metadataFilePath = makeMetadataFilePath();
     constexpr auto kOpenFlags = O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME;
-    FdGuard fd(::open(metadataFilePath.c_str(), kOpenFlags, kDataFileCreationMode));
+    FdGuard fd(::open(path, kOpenFlags, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
-        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateDatabaseMetadataFile,
-                metadataFilePath, m_name, m_uuid, errorCode, std::strerror(errorCode));
+        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateDatabaseMetadataFile, path, m_name,
+                m_uuid, errorCode, std::strerror(errorCode));
     }
 
     // Write initial metadata
@@ -673,27 +672,59 @@ std::unique_ptr<MemoryMappedFile> Database::createMetadataFile() const
                 m_uuid, errorCode, std::strerror(errorCode));
     }
 
-    // Create memory mapping
-    return std::make_unique<MemoryMappedFile>(fd.release(), true,
-            MemoryMappedFile::deduceMemoryProtectionMode(kOpenFlags), MAP_POPULATE, 0,
-            sizeof(DatabaseMetadata));
+    fd.reset();
+
+    return openMetadataFile(path);
 }
 
-std::unique_ptr<MemoryMappedFile> Database::openMetadataFile() const
+std::unique_ptr<MemoryMappedFile> Database::openMetadataFile(const char* path) const
 {
     // Open metadata file
-    const auto metadataFilePath = makeMetadataFilePath();
     constexpr auto kOpenFlags = O_RDWR | O_CLOEXEC | O_NOATIME;
-    const int fd = ::open(metadataFilePath.c_str(), kOpenFlags, kDataFileCreationMode);
-    if (fd < 0) {
+    FdGuard fd(::open(path, kOpenFlags, kDataFileCreationMode));
+    if (!fd.isValidFd()) {
         const int errorCode = errno;
-        throwDatabaseError(IOManagerMessageId::kErrorCannotOpenDatabaseMetadataFile,
-                metadataFilePath, m_name, m_uuid, m_name, m_uuid, errorCode,
-                std::strerror(errorCode));
+        throwDatabaseError(IOManagerMessageId::kErrorCannotOpenDatabaseMetadataFile, path, m_name,
+                m_uuid, m_name, m_uuid, errorCode, std::strerror(errorCode));
     }
+
     // Create memory mapping
-    return std::make_unique<MemoryMappedFile>(
-            fd, true, MemoryMappedFile::deduceMemoryProtectionMode(kOpenFlags), MAP_POPULATE, 0, 0);
+    auto file = std::make_unique<MemoryMappedFile>(fd.getFd(), false,
+            MemoryMappedFile::deduceMemoryProtectionMode(kOpenFlags), MAP_POPULATE, 0, 0);
+    fd.release();
+    file->setFdOwner();
+
+    // Check metadata version
+    const auto metadata = reinterpret_cast<DatabaseMetadata*>(file->getMappingAddress());
+    const auto version = metadata->getVersion();
+    if (version == 0xFFFFFFFFFFFFFFFFULL) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseMetadataFileCorrupted, path, m_name,
+                m_uuid, "Invalid metadata version");
+    }
+    if (version > DatabaseMetadata::kCurrentVersion) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseMetadataFileCorrupted, path, m_name,
+                m_uuid, "Unsupported metadata version");
+    }
+
+    // TODO(cxxman): upgrade metadata
+
+    metadata->adjustByteOrder();
+
+    // Check schema version
+    if (metadata->getSchemaVersion() > DatabaseMetadata::kCurrentSchemaVersion) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseMetadataFileCorrupted, path, m_name,
+                m_uuid, "Unsupported database schema version");
+    }
+
+    // TODO(cxxman): upgrade schema maybe
+
+    // Check schema version
+    if (metadata->getSchemaVersion() != DatabaseMetadata::kCurrentSchemaVersion) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseMetadataFileCorrupted, path, m_name,
+                m_uuid, "Different database schema version");
+    }
+
+    return file;
 }
 
 std::string Database::makeMetadataFilePath() const

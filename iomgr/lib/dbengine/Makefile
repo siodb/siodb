@@ -161,6 +161,7 @@ CXX_SRC:= \
 	TableCache.cpp  \
 	TableColumns.cpp  \
 	TableDataSet.cpp  \
+	TransactionParameters.cpp  \
 	User.cpp  \
 	UserAccessKey.cpp  \
 	UserCache.cpp  \

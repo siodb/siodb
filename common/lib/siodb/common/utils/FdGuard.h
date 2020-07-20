@@ -90,6 +90,7 @@ public:
      */
     bool reset(int fd = -1) noexcept
     {
+        if (m_fd == fd) return true;
         bool ret = true;
         if (isValidFd()) {
             ::close(m_fd);

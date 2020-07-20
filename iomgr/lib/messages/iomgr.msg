@@ -202,6 +202,7 @@ MSG Error CannotOpenDatabaseMetadataFile    Can't open metadata file '%1%' for t
 MSG Error CannotReadDatabaseMetadataFile    Can't read from metadata file for the database '%1%' (%2%): (%3%) %4%
 MSG Error CannotWriteDatabaseMetadataFile   Can't write to metadata for the database '%1%' (%2%): (%3%) %4%
 MSG Warning CannotRemoveDatabaseDataDirectory  Can't remove data directory for the database '%1%' (%2%): (%3%) %4%
+MSG Error DatabaseMetadataFileCorrupted     Metadata file '%1%' for the database '%2%' (%3%) is corrupted: %4%
 
 MSG Error CannotCreateInstanceDataDir   Can't create instance data directory %1%: (%2%) %3%
 MSG Error CannotClearInstanceDataDir    Can't clear instance directory %1%: (%2%) %3%

@@ -1087,15 +1087,17 @@ private:
 
     /**
      * Creates new metadata file.
+     * @param path File path.
      * @return Metadata file object.
      */
-    std::unique_ptr<MemoryMappedFile> createMetadataFile() const;
+    std::unique_ptr<MemoryMappedFile> createMetadataFile(const char* path) const;
 
     /**
      * Opens metadata file.
+     * @param path File path.
      * @return Metadata file object.
      */
-    std::unique_ptr<MemoryMappedFile> openMetadataFile() const;
+    std::unique_ptr<MemoryMappedFile> openMetadataFile(const char* path) const;
 
     /**
      * Constructs database metadata file path.
