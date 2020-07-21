@@ -23,10 +23,11 @@ Run following commands:
 cd $HOME
 
 # Required tools and libraries
-sudo apt install -y build-essential cmake doxygen gdb git graphviz gcc-8 g++-8 \
-    libboost1.65-dev libboost-log1.65-dev libboost-program-options1.65-dev \
-    libcurl4-openssl-dev libssl-dev lsb-release openjdk-11-jdk-headless python \
-    pkg-config uuid-dev clang-format-10 ubuntu-dbgsym-keyring
+sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
+    graphviz gcc-8 g++-8 libboost1.65-dev libboost-log1.65-dev \
+    libboost-program-options1.65-dev libcurl4-openssl-dev libtool libssl-dev \
+    lsb-release openjdk-11-jdk-headless python pkg-config uuid-dev \
+    clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
@@ -48,10 +49,11 @@ Run following commands:
 cd $HOME
 
 # Required tools and libraries
-sudo apt install -y build-essential cmake doxygen gdb git graphviz \
-    libboost1.71-dev libboost-log1.71-dev libboost-program-options1.71-dev \
-    libcurl4-openssl-dev libssl-dev lsb-release openjdk-11-jdk-headless \
-    pkg-config python2 uuid-dev clang-format-10 ubuntu-dbgsym-keyring
+sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
+    graphviz libboost1.71-dev libboost-log1.71-dev \
+    libboost-program-options1.71-dev libcurl4-openssl-dev libtool libssl-dev \
+    lsb-release openjdk-11-jdk-headless pkg-config python2 uuid-dev \
+    clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
@@ -75,10 +77,10 @@ Run following commands:
 cd $HOME
 
 # Required tools and libraries
-sudo apt install -y build-essential cmake doxygen gdb git graphviz \
-    libboost1.67-dev libboost-log1.67-dev libboost-program-options1.67-dev \
-    libcurl4-openssl-dev libssl-dev lsb-release openjdk-11-jdk-headless \
-    pkg-config python2 uuid-dev wget
+sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
+    graphviz libboost1.67-dev libboost-log1.67-dev \
+    libboost-program-options1.67-dev libcurl4-openssl-dev libtool libssl-dev \
+    lsb-release openjdk-11-jdk-headless pkg-config python2 uuid-dev wget
 
 # Install clang-9. This one is for SLES, but works on the Debian 10 too.
 sudo apt install -y libncurses5
@@ -132,9 +134,10 @@ sudo yum remove git*
 sudo yum install -y git
 
 # Install required tools and libraries
-sudo yum install -y boost169-devel cmake3 curl devtoolset-8-toolchain doxygen \
-    gcc gcc-c++ java-1.8.0-openjdk-headless libatomic libcurl-devel libuuid-devel \
-    openssl-devel pkgconfig python redhat-lsb uuid-devel wget zlib-devel
+sudo yum install -y autoconf automake boost169-devel cmake3 curl \
+    devtoolset-8-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
+    libatomic libcurl-devel libtool libuuid-devel openssl-devel pkgconfig \
+    python redhat-lsb uuid-devel wget which zlib-devel
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -188,9 +191,10 @@ sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.
 sudo dnf -y update
 
 # Install required tools and libraries
-sudo dnf install -y boost-devel clang cmake curl gcc gcc-c++ git-clang-format \
-    java-11-openjdk-headless libatomic libcurl-devel libuuid-devel \
-    openssl-devel python2 pkgconfig redhat-lsb wget zlib-devel
+sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
+    git-clang-format java-11-openjdk-headless libatomic libcurl-devel libtool \
+    libuuid-devel openssl-devel python2 pkgconfig redhat-lsb wget which \
+    zlib-devel
 
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
@@ -223,9 +227,10 @@ sudo yum remove git*
 sudo yum install -y git
 
 # Install required tools and libraries
-sudo yum install -y boost169-devel cmake3 curl devtoolset-8-toolchain doxygen \
-    gcc gcc-c++ java-1.8.0-openjdk-headless libatomic libcurl-devel libuuid-devel \
-    openssl-devel pkgconfig python redhat-lsb uuid-devel wget zlib-devel
+sudo yum install -y autoconf automake boost169-devel cmake3 curl \
+    devtoolset-8-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
+    libatomic libcurl-devel lubtool libuuid-devel openssl-devel pkgconfig \
+    python redhat-lsb uuid-devel wget which zlib-devel
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -272,16 +277,16 @@ Run following commands:
 cd $HOME
 
 # Enable additional repositories
-sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
 # Update your system
-sudo yum -y update
+sudo dnf -y update
 
 # Install required tools and libraries
-# Install required tools and libraries
-sudo dnf install -y boost-devel clang cmake curl gcc gcc-c++ git-clang-format \
-    java-11-openjdk-headless libatomic libcurl-devel libuuid-devel \
-    openssl-devel python2 pkgconfig redhat-lsb wget zlib-devel
+sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
+    git-clang-format java-11-openjdk-headless libatomic libcurl-devel libtool \
+    libuuid-devel openssl-devel python2 pkgconfig redhat-lsb wget which \
+    zlib-devel
 
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
@@ -310,34 +315,13 @@ cp -fv tools/git_hooks/siodb-clang-format.hook .git/hooks/pre-commit
 
 # CentOS 7/RHEL 7 ONLY: Enable devtoolset-8
 scl enable devtoolset-8 bash
-export RHEL_DTS8_CFLAGS=-mcet
-export RHEL_DTS8_CXXFLAGS=-mcet
-
-# Ubuntu 18.04 ONLY: Set compiler to gcc-8
-export CC=gcc-8
-export CXX=g++-8
-export LD=g++-8
-
-# All other systems (except Ubuntu 18.04)
-export CC=gcc
-export CXX=g++
-export LD=g++
-
-# All systems
-export SIODB_TP_CFLAGS="-pipe -fexceptions -fasynchronous-unwind-tables \
-    -fstack-clash-protection -fstack-protector-strong -grecord-gcc-switches \
-    -fcf-protection=full -O2 -D_FORTIFY_SOURCE=2 -fPIC -g3 ${RHEL_DTS8_CFLAGS}"
-export SIODB_TP_CXXFLAGS="-pipe -fexceptions -fasynchronous-unwind-tables \
-    -fstack-clash-protection -fstack-protector-strong -grecord-gcc-switches \
-    -fcf-protection=full -O2 -D_FORTIFY_SOURCE=2 -fPIC -g3 ${RHEL_DTS8_CXXFLAGS} \
-    -D_GLIBCXX_ASSERTIONS"
-export SIODB_TP_LDFLAGS="-Wl,-z,defs -Wl,-z,now -Wl,-z,relro -g3"
 
 # Enter third party libraries directory
 cd thirdparty
 
-# Source third-party library versions and directory paths
-source tp_versions.sh
+# Source third-party library versions, directory paths, compiler options
+source thirdparty_versions.sh
+source thirdparty_options.sh
 
 # CentOS 7/RHEL7 ONLY:
 # Install newer version of the OpenSSL
@@ -412,20 +396,17 @@ cd ../../..
 cd protobuf
 tar --no-same-owner -xaf protobuf-all-${SIODB_PROTOBUF_VERSION}.tar.xz
 cd protobuf-${SIODB_PROTOBUF_VERSION}
+./autogen.sh
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
 LDFLAGS="${SIODB_TP_LDFLAGS} -L${SIODB_PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib" \
-    ./configure "--prefix=${SIODB_PROTOBUF_PREFIX}"
+    ./configure "--prefix=${SIODB_PROTOBUF_PREFIX}" --enable-shared --enable-static
 make -j4
 sudo make install
 sudo ldconfig
 
-# Sometimes protoc somehow gets linked against wrong libraries
-# and we have to fix that manually: patch protoc wrapper script and force
-# relinking of the protoc executable with correct libraries
-export PROTOC_CORRECT_LIB_COUNT=$(ldd "${SIODB_PROTOBUF_PREFIX}/bin/protoc" | grep ${SIODB_PROTOBUF_PREFIX}/lib | wc -l
-)
-echo "PROTOC_CORRECT_LIB_COUNT=${PROTOC_CORRECT_LIB_COUNT}"
-if [[ PROTOC_CORRECT_LIB_COUNT != 2 ]]; then
+# Fix protoc if needed
+${SIODB_PROTOBUF_PREFIX}/bin/protoc
+if [[ $? != 0 ]]; then
     cd src
     cp -f protoc protoc.tmp
     sed -i "s+./.libs/libprotobuf.so ./.libs/libprotoc.so+-L${SIODB_PROTOBUF_PREFIX}/lib -lprotobuf -lprotoc -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib+g" protoc.tmp

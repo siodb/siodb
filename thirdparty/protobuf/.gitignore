@@ -1,8 +1,2 @@
 *.tar
-
-# Add new folders here, do not remove previous
-protobuf-3.6.1
-protobuf-3.9.1
-protobuf-3.10.0-rc-1
-protobuf-3.10.0
-protobuf-3.11.4
+protobuf-*/
