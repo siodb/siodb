@@ -1,5 +1,2 @@
 *.tar
-
-# Add new folders here, do not remove previous
-utfcpp-2.3.6
-utfcpp-3.1
+utfcpp-*/
