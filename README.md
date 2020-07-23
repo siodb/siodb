@@ -2,22 +2,13 @@
 
 # Siodb
 
-A relational SQL database that secures your data, manages personal data life-cycle, and automates operational tasks. Feature out-of-the-box:
+Another relational database with something different:
 
-- Transparent encryption
-- Standard SQL
-- Data versioning
-- Data model versioning
-- Automatic indexing
-- Replication
-- Distribution
-- Microservice friendly
-- High performance
-- High security
-- Transparent compression
-- Automatic In memory
-- Automatic data identification
-- Partitioned columns storage
+- Native data encryption 
+- Native data versioning
+- Native data model versioning
+- Native data expiration
+- Standard SQL + REST
 - Effortless administration
 
 **Current status:** Alpha version
@@ -39,16 +30,14 @@ docker run -p 127.0.0.1:50000:50000/tcp --name siodb siodb/siodb
 ### Connect to the instance in the container
 
 ```bash
-siodb@ea7ad13791c1:/$ siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
+$ siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
 Siodb client v.0.6.0
 Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
 
 siocli> show databases ;
-UUID                             NAME
--------------------------------- --------------------------------
-68ba038e-b704-2cb9-1d0d-b9186...                             SYS
-
-1 rows.
+NAME                                     UUID
+---------------------------------------- ----------------------------------------
+                                     SYS     68ba038e-b704-2cb9-1d0d-b91864c819cd
 ```
 
 ## Quick Start (Linux)
