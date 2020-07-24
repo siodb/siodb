@@ -9,7 +9,6 @@ Another relational database with something different:
 - Native data model versioning
 - Native data expiration
 - Standard SQL + REST
-- Effortless administration
 
 **Current status:** Alpha version
 
