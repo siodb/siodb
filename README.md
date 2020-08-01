@@ -2,7 +2,7 @@
 
 # Siodb
 
-Another relational database with something different:
+A versioning database that gives you:
 
 - Native data encryption 
 - Native data versioning
