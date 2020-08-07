@@ -311,7 +311,7 @@ git clone git@github.com:siodb/siodb.git
 cd siodb
 
 # Install source code formatting hook for git
-cp -fv tools/git_hooks/siodb-clang-format.hook .git/hooks/pre-commit
+cp -fv tools/git/clang-format.hook .git/hooks/pre-commit
 
 # CentOS 7/RHEL 7 ONLY: Enable devtoolset-8
 scl enable devtoolset-8 bash
@@ -488,7 +488,7 @@ sudo -u siodb /etc/siodb/instances/siodb
 sudo cp config/siodb.conf /etc/siodb/instances/siodb/config
 sudo chmod 0600 /etc/siodb/instances/siodb/config
 sudo chown siodb:siodb /etc/siodb/instances/siodb/config
-sudo -u siodb dd if=/dev/urandom of=/etc/siodb/instances/siodb/system_db_key bs=16 count=1
+sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/system_db_key bs=16 count=1
 sudo chmod 0600 /etc/siodb/instances/siodb/system_db_key
 sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/initial_access_key
 sudo chmod 0600 /etc/siodb/instances/siodb/initial_access_key

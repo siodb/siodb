@@ -27,6 +27,7 @@ CXX_HDR:= \
 	cstdint_ext.h  \
 	event.h  \
 	lru_cache.h  \
+	n3876.h  \
 	ostream_ext.h  \
 	stdexcept_ext.h  \
 	string_ext.h  \

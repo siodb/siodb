@@ -7,7 +7,15 @@
 // Project headers
 #include "antlr_wrappers/SiodbParserWrapper.h"
 
+// Boost headers
+#include <boost/algorithm/string/case_conv.hpp>
+
 namespace siodb::iomgr::dbengine::parser::helpers {
+
+std::string extractObjectName(const antlr4::tree::ParseTree* node, std::size_t childNodeIndex)
+{
+    return boost::to_upper_copy(node->children.at(childNodeIndex)->getText());
+}
 
 std::size_t getStatementCount(const antlr4::tree::ParseTree* tree) noexcept
 {
@@ -60,6 +68,16 @@ antlr4::tree::ParseTree* findNonTerminal(antlr4::tree::ParseTree* node, const si
     return nullptr;
 }
 
+antlr4::tree::ParseTree* findNonTerminalChild(
+        antlr4::tree::ParseTree* node, const size_t type) noexcept
+{
+    for (const auto childNode : node->children) {
+        const auto context = dynamic_cast<antlr4::RuleContext*>(childNode);
+        if (context && context->getRuleIndex() == type) return childNode;
+    }
+    return nullptr;
+}
+
 antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* tree, const size_t nonTerminalType,
         const size_t terminalType) noexcept
 {
@@ -86,26 +104,33 @@ antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* node, std::size_t
     return nullptr;
 }
 
-std::pair<antlr4::tree::ParseTree*, std::size_t> findTerminalAndIndex(
-        antlr4::tree::ParseTree* node, std::size_t index, std::size_t type) noexcept
+std::size_t findTerminalChild(antlr4::tree::ParseTree* node, std::size_t type) noexcept
 {
-    constexpr auto kMaxIndex = std::numeric_limits<std::size_t>::max();
-    // If this node is a terminal, check its type.
-    // If type doesn't match, there is no way forward.
-    if (!node) return std::make_pair(nullptr, kMaxIndex);
-    const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
-    if (terminal) {
-        const auto symbol = terminal->getSymbol();
-        return (symbol && symbol->getType() == type) ? std::make_pair(node, index)
-                                                     : std::make_pair(nullptr, kMaxIndex);
+    std::size_t index = 0;
+    for (const auto childNode : node->children) {
+        const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(childNode);
+        if (terminal) {
+            const auto symbol = terminal->getSymbol();
+            if (symbol && symbol->getType() == type) return index;
+        }
+        ++index;
     }
+    return std::numeric_limits<std::size_t>::max();
+}
 
-    // Search for the terminal recursively.
-    for (std::size_t i = 0, n = node->children.size(); i < n; ++i) {
-        const auto result1 = findTerminalAndIndex(node->children[i], i, type);
-        if (result1.first) return result1;
+bool hasTerminalChild(
+        antlr4::tree::ParseTree* node, std::size_t type, std::size_t startIndex) noexcept
+{
+    if (startIndex < node->children.size()) {
+        for (auto it = node->children.begin() + startIndex; it != node->children.end(); ++it) {
+            const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(*it);
+            if (terminal) {
+                const auto symbol = terminal->getSymbol();
+                if (symbol && symbol->getType() == type) return true;
+            }
+        }
     }
-    return std::make_pair(nullptr, kMaxIndex);
+    return false;
 }
 
 std::size_t getNonTerminalType(antlr4::tree::ParseTree* node) noexcept
@@ -124,13 +149,14 @@ std::size_t getTerminalType(antlr4::tree::ParseTree* node) noexcept
 
 std::string getAnyNameText(antlr4::tree::ParseTree* node)
 {
-    switch (helpers::getTerminalType(node->children.at(0))) {
+    const auto firstChild = node->children.at(0);
+    switch (helpers::getTerminalType(firstChild)) {
         case SiodbParser::IDENTIFIER: return node->getText();
         case SiodbParser::STRING_LITERAL: return unquoteString(node->getText());
         default: break;
     }
 
-    switch (helpers::getNonTerminalType(node->children.at(0))) {
+    switch (helpers::getNonTerminalType(firstChild)) {
         case SiodbParser::RuleAttribute:
         case SiodbParser::RuleKeyword: return node->getText();
         default: break;
@@ -140,7 +166,7 @@ std::string getAnyNameText(antlr4::tree::ParseTree* node)
     if (node->children.size() == 3) return getAnyNameText(node->children[1]);
 
     // No match
-    throw std::invalid_argument("AnyName node is invalid or not supported");
+    throw std::invalid_argument("any_name node is invalid or unsupported");
 }
 
 }  // namespace siodb::iomgr::dbengine::parser::helpers

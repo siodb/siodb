@@ -15,6 +15,7 @@ CXX_SRC:= \
 	ErrorCodeChecker.cpp  \
 	FsUtils.cpp \
 	MessageCatalog.cpp  \
+	RandomUtils.cpp  \
 	SignalHandlers.cpp  \
 	StartupActions.cpp  \
 	SiodbException.cpp  \
@@ -43,6 +44,7 @@ CXX_HDR:= \
 	HelperMacros.h  \
 	MessageCatalog.h  \
 	MutableOrConstantString.h  \
+	RandomUtils.h  \
 	SignalHandlers.h  \
 	SiodbException.h  \
 	StartupActions.h  \

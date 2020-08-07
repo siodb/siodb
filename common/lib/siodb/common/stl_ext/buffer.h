@@ -5,6 +5,7 @@
 #pragma once
 
 // Project headers
+#include "n3876.h"
 #include "../crt_ext/compiler_defs.h"
 
 // CRT headers
@@ -551,3 +552,29 @@ inline void swap(buffer<Element>& a, buffer<Element>& b) noexcept
 }
 
 }  // namespace stdext
+
+namespace std {
+
+/** 
+ * std::hash specialization for the stdext::buffer.
+ * @tparam Element Buffer element type.
+ */
+template<class Element>
+struct hash<stdext::buffer<Element>> {
+    /**
+     * Computes hash value for the buffer object.
+     * @param buffer Buffer object.
+     * @return Hash value.
+     */
+    std::size_t operator()(const stdext::buffer<Element>& buffer) const
+    {
+        std::size_t result = 0;
+        auto p = buffer.data();
+        const auto e = p + buffer.size();
+        while (p != e)
+            stdext::hash_combine(result, *p++);
+        return result;
+    }
+};
+
+}  // namespace std

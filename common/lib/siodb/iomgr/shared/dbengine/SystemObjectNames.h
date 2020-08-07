@@ -178,6 +178,7 @@ static constexpr const char* kSysIndexColumns_SortDesc_ColumnName = "SORT_DESC";
 static constexpr const char* kSysIndexColumns_SortDesc_ColumnDescription =
         "Indication of descending sort order by this column";
 
+/** Table SYS_USERS */
 static constexpr const char* kSysUsersTableName = "SYS_USERS";
 static constexpr const char* kSysUsersTableDescription = "Stores information about users";
 static constexpr const char* kSysUsers_Name_ColumnName = "NAME";
@@ -189,6 +190,7 @@ static constexpr const char* kSysUsers_State_ColumnDescription = "User state";
 static constexpr const char* kSysUsers_Description_ColumnName = "DESCRIPTION";
 static constexpr const char* kSysUsers_Description_ColumnDescription = "User description";
 
+/** Table SYS_USER_ACCESS_KEYS */
 static constexpr const char* kSysUserAccessKeysTableName = "SYS_USER_ACCESS_KEYS";
 static constexpr const char* kSysUserAccessKeysTableDescription =
         "Stores information about user's access keys";
@@ -204,6 +206,22 @@ static constexpr const char* kSysUserAccessKeys_Description_ColumnName = "DESCRI
 static constexpr const char* kSysUserAccessKeys_Description_ColumnDescription =
         "Access key description";
 
+/** Table SYS_USER_TOKENS */
+static constexpr const char* kSysUserTokensTableName = "SYS_USER_TOKENS";
+static constexpr const char* kSysUserTokensTableDescription = "Stores authentication tokens";
+static constexpr const char* kSysUserTokens_UserId_ColumnName = "USER_ID";
+static constexpr const char* kSysUserTokens_UserId_ColumnDescription = "User identifier";
+static constexpr const char* kSysUserTokens_Name_ColumnName = "NAME";
+static constexpr const char* kSysUserTokens_Name_ColumnDescription = "Token name";
+static constexpr const char* kSysUserTokens_Value_ColumnName = "VALUE";
+static constexpr const char* kSysUserTokens_Value_ColumnDescription = "Token value";
+static constexpr const char* kSysUserTokens_ExpirationTimestamp_ColumnName = "EXPIRATION_TIMESTAMP";
+static constexpr const char* kSysUserTokens_ExpirationTimestamp_ColumnDescription =
+        "Token expiration timestamp";
+static constexpr const char* kSysUserTokens_Description_ColumnName = "DESCRIPTION";
+static constexpr const char* kSysUserTokens_Description_ColumnDescription = "Token description";
+
+/** Table SYS_USER_PERMISSIONS */
 static constexpr const char* kSysUserPermissionsTableName = "SYS_USER_PERMISSIONS";
 static constexpr const char* kSysUserPermissionsTableDescription =
         "Stores information about user permissions";
@@ -226,5 +244,9 @@ static constexpr const char* kSysUserPermissions_GrantOptions_ColumnDescription 
 
 /** System database name */
 static constexpr const char* kSystemDatabaseName = "SYS";
+
+/** System database description */
+static constexpr const char* kSystemDatabaseDescription =
+        "Stores information about other known databases, users and their permissions.";
 
 }  // namespace siodb::iomgr::dbengine

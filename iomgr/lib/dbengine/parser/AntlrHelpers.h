@@ -41,6 +41,14 @@ inline std::string&& unquoteString(std::string&& s)
 }
 
 /**
+ * Extracts object name from a child node.
+ * @param node A node.
+ * @param childNodeIndex Index of a child node containing name.
+ * @return Capitalized object name.
+ */
+std::string extractObjectName(const antlr4::tree::ParseTree* node, std::size_t childNodeIndex);
+
+/**
  * The recursive part of the numberOfStatements() method.
  * @param tree The part of the tree to check.
  * @return A number of statements under this part of tree.
@@ -49,7 +57,7 @@ std::size_t getStatementCount(const antlr4::tree::ParseTree* tree) noexcept;
 
 /**
  * The recursive part of the method findStatement().
- * @param node Place where we are in the tree.
+ * @param node Current node.
  * @param statementIndex The index of the statement we want to find.
  * @param nextIndex The index of the next statement if we find it.
  * @return The node that is the root of the statement or nullptr if statement is not
@@ -59,38 +67,52 @@ antlr4::tree::ParseTree* findStatement(const antlr4::tree::ParseTree* node,
         const std::size_t statementIndex, std::size_t& nextIndex) noexcept;
 
 /**
- * Finds the first terminal from a given point of the tree.
- * @param node Place where we start the search.
+ * Finds the first terminal of a given type from a given point of the tree.
+ * @param node Starting node.
  * @param type Type of the terminal.
  * @return Node of the terminal, if found, nullptr otherwise.
  */
 antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* node, std::size_t type) noexcept;
 
 /**
- * Finds the first terminal from a given point of the tree and its index in the parent.
- * @param node Place where we start the search.
- * @param index Node index.
+ * Finds the first terminal child node from a given point of the tree.
+ * @param node Starting node.
  * @param type Type of the terminal.
- * @return Pair, consisting of:
- *         - first: node of the terminal, if found, nullptr otherwise.
- *         - second: terminal index in the parent, or index if node is terminal itself
- *           or std::numeric_limits<std::size_t>::max() if not found
+ * @return Terminal child index or std::numeric_limits<std::size_t>::max() if not found
  */
-std::pair<antlr4::tree::ParseTree*, std::size_t> findTerminalAndIndex(
-        antlr4::tree::ParseTree* node, std::size_t index, std::size_t type) noexcept;
+std::size_t findTerminalChild(antlr4::tree::ParseTree* node, std::size_t type) noexcept;
 
 /**
- * Finds the first non-terminal from a given point of the tree.
- * @param node Place where we start the search.
+ * Returns indication of existence of a terminal child node from a given point of the tree.
+ * @param node Starting node.
+ * @param type Type of the terminal.
+ * @param startIndex Search start index.
+ * @return true if terminal child of a given type exists, false otherwise.
+ */
+bool hasTerminalChild(
+        antlr4::tree::ParseTree* node, std::size_t type, std::size_t startIndex = 0) noexcept;
+
+/**
+ * Finds the first non-terminal of a given type from a given point of the tree.
+ * @param node Starting node.
  * @param type Type of the non-terminal.
  * @return Node of the non-terminal if found, nullptr otherwise.
  */
 antlr4::tree::ParseTree* findNonTerminal(antlr4::tree::ParseTree* node, std::size_t type) noexcept;
 
 /**
+ * Finds the first non-terminal child node of a given type from a given node.
+ * @param node A node.
+ * @param type Type of the non-terminal.
+ * @return Node of the non-terminal if found, nullptr otherwise.
+ */
+antlr4::tree::ParseTree* findNonTerminalChild(
+        antlr4::tree::ParseTree* node, std::size_t type) noexcept;
+
+/**
  * Finds the first terminal from a given point of the tree
  * under a non-terminal node of a given type.
- * @param node Place where we start the search.
+ * @param node Starting node.
  * @param nonTerminalType Type of the upper-level non-terminal.
  * @param type Type of the terminal as it is defined in the SQLiteParser class.
  * @return Node of the terminal, if found, nullptr otherwise.
@@ -113,14 +135,15 @@ std::size_t getTerminalType(antlr4::tree::ParseTree* node) noexcept;
 std::size_t getNonTerminalType(antlr4::tree::ParseTree* node) noexcept;
 
 /**
- * Returns any_name node text value.
- * Any text value could be:
- * - identifier;
- * - SQL keyword;
+ * Returns any_name node text.
+ * any_name node can be:
+ * - identifier
+ * - SQL keyword
+ * - attribute name
  * - string literal
  * - '(' any_name ')'
- * @param node Node
- * @throw std::invalid_argument in case of invalid or not supported node.
+ * @param node A node.
+ * @throw std::invalid_argument if node is invalid or unsupported.
  */
 std::string getAnyNameText(antlr4::tree::ParseTree* node);
 

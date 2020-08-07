@@ -53,7 +53,6 @@ Variant Variant::operator|(const Variant& other) const
                 case VariantType::kUInt32: return getInt16() | other.getUInt32();
                 case VariantType::kInt64: return getInt16() | other.getInt64();
                 case VariantType::kUInt64: return getInt16() | other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for | operation");
@@ -71,7 +70,6 @@ Variant Variant::operator|(const Variant& other) const
                 case VariantType::kUInt32: return getUInt16() | other.getUInt32();
                 case VariantType::kInt64: return getUInt16() | other.getInt64();
                 case VariantType::kUInt64: return getUInt16() | other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for | operation");
@@ -201,7 +199,6 @@ Variant Variant::operator&(const Variant& other) const
                 case VariantType::kUInt32: return getInt16() & other.getUInt32();
                 case VariantType::kInt64: return getInt16() & other.getInt64();
                 case VariantType::kUInt64: return getInt16() & other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for & operation");
@@ -219,7 +216,6 @@ Variant Variant::operator&(const Variant& other) const
                 case VariantType::kUInt32: return getUInt16() & other.getUInt32();
                 case VariantType::kInt64: return getUInt16() & other.getInt64();
                 case VariantType::kUInt64: return getUInt16() & other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for & operation");
@@ -367,7 +363,6 @@ Variant Variant::operator^(const Variant& other) const
                 case VariantType::kUInt32: return getUInt16() ^ other.getUInt32();
                 case VariantType::kInt64: return getUInt16() ^ other.getInt64();
                 case VariantType::kUInt64: return getUInt16() ^ other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for ^ operation");
@@ -497,7 +492,6 @@ Variant Variant::operator<<(const Variant& other) const
                 case VariantType::kUInt32: return getInt16() << other.getUInt32();
                 case VariantType::kInt64: return getInt16() << other.getInt64();
                 case VariantType::kUInt64: return getInt16() << other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for << operation");
@@ -515,7 +509,6 @@ Variant Variant::operator<<(const Variant& other) const
                 case VariantType::kUInt32: return getUInt16() << other.getUInt32();
                 case VariantType::kInt64: return getUInt16() << other.getInt64();
                 case VariantType::kUInt64: return getUInt16() << other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for << operation");
@@ -645,7 +638,6 @@ Variant Variant::operator>>(const Variant& other) const
                 case VariantType::kUInt32: return getInt16() >> other.getUInt32();
                 case VariantType::kInt64: return getInt16() >> other.getInt64();
                 case VariantType::kUInt64: return getInt16() >> other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for >> operation");
@@ -663,7 +655,6 @@ Variant Variant::operator>>(const Variant& other) const
                 case VariantType::kUInt32: return getUInt16() >> other.getUInt32();
                 case VariantType::kInt64: return getUInt16() >> other.getInt64();
                 case VariantType::kUInt64: return getUInt16() >> other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for >> operation");

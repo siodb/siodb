@@ -706,7 +706,7 @@ std::unique_ptr<MemoryMappedFile> Database::openMetadataFile(const char* path) c
                 m_uuid, "Unsupported metadata version");
     }
 
-    // TODO(cxxman): upgrade metadata
+    // NOTE: upgrade metadata here
 
     metadata->adjustByteOrder();
 
@@ -716,7 +716,7 @@ std::unique_ptr<MemoryMappedFile> Database::openMetadataFile(const char* path) c
                 m_uuid, "Unsupported database schema version");
     }
 
-    // TODO(cxxman): upgrade schema maybe
+    // NOTE: Maybe upgrade schema here
 
     // Check schema version
     if (metadata->getSchemaVersion() != DatabaseMetadata::kCurrentSchemaVersion) {

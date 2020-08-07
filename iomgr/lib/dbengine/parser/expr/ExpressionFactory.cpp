@@ -83,27 +83,109 @@ requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseT
     }
 
     throw std::invalid_argument("Node is not valid expression or not supported");
-}  // namespace siodb::iomgr::dbengine::parser
+}
 
-requests::ExpressionPtr ExpressionFactory::createNumericConstant(
-        const antlr4::Token* token, bool negate)
+Variant ExpressionFactory::createConstantValue(antlr4::tree::ParseTree* node)
+{
+    // Expect literal
+    const auto rule = helpers::getNonTerminalType(node);
+    switch (rule) {
+        case SiodbParser::RuleSigned_number: {
+            std::size_t literalNodeIndex = 0;
+            bool negate = false;
+            if (node->children.size() > 1) {
+                literalNodeIndex = 1;
+                negate = helpers::getTerminalType(node->children[0]) == SiodbParser::MINUS;
+            }
+            return createConstantValue(node, literalNodeIndex, negate);
+        }
+        case SiodbParser::RuleLiteral_value: return createConstantValue(node, 0, false);
+        case SIZE_MAX: {
+            // Likely terminal node
+            const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
+            if (terminal) return createConstantValue(terminal, false);
+            break;
+        }
+        default: break;
+    }
+    throw std::invalid_argument("Not a valid constant");
+}
+
+// ----- internals -----
+
+requests::ExpressionPtr ExpressionFactory::createConstant(const antlr4::Token* token, bool negate)
+{
+    return std::make_unique<requests::ConstantExpression>(createConstantValue(token, negate));
+}
+
+requests::ExpressionPtr ExpressionFactory::createConstant(
+        const antlr4::tree::ParseTree* node, std::size_t literalNodeIndex, bool negate)
+{
+    return std::make_unique<requests::ConstantExpression>(
+            createConstantValue(node, literalNodeIndex, negate));
+}
+
+Variant ExpressionFactory::createConstantValue(
+        const antlr4::tree::ParseTree* node, std::size_t literalNodeIndex, bool negate)
+{
+    const auto terminal =
+            dynamic_cast<antlr4::tree::TerminalNode*>(node->children.at(literalNodeIndex));
+    if (terminal)
+        return createConstantValue(terminal, negate);
+    else {
+        throw std::invalid_argument(
+                "Expression malformed: Literal node has no terminal after 2 children deep");
+    }
+}
+
+Variant ExpressionFactory::createConstantValue(antlr4::tree::TerminalNode* terminal, bool negate)
+{
+    const auto symbol = terminal->getSymbol();
+    if (symbol) return createConstantValue(symbol, negate);
+    throw std::invalid_argument("Expression malformed: terminal has no symbol");
+}
+
+Variant ExpressionFactory::createConstantValue(const antlr4::Token* token, bool negate)
+{
+    switch (token->getType()) {
+        case SiodbParser::K_NULL: return Variant();
+        case SiodbParser::K_TRUE:
+        case SiodbParser::K_FALSE: return token->getType() == SiodbParser::K_TRUE;
+        case SiodbParser::NUMERIC_LITERAL: return createNumericConstantValue(token, negate);
+        case SiodbParser::STRING_LITERAL: return createStringConstantValue(token);
+        case SiodbParser::BLOB_LITERAL: return createBinaryConstantValue(token);
+        case SiodbParser::K_CURRENT_TIME: {
+            RawDateTime dt;
+            dt.m_datePart = kZeroRawDate;
+            dt.m_timePart = RawTime(std::time(nullptr));
+            return Variant(dt);
+        }
+        case SiodbParser::K_CURRENT_DATE: {
+            RawDateTime dt;
+            dt.m_datePart = RawDate(std::time(nullptr));
+            return Variant(dt);
+        }
+        case SiodbParser::K_CURRENT_TIMESTAMP: return Variant(RawDateTime(std::time(nullptr)));
+        default: throw std::invalid_argument("Invalid constant type");
+    }
+}
+
+Variant ExpressionFactory::createNumericConstantValue(const antlr4::Token* token, bool negate)
 {
     const auto text = token->getText();
     try {
         std::size_t end = 0;
         auto n = std::stoull(text, &end);
         if (text.size() == end) {
-            Variant v;
             if (negate) n = -n;
             if (n > std::numeric_limits<std::uint32_t>::max())
-                v = static_cast<std::uint64_t>(n);
+                return static_cast<std::uint64_t>(n);
             else if (n > std::numeric_limits<std::uint16_t>::max())
-                v = static_cast<std::uint32_t>(n);
+                return static_cast<std::uint32_t>(n);
             else if (n > std::numeric_limits<std::uint8_t>::max())
-                v = static_cast<std::uint16_t>(n);
+                return static_cast<std::uint16_t>(n);
             else
-                v = static_cast<std::uint8_t>(n);
-            return std::make_unique<requests::ConstantExpression>(std::move(v));
+                return static_cast<std::uint8_t>(n);
         }
     } catch (...) {
         // Ignore errors, try more variants
@@ -114,44 +196,39 @@ requests::ExpressionPtr ExpressionFactory::createNumericConstant(
         std::size_t end = 0;
         auto n = std::stoll(text, &end);
         if (text.size() == end) {
-            Variant v;
             if (negate) n = -n;
             if (n < std::numeric_limits<std::int32_t>::min()
                     || n > std::numeric_limits<std::int32_t>::max())
-                v = static_cast<std::int64_t>(n);
+                return static_cast<std::int64_t>(n);
             else if (n < std::numeric_limits<std::int16_t>::min()
                      || n > std::numeric_limits<std::int16_t>::max())
-                v = static_cast<std::int32_t>(n);
+                return static_cast<std::int32_t>(n);
             else if (n < std::numeric_limits<std::int8_t>::min()
                      || n > std::numeric_limits<std::int8_t>::max())
-                v = static_cast<std::int16_t>(n);
+                return static_cast<std::int16_t>(n);
             else
-                v = static_cast<std::int8_t>(n);
-            return std::make_unique<requests::ConstantExpression>(std::move(v));
+                return static_cast<std::int8_t>(n);
         }
     } catch (...) {
         // Ignore errors, try more variants
     }
 
-    // Next one would be float, but do not try it, due to precision errors.
-
-    // Try double
+    // Try double. Do not try float due to precision errors.
     try {
-        auto n = std::stod(text);
-        if (negate) n = -n;
-        return std::make_unique<requests::ConstantExpression>(n);
+        const auto n = std::stod(text);
+        return negate ? -n : n;
     } catch (...) {
         // No more variants to try, report error
         throw std::invalid_argument("Invalid numeric literal");
     }
 }
 
-requests::ExpressionPtr ExpressionFactory::createStringConstant(const antlr4::Token* token)
+Variant ExpressionFactory::createStringConstantValue(const antlr4::Token* token)
 {
-    return std::make_unique<requests::ConstantExpression>(helpers::unquoteString(token->getText()));
+    return helpers::unquoteString(token->getText());
 }
 
-requests::ExpressionPtr ExpressionFactory::createBinaryConstant(const antlr4::Token* token)
+Variant ExpressionFactory::createBinaryConstantValue(const antlr4::Token* token)
 {
     const auto hexLiteral = token->getText();
     // Exclude leading "x'" and trailing "'"
@@ -162,48 +239,7 @@ requests::ExpressionPtr ExpressionFactory::createBinaryConstant(const antlr4::To
         boost::algorithm::unhex(hexLiteral.data() + 2, hexLiteral.data() + hexLiteral.length() - 1,
                 binaryValue.data());
     }
-    return std::make_unique<requests::ConstantExpression>(std::move(binaryValue));
-}
-
-requests::ExpressionPtr ExpressionFactory::createConstant(const antlr4::Token* token, bool negate)
-{
-    const auto tokenType = token->getType();
-    switch (tokenType) {
-        case SiodbParser::NUMERIC_LITERAL: return createNumericConstant(token, negate);
-        case SiodbParser::STRING_LITERAL: return createStringConstant(token);
-        case SiodbParser::BLOB_LITERAL: return createBinaryConstant(token);
-        case SiodbParser::K_NULL: return std::make_unique<requests::ConstantExpression>();
-        case SiodbParser::K_CURRENT_TIME:
-        case SiodbParser::K_CURRENT_DATE:
-        case SiodbParser::K_CURRENT_TIMESTAMP: {
-            const auto rawTime = std::time(nullptr);
-            struct tm timeInfo;
-            char buffer[80];
-            localtime_r(&rawTime, &timeInfo);
-            strftime(buffer, sizeof(buffer), Variant::kDefaultDateTimeFormat, &timeInfo);
-            Variant value(buffer, Variant::AsDateTime(), Variant::kDefaultDateTimeFormat);
-            return std::make_unique<requests::ConstantExpression>(std::move(value));
-        }
-        case SiodbParser::K_TRUE:
-        case SiodbParser::K_FALSE: {
-            return std::make_unique<requests::ConstantExpression>(tokenType == SiodbParser::K_TRUE);
-        }
-        default: throw std::invalid_argument("Invalid constant type");
-    }
-}
-
-requests::ExpressionPtr ExpressionFactory::createConstant(
-        const antlr4::tree::ParseTree* node, std::size_t literalNodeIndex, bool negate)
-{
-    const auto terminal =
-            dynamic_cast<antlr4::tree::TerminalNode*>(node->children.at(literalNodeIndex));
-    if (terminal) {
-        const auto symbol = terminal->getSymbol();
-        if (symbol) return createConstant(symbol, negate);
-        throw std::invalid_argument("Expression malformed: terminal has no symbol");
-    }
-    throw std::invalid_argument(
-            "Expression malformed: Literal node has no terminal after 2 childs deep");
+    return binaryValue;
 }
 
 bool ExpressionFactory::isNonLogicalBinaryOperator(std::size_t terminalType) noexcept
@@ -432,19 +468,16 @@ bool ExpressionFactory::isInOperator(const antlr4::tree::ParseTree* node) noexce
 
 requests::ExpressionPtr ExpressionFactory::createInOperator(antlr4::tree::ParseTree* node) const
 {
-    auto valueExpression = createSimpleExpression(node->children[0]);
-    bool notIn = helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT;
+    auto valueExpr = createSimpleExpression(node->children[0]);
+    const bool notIn = helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT;
+
     std::vector<requests::ExpressionPtr> variants;
-    std::size_t curValueIndex = notIn ? 4 : 3;
-    for (; curValueIndex < node->children.size(); curValueIndex += 2) {
-        variants.push_back(createSimpleExpression(node->children[curValueIndex]));
-        // Skip comma
-    }
+    for (std::size_t i = notIn ? 4 : 3, n = node->children.size(); i < n; i += 2)
+        variants.push_back(createSimpleExpression(node->children[i]));
 
-    if (variants.empty()) throw std::invalid_argument("In operator has no variants");
+    if (variants.empty()) throw std::invalid_argument("Operator IN has no variants");
 
-    return std::make_unique<requests::InOperator>(
-            std::move(valueExpression), std::move(variants), notIn);
+    return std::make_unique<requests::InOperator>(std::move(valueExpr), std::move(variants), notIn);
 }
 
 requests::ExpressionPtr ExpressionFactory::createLogicalBinaryOperator(
@@ -467,111 +500,121 @@ requests::ExpressionPtr ExpressionFactory::createLogicalBinaryOperator(
 requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
         antlr4::tree::ParseTree* node) const
 {
-    const auto childCount = node->children.size();
-    if (isInOperator(node))
-        return createInOperator(node);
-    else if (childCount == 1) {
-        const auto childNode = node->children[0];
-        const auto rule = helpers::getNonTerminalType(childNode);
-        if (rule == SiodbParser::RuleLiteral_value)
-            return createConstant(childNode);
-        else if (rule == SiodbParser::RuleColumn_name)
-            return createColumnValueExpression(nullptr, childNode);
-
-    } else if (childCount == 2) {
-        // the only case with 2 childs is: unary_operator, [expression, column_name]
-        const auto leftNode = node->children[0];
-        const auto rightNode = node->children[1];
-        const bool rightNodeValid =
-                helpers::getNonTerminalType(rightNode) == SiodbParser::RuleColumn_name
-                || helpers::getNonTerminalType(rightNode) == SiodbParser::RuleSimple_expr;
-        // NOT EXPR is not under RuleUnary_operator
-        if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleUnary_operator
-                && rightNodeValid) {
-            return createUnaryOperator(leftNode, rightNode);
-        } else {
+    if (isInOperator(node)) return createInOperator(node);
+    switch (node->children.size()) {
+        case 1: {
+            const auto childNode = node->children[0];
+            const auto rule = helpers::getNonTerminalType(childNode);
+            if (rule == SiodbParser::RuleLiteral_value)
+                return createConstant(childNode);
+            else if (rule == SiodbParser::RuleColumn_name)
+                return createColumnValueExpression(nullptr, childNode);
+            break;
+        }
+        case 2: {
+            // the only case with 2 children is: unary_operator, [expression, column_name]
+            const auto leftNode = node->children[0];
+            const auto rightNode = node->children[1];
+            const bool rightNodeValid =
+                    helpers::getNonTerminalType(rightNode) == SiodbParser::RuleColumn_name
+                    || helpers::getNonTerminalType(rightNode) == SiodbParser::RuleSimple_expr;
+            // NOT EXPR is not under RuleUnary_operator
+            if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleUnary_operator
+                    && rightNodeValid) {
+                return createUnaryOperator(leftNode, rightNode);
+            }
             throw std::invalid_argument("Invalid unary expression");
         }
-    } else if (childCount == 3) {
-        const auto leftNode = node->children[0];
-        const auto midNode = node->children[1];
-        const auto rightNode = node->children[2];
-        // Check case: Expr Operator Expr
-        if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleSimple_expr
-                && isNonLogicalBinaryOperator(helpers::getTerminalType(midNode))
-                && helpers::getNonTerminalType(rightNode) == SiodbParser::RuleSimple_expr) {
-            return createNonLogicalBinaryOperator(leftNode, midNode, rightNode);
+        case 3: {
+            const auto leftNode = node->children[0];
+            const auto midNode = node->children[1];
+            const auto rightNode = node->children[2];
+            // Check for the "Expr Operator Expr"
+            if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleSimple_expr
+                    && isNonLogicalBinaryOperator(helpers::getTerminalType(midNode))
+                    && helpers::getNonTerminalType(rightNode) == SiodbParser::RuleSimple_expr) {
+                return createNonLogicalBinaryOperator(leftNode, midNode, rightNode);
+            }
+            // Check for the  '(' simple_expr ')'
+            else if (helpers::getTerminalType(leftNode) == SiodbParser::OPEN_PAR
+                     && helpers::getNonTerminalType(midNode) == SiodbParser::RuleSimple_expr
+                     && helpers::getTerminalType(rightNode) == SiodbParser::CLOSE_PAR) {
+                return createExpression(midNode);
+            }
+            // Check for the "tableName . columnName"
+            else if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleTable_name
+                     && helpers::getTerminalType(midNode) == SiodbParser::DOT
+                     && helpers::getNonTerminalType(rightNode) == SiodbParser::RuleColumn_name) {
+                return createColumnValueExpression(leftNode, rightNode);
+            }
+            break;
         }
-        // Check case ( simple_expr )
-        else if (helpers::getTerminalType(leftNode) == SiodbParser::OPEN_PAR
-                 && helpers::getNonTerminalType(midNode) == SiodbParser::RuleSimple_expr
-                 && helpers::getTerminalType(rightNode) == SiodbParser::CLOSE_PAR) {
-            return createExpression(midNode);
-        }
-        // Check case tableName . columnName
-        else if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleTable_name
-                 && helpers::getTerminalType(midNode) == SiodbParser::DOT
-                 && helpers::getNonTerminalType(rightNode) == SiodbParser::RuleColumn_name) {
-            return createColumnValueExpression(leftNode, rightNode);
-        }
-    } else if (childCount == 4) {
-        const auto& node0 = node->children[0];
-        const auto& node1 = node->children[1];
-        const auto& node2 = node->children[2];
-        const auto& node3 = node->children[3];
+        case 4: {
+            const auto& node0 = node->children[0];
+            const auto& node1 = node->children[1];
+            const auto& node2 = node->children[2];
+            const auto& node3 = node->children[3];
 
-        // Check expr NOT LIKE expr
-        if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
-                && helpers::getTerminalType(node1) == SiodbParser::K_NOT
-                && helpers::getTerminalType(node2) == SiodbParser::K_LIKE
-                && helpers::getNonTerminalType(node3) == SiodbParser::RuleSimple_expr) {
-            return std::make_unique<requests::LikeOperator>(
-                    createSimpleExpression(node0), createSimpleExpression(node3), true);
-        }
-        // Check expr IS NOT expr
-        if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
-                && helpers::getTerminalType(node1) == SiodbParser::K_IS
-                && helpers::getTerminalType(node2) == SiodbParser::K_NOT
-                && helpers::getNonTerminalType(node3) == SiodbParser::RuleSimple_expr) {
-            return std::make_unique<requests::IsOperator>(
-                    createSimpleExpression(node0), createSimpleExpression(node3), true);
-        }
-    } else if (childCount == 5) {
-        // Check expr BETWEEN expr AND Expr
-        const auto& node0 = node->children[0];
-        const auto& node1 = node->children[1];
-        const auto& node2 = node->children[2];
-        const auto& node3 = node->children[3];
-        const auto& node4 = node->children[4];
+            // Check for the "expr NOT LIKE expr"
+            if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
+                    && helpers::getTerminalType(node1) == SiodbParser::K_NOT
+                    && helpers::getTerminalType(node2) == SiodbParser::K_LIKE
+                    && helpers::getNonTerminalType(node3) == SiodbParser::RuleSimple_expr) {
+                return std::make_unique<requests::LikeOperator>(
+                        createSimpleExpression(node0), createSimpleExpression(node3), true);
+            }
 
-        if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
-                && helpers::getTerminalType(node1) == SiodbParser::K_BETWEEN
-                && helpers::getNonTerminalType(node2) == SiodbParser::RuleSimple_expr
-                && helpers::getTerminalType(node3) == SiodbParser::K_AND
-                && helpers::getNonTerminalType(node4) == SiodbParser::RuleSimple_expr) {
-            return createBetweenExpression(node0, node2, node4, false);
+            // Check for the "expr IS NOT expr"
+            if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
+                    && helpers::getTerminalType(node1) == SiodbParser::K_IS
+                    && helpers::getTerminalType(node2) == SiodbParser::K_NOT
+                    && helpers::getNonTerminalType(node3) == SiodbParser::RuleSimple_expr) {
+                return std::make_unique<requests::IsOperator>(
+                        createSimpleExpression(node0), createSimpleExpression(node3), true);
+            }
+            break;
         }
-        // Check database . table . column
-        else if (helpers::getNonTerminalType(node0) == SiodbParser::RuleDatabase_name
-                 && helpers::getTerminalType(node1) == SiodbParser::DOT
-                 && helpers::getNonTerminalType(node2) == SiodbParser::RuleTable_name
-                 && helpers::getTerminalType(node3) == SiodbParser::DOT
-                 && helpers::getNonTerminalType(node4) == SiodbParser::RuleColumn_name) {
-            throw std::runtime_error("Column name with a database not supported");
+        case 5: {
+            // Check for the "expr BETWEEN expr AND expr"
+            const auto& node0 = node->children[0];
+            const auto& node1 = node->children[1];
+            const auto& node2 = node->children[2];
+            const auto& node3 = node->children[3];
+            const auto& node4 = node->children[4];
+
+            if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
+                    && helpers::getTerminalType(node1) == SiodbParser::K_BETWEEN
+                    && helpers::getNonTerminalType(node2) == SiodbParser::RuleSimple_expr
+                    && helpers::getTerminalType(node3) == SiodbParser::K_AND
+                    && helpers::getNonTerminalType(node4) == SiodbParser::RuleSimple_expr) {
+                return createBetweenExpression(node0, node2, node4, false);
+            }
+            // Check for the "database . table . column"
+            else if (helpers::getNonTerminalType(node0) == SiodbParser::RuleDatabase_name
+                     && helpers::getTerminalType(node1) == SiodbParser::DOT
+                     && helpers::getNonTerminalType(node2) == SiodbParser::RuleTable_name
+                     && helpers::getTerminalType(node3) == SiodbParser::DOT
+                     && helpers::getNonTerminalType(node4) == SiodbParser::RuleColumn_name) {
+                throw std::runtime_error("Column name with a database not supported");
+            }
+            break;
         }
-    } else if (childCount == 6) {
-        // Check expr NOT BETWEEN expr AND Expr
-        if (helpers::getNonTerminalType(node->children[0]) == SiodbParser::RuleSimple_expr
-                && helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT
-                && helpers::getTerminalType(node->children[2]) == SiodbParser::K_BETWEEN
-                && helpers::getNonTerminalType(node->children[3]) == SiodbParser::RuleSimple_expr
-                && helpers::getTerminalType(node->children[4]) == SiodbParser::K_AND
-                && helpers::getNonTerminalType(node->children[5]) == SiodbParser::RuleSimple_expr) {
-            return createBetweenExpression(
-                    node->children[0], node->children[3], node->children[5], true);
+        case 6: {
+            // Check for the "expr NOT BETWEEN expr AND expr"
+            if (helpers::getNonTerminalType(node->children[0]) == SiodbParser::RuleSimple_expr
+                    && helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT
+                    && helpers::getTerminalType(node->children[2]) == SiodbParser::K_BETWEEN
+                    && helpers::getNonTerminalType(node->children[3])
+                               == SiodbParser::RuleSimple_expr
+                    && helpers::getTerminalType(node->children[4]) == SiodbParser::K_AND
+                    && helpers::getNonTerminalType(node->children[5])
+                               == SiodbParser::RuleSimple_expr) {
+                return createBetweenExpression(
+                        node->children[0], node->children[3], node->children[5], true);
+            }
         }
+        default: break;
     }
-
     throw std::invalid_argument("Node is not valid simple expression or not supported");
 }
 

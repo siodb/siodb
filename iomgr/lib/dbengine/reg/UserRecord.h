@@ -6,6 +6,7 @@
 
 // Project headers
 #include "UserAccessKeyRegistry.h"
+#include "UserTokenRegistry.h"
 
 namespace siodb::iomgr::dbengine {
 
@@ -14,7 +15,7 @@ class User;
 /** User reqistry record */
 struct UserRecord {
     /** Initializes object of class UserRecord */
-    UserRecord()
+    UserRecord() noexcept
         : m_id(0)
         , m_active(false)
     {
@@ -28,16 +29,18 @@ struct UserRecord {
      * @param description User description.
      * @param active User state.
      * @param accessKeys Access keys.
+     * @param tokens Tokens.
      */
     UserRecord(std::uint32_t id, std::string&& name, std::optional<std::string>&& realName,
             std::optional<std::string>&& description, bool active,
-            UserAccessKeyRegistry&& accessKeys)
+            UserAccessKeyRegistry&& accessKeys, UserTokenRegistry&& tokens)
         : m_id(id)
         , m_name(std::move(name))
         , m_realName(std::move(realName))
         , m_description(std::move(description))
         , m_active(active)
         , m_accessKeys(std::move(accessKeys))
+        , m_tokens(std::move(tokens))
     {
     }
 
@@ -56,7 +59,7 @@ struct UserRecord {
     {
         return m_id == other.m_id && m_name == other.m_name && m_realName == other.m_realName
                && m_description == other.m_description && m_active == other.m_active
-               && m_accessKeys == other.m_accessKeys;
+               && m_accessKeys == other.m_accessKeys && m_tokens == other.m_tokens;
     }
 
     /**
@@ -71,8 +74,8 @@ struct UserRecord {
      * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
-            noexcept;
+    std::uint8_t* serializeUnchecked(
+            std::uint8_t* buffer, unsigned version = kClassVersion) const noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -100,6 +103,9 @@ struct UserRecord {
     /** User access keys */
     UserAccessKeyRegistry m_accessKeys;
 
+    /** User tokens */
+    UserTokenRegistry m_tokens;
+
     /** Structure UUID */
     static const Uuid s_classUuid;
 
@@ -107,7 +113,7 @@ struct UserRecord {
     static constexpr const char* kClassName = "UserRecord";
 
     /** Structure version */
-    static constexpr std::uint32_t kClassVersion = 0;
+    static constexpr std::uint32_t kClassVersion = 1;
 };
 
 }  // namespace siodb::iomgr::dbengine

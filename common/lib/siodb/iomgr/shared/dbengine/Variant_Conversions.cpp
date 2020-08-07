@@ -370,7 +370,7 @@ std::pair<const std::string*, bool> Variant::asStringInternal(const char* format
             return std::make_pair(new std::string(buffer), false);
         }
         case VariantType::kDateTime: {
-            auto s = m_value.m_dt->format(format ? format : kDefaultDateTimeFormat);
+            auto s = m_value.m_dt->format(format ? format : RawDateTime::kDefaultDateTimeFormat);
             return std::make_pair(new std::string(std::move(s)), false);
         }
         case VariantType::kString: return std::make_pair(m_value.m_string, true);

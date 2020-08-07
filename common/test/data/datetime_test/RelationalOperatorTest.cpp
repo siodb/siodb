@@ -12,6 +12,7 @@
 #include <gtest/gtest.h>
 
 namespace {
+
 siodb::RawDateTime makeSampleDateTime() noexcept
 {
     siodb::RawDateTime dt;
@@ -28,6 +29,7 @@ siodb::RawDateTime makeSampleDateTime() noexcept
     dt.m_timePart.m_reserved2 = 0;
     return dt;
 }
+
 }  // namespace
 
 TEST(RelationalOperators, YearDifference_NoTimePart)

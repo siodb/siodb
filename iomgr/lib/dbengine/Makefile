@@ -105,10 +105,12 @@ CXX_SRC:= \
 	reg/Helpers.cpp  \
 	reg/IndexColumnRecord.cpp  \
 	reg/IndexRecord.cpp  \
+	reg/RegistryRecordUuidChecker.cpp  \
 	reg/TableRecord.cpp  \
 	reg/UserAccessKeyRecord.cpp  \
 	reg/UserPermissionRecord.cpp  \
 	reg/UserRecord.cpp  \
+	reg/UserTokenRecord.cpp  \
 	\
 	uli/FileCache.cpp  \
 	uli/FileData.cpp  \
@@ -156,7 +158,10 @@ CXX_SRC:= \
 	LobChunkHeader.cpp  \
 	MasterColumnRecord.cpp  \
 	NotNullConstraint.cpp  \
-	SystemDatabase.cpp  \
+	SystemDatabase_Common.cpp  \
+	SystemDatabase_Init.cpp  \
+	SystemDatabase_ReadObjects.cpp  \
+	SystemDatabase_RecordObjects.cpp  \
 	Table.cpp  \
 	TableCache.cpp  \
 	TableColumns.cpp  \
@@ -166,7 +171,8 @@ CXX_SRC:= \
 	UserAccessKey.cpp  \
 	UserCache.cpp  \
 	UserDatabase.cpp  \
-	UserPermission.cpp
+	UserPermission.cpp  \
+	UserToken.cpp
 
 CXX_HDR:= \
 	bpt/BPlusTreeIndex.h  \
@@ -271,6 +277,7 @@ CXX_HDR:= \
 	reg/IndexColumnRegistry.h  \
 	reg/IndexRecord.h  \
 	reg/IndexRegistry.h  \
+	reg/RegistryRecordUuidChecker.р  \
 	reg/TableRecord.h  \
 	reg/TableRegistry.h  \
 	reg/UserAccessKeyRecord.h  \
@@ -279,6 +286,8 @@ CXX_HDR:= \
 	reg/UserPermissionRegistry.h  \
 	reg/UserRecord.h  \
 	reg/UserRegistry.h  \
+	reg/UserTokenRecord.h  \
+	reg/UserTokenRegistry.h  \
 	\
 	uli/FileCache.h  \
 	uli/FileData.h  \
@@ -357,14 +366,18 @@ CXX_HDR:= \
 	ThrowDatabaseError.h  \
 	TransactionParameters.h  \
 	UpdateUserAccessKeyParameters.h  \
+	UpdateDatabaseParameters.h  \
 	UpdateUserParameters.h  \
+	UpdateUserTokenParameters.h  \
 	User.h  \
 	UserAccessKey.h  \
 	UserAccessKeyPtr.h  \
 	UserCache.h  \
 	UserDatabase.h  \
 	UserPermission.h  \
-	UserPtr.h
+	UserPtr.h  \
+	UserToken.h  \
+	UserTokenPtr.h
 
 
 CXXFLAGS+=-I$(GENERATED_FILES_ROOT)

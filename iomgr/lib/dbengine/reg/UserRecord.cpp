@@ -28,6 +28,9 @@ UserRecord::UserRecord(const User& user)
 {
     for (const auto& accessKey : user.getAccessKeys())
         m_accessKeys.emplace(*accessKey);
+
+    for (const auto& token : user.getTokens())
+        m_tokens.emplace(*token);
 }
 
 std::size_t UserRecord::getSerializedSize(unsigned version) const noexcept
@@ -38,6 +41,11 @@ std::size_t UserRecord::getSerializedSize(unsigned version) const noexcept
                          + ::getVarIntSize(static_cast<std::uint32_t>(m_accessKeys.size()));
     for (const auto& accessKey : m_accessKeys.byId())
         result += accessKey.getSerializedSize();
+    if (version >= 1) {
+        result += ::getVarIntSize(static_cast<std::uint32_t>(m_tokens.size()));
+        for (const auto& token : m_tokens.byId())
+            result += token.getSerializedSize();
+    }
     return result;
 }
 
@@ -54,6 +62,11 @@ std::uint8_t* UserRecord::serializeUnchecked(std::uint8_t* buffer, unsigned vers
     buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_accessKeys.size()), buffer);
     for (const auto& accessKey : m_accessKeys.byId())
         buffer = accessKey.serializeUnchecked(buffer);
+    if (version >= 1) {
+        buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_tokens.size()), buffer);
+        for (const auto& token : m_tokens.byId())
+            buffer = token.serializeUnchecked(buffer);
+    }
     return buffer;
 }
 
@@ -117,6 +130,28 @@ std::size_t UserRecord::deserialize(const std::uint8_t* buffer, std::size_t leng
         std::ostringstream err;
         err << "accessKeys[" << index << ']';
         helpers::reportDeserializationFailure(kClassName, err.str().c_str(), ex.what());
+    }
+
+    if (classVersion >= 1) {
+        std::uint32_t tokenCount = 0;
+        consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, tokenCount);
+        if (consumed < 1)
+            helpers::reportInvalidOrNotEnoughData(kClassName, "tokens.size", tokenCount);
+        totalConsumed += consumed;
+
+        index = 0;
+        try {
+            m_tokens.clear();
+            for (; index < tokenCount; ++index) {
+                UserTokenRecord r;
+                totalConsumed += r.deserialize(buffer + totalConsumed, length - totalConsumed);
+                m_tokens.insert(std::move(r));
+            }
+        } catch (std::exception& ex) {
+            std::ostringstream err;
+            err << "tokens[" << index << ']';
+            helpers::reportDeserializationFailure(kClassName, err.str().c_str(), ex.what());
+        }
     }
 
     return totalConsumed;

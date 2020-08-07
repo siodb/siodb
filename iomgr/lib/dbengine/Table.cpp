@@ -485,11 +485,11 @@ std::string&& Table::validateTableName(std::string&& tableName)
 
 void Table::createMasterColumn(std::uint64_t firstUserTrid)
 {
-    m_masterColumn = createColumn(
-            ColumnSpecification(Database::kMasterColumnName, Column::kMasterColumnDataType,
-                    isSystemTable() ? kSystemTableDataFileDataAreaSize
-                                    : kDefaultDataFileDataAreaSize),
-            firstUserTrid);
+    m_masterColumn =
+            createColumn(ColumnSpecification(kMasterColumnName, Column::kMasterColumnDataType,
+                                 isSystemTable() ? kSystemTableDataFileDataAreaSize
+                                                 : kDefaultDataFileDataAreaSize),
+                    firstUserTrid);
 }
 
 void Table::loadColumnsUnlocked()
@@ -512,7 +512,7 @@ void Table::loadColumnsUnlocked()
     m_currentColumns.swap(currentColumns);
 
     // Finally, update master column
-    m_masterColumn = findColumnCheckedUnlocked(Database::kMasterColumnName);
+    m_masterColumn = findColumnCheckedUnlocked(kMasterColumnName);
 }
 
 ColumnSetPtr Table::createColumnSetUnlocked()

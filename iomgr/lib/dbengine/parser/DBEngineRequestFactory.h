@@ -136,6 +136,21 @@ private:
     static requests::DBEngineRequestPtr createDropDatabaseRequest(antlr4::tree::ParseTree* node);
 
     /**
+     * Creates a ALTER DATABASE RENAME TO request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER DATABASE RENAME TO request.
+     */
+    static requests::DBEngineRequestPtr createRenameDatabaseRequest(antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates a ALTER DATABASE SET attributes request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER DATABASE SET attributes request.
+     */
+    static requests::DBEngineRequestPtr createSetDatabaseAttributesRequest(
+            antlr4::tree::ParseTree* node);
+
+    /**
      * Creates a USE DATABASE request.
      * @param node Parse tree node with SQL statement.
      * @return USE DATABASE request.
@@ -157,9 +172,9 @@ private:
     static requests::DBEngineRequestPtr createDropTableRequest(antlr4::tree::ParseTree* node);
 
     /**
-     * Creates a ALTER TABLE RENAME request.
+     * Creates a ALTER TABLE RENAME TO request.
      * @param node Parse tree node with SQL statement.
-     * @return ALTER TABLE RENAME request.
+     * @return ALTER TABLE RENAME TO request.
      */
     static requests::DBEngineRequestPtr createRenameTableRequest(antlr4::tree::ParseTree* node);
 
@@ -170,13 +185,6 @@ private:
      */
     static requests::DBEngineRequestPtr createSetTableAttributesRequest(
             antlr4::tree::ParseTree* node);
-
-    /**
-     * Creates a ALTER TABLE request.
-     * @param node Parse tree node with SQL statement.
-     * @return ALTER TABLE request.
-     */
-    static requests::DBEngineRequestPtr createAlterTableRequest(antlr4::tree::ParseTree* node);
 
     /**
      * Creates a CREATE INDEX request.
@@ -207,11 +215,18 @@ private:
     static requests::DBEngineRequestPtr createDropColumnRequest(antlr4::tree::ParseTree* node);
 
     /**
+     * Creates a ALTER TABLE ALTER COLUMN RENAME TO request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER TABLE ALTER COLUMN RENAME TO request.
+     */
+    static requests::DBEngineRequestPtr createRenameColumnRequest(antlr4::tree::ParseTree* node);
+
+    /**
      * Creates a ALTER TABLE ALTER COLUMN request.
      * @param node Parse tree node with SQL statement.
      * @return ALTER TABLE ALTER COLUMN request.
      */
-    static requests::DBEngineRequestPtr createAlterColumnRequest(antlr4::tree::ParseTree* node);
+    static requests::DBEngineRequestPtr createRedefineColumnRequest(antlr4::tree::ParseTree* node);
 
     /**
      * Creates a CREATE USER request.
@@ -228,11 +243,12 @@ private:
     static requests::DBEngineRequestPtr createDropUserRequest(antlr4::tree::ParseTree* node);
 
     /**
-     * Creates an ALTER USER SET OPTIONS_LIST request.
+     * Creates an ALTER USER SET attributes request.
      * @param node Parse tree node with SQL statement.
-     * @return ALTER USER SET OPTIONS_LIST request.
+     * @return ALTER USER SET attributes request.
      */
-    static requests::DBEngineRequestPtr createAlterUserRequest(antlr4::tree::ParseTree* node);
+    static requests::DBEngineRequestPtr createSetUserAttributesRequest(
+            antlr4::tree::ParseTree* node);
 
     /**
      * Creates an ALTER USER ADD ACCESS KEY request.
@@ -251,12 +267,49 @@ private:
             antlr4::tree::ParseTree* node);
 
     /**
-     * Creates an ALTER USER ALTER ACCESS KEY SET OPTIONS_LIST request.
+     * Creates an ALTER USER ALTER ACCESS KEY SET ATTR_LIST request.
      * @param node Parse tree node with SQL statement.
-     * @return ALTER USER ALTER ACCESS KEY SET OPTIONS_LIST request.
+     * @return ALTER USER ALTER ACCESS KEY SET ATTR_LIST request.
      */
-    static requests::DBEngineRequestPtr createAlterUserAccessKeyRequest(
+    static requests::DBEngineRequestPtr createSetUserAccessKeyAttributesRequest(
             antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates an ALTER USER ALTER ACCES KEY RENAME IF EXISTS request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER USER ALTER ACCESS KEY IF EXISTS request.
+     */
+    static requests::DBEngineRequestPtr createRenameUserAccessKeyRequest(
+            antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates an ALTER USER ADD TOKEN request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER USER ADD TOKEN request.
+     */
+    static requests::DBEngineRequestPtr createAddUserTokenRequest(antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates an ALTER USER DROP TOKEN request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER USER DROP TOKEN request.
+     */
+    static requests::DBEngineRequestPtr createDropUserTokenRequest(antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates an ALTER USER ALTER TOKEN SET attributes request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER USER ALTER TOKEN SET attributes request.
+     */
+    static requests::DBEngineRequestPtr createSetUserTokenAttributesRequest(
+            antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates an ALTER USER ALTER TOKEN RENAME IF EXISTS request.
+     * @param node Parse tree node with SQL statement.
+     * @return ALTER USER ALTER TOKEN RENAME IF EXISTS request.
+     */
+    static requests::DBEngineRequestPtr createRenameUserTokenRequest(antlr4::tree::ParseTree* node);
 
     /**
      * Parses SelectCore.

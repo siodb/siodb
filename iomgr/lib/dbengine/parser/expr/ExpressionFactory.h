@@ -16,7 +16,7 @@ public:
      * Initializes object of class ExpressionFactory.
      * @param allowColumnExpressions Indication that parser should allow columns in expressions.
      */
-    explicit ExpressionFactory(bool allowColumnExpressions) noexcept;
+    explicit ExpressionFactory(bool allowColumnExpressions = false) noexcept;
 
     /**
      * Creates an expression from expression node.
@@ -28,34 +28,18 @@ public:
      */
     requests::ExpressionPtr createExpression(antlr4::tree::ParseTree* node) const;
 
-private:
     /**
-     * Creates a numeric constant.
-     * @param token A token with numeric constant.
-     * @param negate Indicates that numeric constant must be negated.
-     * @return New constant expression object.
-     * @throw std::invalid_argument if token is invalid.
-     */
-    static requests::ExpressionPtr createNumericConstant(
-            const antlr4::Token* token, bool negate = false);
-
-    /**
-     * Creates a string constant.
-     * @param token A token with string constant.
-     * @return New constant expression object.
-     * @throw std::invalid_argument if token is invalid.
-     */
-    static requests::ExpressionPtr createStringConstant(const antlr4::Token* token);
-
-    /**
-     * Creates a binary constant.
-     * @param token A token with binary constant.
-     * @return New constant expression object.
-     * @throw std::invalid_argument if token is invalid.
+     * Creates constant value from expression node.
+     * Throws exception if node is not valid constant node expression.
+     * @param node A pointer to a parse tree with expression.
+     * @return Value object.
+     * @throw invalid_argument if invalid node encountered.
      * @throw runtime_error if unsupported node encountered.
+     * @throw VariantTypeCastError in case of incompatible constant types.
      */
-    static requests::ExpressionPtr createBinaryConstant(const antlr4::Token* token);
+    static Variant createConstantValue(antlr4::tree::ParseTree* node);
 
+private:
     /**
      * Creates constant expression from a token.
      * @param token Token with value.
@@ -75,6 +59,61 @@ private:
      */
     static requests::ExpressionPtr createConstant(const antlr4::tree::ParseTree* node,
             std::size_t literalNodeIndex = 0, bool negate = false);
+
+    /**
+     * Creates constant value from a node.
+     * @param node Node with value.
+     * @param literalNodeIndex Index of child node with constant literal.
+     * @param negate Indicates that numeric value must be negated.
+     * @return Value object.
+     * @throw std::invalid_argument if any argument is invalid.
+     */
+    static Variant createConstantValue(
+            const antlr4::tree::ParseTree* node, std::size_t literalNodeIndex, bool negate);
+
+    /**
+     * Creates constant value from a terminal.
+     * @param terminal Terminal node.
+     * @param negate Indicates that numeric value must be negated.
+     * @return Value object.
+     * @throw std::invalid_argument if any argument is invalid.
+     */
+    static Variant createConstantValue(antlr4::tree::TerminalNode* terminal, bool negate);
+
+    /**
+     * Creates constant value from a token.
+     * @param token Token with value.
+     * @param negate Indicates that numeric value must be negated.
+     * @return Value object.
+     * @throw std::invalid_argument if any argument is invalid.
+     */
+    static Variant createConstantValue(const antlr4::Token* token, bool negate);
+
+    /**
+     * Creates a numeric constant value.
+     * @param token A token with numeric constant.
+     * @param negate Indicates that numeric constant must be negated.
+     * @return Value object.
+     * @throw std::invalid_argument if token is invalid.
+     */
+    static Variant createNumericConstantValue(const antlr4::Token* token, bool negate = false);
+
+    /**
+     * Creates a string constant.
+     * @param token A token with string constant.
+     * @return Value object.
+     * @throw std::invalid_argument if token is invalid.
+     */
+    static Variant createStringConstantValue(const antlr4::Token* token);
+
+    /**
+     * Creates a binary constant.
+     * @param token A token with binary constant.
+     * @return New constant expression object.
+     * @throw std::invalid_argument if token is invalid.
+     * @throw runtime_error if unsupported node encountered.
+     */
+    static Variant createBinaryConstantValue(const antlr4::Token* token);
 
     /**
      * Returns indication that specified terminal is non-logical binary operator.

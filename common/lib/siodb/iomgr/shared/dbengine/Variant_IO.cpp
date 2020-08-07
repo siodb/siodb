@@ -49,7 +49,7 @@ std::ostream& operator<<(std::ostream& os, const Variant& v)
         case VariantType::kFloat: return os << v.m_value.m_float;
         case VariantType::kDouble: return os << v.m_value.m_double;
         case VariantType::kDateTime: {
-            return os << v.m_value.m_dt->format(Variant::kDefaultDateTimeFormat);
+            return os << v.m_value.m_dt->format(RawDateTime::kDefaultDateTimeFormat);
         }
         case VariantType::kString: return os << *v.m_value.m_string;
         case VariantType::kBinary: {

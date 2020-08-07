@@ -21,8 +21,8 @@
 namespace siodb {
 
 /**
- * File descriptor lifetime guard. Holds file descriptor until end of current scope,
- * then closes it.
+ * File descriptor lifetime guard.
+ * Holds file descriptor until end of current scope, then closes it.
  */
 class FdGuard {
 public:

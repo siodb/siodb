@@ -73,7 +73,7 @@ void RequestHandler::executeUpdateRequest(
     requests::DatabaseContext dbContext(std::vector<DataSetPtr> {tableDataSet});
 
     for (const auto& columnRef : request.m_columns) {
-        if (columnRef.m_column == Database::kMasterColumnName) {
+        if (columnRef.m_column == kMasterColumnName) {
             errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorCannotUpdateMasterColumn));
             continue;
         }
@@ -263,7 +263,7 @@ void RequestHandler::executeInsertRequest(
         columnNames.reserve(request.m_columns.size());
 
         for (const auto& columnName : request.m_columns) {
-            if (columnName == Database::kMasterColumnName) {
+            if (columnName == kMasterColumnName) {
                 errors.push_back(
                         makeDatabaseError(IOManagerMessageId::kErrorCannotInsertIntoMasterColumn));
                 continue;

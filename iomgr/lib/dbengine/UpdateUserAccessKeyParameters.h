@@ -10,15 +10,15 @@
 
 namespace siodb::iomgr::dbengine {
 
-/** Update user acces key parameters. */
+/** Update user access key parameters. */
 struct UpdateUserAccessKeyParameters {
     /** Initializes new object of class UpdateUserAccessKeyParameters */
     UpdateUserAccessKeyParameters() noexcept = default;
 
     /** 
      * Initializes new object of class UpdateUserAccessKeyParameters.
-     * @param description User description.
-     * @param active User state.
+     * @param description User access key description.
+     * @param active User access key state.
      */
     UpdateUserAccessKeyParameters(std::optional<std::optional<std::string>>&& description,
             std::optional<bool>&& active) noexcept

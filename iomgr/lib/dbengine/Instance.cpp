@@ -10,6 +10,7 @@
 #include "ThrowDatabaseError.h"
 #include "UserAccessKey.h"
 #include "UserDatabase.h"
+#include "UserToken.h"
 #include "crypto/GetCipher.h"
 
 // Common project headers
@@ -21,9 +22,11 @@
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
+#include <siodb/common/utils/Debug.h>
 #include <siodb/common/utils/FsUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/common/utils/RandomUtils.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
 
 // CRT headers
@@ -227,8 +230,13 @@ void Instance::dropUser(const std::string& name, bool userMustExist, std::uint32
     m_userCache.erase(id);
     index.erase(it);
 
+    // Delete assoiated access keys
     for (const auto& accessKey : user->getAccessKeys())
         m_systemDatabase->deleteUserAccessKey(accessKey->getId(), currentUserId);
+
+    // Delete assoiated tokens
+    for (const auto& token : user->getTokens())
+        m_systemDatabase->deleteUserToken(token->getId(), currentUserId);
 
     m_systemDatabase->deleteUser(id, currentUserId);
 }
@@ -289,16 +297,16 @@ std::uint64_t Instance::createUserAccessKey(const std::string& userName, const s
     if (it == index.cend())
         throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
 
-    // NOTE: We don't index by UserRecord::m_accessKeys.
+    // NOTE: We don't index by UserRecord::m_accessKeys, that's why this works
     auto& mutableUserRecord = stdext::as_mutable(*it);
 
     const auto user = findUserUnlocked(*it);
 
     const auto id = m_systemDatabase->generateNextUserAccessKeyId();
-    const auto accessKey = user->addUserAccessKey(id, std::string(keyName), std::string(text),
+    const auto accessKey = user->addAccessKey(id, std::string(keyName), std::string(text),
             std::optional<std::string>(description), active);
 
-    // NOTE: We don't index by UserRecord::m_accessKeys.
+    // NOTE: We don't index by UserRecord::m_accessKeys, that's why this works
     mutableUserRecord.m_accessKeys.emplace(*accessKey);
 
     const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
@@ -307,29 +315,28 @@ std::uint64_t Instance::createUserAccessKey(const std::string& userName, const s
     return id;
 }
 
-void Instance::dropUserAccessKey(const std::string& userName, const std::string& name,
-        bool accessKeyMustExist, std::uint32_t currentUserId)
+void Instance::dropUserAccessKey(const std::string& userName, const std::string& keyName,
+        bool mustExist, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
 
     const auto& userIndex = m_userRegistry.byName();
     const auto itUser = userIndex.find(userName);
     if (itUser == userIndex.end()) {
-        if (!accessKeyMustExist) return;
-        throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
+        if (mustExist) throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
+        return;
     }
 
-    // NOTE: We don't index by UserRecord::m_accessKeys.
+    // NOTE: We don't index by UserRecord::m_accessKeys, that's why this works
     auto& accessKeyIndex = stdext::as_mutable(*itUser).m_accessKeys.byName();
-    const auto itKey = accessKeyIndex.find(name);
+    const auto itKey = accessKeyIndex.find(keyName);
     if (itKey == accessKeyIndex.end())
-        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, name);
+        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, keyName);
 
     const auto user = findUserUnlocked(*itUser);
-
     const auto accessKeyId = itKey->m_id;
     accessKeyIndex.erase(itKey);
-    user->deleteUserAccessKey(name);
+    user->deleteAccessKey(keyName);
     m_systemDatabase->deleteUserAccessKey(accessKeyId, currentUserId);
 }
 
@@ -349,7 +356,7 @@ void Instance::updateUserAccessKey(const std::string& userName, const std::strin
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, keyName);
 
     const auto user = findUserUnlocked(*itUser);
-    const auto userAccessKey = user->findUserAccessKeyChecked(keyName);
+    const auto userAccessKey = user->findAccessKeyChecked(keyName);
 
     const bool needUpdateDescription =
             params.m_description && *params.m_description != itKey->m_description;
@@ -357,14 +364,14 @@ void Instance::updateUserAccessKey(const std::string& userName, const std::strin
     if (!needUpdateDescription && !needUpdateState) return;
 
     if (needUpdateDescription) {
-        user->setDescription(stdext::copy(*params.m_description));
+        userAccessKey->setDescription(stdext::copy(*params.m_description));
         // NOTE: The following one still correct only because we don't index
         // by UserAccessKeyRecord::m_description.
         stdext::as_mutable(*itKey).m_description = *params.m_description;
     }
 
     if (needUpdateState) {
-        if (user->isSuperUser() && !*params.m_active && user->getActiveKeyCount() == 1) {
+        if (user->isSuperUser() && !*params.m_active && user->getActiveAccessKeyCount() == 1) {
             throwDatabaseError(
                     IOManagerMessageId::kErrorCannotDeactivateLastSuperUserAccessKey, keyName);
         }
@@ -389,11 +396,124 @@ void Instance::updateUserAccessKey(const std::string& userName, const std::strin
     m_systemDatabase->updateUserAccessKey(userAccessKey->getId(), params, currentUserId);
 }
 
+std::pair<std::uint64_t, BinaryValue> Instance::createUserToken(const std::string& userName,
+        const std::string& tokenName, const std::optional<BinaryValue>& value,
+        const std::optional<std::string>& description,
+        const std::optional<std::time_t>& expirationTimestamp, std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_cacheMutex);
+    std::pair<std::uint64_t, BinaryValue> result;
+
+    const auto& index = m_userRegistry.byName();
+    const auto it = index.find(userName);
+    if (it == index.cend())
+        throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
+
+    // NOTE: We don't index by UserRecord::m_tokens.
+    auto& mutableUserRecord = stdext::as_mutable(*it);
+
+    const auto user = findUserUnlocked(*it);
+    const auto id = m_systemDatabase->generateNextUserTokenId();
+    BinaryValue v;
+    if (value)
+        v = *value;
+    else {
+        // Need to generate new token value
+        result.second.resize(kGeneratedTokenLength);
+        DEBUG_DECL_LOCAL(std::size_t attemptNo = 1);
+        do {
+            DBG_LOG_DEBUG("Generating token value, attempt #" << attemptNo);
+            try {
+                utils::getRandomBytes(result.second.data(), result.second.size());
+            } catch (std::exception& ex) {
+                throwDatabaseError(IOManagerMessageId::kErrorCannotGenerateUserToken, ex.what());
+            }
+            DBG_LOG_DEBUG("Token value generated, attempt #" << attemptNo);
+        } while (user->checkToken(result.second) != User::CheckTokenResult::kNotFound);
+        v = result.second;
+    }
+
+    const auto token = user->addToken(id, std::string(tokenName), v,
+            std::optional<std::time_t>(expirationTimestamp),
+            std::optional<std::string>(description));
+
+    // NOTE: We don't index by UserRecord::m_tokens, that's why this works.
+    mutableUserRecord.m_tokens.emplace(*token);
+
+    const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
+    m_systemDatabase->recordUserToken(*token, tp);
+    return result;
+}
+
+void Instance::dropUserToken(const std::string& userName, const std::string& tokenName,
+        bool mustExist, std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_cacheMutex);
+
+    const auto& userIndex = m_userRegistry.byName();
+    const auto itUser = userIndex.find(userName);
+    if (itUser == userIndex.end()) {
+        if (mustExist) throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
+        return;
+    }
+
+    // NOTE: We don't index by UserRecord::m_accessKeys.
+    auto& tokenIndex = stdext::as_mutable(*itUser).m_tokens.byName();
+    const auto itToken = tokenIndex.find(tokenName);
+    if (itToken == tokenIndex.end())
+        throwDatabaseError(IOManagerMessageId::kErrorUserTokenDoesNotExist, userName, tokenName);
+
+    const auto user = findUserUnlocked(*itUser);
+
+    const auto tokenId = itToken->m_id;
+    tokenIndex.erase(itToken);
+    user->deleteToken(tokenName);
+    m_systemDatabase->deleteUserToken(tokenId, currentUserId);
+}
+
+void Instance::updateUserToken(const std::string& userName, const std::string& tokenName,
+        const UpdateUserTokenParameters& params, std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_cacheMutex);
+
+    const auto& userIndex = m_userRegistry.byName();
+    const auto itUser = userIndex.find(userName);
+    if (itUser == userIndex.end())
+        throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
+
+    auto& tokenIndex = stdext::as_mutable(*itUser).m_tokens.byName();
+    const auto itToken = tokenIndex.find(tokenName);
+    if (itToken == tokenIndex.end())
+        throwDatabaseError(IOManagerMessageId::kErrorUserTokenDoesNotExist, userName, tokenName);
+
+    const auto user = findUserUnlocked(*itUser);
+    const auto userToken = user->findTokenChecked(tokenName);
+
+    const bool needUpdateDescription =
+            params.m_description && *params.m_description != itToken->m_description;
+    const bool needUpdateExpirationTimestamp =
+            params.m_expirationTimestamp
+            && *params.m_expirationTimestamp != itToken->m_expirationTimestamp;
+    if (!needUpdateDescription && !needUpdateExpirationTimestamp) return;
+
+    if (needUpdateDescription) {
+        userToken->setDescription(stdext::copy(*params.m_description));
+        // NOTE: The following one still correct only because we don't index
+        // by UserTokenRecord::m_description.
+        stdext::as_mutable(*itToken).m_description = *params.m_description;
+    }
+
+    if (needUpdateExpirationTimestamp)
+        userToken->setExpirationTimestamp(*params.m_expirationTimestamp);
+
+    m_systemDatabase->updateUserToken(userToken->getId(), params, currentUserId);
+}
+
 void Instance::beginUserAuthentication(const std::string& userName)
 {
     const auto user = findUserChecked(userName);
     if (!user->isActive()) throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
-    if (user->getActiveKeyCount() == 0)
+    if (user->getActiveAccessKeyCount() == 0)
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
 }
 
@@ -503,10 +623,11 @@ void Instance::loadSystemDatabase()
 void Instance::createSuperUser()
 {
     LOG_DEBUG << "Instance: Creating super user.";
-    m_superUser = std::make_shared<User>(UserRecord(User::kSuperUserId, User::kSuperUserName,
-            std::string(), User::kSuperUserDescription, true, UserAccessKeyRegistry()));
+    const UserRecord userRecord(User::kSuperUserId, User::kSuperUserName, std::nullopt,
+            User::kSuperUserDescription, true, UserAccessKeyRegistry(), UserTokenRegistry());
+    m_superUser = std::make_shared<User>(userRecord);
     if (!m_superUserInitialAccessKey.empty()) {
-        m_superUser->addUserAccessKey(UserAccessKey::kSuperUserInitialAccessKeyId,
+        m_superUser->addAccessKey(UserAccessKey::kSuperUserInitialAccessKeyId,
                 UserAccessKey::kSuperUserInitialAccessKeyName,
                 std::string(m_superUserInitialAccessKey),
                 UserAccessKey::kSuperUserInitialAccessKeyDescription, true);
@@ -571,9 +692,9 @@ std::string Instance::loadSuperUserInitialAccessKey() const
     if (fileSize == static_cast<boost::uintmax_t>(-1))
         throwDatabaseError(IOManagerMessageId::kFatalCannotStatSuperUserKey, fileName);
 
-    if (fileSize > siodb::kMaxAccessKeySize)
-        throwDatabaseError(IOManagerMessageId::kFatalSuperUserAccessKeyIsLargerThanMax, fileSize,
-                siodb::kMaxAccessKeySize);
+    if (fileSize > siodb::kMaxUserAccessKeySize)
+        throwDatabaseError(IOManagerMessageId::kFatalSuperUserAccessKeyIsTooLong, fileSize,
+                siodb::kMaxUserAccessKeySize);
 
     LOG_DEBUG << "Instance: Read " << fileSize << " bytes of access key";
     std::ifstream ifs(fileName);

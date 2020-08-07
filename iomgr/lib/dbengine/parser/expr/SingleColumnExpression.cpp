@@ -19,7 +19,7 @@ SingleColumnExpression::SingleColumnExpression(
 VariantType SingleColumnExpression::getResultValueType(const Context& context) const
 {
     checkHasTableAndColumnIndices();
-    // TODO(cxxman): Make this better, take CLOBs into account.
+    // TODO(cxxman): Make this somehow better, take CLOBs into account.
 #if 0
     const auto& value = context.getColumnValue(*m_datasetTableIndex, *m_datasetColumnIndex);
     return value.getValueType();

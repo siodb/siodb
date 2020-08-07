@@ -717,9 +717,9 @@ TEST(DML_Insert, InsertDateTime)
     char buffer[80] = {'\0'};
     localtime_r(&rawTime, &timeInfo);
     const auto n =
-            strftime(buffer, sizeof(buffer), dbengine::Variant::kDefaultDateTimeFormat, &timeInfo);
+            strftime(buffer, sizeof(buffer), siodb::RawDateTime::kDefaultDateTimeFormat, &timeInfo);
     ASSERT_TRUE(n > 0);
-    dateTime[0].parse(buffer, dbengine::Variant::kDefaultDateTimeFormat);
+    dateTime[0].parse(buffer, siodb::RawDateTime::kDefaultDateTimeFormat);
     auto v = &values.emplace_back();
     v->push_back(std::make_unique<requests::ConstantExpression>(dateTime[0]));
 

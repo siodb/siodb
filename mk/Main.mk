@@ -17,7 +17,7 @@ PROTO_CXX_HDR_N:=$(PROTO_SRC:.proto=.pb.h)
 PROTO_CXX_SRC:=$(addprefix $(THIS_GENERATED_FILES_DIR), $(PROTO_CXX_SRC_N))
 PROTO_CXX_HDR:=$(addprefix $(THIS_GENERATED_FILES_DIR), $(PROTO_CXX_HDR_N))
 
-# Obejcts
+# Objects
 OBJ:=$(addprefix $(THIS_OBJ_DIR),$(PROTO_CXX_SRC_N:.pb.cc=.pb.o) $(C_SRC:.c=.o) $(CXX_SRC:.cpp=.o))
 
 # Generated dependencies
@@ -161,9 +161,6 @@ PCH_CXXFLAGS:=$(CXXFLAGS)
 CFLAGS+=-include $(ROOT)/$(C_PCH_HDR)
 CXXFLAGS+=-include $(ROOT)/$(CXX_PCH_HDR)
 endif
-
-INTERMEDIATE_SUFFIX=.intermediate
-DEBUG_SUFFIX=.debug
 
 ##### TARGETS #####
 

@@ -110,6 +110,15 @@ public:
     }
 
     /**
+     * Sets access key decription.
+     * @param description Access key description.
+     */
+    void setDescription(std::optional<std::string>&& description) noexcept
+    {
+        m_description = std::move(description);
+    }
+
+    /**
      * Returns indication that access key is active.
      * @return true if this access key is active, false otherwise.
      */
@@ -139,11 +148,11 @@ private:
 
     /**
      * Validates user access key name.
-     * @param accessKeyName User name.
+     * @param accessKeyName User access key name.
      * @return Same user access key name, if it is valid.
      * @throw DatabaseError if user access key name is invalid.
      */
-    static std::string&& validateUserAccessKeyName(std::string&& accessKeyName);
+    static std::string&& validateName(std::string&& accessKeyName);
 
 private:
     /** User object */

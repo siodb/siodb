@@ -25,6 +25,7 @@
 // STL headers
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 extern "C" {
@@ -551,7 +552,10 @@ std::size_t deserializeObject(
 template<class T>
 inline std::size_t getSerializedSize(const std::optional<T>& opt) noexcept
 {
-    return opt ? ::getSerializedSize(*opt) + 1U : 1U;
+    if constexpr (std::is_fundamental_v<T>)
+        return opt ? ::getVarIntSize(*opt) + 1U : 1U;
+    else
+        return opt ? ::getSerializedSize(*opt) + 1U : 1U;
 }
 
 /**
@@ -565,7 +569,10 @@ std::uint8_t* serializeUnchecked(const std::optional<T>& opt, std::uint8_t* buff
     *buffer++ = opt ? 1 : 0;
     if (opt) {
         const auto& obj = *opt;
-        buffer = serializeUnchecked(obj, buffer);
+        if constexpr (std::is_fundamental_v<T>)
+            buffer = encodeVarInt(*opt, buffer);
+        else
+            buffer = serializeUnchecked(obj, buffer);
     }
     return buffer;
 }
@@ -575,7 +582,7 @@ std::uint8_t* serializeUnchecked(const std::optional<T>& opt, std::uint8_t* buff
  * @tparam Object type.
  * @param buffer Source buffer.
  * @param length Data length in the buffer.
- * @param[out] o Destination object.
+ * @param[out] opt Destination object.
  * @return Number of consumed bytes.
  * @throw VariantDeserializationError if deserialization failed.
  */
@@ -592,12 +599,21 @@ std::size_t deserializeObject(const std::uint8_t* buffer, std::size_t length, st
         return 1;
     }
 
-    if (opt)
-        return deserializeObject(buffer, length - 1, *opt) + 1;
-    else {
-        T tmp;
-        const auto consumed = deserializeObject(buffer, length - 1, tmp);
-        opt = std::move(tmp);
+    if (opt) {
+        if constexpr (std::is_fundamental_v<T>)
+            return decodeVarInt(buffer, length - 1, *opt);
+        else
+            return deserializeObject(buffer, length - 1, *opt) + 1;
+    } else {
+        T tmp = T();
+        std::size_t consumed;
+        if constexpr (std::is_fundamental_v<T>) {
+            consumed = decodeVarInt(buffer, length - 1, tmp);
+            opt = tmp;
+        } else {
+            consumed = deserializeObject(buffer, length - 1, tmp);
+            opt = std::move(tmp);
+        }
         return consumed + 1;
     }
 }

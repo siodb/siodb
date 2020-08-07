@@ -48,6 +48,11 @@ void SqlParser::parse()
     m_parseTree = m_siodbParser.parse();
 }
 
+void SqlParser::dump(bool flush) const
+{
+    dump(std::cout, flush);
+}
+
 void SqlParser::dump(antlr4::tree::ParseTree* tree, std::ostream& os, bool flush) const
 {
     dump(tree, 0, 0, "", false, os);

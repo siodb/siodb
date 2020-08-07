@@ -9,6 +9,7 @@
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/common/utils/RandomUtils.h>
 
 // CRT headers
 #include <ctime>
@@ -38,12 +39,7 @@ BinaryValue generateCipherKey(unsigned keyLength, const std::string& seed)
 
     // Collect entropy from system
     std::uint8_t rdata[kRandomSeedSize + 2];
-    {
-        FdGuard fd(::open("/dev/urandom", O_RDONLY));
-        if (!fd.isValidFd()) throw std::runtime_error("Can't open /dev/urandom for reading");
-        if (::readExact(fd.getFd(), rdata, sizeof(rdata), kIgnoreSignals) != sizeof(rdata))
-            throw std::runtime_error("Can't read data from /dev/urandom");
-    }
+    utils::getRandomBytes(rdata, sizeof(rdata));
 
     // Collect current time
     const auto t = std::time(nullptr);
@@ -59,29 +55,29 @@ BinaryValue generateCipherKey(unsigned keyLength, const std::string& seed)
     const std::size_t seedLength = seed.empty() ? ct_strlen(kDefaultSeed) : seed.length();
     if (keyLength <= 256) {
         // Use SHA-256
-        SHA256_CTX ctx;
-        SHA256_Init(&ctx);
-        SHA256_Update(&ctx, seedData, seedLength);
-        SHA256_Update(&ctx, &t, sizeof(t));
-        SHA256_Update(&ctx, rdata, kRandomSeedSize);
-        SHA256_Final(hash, &ctx);
+        ::SHA256_CTX ctx;
+        ::SHA256_Init(&ctx);
+        ::SHA256_Update(&ctx, seedData, seedLength);
+        ::SHA256_Update(&ctx, &t, sizeof(t));
+        ::SHA256_Update(&ctx, rdata, kRandomSeedSize);
+        ::SHA256_Final(hash, &ctx);
         for (unsigned i = 0; i < hashRoundCount; ++i) {
-            SHA256_Init(&ctx);
-            SHA256_Update(&ctx, hash, 32);
-            SHA256_Final(hash, &ctx);
+            ::SHA256_Init(&ctx);
+            ::SHA256_Update(&ctx, hash, 32);
+            ::SHA256_Final(hash, &ctx);
         }
     } else {
         // Use SHA-512
-        SHA512_CTX ctx;
-        SHA512_Init(&ctx);
-        SHA512_Update(&ctx, seedData, seedLength);
-        SHA512_Update(&ctx, &t, sizeof(t));
-        SHA512_Update(&ctx, rdata, kRandomSeedSize);
-        SHA512_Final(hash, &ctx);
+        ::SHA512_CTX ctx;
+        ::SHA512_Init(&ctx);
+        ::SHA512_Update(&ctx, seedData, seedLength);
+        ::SHA512_Update(&ctx, &t, sizeof(t));
+        ::SHA512_Update(&ctx, rdata, kRandomSeedSize);
+        ::SHA512_Final(hash, &ctx);
         for (unsigned i = 0; i < hashRoundCount; ++i) {
-            SHA512_Init(&ctx);
-            SHA512_Update(&ctx, hash, 64);
-            SHA512_Final(hash, &ctx);
+            ::SHA512_Init(&ctx);
+            ::SHA512_Update(&ctx, hash, 64);
+            ::SHA512_Final(hash, &ctx);
         }
     }
 

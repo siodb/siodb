@@ -299,7 +299,7 @@ public:
      *                                 underlying LOB stream objects.
      */
     void readRecord(
-            const ColumnDataAddress& addr, Variant& value, bool lobStreamsMustHoldSource = true);
+            const ColumnDataAddress& addr, Variant& value, bool lobStreamsMustHoldSource = false);
 
     /**
      * Read master column record from the data file.
@@ -489,7 +489,7 @@ private:
      */
     bool isMasterColumnName() const noexcept
     {
-        return m_name == Database::kMasterColumnName;
+        return m_name == kMasterColumnName;
     }
 
     /**

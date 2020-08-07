@@ -153,10 +153,10 @@ void ColumnDataBlock::computeDigest(const ColumnDataBlockHeader::Digest& prevBlo
     p = pbeEncodeUInt32(dataLength, p);
 
     // Compute digest
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, prevBlockDigest.data(), prevBlockDigest.size());
-    SHA256_Update(&ctx, headerData, p - headerData);
+    ::SHA256_CTX ctx;
+    ::SHA256_Init(&ctx);
+    ::SHA256_Update(&ctx, prevBlockDigest.data(), prevBlockDigest.size());
+    ::SHA256_Update(&ctx, headerData, p - headerData);
     if (dataLength > 0) {
         std::vector<std::uint8_t> buffer(dataLength);
         if (m_file->read(buffer.data(), dataLength, m_header.m_dataAreaOffset) != dataLength) {
@@ -166,9 +166,9 @@ void ColumnDataBlock::computeDigest(const ColumnDataBlockHeader::Digest& prevBlo
                     m_header.m_dataAreaOffset, dataLength, m_file->getLastError(),
                     std::strerror(m_file->getLastError()));
         }
-        SHA256_Update(&ctx, buffer.data(), dataLength);
+        ::SHA256_Update(&ctx, buffer.data(), dataLength);
     }
-    SHA256_Final(blockDigest.data(), &ctx);
+    ::SHA256_Final(blockDigest.data(), &ctx);
 }
 
 // ---- internals ----

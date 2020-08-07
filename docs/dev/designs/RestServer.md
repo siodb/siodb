@@ -16,7 +16,7 @@ Siodb must provide a new table `sys_user_tokens` with following columns:
 |TRID|UINT64|Yes|Token ID|
 |USER_ID|UINT64|Yes|User ID|
 |NAME|TEXT|Yes|Token name|
-|VALUE|TEXT|Yes|Token value|
+|VALUE|BINARY|Yes|Token value|
 |DESCRIPTION|TEXT|No|Token description|
 
 New token is generated using SQL command:

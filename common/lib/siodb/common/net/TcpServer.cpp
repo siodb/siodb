@@ -38,9 +38,7 @@ int createTcpServer(int domain, const char* serverAddress, int port, int backlog
         case AF_INET:
         case AF_INET6: break;
         // Anything else
-        default: {
-            throw std::invalid_argument("Invalid socket domain");
-        }
+        default: throw std::invalid_argument("Invalid socket domain");
     }
 
     // Validate port number

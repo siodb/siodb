@@ -15,7 +15,7 @@ CXX_SRC:= \
 
 CXXFLAGS+=-I../../lib
 
-TARGET_COMMON_LIBS:=unit_test crypto io stl_ext crt_ext utils
+TARGET_COMMON_LIBS:=unit_test crypto stl_ext crt_ext utils io
 
 TARGET_LIBS:=-lcrypto
 
