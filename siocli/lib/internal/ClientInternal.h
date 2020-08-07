@@ -13,10 +13,9 @@
 // Protobuf headers
 #include <google/protobuf/io/coded_stream.h>
 
-namespace {
+namespace siodb::cli::detail {
 
 // Default data widths
-constexpr std::size_t kNullDataWidth = 4;
 constexpr std::size_t kBoolDefaultDataWidth = 5;  // false/true
 constexpr std::size_t kInt8DefaultDataWidth = 4;
 constexpr std::size_t kUInt8DefaultDataWidth = 3;
@@ -55,7 +54,7 @@ constexpr std::size_t kLobReadBufferSize = 4096;
  * @param type Column type.
  * @param nameLength Column name length.
  */
-std::size_t getColumnDataWidth(siodb::ColumnDataType type, std::size_t nameLength);
+std::size_t getColumnDataWidth(ColumnDataType type, std::size_t nameLength);
 
 /**
  * Receives and prints column data.
@@ -65,7 +64,14 @@ std::size_t getColumnDataWidth(siodb::ColumnDataType type, std::size_t nameLengt
  * @param os Output stream.
  * @return true on success, false if error occurred.
  */
-bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
-        siodb::ColumnDataType type, std::size_t width, std::ostream& os);
+bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is, ColumnDataType type,
+        std::size_t width, std::ostream& os);
 
-}  // anonymous namespace
+/**
+ * Prints NULL value.
+ * @param width Column width.
+ * @param os Output stream.
+ */
+void printNull(std::size_t width, std::ostream& os);
+
+}  // namespace siodb::cli::detail

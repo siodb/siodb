@@ -7,7 +7,7 @@
 // STL headers
 #include <string>
 
-namespace {
+namespace siodb::cli {
 
 /** Client parameters. */
 struct ClientParameters {
@@ -46,11 +46,11 @@ struct ClientParameters {
 };
 
 /**
- * Loads user's private key from a file.
- * @param path File path.
- * @return User's private key.
+ * Runs command line prompt.
+ * @param params Client parameters.
+ * @return Exit code.
  */
-std::string loadUserIdentityKey(const char* path);
+int commandPrompt(const ClientParameters& params);
 
 /**
  * Exporting SQL dump of current instance.
@@ -60,11 +60,11 @@ std::string loadUserIdentityKey(const char* path);
 int exportSqlDump(const ClientParameters& params);
 
 /**
- * Runs command line prompt.
- * @param params Client parameters.
- * @return Exit code.
+ * Loads user's private key from a file.
+ * @param path File path.
+ * @return User's private key.
  */
-int commandPrompt(const ClientParameters& params);
+std::string loadUserIdentityKey(const char* path);
 
 /** Single word command types */
 enum class SingleWordCommandType {
@@ -81,4 +81,4 @@ enum class SingleWordCommandType {
  */
 SingleWordCommandType decodeSingleWordCommand(const std::string& command) noexcept;
 
-}  // anonymous namespace
+}  // namespace siodb::cli

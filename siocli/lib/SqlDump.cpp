@@ -7,7 +7,6 @@
 #include "SqlQueryException.h"
 
 // Common project headers
-#include "siodb/iomgr/shared/dbengine/SystemObjectNames.h"
 #include <siodb/common/data/RawDateTime.h>
 #include <siodb/common/protobuf/CustomCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
@@ -16,6 +15,7 @@
 #include <siodb/common/utils/BinaryValue.h>
 #include <siodb/iomgr/shared/dbengine/ColumnDataType.h>
 #include <siodb/iomgr/shared/dbengine/ConstraintType.h>
+#include <siodb/iomgr/shared/dbengine/SystemObjectNames.h>
 
 // STL headers
 #include <iomanip>
