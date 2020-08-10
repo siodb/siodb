@@ -166,7 +166,7 @@ void TableDataSet::readColumnValue(std::size_t index)
     if (column->isMasterColumn())
         value = m_currentMcr.getTableRowId();
     else {
-        column->readRecord(m_currentMcr.getColumnRecords().at(pos - 1).getAddress(), value, false);
+        column->readRecord(m_currentMcr.getColumnRecords().at(pos - 1).getAddress(), value);
         if (value.isNull() && column->isNotNull()) {
             throwDatabaseError(IOManagerMessageId::kErrorUnexpectedNullValue,
                     m_table->getDatabaseName(), m_table->getName(), column->getName(),

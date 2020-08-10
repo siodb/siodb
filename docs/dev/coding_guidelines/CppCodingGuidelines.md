@@ -348,7 +348,7 @@ void setTopic(const Topic& topic);
 void connect(Database& database;
 
 
-// Inorrect
+// INCORRECT
 void setTopic(const Topic& value);
 void setTopic(Topic* aTopic);
 void setTopic(Topic* t);
@@ -394,7 +394,8 @@ for (int theIndexIWantToPrint = 0; theIndexIWantToPrint < 10; ++theIndexIWantToP
 }
 ```
 
-**Rule 2.16** The name of the object is implicit, and must be avoided in a method name.
+**Rule 2.16** The name of the object is implicit, and must be avoided in a method and
+member variable names.
 
 ```C++
 // Correct
@@ -678,7 +679,7 @@ class MySubsystemNotReadyError : public MySubsystemException {
 };
 
 
-// Inorrect
+// INCORRECT
 class SomethingNotFound: public std::runtime_error {
 
 };
@@ -1418,7 +1419,7 @@ for (int i = 1, sum = 0; i <= 10; ++i)
 while (!done) // Single statement
     done = doSomeProgress();
 
-// Inorrect
+// INCORRECT
 while (!done) { // Not required
     done = doSomeProgress();
 }

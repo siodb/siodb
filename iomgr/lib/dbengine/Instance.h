@@ -5,10 +5,12 @@
 #pragma once
 
 // Project headers
+#include "AuthenticationResult.h"
 #include "DatabaseCache.h"
 #include "InstancePtr.h"
 #include "UpdateUserAccessKeyParameters.h"
 #include "UpdateUserParameters.h"
+#include "UpdateUserTokenParameters.h"
 #include "UserCache.h"
 #include "reg/DatabaseRegistry.h"
 #include "reg/UserRegistry.h"
@@ -17,7 +19,6 @@
 // Common project headers
 #include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
-#include <siodb/common/utils/Uuid.h>
 
 // STL headers
 #include <mutex>
@@ -25,7 +26,7 @@
 
 namespace siodb::config {
 
-struct InstanceOptions;
+struct SiodbOptions;
 
 }  // namespace siodb::config
 
@@ -41,7 +42,7 @@ public:
      * Reads existing on-disk instance definition or creates new ones.
      * @param options Instance options.
      */
-    explicit Instance(const config::InstanceOptions& options);
+    explicit Instance(const config::SiodbOptions& options);
 
     DECLARE_NONCOPYABLE(Instance);
 
@@ -200,7 +201,7 @@ public:
     /**
      * Deletes existing user.
      * @param name User name.
-     * @param userMustExist Indicated that user must exist.
+     * @param userMustExist Indicates that user must exist.
      * @param currentUserId Current user ID.
      * @throw DatabaseError if some error has occurrred.
      */
@@ -234,13 +235,13 @@ public:
     /**
      * Deletes existing user access key.
      * @param userName User name.
-     * @param name Access key name.
+     * @param keyName Access key name.
      * @param currentUserId Current user ID.
-     * @param accessKeyMustExist Indicates that access key must exist.
+     * @param mustExist Indicates that access key must exist.
      * @throw DatabaseError if some error has occurrred.
      */
-    void dropUserAccessKey(const std::string& userName, const std::string& name,
-            bool accessKeyMustExist, std::uint32_t currentUserId);
+    void dropUserAccessKey(const std::string& userName, const std::string& keyName, bool mustExist,
+            std::uint32_t currentUserId);
 
     /**
      * Updates user access key.
@@ -252,6 +253,44 @@ public:
      */
     void updateUserAccessKey(const std::string& userName, const std::string& keyName,
             const UpdateUserAccessKeyParameters& params, std::uint32_t currentUserId);
+
+    /**
+     * Creates new user token.
+     * @param userName User name.
+     * @param tokenName User token name.
+     * @param value User token value. If this is nullptr, value is generated.
+     * @param description User access key description.
+     * @param expirationTimestamp User token expiration timestamp.
+     * @param currentUserId Current user ID.
+     * @return Pair of user token ID and token value if it was generated.
+     * @throw DatabaseError if some error has occurrred.
+     */
+    std::pair<std::uint64_t, BinaryValue> createUserToken(const std::string& userName,
+            const std::string& tokenName, const std::optional<BinaryValue>& value,
+            const std::optional<std::string>& description,
+            const std::optional<std::time_t>& expirationTimestamp, std::uint32_t currentUserId);
+
+    /**
+     * Deletes existing user token.
+     * @param userName User name.
+     * @param tokenName Token name.
+     * @param currentUserId Current user ID.
+     * @param mustExist Indicates that access key must exist.
+     * @throw DatabaseError if some error has occurrred.
+     */
+    void dropUserToken(const std::string& userName, const std::string& tokenName, bool mustExist,
+            std::uint32_t currentUserId);
+
+    /**
+     * Updates user token.
+     * @param userName User name.
+     * @param tokenName Token name.
+     * @param params Update parameters.
+     * @param currentUserId Current user ID.
+     * @throw DatabaseError if some error has occurrred.
+     */
+    void updateUserToken(const std::string& userName, const std::string& tokenName,
+            const UpdateUserTokenParameters& params, std::uint32_t currentUserId);
 
     /**
      * Begins user Authentication.
@@ -268,8 +307,8 @@ public:
      * @return Pair (user ID, new session UUID).
      * @throw DatabaseError if some error has occurrred.
      */
-    std::pair<std::uint32_t, Uuid> authenticateUser(const std::string& userName,
-            const std::string& signature, const std::string& challenge);
+    AuthenticationResult authenticateUser(const std::string& userName, const std::string& signature,
+            const std::string& challenge);
 
     /**
      * Closes session.
@@ -508,6 +547,9 @@ private:
 
     /** Metadata file name */
     static constexpr const char* kMetadataFileName = "instance_metadata";
+
+    /** Generated token length */
+    static constexpr std::size_t kGeneratedTokenLength = 64;
 };
 
 }  // namespace siodb::iomgr::dbengine

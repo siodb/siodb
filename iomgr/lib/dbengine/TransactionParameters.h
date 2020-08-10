@@ -34,6 +34,9 @@ struct TransactionParameters {
     {
     }
 
+    /** Changes byte order of the all contained data. */
+    void flipByteOrder() noexcept;
+
     /** Transaction ID */
     std::uint64_t m_transactionId;
 

@@ -836,6 +836,15 @@ void Column::setLastSystemTrid(std::uint64_t lastSystemTrid)
     m_masterColumnData->m_tridCounters->m_lastSystemTrid = lastSystemTrid;
 }
 
+void Column::setLastUserTrid(std::uint64_t lastUserTrid)
+{
+    if (lastUserTrid <= m_masterColumnData->m_tridCounters->m_lastUserTrid) {
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidLastUserTrid, getDatabaseName(),
+                getTableName(), getDatabaseUuid(), getTableId(), lastUserTrid);
+    }
+    m_masterColumnData->m_tridCounters->m_lastUserTrid = lastUserTrid;
+}
+
 int Column::createTridCountersFile(std::uint64_t firstUserTrid)
 {
     const auto tridCounterFilePath = utils::constructPath(m_dataDir, kTridCounterFile);

@@ -16,7 +16,7 @@ public:
      * Initializes object of class ExpressionFactory.
      * @param allowColumnExpressions Indication that parser should allow columns in expressions.
      */
-    explicit ExpressionFactory(bool allowColumnExpressions) noexcept;
+    explicit ExpressionFactory(bool allowColumnExpressions = false) noexcept;
 
     /**
      * Creates an expression from expression node.
@@ -28,22 +28,83 @@ public:
      */
     requests::ExpressionPtr createExpression(antlr4::tree::ParseTree* node) const;
 
+    /**
+     * Creates constant value from expression node.
+     * Throws exception if node is not valid constant node expression.
+     * @param node A pointer to a parse tree with expression.
+     * @return Value object.
+     * @throw invalid_argument if invalid node encountered.
+     * @throw runtime_error if unsupported node encountered.
+     * @throw VariantTypeCastError in case of incompatible constant types.
+     */
+    static Variant createConstantValue(antlr4::tree::ParseTree* node);
+
 private:
     /**
-     * Creates a numeric constant.
-     * @param token A token with numeric constant.
+     * Creates constant expression from a token.
+     * @param token Token with value.
+     * @param negate Indicates that numeric value must be negated.
      * @return New constant expression object.
+     * @throw std::invalid_argument if any argument is invalid.
+     */
+    static requests::ExpressionPtr createConstant(const antlr4::Token* token, bool negate = false);
+
+    /**
+     * Creates constant expression from a node.
+     * @param node Node with value.
+     * @param literalNodeIndex Index of child node with constant literal.
+     * @param negate Indicates that numeric value must be negated.
+     * @return New constant expression object.
+     * @throw std::invalid_argument if any argument is invalid.
+     */
+    static requests::ExpressionPtr createConstant(const antlr4::tree::ParseTree* node,
+            std::size_t literalNodeIndex = 0, bool negate = false);
+
+    /**
+     * Creates constant value from a node.
+     * @param node Node with value.
+     * @param literalNodeIndex Index of child node with constant literal.
+     * @param negate Indicates that numeric value must be negated.
+     * @return Value object.
+     * @throw std::invalid_argument if any argument is invalid.
+     */
+    static Variant createConstantValue(
+            const antlr4::tree::ParseTree* node, std::size_t literalNodeIndex, bool negate);
+
+    /**
+     * Creates constant value from a terminal.
+     * @param terminal Terminal node.
+     * @param negate Indicates that numeric value must be negated.
+     * @return Value object.
+     * @throw std::invalid_argument if any argument is invalid.
+     */
+    static Variant createConstantValue(antlr4::tree::TerminalNode* terminal, bool negate);
+
+    /**
+     * Creates constant value from a token.
+     * @param token Token with value.
+     * @param negate Indicates that numeric value must be negated.
+     * @return Value object.
+     * @throw std::invalid_argument if any argument is invalid.
+     */
+    static Variant createConstantValue(const antlr4::Token* token, bool negate);
+
+    /**
+     * Creates a numeric constant value.
+     * @param token A token with numeric constant.
+     * @param negate Indicates that numeric constant must be negated.
+     * @return Value object.
      * @throw std::invalid_argument if token is invalid.
      */
-    requests::ExpressionPtr createNumericConstant(const antlr4::Token* token) const;
+    static Variant createNumericConstantValue(const antlr4::Token* token, bool negate = false);
 
     /**
      * Creates a string constant.
      * @param token A token with string constant.
-     * @return New constant expression object.
+     * @return Value object.
      * @throw std::invalid_argument if token is invalid.
      */
-    requests::ExpressionPtr createStringConstant(const antlr4::Token* token) const;
+    static Variant createStringConstantValue(const antlr4::Token* token);
 
     /**
      * Creates a binary constant.
@@ -52,37 +113,21 @@ private:
      * @throw std::invalid_argument if token is invalid.
      * @throw runtime_error if unsupported node encountered.
      */
-    requests::ExpressionPtr createBinaryConstant(const antlr4::Token* token) const;
-
-    /**
-     * Creates constant expression from a token.
-     * @param token Token with value.
-     * @return New constant expression object.
-     * @throw std::invalid_argument if any argument is invalid.
-     */
-    requests::ExpressionPtr createConstant(const antlr4::Token* token) const;
-
-    /**
-     * Creates constant expression from a node.
-     * @param token Node with value.
-     * @return New constant expression object.
-     * @throw std::invalid_argument if any argument is invalid.
-     */
-    requests::ExpressionPtr createConstant(const antlr4::tree::ParseTree* node) const;
+    static Variant createBinaryConstantValue(const antlr4::Token* token);
 
     /**
      * Returns indication that specified terminal is non-logical binary operator.
      * @param terminalType Terminal type.
      * @return true if specified terminal is non-logical binary operator, false otherwise.
      */
-    bool isNonLogicalBinaryOperator(std::size_t terminalType) const noexcept;
+    static bool isNonLogicalBinaryOperator(std::size_t terminalType) noexcept;
 
     /**
      * Returns indication that specified terminal is logical binary operator.
      * @param terminalType Terminal type.
      * @return true if specified terminal is logical binary operator, false otherwise.
      */
-    bool isLogicalBinaryOperator(std::size_t terminalType) const noexcept;
+    static bool isLogicalBinaryOperator(std::size_t terminalType) noexcept;
 
     /**
      * Creates column expression.
@@ -133,7 +178,7 @@ private:
      * @param node Node.
      * @return New logical binary operator expression object.
      */
-    bool checkInOperator(const antlr4::tree::ParseTree* node) const noexcept;
+    static bool isInOperator(const antlr4::tree::ParseTree* node) noexcept;
 
     /**
      * Creates IN operator expression.

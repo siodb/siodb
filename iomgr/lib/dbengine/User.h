@@ -7,6 +7,7 @@
 // Project headers
 #include "UserAccessKeyPtr.h"
 #include "UserPtr.h"
+#include "UserTokenPtr.h"
 #include "reg/UserRecord.h"
 
 // STL headers
@@ -41,6 +42,14 @@ public:
 
     /** Super user ID */
     static constexpr std::uint32_t kSuperUserId = 1;
+
+public:
+    /** Result of checking token */
+    enum CheckTokenResult {
+        kSuccess,
+        kNotFound,
+        kExpired,
+    };
 
 public:
     /**
@@ -142,8 +151,8 @@ public:
     }
 
     /**
-     * Returns collection of user access keys.
-     * @return User access key collection.
+     * Returns collection of access keys.
+     * @return Collection of access key.
      */
     const auto& getAccessKeys() const noexcept
     {
@@ -151,46 +160,88 @@ public:
     }
 
     /**
-     * Returns copy of user access key collection.
-     * @return Copy of user access keys collection.
+     * Finds existing access key.
+     * @param name Access key name.
+     * @return Access key object.
+     * @throw DatabaseError if access key object doesn't exists.
      */
-    auto getAccessKeysCopy() const
-    {
-        return m_accessKeys;
-    }
+    UserAccessKeyPtr findAccessKeyChecked(const std::string& name) const;
 
     /**
-     * Returns existing user access key.
-     * @param name User access key name.
-     * @return User access key object.
-     * @throw DatabaseError if user access key object doesn't exists.
-     */
-    UserAccessKeyPtr findUserAccessKeyChecked(const std::string& name) const;
-
-    /**
-     * Creates new user access key.
+     * Creates new access key.
      * @param id Access key ID.
-     * @param name Key name.
-     * @param text Key text.
-     * @param active Indication that key is active.
-     * @return Created user access key.
+     * @param name Access key name.
+     * @param text Access key text.
+     * @param active Indication that access key is active.
+     * @return New access key object.
      * @throw DatabaseError if some error has occurrred.
      */
-    UserAccessKeyPtr addUserAccessKey(std::uint64_t id, std::string&& name, std::string&& text,
+    UserAccessKeyPtr addAccessKey(std::uint64_t id, std::string&& name, std::string&& text,
             std::optional<std::string>&& description, bool active);
 
     /**
-     * Deletes existing user access key.
-     * @param name Key name.
+     * Deletes existing access key.
+     * @param name Access key name.
      * @throw DatabaseError if some error has occurrred.
      */
-    void deleteUserAccessKey(const std::string& name);
+    void deleteAccessKey(const std::string& name);
 
     /**
-     * Returns active key count.
-     * @return Active key count.
+     * Returns active access key count.
+     * @return Active access key count.
      */
-    std::size_t getActiveKeyCount() const noexcept;
+    std::size_t getActiveAccessKeyCount() const noexcept;
+
+    /**
+     * Returns collection of tokens.
+     * @return Collection of tokens.
+     */
+    const auto& getTokens() const noexcept
+    {
+        return m_tokens;
+    }
+
+    /**
+     * Finds existing token.
+     * @param name Token name.
+     * @return Token object.
+     * @throw DatabaseError if token object doesn't exists.
+     */
+    UserTokenPtr findTokenChecked(const std::string& name) const;
+
+    /**
+     * Creates new token.
+     * @param id Token ID.
+     * @param name Token name.
+     * @param value Token value.
+     * @param expirationTimestamp Token expiration timestamp.
+     * @param description Token description.
+     * @return New token object.
+     * @throw DatabaseError if some error has occurrred.
+     */
+    UserTokenPtr addToken(std::uint64_t id, std::string&& name, const BinaryValue& value,
+            std::optional<std::time_t>&& expirationTimestamp,
+            std::optional<std::string>&& description);
+
+    /**
+     * Deletes existing token.
+     * @param name Token name.
+     * @throw DatabaseError if some error has occurrred.
+     */
+    void deleteToken(const std::string& name);
+
+    /**
+     * Checks if token matches to user.
+     * @param tokenValue Token value.
+     * @return Check result value.
+     */
+    CheckTokenResult checkToken(const BinaryValue& tokenValue) const;
+
+    /**
+     * Returns active token count.
+     * @return Active token count.
+     */
+    std::size_t getActiveTokenCount() const noexcept;
 
 private:
     /**
@@ -202,11 +253,25 @@ private:
     static std::string&& validateUserName(std::string&& userName);
 
     /**
-     * Returns existing user access key.
-     * @param name User access key name.
-     * @return User access key object or nullptr if it doesn't exist.
+     * Finds existing access key.
+     * @param name Access key name.
+     * @return Access key object or nullptr if it doesn't exist.
      */
-    UserAccessKeyPtr findUserAccessKeyUnlocked(const std::string& name) const noexcept;
+    UserAccessKeyPtr findAccessKeyUnlocked(const std::string& name) const noexcept;
+
+    /**
+     * Finds existing token.
+     * @param name Token name.
+     * @return Token object or nullptr if it doesn't exist.
+     */
+    UserTokenPtr findTokenUnlocked(const std::string& name) const noexcept;
+
+    /**
+     * Hashes token value.
+     * @param tokenValue Token value.
+     * @return Token hash.
+     */
+    BinaryValue hashTokenValue(const BinaryValue& tokenValue) const;
 
 private:
     /** User name */
@@ -223,6 +288,9 @@ private:
 
     /** Access keys */
     std::vector<UserAccessKeyPtr> m_accessKeys;
+
+    /** Tokens */
+    std::vector<UserTokenPtr> m_tokens;
 
     /** User ID */
     const std::uint32_t m_id;

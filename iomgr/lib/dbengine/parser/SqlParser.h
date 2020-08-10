@@ -71,23 +71,28 @@ public:
     void parse();
 
     /**
+     * Dumps full parse tree to stdout.
+     * @param flush Indicates that stream must be flushed after dumping.
+     */
+    void dump(bool flush = true) const;
+
+    /**
      * Dumps full parse tree to a given output stream.
      * @param os Output stream.
+     * @param flush Indicates that stream must be flushed after dumping.
      */
-    void dump(std::ostream& os) const
+    void dump(std::ostream& os, bool flush = true) const
     {
-        dump(m_parseTree, os);
+        dump(m_parseTree, os, flush);
     }
 
     /**
      * Dumps the parse tree starting at a given node.
      * @param tree A parse tree node where the dump starts.
      * @param os Output stream.
+     * @param flush Indicates that stream must be flushed after dumping.
      */
-    void dump(antlr4::tree::ParseTree* tree, std::ostream& os) const
-    {
-        dump(tree, 0, 0, "", false, os);
-    }
+    void dump(antlr4::tree::ParseTree* tree, std::ostream& os, bool flush = true) const;
 
 private:
     /**

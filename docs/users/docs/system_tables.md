@@ -99,6 +99,15 @@ The number is 64-bit unsigned integer that can grow up to 18446744073709551615.
 - state
 - description
 
+## sys_user_tokens
+
+- trid
+- user_id
+- name
+- value
+- expiration_timestamp
+- description
+
 ## sys_databases
 
 - trid

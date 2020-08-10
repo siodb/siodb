@@ -17,7 +17,7 @@ UserAccessKey::UserAccessKey(User& user, std::uint64_t id, std::string&& name, s
         std::optional<std::string>&& description, bool active)
     : m_user(user)
     , m_id(id)
-    , m_name(validateUserAccessKeyName(std::move(name)))
+    , m_name(validateName(std::move(name)))
     , m_text(std::move(text))
     , m_description(std::move(description))
     , m_active(active)
@@ -27,7 +27,7 @@ UserAccessKey::UserAccessKey(User& user, std::uint64_t id, std::string&& name, s
 UserAccessKey::UserAccessKey(User& user, const UserAccessKeyRecord& accessKeyRecord)
     : m_user(validateUser(user, accessKeyRecord))
     , m_id(accessKeyRecord.m_id)
-    , m_name(validateUserAccessKeyName(std::string(accessKeyRecord.m_name)))
+    , m_name(validateName(std::string(accessKeyRecord.m_name)))
     , m_text(accessKeyRecord.m_text)
     , m_description(accessKeyRecord.m_description)
     , m_active(accessKeyRecord.m_active)
@@ -43,7 +43,7 @@ User& UserAccessKey::validateUser(User& user, const UserAccessKeyRecord& accessK
             accessKeyRecord.m_userId);
 }
 
-std::string&& UserAccessKey::validateUserAccessKeyName(std::string&& accessKeyName)
+std::string&& UserAccessKey::validateName(std::string&& accessKeyName)
 {
     if (isValidDatabaseObjectName(accessKeyName)) return std::move(accessKeyName);
     throwDatabaseError(IOManagerMessageId::kErrorInvalidUserAccessKeyName, accessKeyName);

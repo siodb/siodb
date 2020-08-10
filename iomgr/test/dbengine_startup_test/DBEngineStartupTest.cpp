@@ -9,8 +9,8 @@
 
 // Common project headers
 #include <siodb/common/log/Log.h>
-#include <siodb/common/options/DatabaseInstance.h>
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbInstance.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FsUtils.h>
@@ -45,7 +45,7 @@ void CreateAndLoadInstance(const char* cipherId)
     std::cout << "Filling database instance options..." << std::endl;
 
     // Create options object
-    siodb::config::InstanceOptions instanceOptions;
+    siodb::config::SiodbOptions instanceOptions;
 
     std::cout << "Filling general options..." << std::endl;
 

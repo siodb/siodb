@@ -26,41 +26,7 @@ const Uuid Database::kSystemDatabaseUuid {{0x68, 0xba, 0x3, 0x8e, 0xb7, 0x4, 0x2
         0xb9, 0x18, 0x64, 0xc8, 0x19, 0xcd}};
 
 const std::unordered_map<std::string, std::unordered_set<std::string>> Database::m_allSystemTables {
-        {kSysUsersTableName,
-                {
-                        kMasterColumnName,
-                        kSysUsers_Name_ColumnName,
-                        kSysUsers_RealName_ColumnName,
-                        kSysUsers_State_ColumnName,
-                }},
-        {kSysUserAccessKeysTableName,
-                {
-                        kMasterColumnName,
-                        kSysUserAccessKeys_UserId_ColumnName,
-                        kSysUserAccessKeys_Name_ColumnName,
-                        kSysUserAccessKeys_State_ColumnName,
-                        kSysUserAccessKeys_Text_ColumnName,
-                        kSysUserAccessKeys_Description_ColumnName,
-                }},
-        {kSysDatabasesTableName,
-                {
-                        kMasterColumnName,
-                        kSysDatabases_Uuid_ColumnName,
-                        kSysDatabases_Name_ColumnName,
-                        kSysDatabases_CipherId_ColumnName,
-                        kSysDatabases_CipherKey_ColumnName,
-                        kSysDatabases_Description_ColumnName,
-                }},
-        {kSysUserPermissionsTableName,
-                {
-                        kMasterColumnName,
-                        kSysUserPermissions_UserId_ColumnName,
-                        kSysUserPermissions_DatabaseId_ColumnName,
-                        kSysUserPermissions_ObjectType_ColumnName,
-                        kSysUserPermissions_ObjectId_ColumnName,
-                        kSysUserPermissions_Permissions_ColumnName,
-                        kSysUserPermissions_GrantOptions_ColumnName,
-                }},
+        // All databases
         {kSysTablesTableName,
                 {
                         kMasterColumnName,
@@ -142,6 +108,51 @@ const std::unordered_map<std::string, std::unordered_set<std::string>> Database:
                         kSysIndexColumns_ColumnDefinitionId_ColumnName,
                         kSysIndexColumns_SortDesc_ColumnName,
                 }},
+        // Only system database
+        {kSysUsersTableName,
+                {
+                        kMasterColumnName,
+                        kSysUsers_Name_ColumnName,
+                        kSysUsers_RealName_ColumnName,
+                        kSysUsers_State_ColumnName,
+                }},
+        {kSysUserAccessKeysTableName,
+                {
+                        kMasterColumnName,
+                        kSysUserAccessKeys_UserId_ColumnName,
+                        kSysUserAccessKeys_Name_ColumnName,
+                        kSysUserAccessKeys_State_ColumnName,
+                        kSysUserAccessKeys_Text_ColumnName,
+                        kSysUserAccessKeys_Description_ColumnName,
+                }},
+        {kSysDatabasesTableName,
+                {
+                        kMasterColumnName,
+                        kSysDatabases_Uuid_ColumnName,
+                        kSysDatabases_Name_ColumnName,
+                        kSysDatabases_CipherId_ColumnName,
+                        kSysDatabases_CipherKey_ColumnName,
+                        kSysDatabases_Description_ColumnName,
+                }},
+        {kSysUserPermissionsTableName,
+                {
+                        kMasterColumnName,
+                        kSysUserPermissions_UserId_ColumnName,
+                        kSysUserPermissions_DatabaseId_ColumnName,
+                        kSysUserPermissions_ObjectType_ColumnName,
+                        kSysUserPermissions_ObjectId_ColumnName,
+                        kSysUserPermissions_Permissions_ColumnName,
+                        kSysUserPermissions_GrantOptions_ColumnName,
+                }},
+        {kSysUserTokensTableName,
+                {
+                        kMasterColumnName,
+                        kSysUserTokens_UserId_ColumnName,
+                        kSysUserTokens_Name_ColumnName,
+                        kSysUserTokens_Value_ColumnName,
+                        kSysUserTokens_Description_ColumnName,
+                        kSysUserTokens_ExpirationTimestamp_ColumnName,
+                }},
 };
 
 const std::unordered_set<std::string> Database::m_systemDatabaseOnlySystemTables {
@@ -149,6 +160,7 @@ const std::unordered_set<std::string> Database::m_systemDatabaseOnlySystemTables
         kSysUsersTableName,
         kSysUserAccessKeysTableName,
         kSysUserPermissionsTableName,
+        kSysUserTokensTableName,
 };
 
 // New database
@@ -166,7 +178,7 @@ Database::Database(Instance& instance, std::string&& name, const std::string& ci
     , m_cipherKey(std::move(cipherKey))
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
     , m_decryptionContext(m_cipher ? m_cipher->createDecryptionContext(m_cipherKey) : nullptr)
-    , m_metadataFile(createMetadataFile())
+    , m_metadataFile(createMetadataFile(makeMetadataFilePath().c_str()))
     , m_metadata(static_cast<DatabaseMetadata*>(m_metadataFile->getMappingAddress()))
     , m_createTransactionParams(User::kSuperUserId, generateNextTransactionId())
     , m_tableCache(m_name,
@@ -194,7 +206,7 @@ Database::Database(
     , m_cipherKey(dbRecord.m_cipherKey)
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
     , m_decryptionContext(m_cipher ? m_cipher->createDecryptionContext(m_cipherKey) : nullptr)
-    , m_metadataFile(openMetadataFile())
+    , m_metadataFile(openMetadataFile(makeMetadataFilePath().c_str()))
     , m_metadata(static_cast<DatabaseMetadata*>(m_metadataFile->getMappingAddress()))
     , m_tableCache(m_name,
               tableCacheCapacity > 0 ? tableCacheCapacity : instance.getTableCacheCapacity())

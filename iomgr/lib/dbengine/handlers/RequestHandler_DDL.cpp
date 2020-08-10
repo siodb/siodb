@@ -101,8 +101,8 @@ void RequestHandler::executeCreateTableRequest(iomgr_protocol::DatabaseEngineRes
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
 
-void RequestHandler::executeAddColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::AddColumnRequest& request)
+void RequestHandler::executeAddColumnRequest(
+        iomgr_protocol::DatabaseEngineResponse& response, const requests::AddColumnRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -126,7 +126,7 @@ void RequestHandler::executeAddColumnRequest(iomgr_protocol::DatabaseEngineRespo
 }
 
 void RequestHandler::executeCreateIndexRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::CreateIndexRequest& request)
+        const requests::CreateIndexRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -150,7 +150,7 @@ void RequestHandler::executeCreateIndexRequest(iomgr_protocol::DatabaseEngineRes
 }
 
 void RequestHandler::executeDropDatabaseRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::DropDatabaseRequest& request)
+        const requests::DropDatabaseRequest& request)
 {
     response.set_has_affected_row_count(false);
     if (!isValidDatabaseObjectName(request.m_database))
@@ -165,13 +165,38 @@ void RequestHandler::executeDropDatabaseRequest(iomgr_protocol::DatabaseEngineRe
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
 
+void RequestHandler::executeRenameDatabaseRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::RenameDatabaseRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    if (!isValidDatabaseObjectName(request.m_database))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
+
+    if (m_currentDatabaseName == request.m_database) {
+        throwDatabaseError(
+                IOManagerMessageId::kErrorCannotRenameCurrentDatabase, request.m_database);
+    }
+
+    sendNotImplementedYet(response);
+}
+
+void RequestHandler::executeSetDatabaseAttributesRequest(
+        iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::SetDatabaseAttributesRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    if (!isValidDatabaseObjectName(request.m_database))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
+
+    sendNotImplementedYet(response);
+}
+
 void RequestHandler::executeUseDatabaseRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::UseDatabaseRequest& request)
+        const requests::UseDatabaseRequest& request)
 {
     if (!isValidDatabaseObjectName(request.m_database))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    // Throws exception if database does not exist
     auto newDatabase = m_instance.findDatabaseChecked(request.m_database);
     m_instance.findDatabaseChecked(m_currentDatabaseName)->release();
     newDatabase->use();
@@ -184,8 +209,8 @@ void RequestHandler::executeUseDatabaseRequest(iomgr_protocol::DatabaseEngineRes
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
 
-void RequestHandler::executeDropTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::DropTableRequest& request)
+void RequestHandler::executeDropTableRequest(
+        iomgr_protocol::DatabaseEngineResponse& response, const requests::DropTableRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -201,7 +226,7 @@ void RequestHandler::executeDropTableRequest(iomgr_protocol::DatabaseEngineRespo
 }
 
 void RequestHandler::executeDropColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::DropColumnRequest& request)
+        const requests::DropColumnRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -219,8 +244,30 @@ void RequestHandler::executeDropColumnRequest(iomgr_protocol::DatabaseEngineResp
     sendNotImplementedYet(response);
 }
 
-void RequestHandler::executeDropIndexRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::DropIndexRequest& request)
+void RequestHandler::executeRenameColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::RenameColumnRequest& request)
+{
+    response.set_has_affected_row_count(false);
+
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
+
+    if (!isValidDatabaseObjectName(request.m_table))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
+
+    if (!isValidDatabaseObjectName(request.m_column))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidColumnName, request.m_column);
+
+    if (!isValidDatabaseObjectName(request.m_newColumn))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidColumnName, request.m_column);
+
+    sendNotImplementedYet(response);
+}
+
+void RequestHandler::executeDropIndexRequest(
+        iomgr_protocol::DatabaseEngineResponse& response, const requests::DropIndexRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -235,8 +282,8 @@ void RequestHandler::executeDropIndexRequest(iomgr_protocol::DatabaseEngineRespo
     sendNotImplementedYet(response);
 }
 
-void RequestHandler::executeAlterColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::AlterColumnRequest& request)
+void RequestHandler::executeRedefineColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::RedefineColumnRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -248,14 +295,14 @@ void RequestHandler::executeAlterColumnRequest(iomgr_protocol::DatabaseEngineRes
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
-    if (!isValidDatabaseObjectName(request.m_column))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidColumnName, request.m_column);
+    if (!isValidDatabaseObjectName(request.m_newColumn.m_name))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidColumnName, request.m_newColumn.m_name);
 
     sendNotImplementedYet(response);
 }
 
 void RequestHandler::executeAttachDatabaseRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::AttachDatabaseRequest& request)
+        const requests::AttachDatabaseRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -266,7 +313,7 @@ void RequestHandler::executeAttachDatabaseRequest(iomgr_protocol::DatabaseEngine
 }
 
 void RequestHandler::executeDetachDatabaseRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::DetachDatabaseRequest& request)
+        const requests::DetachDatabaseRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -279,7 +326,7 @@ void RequestHandler::executeDetachDatabaseRequest(iomgr_protocol::DatabaseEngine
 }
 
 void RequestHandler::executeRenameTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::RenameTableRequest& request)
+        const requests::RenameTableRequest& request)
 {
     response.set_has_affected_row_count(false);
 
@@ -295,6 +342,41 @@ void RequestHandler::executeRenameTableRequest(iomgr_protocol::DatabaseEngineRes
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_oldTable);
 
     sendNotImplementedYet(response);
+}
+
+void RequestHandler::executeSetTableAttributesRequest(
+        iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::SetTableAttributesRequest& request)
+{
+    response.set_has_affected_row_count(false);
+
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    if (!isValidDatabaseObjectName(databaseName))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
+
+    if (!isValidDatabaseObjectName(request.m_table))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
+
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    const auto table = database->findTableChecked(request.m_table);
+
+    if (request.m_nextTrid) {
+        const auto nextTrid = *request.m_nextTrid;
+        if (nextTrid == 0) {
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidNextUserTrid, database->getName(),
+                    table->getName(), nextTrid);
+        }
+        try {
+            table->setLastUserTrid(nextTrid - 1);
+        } catch (std::exception& ex) {
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidNextUserTrid, database->getName(),
+                    table->getName(), nextTrid);
+        }
+    }
+
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
 
 }  // namespace siodb::iomgr::dbengine

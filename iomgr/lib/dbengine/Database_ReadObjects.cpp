@@ -91,14 +91,13 @@ void Database::readAllTables()
         const auto& columnRecords = mcr.getColumnRecords();
         Variant typeValue, nameValue, firstUserTridValue, currentColumnSetIdValue, descriptionValue;
         std::size_t colIndex = 0;
-        typeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), typeValue, false);
-        nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue, false);
+        typeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), typeValue);
+        nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue);
         firstUserTridColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), firstUserTridValue, false);
+                columnRecords.at(colIndex++).getAddress(), firstUserTridValue);
         currentColumnSetIdColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), currentColumnSetIdValue, false);
-        descriptionColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
+                columnRecords.at(colIndex++).getAddress(), currentColumnSetIdValue);
+        descriptionColumn->readRecord(columnRecords.at(colIndex++).getAddress(), descriptionValue);
 
         const auto tableId = static_cast<std::uint32_t>(mcr.getTableRowId());
         const auto tableType = typeValue.asInt32();
@@ -204,9 +203,8 @@ void Database::readAllColumnSets()
         const auto& columnRecords = mcr.getColumnRecords();
         Variant tableIdValue, columnCountValue;
         std::size_t colIndex = 0;
-        tableIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), tableIdValue, false);
-        columnCountColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), columnCountValue, false);
+        tableIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), tableIdValue);
+        columnCountColumn->readRecord(columnRecords.at(colIndex++).getAddress(), columnCountValue);
         const auto columnSetId = mcr.getTableRowId();
         const auto tableId = tableIdValue.asUInt32();
 
@@ -308,14 +306,13 @@ void Database::readAllColumns()
         Variant tableIdValue, dataTypeValue, nameValue, stateValue, blockDataAreaSizeValue,
                 descriptionValue;
         std::size_t colIndex = 0;
-        tableIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), tableIdValue, false);
-        dataTypeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), dataTypeValue, false);
-        nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue, false);
-        stateColumn->readRecord(columnRecords.at(colIndex++).getAddress(), stateValue, false);
+        tableIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), tableIdValue);
+        dataTypeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), dataTypeValue);
+        nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue);
+        stateColumn->readRecord(columnRecords.at(colIndex++).getAddress(), stateValue);
         blockDataAreaSizeColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), blockDataAreaSizeValue, false);
-        descriptionColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
+                columnRecords.at(colIndex++).getAddress(), blockDataAreaSizeValue);
+        descriptionColumn->readRecord(columnRecords.at(colIndex++).getAddress(), descriptionValue);
 
         // Record column into the temporary map
         const auto columnId = mcr.getTableRowId();
@@ -514,9 +511,9 @@ void Database::readAllColumnDefs()
         const auto& columnRecords = mcr.getColumnRecords();
         Variant columnIdValue, constraintCountValue;
         std::size_t colIndex = 0;
-        columnIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), columnIdValue, false);
+        columnIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), columnIdValue);
         constraintCountColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), constraintCountValue, false);
+                columnRecords.at(colIndex++).getAddress(), constraintCountValue);
         const auto columnDefinitionId = mcr.getTableRowId();
         const auto columnId = columnIdValue.asUInt64();
 
@@ -613,10 +610,9 @@ void Database::readAllColumnSetColumns()
         const auto& columnRecords = mcr.getColumnRecords();
         Variant columnSetIdValue, columnDefinitionIdValue, columnIdValue;
         std::size_t colIndex = 0;
-        columnSetIdColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), columnSetIdValue, false);
+        columnSetIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), columnSetIdValue);
         columnDefinitionIdColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), columnDefinitionIdValue, false);
+                columnRecords.at(colIndex++).getAddress(), columnDefinitionIdValue);
         const auto columnSetColumnId = mcr.getTableRowId();
         const auto columnSetId = columnSetIdValue.asUInt64();
         const auto columnDefinitionId = columnDefinitionIdValue.asUInt64();
@@ -753,8 +749,8 @@ void Database::readAllConstraintDefs()
         const auto& columnRecords = mcr.getColumnRecords();
         Variant typeValue, exprValue;
         std::size_t colIndex = 0;
-        typeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), typeValue, false);
-        exprColumn->readRecord(columnRecords.at(colIndex++).getAddress(), exprValue, false);
+        typeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), typeValue);
+        exprColumn->readRecord(columnRecords.at(colIndex++).getAddress(), exprValue);
         const auto constraintDefinitionId = mcr.getTableRowId();
         const auto constraintType = typeValue.asInt32();
         const auto expr = exprValue.isNull()
@@ -863,13 +859,12 @@ void Database::readAllConstraints()
         const auto& columnRecords = mcr.getColumnRecords();
         Variant nameValue, stateValue, tableIdValue, columnIdValue, defIdValue, descriptionValue;
         std::size_t colIndex = 0;
-        nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue, false);
-        stateColumn->readRecord(columnRecords.at(colIndex++).getAddress(), stateValue, false);
-        tableIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), tableIdValue, false);
-        columnIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), columnIdValue, false);
-        defIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), defIdValue, false);
-        descriptionColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
+        nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue);
+        stateColumn->readRecord(columnRecords.at(colIndex++).getAddress(), stateValue);
+        tableIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), tableIdValue);
+        columnIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), columnIdValue);
+        defIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), defIdValue);
+        descriptionColumn->readRecord(columnRecords.at(colIndex++).getAddress(), descriptionValue);
         const auto constraintId = mcr.getTableRowId();
         const auto name = nameValue.asString();
         const auto constraintState = stateValue.asInt32();
@@ -992,9 +987,9 @@ void Database::readAllColumnDefConstraints()
         Variant columnDefinitionIdValue, constraintIdValue;
         std::size_t colIndex = 0;
         columnDefinitionIdColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), columnDefinitionIdValue, false);
+                columnRecords.at(colIndex++).getAddress(), columnDefinitionIdValue);
         constraintIdColumn->readRecord(
-                columnRecords.at(colIndex++).getAddress(), constraintIdValue, false);
+                columnRecords.at(colIndex++).getAddress(), constraintIdValue);
         const auto columnDefinitionConstraintId = mcr.getTableRowId();
         const auto columnDefinitionId = columnDefinitionIdValue.asUInt64();
         const auto constraintId = constraintIdValue.asUInt64();
@@ -1151,11 +1146,11 @@ void Database::readAllIndices()
             Variant indexIdValue, columnDefinitionIdValue, sortDescendingValue;
             std::size_t colIndex = 0;
             sysIndexColumnsIndexIdColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), indexIdValue, false);
+                    columnRecords.at(colIndex++).getAddress(), indexIdValue);
             sysIndexColumnsColumnDefinitionIdColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), columnDefinitionIdValue, false);
+                    columnRecords.at(colIndex++).getAddress(), columnDefinitionIdValue);
             sysIndexColumnsSortDescColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), sortDescendingValue, false);
+                    columnRecords.at(colIndex++).getAddress(), sortDescendingValue);
 
             // Save into map
             const auto indexId = indexIdValue.asUInt64();
@@ -1229,18 +1224,16 @@ void Database::readAllIndices()
             Variant typeValue, uniqueValue, nameValue, tableIdValue, dataFileSizeValue,
                     descriptionValue;
             std::size_t colIndex = 0;
-            sysIndicesTypeColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), typeValue, false);
+            sysIndicesTypeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), typeValue);
             sysIndicesIsUniqueColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), uniqueValue, false);
-            sysIndicesNameColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), nameValue, false);
+                    columnRecords.at(colIndex++).getAddress(), uniqueValue);
+            sysIndicesNameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue);
             sysIndicesTableIdColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), tableIdValue, false);
+                    columnRecords.at(colIndex++).getAddress(), tableIdValue);
             sysIndicesDataFileSizeColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), dataFileSizeValue, false);
+                    columnRecords.at(colIndex++).getAddress(), dataFileSizeValue);
             descriptionColumn->readRecord(
-                    columnRecords.at(colIndex++).getAddress(), descriptionValue, false);
+                    columnRecords.at(colIndex++).getAddress(), descriptionValue);
 
             const auto indexId = mcr.getTableRowId();
             const auto tableId = tableIdValue.asUInt32();

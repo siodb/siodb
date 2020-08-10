@@ -71,6 +71,12 @@ public:
         return m_length;
     }
 
+    /** Makes this object a file descriptor owner. */
+    void setFdOwner() noexcept
+    {
+        m_fdGuard.reset(m_fd);
+    }
+
     /**
      * Deduces memory protection mode from file open flags.
      * @param int openFlags File open flags.
@@ -94,8 +100,11 @@ private:
     void checkInitialized() const;
 
 private:
+    /** File descriptor guard */
+    FdGuard m_fdGuard;
+
     /** File descriptor */
-    const FdGuard m_fd;
+    const int m_fd;
 
     /** Mapping length */
     const std::size_t m_length;

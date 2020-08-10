@@ -5,7 +5,7 @@
 #include "Log.h"
 
 // Project headers
-#include "../options/InvalidConfigurationOptionError.h"
+#include "../options/InvalidConfigurationError.h"
 #include "../stl_wrap/filesystem_wrapper.h"
 #include "../sys/Syscalls.h"
 #include "../utils/Debug.h"
@@ -126,7 +126,7 @@ void initLogging(const config::LogOptions& options)
                     std::ostringstream err;
                     err << "Invalid channel destination '" << channelOptions.m_destination
                         << "' for the log channel " << channelOptions.m_name;
-                    throw config::InvalidConfigurationOptionError(err.str());
+                    throw config::InvalidConfigurationError(err.str());
                 }
                 DEBUG_TRACE("Log channel '" << channelOptions.m_name << "' initialized.");
                 break;

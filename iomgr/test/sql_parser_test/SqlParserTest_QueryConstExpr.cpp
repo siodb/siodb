@@ -14,7 +14,7 @@
 namespace dbengine = siodb::iomgr::dbengine;
 namespace parser_ns = dbengine::parser;
 
-TEST(SqlParser_Query, SelectWithNegativeInt8)
+TEST(Query, SelectWithNegativeInt8)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT -111 AS column_alias FROM my_database.my_table;");
@@ -48,7 +48,7 @@ TEST(SqlParser_Query, SelectWithNegativeInt8)
     ASSERT_EQ(value.getUInt8(), 111U);
 }
 
-TEST(SqlParser_Query, SelectWithUInt8)
+TEST(Query, SelectWithUInt8)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT 111 AS column_alias FROM my_database.my_table;");
@@ -79,7 +79,7 @@ TEST(SqlParser_Query, SelectWithUInt8)
     ASSERT_EQ(value.getUInt8(), 111U);
 }
 
-TEST(SqlParser_Query, SelectWithNegativeInt16)
+TEST(Query, SelectWithNegativeInt16)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT -11111 AS column_alias FROM my_database.my_table;");
@@ -113,7 +113,7 @@ TEST(SqlParser_Query, SelectWithNegativeInt16)
     ASSERT_EQ(value.getUInt16(), 11111U);
 }
 
-TEST(SqlParser_Query, SelectWithUInt16)
+TEST(Query, SelectWithUInt16)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT 11111 AS column_alias FROM my_database.my_table;");
@@ -144,7 +144,7 @@ TEST(SqlParser_Query, SelectWithUInt16)
     ASSERT_EQ(value.getUInt16(), 11111U);
 }
 
-TEST(SqlParser_Query, SelectWithNegativeInt32)
+TEST(Query, SelectWithNegativeInt32)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT -111111 AS column_alias FROM my_database.my_table;");
@@ -178,7 +178,7 @@ TEST(SqlParser_Query, SelectWithNegativeInt32)
     ASSERT_EQ(value.getUInt32(), 111111U);
 }
 
-TEST(SqlParser_Query, SelectWithUInt32)
+TEST(Query, SelectWithUInt32)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT 111111 AS column_alias FROM my_database.my_table;");
@@ -209,7 +209,7 @@ TEST(SqlParser_Query, SelectWithUInt32)
     ASSERT_EQ(value.getUInt32(), 111111U);
 }
 
-TEST(SqlParser_Query, SelectWithNegativeInt64)
+TEST(Query, SelectWithNegativeInt64)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT -111111111111 AS column_alias FROM my_database.my_table;");
@@ -243,7 +243,7 @@ TEST(SqlParser_Query, SelectWithNegativeInt64)
     ASSERT_EQ(value.getUInt64(), 111111111111ULL);
 }
 
-TEST(SqlParser_Query, SelectWithUInt64)
+TEST(Query, SelectWithUInt64)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT 111111111111 AS column_alias FROM my_database.my_table;");
@@ -274,7 +274,7 @@ TEST(SqlParser_Query, SelectWithUInt64)
     ASSERT_EQ(value.getUInt64(), 111111111111ULL);
 }
 
-TEST(SqlParser_Query, SelectWithNegativeDouble)
+TEST(Query, SelectWithNegativeDouble)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT -111.111 AS column_alias FROM my_database.my_table;");
@@ -308,7 +308,7 @@ TEST(SqlParser_Query, SelectWithNegativeDouble)
     ASSERT_EQ(value.getDouble(), 111.111);
 }
 
-TEST(SqlParser_Query, SelectWithDouble)
+TEST(Query, SelectWithDouble)
 {
     // Parse statement and prepare request
     const std::string statement("SELECT 111.111 AS column_alias FROM my_database.my_table;");

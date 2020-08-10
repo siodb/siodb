@@ -4,7 +4,7 @@
 
 // Common project headers
 #include <siodb/common/crypto/DigitalSignatureKey.h>
-#include <siodb/common/crypto/RandomGenerator.h>
+#include <siodb/common/utils/RandomUtils.h>
 
 // Google Test
 #include <gtest/gtest.h>
@@ -13,9 +13,8 @@ namespace {
 
 std::string createRandomMessage()
 {
-    siodb::crypto::RandomGenerator generator;
     std::string msg(1024, '\0');
-    generator.getRandomBytes(reinterpret_cast<unsigned char*>(msg.data()), msg.size());
+    siodb::utils::getRandomBytes(reinterpret_cast<uint8_t*>(msg.data()), msg.size());
     return msg;
 }
 

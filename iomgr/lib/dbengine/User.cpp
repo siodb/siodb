@@ -8,11 +8,15 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "ThrowDatabaseError.h"
 #include "UserAccessKey.h"
+#include "UserToken.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/crypto/DigitalSignatureKey.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
+
+// OpenSSL
+#include <openssl/sha.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -38,32 +42,36 @@ User::User(const UserRecord& userRecord)
         m_accessKeys.push_back(std::make_shared<UserAccessKey>(*this, accessKeyRecord));
 }
 
-UserAccessKeyPtr User::findUserAccessKeyChecked(const std::string& name) const
+UserAccessKeyPtr User::findAccessKeyChecked(const std::string& name) const
 {
-    if (auto userAccessKey = findUserAccessKeyUnlocked(name)) return userAccessKey;
+    if (auto userAccessKey = findAccessKeyUnlocked(name)) return userAccessKey;
     throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, m_name, name);
 }
 
-UserAccessKeyPtr User::addUserAccessKey(std::uint64_t id, std::string&& name, std::string&& text,
+UserAccessKeyPtr User::addAccessKey(std::uint64_t id, std::string&& name, std::string&& text,
         std::optional<std::string>&& description, bool active)
 {
-    auto it = std::find_if(
+    const auto it = std::find_if(
             m_accessKeys.begin(), m_accessKeys.end(), [id, &name](const auto& accessKey) noexcept {
                 return accessKey->getId() == id || accessKey->getName() == name;
             });
-    if (it != m_accessKeys.end())
-        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyAlreadyExists, m_name, name);
+    if (it != m_accessKeys.end()) {
+        if ((*it)->getId() == id)
+            throwDatabaseError(IOManagerMessageId::kErrorDuplicateUserAccessKeyId, m_name, id);
+        else
+            throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyAlreadyExists, m_name, name);
+    }
 
-    if (text.size() > siodb::kMaxAccessKeySize) {
-        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIsLargerThanMax, m_name, name,
-                text.size(), siodb::kMaxAccessKeySize);
+    if (text.size() > siodb::kMaxUserAccessKeySize) {
+        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIsTooLong, m_name, name,
+                text.size(), siodb::kMaxUserAccessKeySize);
     }
 
     try {
         siodb::crypto::DigitalSignatureKey key;
         key.parseFromString(text);
     } catch (std::exception& e) {
-        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIsInvalid, m_name, name);
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserAccessKey, m_name, name);
     }
 
     auto accessKey = std::make_shared<UserAccessKey>(
@@ -72,23 +80,83 @@ UserAccessKeyPtr User::addUserAccessKey(std::uint64_t id, std::string&& name, st
     return accessKey;
 }
 
-void User::deleteUserAccessKey(const std::string& name)
+void User::deleteAccessKey(const std::string& name)
 {
-    auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
+    const auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
             [&name](const auto& accessKey) noexcept { return accessKey->getName() == name; });
     if (it == m_accessKeys.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, m_name, name);
 
-    if (isSuperUser() && getActiveKeyCount() == 1 && (*it)->isActive())
+    if (isSuperUser() && getActiveAccessKeyCount() == 1 && (*it)->isActive())
         throwDatabaseError(IOManagerMessageId::kErrorCannotDeleteLastSuperUserAccessKey, name);
 
     m_accessKeys.erase(it);
 }
 
-std::size_t User::getActiveKeyCount() const noexcept
+std::size_t User::getActiveAccessKeyCount() const noexcept
 {
     return std::count_if(m_accessKeys.begin(), m_accessKeys.end(),
             [](const auto& key) noexcept { return key->isActive(); });
+}
+
+UserTokenPtr User::findTokenChecked(const std::string& name) const
+{
+    if (auto token = findTokenUnlocked(name)) return token;
+    throwDatabaseError(IOManagerMessageId::kErrorUserTokenDoesNotExist, m_name, name);
+}
+
+UserTokenPtr User::addToken(std::uint64_t id, std::string&& name, const BinaryValue& value,
+        std::optional<std::time_t>&& expirationTimestamp, std::optional<std::string>&& description)
+{
+    const auto it =
+            std::find_if(m_tokens.begin(), m_tokens.end(), [id, &name](const auto& token) noexcept {
+                return token->getId() == id || token->getName() == name;
+            });
+    if (it != m_tokens.end()) {
+        if ((*it)->getId() == id)
+            throwDatabaseError(IOManagerMessageId::kErrorDuplicateUserTokenId, m_name, id);
+        else
+            throwDatabaseError(IOManagerMessageId::kErrorUserTokenAlreadyExists, m_name, name);
+    }
+
+    if (checkToken(value) != CheckTokenResult::kNotFound)
+        throwDatabaseError(IOManagerMessageId::kErrorUserTokenAlreadyExists, m_name, name);
+
+    if (value.size() == 0 || value.size() > siodb::kMaxUserTokenSize) {
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserToken, m_name, name);
+    }
+
+    auto hash = hashTokenValue(value);
+
+    auto token = std::make_shared<UserToken>(*this, id, std::move(name), std::move(hash),
+            std::move(expirationTimestamp), std::move(description));
+    m_tokens.push_back(token);
+    return token;
+}
+
+void User::deleteToken(const std::string& name)
+{
+    const auto it = std::find_if(m_tokens.begin(), m_tokens.end(),
+            [&name](const auto& token) noexcept { return token->getName() == name; });
+    if (it == m_tokens.end())
+        throwDatabaseError(IOManagerMessageId::kErrorUserTokenDoesNotExist, m_name, name);
+    m_tokens.erase(it);
+}
+
+User::CheckTokenResult User::checkToken(const BinaryValue& tokenValue) const
+{
+    if (m_tokens.empty()) return CheckTokenResult::kNotFound;
+    const auto hash = hashTokenValue(tokenValue);
+    const auto it = std::find_if(m_tokens.cbegin(), m_tokens.cend(),
+            [&hash](const auto& token) { return token->getValue() == hash; });
+    if (it == m_tokens.cend()) return CheckTokenResult::kNotFound;
+    return (*it)->isExpired() ? CheckTokenResult::kExpired : CheckTokenResult::kSuccess;
+}
+
+std::size_t User::getActiveTokenCount() const noexcept
+{
+    return std::count_if(m_tokens.begin(), m_tokens.end(),
+            [](const auto& token) noexcept { return !token->isExpired(); });
 }
 
 // ----- internals -----
@@ -99,11 +167,29 @@ std::string&& User::validateUserName(std::string&& userName)
     throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, userName);
 }
 
-UserAccessKeyPtr User::findUserAccessKeyUnlocked(const std::string& name) const noexcept
+UserAccessKeyPtr User::findAccessKeyUnlocked(const std::string& name) const noexcept
 {
     auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
             [&name](const auto& accessKey) noexcept { return accessKey->getName() == name; });
     return (it == m_accessKeys.end()) ? nullptr : *it;
+}
+
+UserTokenPtr User::findTokenUnlocked(const std::string& name) const noexcept
+{
+    auto it = std::find_if(m_tokens.begin(), m_tokens.end(),
+            [&name](const auto& token) noexcept { return token->getName() == name; });
+    return (it == m_tokens.end()) ? nullptr : *it;
+}
+
+BinaryValue User::hashTokenValue(const BinaryValue& tokenValue) const
+{
+    BinaryValue hash(64);
+    ::SHA512_CTX ctx;
+    ::SHA512_Init(&ctx);
+    ::SHA512_Update(&ctx, m_name.c_str(), m_name.length());
+    ::SHA512_Update(&ctx, tokenValue.data(), tokenValue.size());
+    ::SHA512_Final(hash.data(), &ctx);
+    return hash;
 }
 
 }  // namespace siodb::iomgr::dbengine

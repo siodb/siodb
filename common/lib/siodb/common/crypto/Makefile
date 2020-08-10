@@ -7,18 +7,16 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../../../../mk/Prolog.mk
 
-TARGET_LIB:=siodb_common_crypto
+TARGET_COMMON_LIB:=siodb_common_crypto
 
 CXX_SRC:= \
 	DigitalSignatureKey.cpp  \
-	RandomGenerator.cpp  \
 	TlsClient.cpp  \
 	TlsConnection.cpp  \
 	TlsServer.cpp
 
 CXX_HDR:= \
 	DigitalSignatureKey.h  \
-	RandomGenerator.h  \
 	OpenSslError.h  \
 	TlsClient.h  \
 	TlsConnection.h  \

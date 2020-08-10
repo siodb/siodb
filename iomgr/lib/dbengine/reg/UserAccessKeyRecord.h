@@ -21,7 +21,7 @@ class UserAccessKey;
 /** User acess key reqistry record */
 struct UserAccessKeyRecord {
     /** Initializes object of class UserAccessKeyRecord */
-    UserAccessKeyRecord()
+    UserAccessKeyRecord() noexcept
         : m_id(0)
         , m_userId(0)
         , m_active(false)
@@ -38,7 +38,7 @@ struct UserAccessKeyRecord {
      * @param active Indication that access key is active.
      */
     UserAccessKeyRecord(std::uint64_t id, std::uint32_t userId, std::string&& name,
-            std::string&& text, std::optional<std::string>&& description, bool active)
+            std::string&& text, std::optional<std::string>&& description, bool active) noexcept
         : m_id(id)
         , m_userId(userId)
         , m_name(std::move(name))
@@ -79,8 +79,8 @@ struct UserAccessKeyRecord {
      * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
-            noexcept;
+    std::uint8_t* serializeUnchecked(
+            std::uint8_t* buffer, unsigned version = kClassVersion) const noexcept;
 
     /**
      * Deserializes object from buffer.

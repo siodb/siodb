@@ -1459,9 +1459,7 @@ bool Variant::isNegative() const
         case VariantType::kUInt64: return false;
         case VariantType::kDouble: return getDouble() < 0.0;
         case VariantType::kFloat: return getFloat() < 0.0f;
-        default: {
-            throw WrongVariantTypeError(m_valueType, "Value is not numeric");
-        }
+        default: throw WrongVariantTypeError(m_valueType, "Value is not numeric");
     }
 }
 
@@ -1478,9 +1476,7 @@ bool Variant::isPositive() const
         case VariantType::kUInt64: return getUInt64() > 0U;
         case VariantType::kDouble: return getDouble() > 0.0;
         case VariantType::kFloat: return getFloat() > 0.0f;
-        default: {
-            throw WrongVariantTypeError(m_valueType, "Value is not numeric");
-        }
+        default: throw WrongVariantTypeError(m_valueType, "Value is not numeric");
     }
 }
 
@@ -1497,9 +1493,7 @@ bool Variant::isZero() const
         case VariantType::kUInt64: return getUInt64() == 0U;
         case VariantType::kDouble: return getDouble() == 0.0;
         case VariantType::kFloat: return getFloat() == 0.0f;
-        default: {
-            throw WrongVariantTypeError(m_valueType, "Value is not numeric");
-        }
+        default: throw WrongVariantTypeError(m_valueType, "Value is not numeric");
     }
 }
 }  // namespace siodb::iomgr::dbengine

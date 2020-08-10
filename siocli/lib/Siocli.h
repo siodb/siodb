@@ -7,7 +7,7 @@
 // STL headers
 #include <string>
 
-namespace {
+namespace siodb::cli {
 
 /** Client parameters. */
 struct ClientParameters {
@@ -37,14 +37,13 @@ struct ClientParameters {
 
     /** Echo commands if not on a terminal */
     bool m_echoCommandsWhenNotOnATerminal = true;
-};
 
-/**
- * Loads user's private key from a file.
- * @param path File path.
- * @return User's private key.
- */
-std::string loadUserIdentityKey(const char* path);
+    /** Indicates that siocli should verify siodb certificates */
+    bool m_verifyCertificates = false;
+
+    /** Database name to export. Empty string means export all databases */
+    std::string m_exportDatabaseName;
+};
 
 /**
  * Runs command line prompt.
@@ -52,6 +51,20 @@ std::string loadUserIdentityKey(const char* path);
  * @return Exit code.
  */
 int commandPrompt(const ClientParameters& params);
+
+/**
+ * Exporting SQL dump of current instance.
+ * @param params Client parameters.
+ * @return Exit code.
+ */
+int exportSqlDump(const ClientParameters& params);
+
+/**
+ * Loads user's private key from a file.
+ * @param path File path.
+ * @return User's private key.
+ */
+std::string loadUserIdentityKey(const char* path);
 
 /** Single word command types */
 enum class SingleWordCommandType {
@@ -68,4 +81,4 @@ enum class SingleWordCommandType {
  */
 SingleWordCommandType decodeSingleWordCommand(const std::string& command) noexcept;
 
-}  // anonymous namespace
+}  // namespace siodb::cli

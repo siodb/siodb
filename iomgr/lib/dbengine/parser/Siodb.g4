@@ -1,9 +1,4 @@
 /*
- * SIODB SQL Grammar for ANTLR4. Copyright (C) Siodb GmbH, 2019-2020. All rights reserved. Based on
- * the open-source SQLite Grammar. See original license terms below.
- */
-
-/*
  * The MIT License (MIT)
  * 
  * Copyright (c) 2014 by Bart Kiers
@@ -39,7 +34,10 @@ error:
 sql_stmt_list: ';'* sql_stmt ( ';'+ sql_stmt)* ';'*;
 
 sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
-		alter_table_stmt
+		alter_constraint_stmt
+		| alter_database_stmt
+		| alter_index_stmt
+		| alter_table_stmt
 		| alter_user_stmt
 		| analyze_stmt
 		| attach_stmt
@@ -64,7 +62,6 @@ sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
 		| drop_view_stmt
 		| factored_select_stmt
 		| insert_stmt
-		| pragma_stmt
 		| reindex_stmt
 		| release_stmt
 		| rollback_stmt
@@ -78,29 +75,72 @@ sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
 		| vacuum_stmt
 	);
 
+alter_database_stmt:
+	K_ALTER K_DATABASE database_name (
+		K_RENAME (K_IF K_EXISTS)? K_TO new_database_name
+		| K_SET database_attr_list
+	);
+
+database_attr_list: database_attr (',' database_attr)*;
+
+database_attr: K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
+
+alter_constraint_stmt:
+	K_ALTER K_CONSTRAINT constraint_spec (
+		K_RENAME (K_IF K_EXISTS)? K_TO new_constraint_name
+		| K_SET constraint_attr_list
+	);
+
+constraint_attr_list: constraint_attr (',' constraint_attr)*;
+
+constraint_attr: K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
+
+alter_index_stmt:
+	K_ALTER K_INDEX index_spec (
+		K_RENAME (K_IF K_EXISTS)? K_TO new_index_name
+		| K_SET index_attr_list
+	);
+
+index_attr_list: index_attr (',' index_attr)*;
+
+index_attr: K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
+
 alter_table_stmt:
-	K_ALTER K_TABLE (database_name '.')? table_name (
+	K_ALTER K_TABLE table_spec (
 		K_RENAME (K_IF K_EXISTS)? K_TO new_table_name
 		| K_ADD K_COLUMN? column_def
 		| K_DROP K_COLUMN? (K_IF K_EXISTS)? column_name
+		| K_ALTER K_COLUMN (
+			column_name K_RENAME (K_IF K_EXISTS)? K_TO new_column_name
+			| column_def
+		)
+		| K_SET table_attr_list
 	);
 
 alter_user_stmt:
 	K_ALTER K_USER user_name (
-		| K_SET user_option_list
-		| K_ADD K_ACCESS K_KEY user_access_key_name STRING_LITERAL user_access_key_option_list?
-		| K_DROP K_ACCESS K_KEY user_access_key_name
-		| K_ALTER K_ACCESS K_KEY user_access_key_name K_SET user_access_key_option_list
+		| K_SET user_attr_list
+		| K_ADD K_ACCESS K_KEY user_access_key_name user_access_key_text (
+			K_WITH user_access_key_attr_list
+		)?
+		| K_DROP K_ACCESS K_KEY (K_IF K_EXISTS)? user_access_key_name
+		| K_ALTER K_ACCESS K_KEY user_access_key_name K_RENAME (
+			K_IF K_EXISTS
+		)? K_TO new_user_access_key_name
+		| K_ALTER K_ACCESS K_KEY user_access_key_name K_SET user_access_key_attr_list
+		| K_ADD K_TOKEN user_token_name (user_token_value)? (
+			K_WITH user_token_attr_list
+		)?
+		| K_DROP K_TOKEN (K_IF K_EXISTS)? user_token_name
+		| K_ALTER K_TOKEN user_token_name K_RENAME (
+			K_IF K_EXISTS
+		)? K_TO new_user_token_name
+		| K_ALTER K_TOKEN user_token_name K_SET user_token_attr_list
 	);
 
-analyze_stmt:
-	K_ANALYZE (
-		database_name
-		| table_or_index_name
-		| database_name '.' table_or_index_name
-	)?;
+analyze_stmt: K_ANALYZE ( database_name | table_or_index_spec)?;
 
-attach_stmt: K_ATTACH K_DATABASE? expr K_AS database_name;
+attach_stmt: K_ATTACH K_DATABASE expr K_AS database_name;
 
 begin_stmt:
 	K_BEGIN (K_DEFERRED | K_IMMEDIATE | K_EXCLUSIVE)? (
@@ -119,16 +159,16 @@ compound_select_stmt: (
 		K_LIMIT simple_expr (( K_OFFSET | ',') simple_expr)?
 	)?;
 
-create_database_option:
+create_database_attr:
 	K_CIPHER_ID '=' simple_expr
 	| K_CIPHER_KEY_SEED '=' simple_expr;
 
-create_database_option_list:
-	create_database_option (',' create_database_option)*;
+create_database_attr_list:
+	create_database_attr (',' create_database_attr)*;
 
 create_database_stmt:
 	K_CREATE (K_TEMP | K_TEMPORARY)? K_DATABASE database_name (
-		K_WITH create_database_option_list
+		K_WITH create_database_attr_list
 	)?;
 
 create_index_stmt:
@@ -141,7 +181,7 @@ create_index_stmt:
 create_table_stmt:
 	K_CREATE (K_TEMP | K_TEMPORARY)? K_TABLE (
 		K_IF K_NOT K_EXISTS
-	)? (database_name '.')? table_name (
+	)? table_spec (
 		'(' column_def (',' column_def)* (',' table_constraint)* ')' (
 			K_WITHOUT IDENTIFIER
 		)?
@@ -159,14 +199,12 @@ create_trigger_stmt:
 		K_DELETE
 		| K_INSERT
 		| K_UPDATE ( K_OF column_name ( ',' column_name)*)?
-	) K_ON (database_name '.')? table_name (K_FOR K_EACH K_ROW)? (
-		K_WHEN expr
-	)? K_BEGIN (
+	) K_ON table_spec (K_FOR K_EACH K_ROW)? (K_WHEN expr)? K_BEGIN (
 		(update_stmt | insert_stmt | delete_stmt | select_stmt) ';'
 	)+ K_END;
 
 create_user_stmt:
-	K_CREATE K_USER user_name (K_WITH user_option_list)?;
+	K_CREATE K_USER user_name (K_WITH user_attr_list)?;
 
 create_view_stmt:
 	K_CREATE (K_TEMP | K_TEMPORARY)? K_VIEW (K_IF K_NOT K_EXISTS)? (
@@ -194,7 +232,7 @@ delete_stmt_limited:
 		)?
 	)?;
 
-detach_stmt: K_DETACH K_DATABASE? database_name;
+detach_stmt: K_DETACH K_DATABASE database_name;
 
 drop_database_stmt:
 	K_DROP K_DATABASE (K_IF K_EXISTS)? database_name;
@@ -202,8 +240,7 @@ drop_database_stmt:
 drop_index_stmt:
 	K_DROP K_INDEX (K_IF K_EXISTS)? (database_name '.')? index_name;
 
-drop_table_stmt:
-	K_DROP K_TABLE (K_IF K_EXISTS)? (database_name '.')? table_name;
+drop_table_stmt: K_DROP K_TABLE (K_IF K_EXISTS)? table_spec;
 
 drop_trigger_stmt:
 	K_DROP K_TRIGGER (K_IF K_EXISTS)? (database_name '.')? trigger_name;
@@ -240,11 +277,9 @@ insert_stmt:
 		| K_DEFAULT K_VALUES
 	);
 
-pragma_stmt:
-	K_PRAGMA (database_name '.')? pragma_name (
-		'=' pragma_value
-		| '(' pragma_value ')'
-	)?;
+table_attr: K_NEXT_TRID '=' NUMERIC_LITERAL;
+
+table_attr_list: table_attr (',' table_attr)*;
 
 reindex_stmt:
 	K_REINDEX (
@@ -326,19 +361,25 @@ vacuum_stmt: K_VACUUM;
 
 column_def: column_name type_name? column_constraint*;
 
-user_access_key_option:
+user_access_key_attr:
 	K_STATE '=' (K_ACTIVE | K_INACTIVE)
 	| K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
 
-user_access_key_option_list:
-	user_access_key_option (',' user_access_key_option)*;
+user_access_key_attr_list:
+	user_access_key_attr (',' user_access_key_attr)*;
 
-user_option:
+user_attr:
 	K_STATE '=' (K_ACTIVE | K_INACTIVE)
 	| K_REAL_NAME '=' (STRING_LITERAL | K_NULL)
 	| K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
 
-user_option_list: user_option (',' user_option)*;
+user_attr_list: user_attr (',' user_attr)*;
+
+user_token_attr_list: user_token_attr (',' user_token_attr)*;
+
+user_token_attr:
+	K_EXPIRATION_TIMESTAMP '=' (STRING_LITERAL | K_NULL)
+	| K_DESCRIPTION '=' (STRING_LITERAL | K_NULL);
 
 type_name:
 	IDENTIFIER+ (
@@ -346,7 +387,7 @@ type_name:
 		| '(' signed_number ',' signed_number ')'
 	)?;
 
-column_constraint: (K_CONSTRAINT name)? (
+column_constraint: (K_CONSTRAINT constraint_name)? (
 		K_PRIMARY K_KEY (K_ASC | K_DESC)? conflict_clause K_AUTOINCREMENT?
 		| K_NOT? K_NULL conflict_clause
 		| K_UNIQUE conflict_clause
@@ -454,7 +495,7 @@ raise_function:
 indexed_column:
 	column_name (K_COLLATE collation_name)? (K_ASC | K_DESC)?;
 
-table_constraint: (K_CONSTRAINT name)? (
+table_constraint: (K_CONSTRAINT constraint_name)? (
 		(K_PRIMARY K_KEY | K_UNIQUE) '(' indexed_column (
 			',' indexed_column
 		)* ')' conflict_clause
@@ -473,8 +514,6 @@ aliased_qualified_table_name: (database_name '.')? table_name (
 
 ordering_term:
 	expr (K_COLLATE collation_name)? (K_ASC | K_DESC)?;
-
-pragma_value: signed_number | name | STRING_LITERAL;
 
 common_table_expression:
 	table_name ('(' column_name ( ',' column_name)* ')')? K_AS '(' select_stmt ')';
@@ -574,8 +613,6 @@ keyword:
 	| K_CASCADE
 	| K_CASE
 	| K_CAST
-	| K_CIPHER_ID
-	| K_CIPHER_KEY_SEED
 	| K_CHECK
 	| K_COLLATE
 	| K_COLUMN
@@ -647,7 +684,6 @@ keyword:
 	| K_ORDER
 	| K_OUTER
 	| K_PLAN
-	| K_PRAGMA
 	| K_PRIMARY
 	| K_QUERY
 	| K_RAISE
@@ -665,12 +701,12 @@ keyword:
 	| K_SAVEPOINT
 	| K_SELECT
 	| K_SET
-	| K_STATE
 	| K_TABLE
 	| K_TEMP
 	| K_TEMPORARY
 	| K_THEN
 	| K_TO
+	| K_TOKEN
 	| K_TRANSACTION
 	| K_TRIGGER
 	| K_TRUE
@@ -689,39 +725,88 @@ keyword:
 	| K_WITH
 	| K_WITHOUT;
 
-attribute: K_DESCRIPTION | K_REAL_NAME;
+attribute:
+	K_CIPHER_ID
+	| K_CIPHER_KEY_SEED
+	| K_EXPIRATION_TIMESTAMP
+	| K_DESCRIPTION
+	| K_NEXT_TRID
+	| K_REAL_NAME
+	| K_STATE;
 
 name: any_name;
 
 function_name: any_name;
 
+// TODO(siodb): ALTER FUNCTION RENAME IF EXISTS TO
+new_function_name: any_name;
+
 database_name: any_name;
+
+// TODO(siodb): ALTER DATABASE RENAME IF EXISTS TO
+new_database_name: any_name;
 
 table_name: any_name;
 
+table_spec: (database_name '.')? table_name;
+
 table_or_index_name: any_name;
+
+table_or_index_spec: (database_name '.')? table_or_index_name;
 
 new_table_name: any_name;
 
 column_name: any_name;
 
+// TODO(siodb): ALTER TABLE ALTER COLUMN RENAME IF EXISTS TO
+new_column_name: any_name;
+
+constraint_name: any_name;
+
+constraint_spec: (database_name '.')? constraint_name;
+
+// TODO(siodb): ALTER TABLE ALTER CONSTRAINT RENAME IF EXISTS TO
+new_constraint_name: any_name;
+
 collation_name: any_name;
+
+// TODO(siodb): ALTER COLLATION RENAME IF EXISTS TO
+new_collation_name: any_name;
 
 foreign_table: any_name;
 
 index_name: any_name;
 
+index_spec: (database_name '.')? index_name;
+
+// TODO(siodb): ALTER INDEX RENAME IF EXISTS TO
+new_index_name: any_name;
+
 trigger_name: any_name;
+
+// TODO(siodb): ALTER TRIGGER RENAME IF EXISTS TO
+new_trigger_name: any_name;
 
 user_name: any_name;
 
 user_access_key_name: any_name;
 
+user_access_key_text: STRING_LITERAL;
+
+new_user_access_key_name: any_name;
+
+user_token_name: any_name;
+
+new_user_token_name: any_name;
+
+user_token_value: BLOB_LITERAL;
+
 view_name: any_name;
 
-module_name: any_name;
+// TODO(siodb): ALTER VIEW RENAME IF EXISTS TO
+new_view_name: any_name;
 
-pragma_name: any_name;
+module_name: any_name;
 
 savepoint_name: any_name;
 
@@ -762,7 +847,18 @@ EQ: '==';
 NOT_EQ1: '!=';
 NOT_EQ2: '<>';
 
+// Siodb specific: attributes
+K_CIPHER_ID: C I P H E R '_' I D;
+K_CIPHER_KEY_SEED: C I P H E R '_' K E Y '_' S E E D;
+K_DESCRIPTION: D E S C R I P T I O N;
+K_EXPIRATION_TIMESTAMP:
+	E X P I R A T I O N '_' T I M E S T A M P;
+K_NEXT_TRID: N E X T '_' T R I D;
+K_STATE: S T A T E;
+K_REAL_NAME: R E A L '_' N A M E;
+
 // http://www.sqlite.org/lang_keywords.html
+// + Siodb specific keywords
 K_ABORT: A B O R T;
 K_ACCESS: A C C E S S;
 K_ACTION: A C T I O N;
@@ -784,8 +880,6 @@ K_BY: B Y;
 K_CASCADE: C A S C A D E;
 K_CASE: C A S E;
 K_CAST: C A S T;
-K_CIPHER_ID: C I P H E R '_' I D;
-K_CIPHER_KEY_SEED: C I P H E R '_' K E Y '_' S E E D;
 K_CHECK: C H E C K;
 K_COLLATE: C O L L A T E;
 K_COLUMN: C O L U M N;
@@ -804,7 +898,6 @@ K_DEFERRABLE: D E F E R R A B L E;
 K_DEFERRED: D E F E R R E D;
 K_DELETE: D E L E T E;
 K_DESC: D E S C;
-K_DESCRIPTION: D E S C R I P T I O N;
 K_DETACH: D E T A C H;
 K_DISTINCT: D I S T I N C T;
 K_DROP: D R O P;
@@ -858,11 +951,9 @@ K_OR: O R;
 K_ORDER: O R D E R;
 K_OUTER: O U T E R;
 K_PLAN: P L A N;
-K_PRAGMA: P R A G M A;
 K_PRIMARY: P R I M A R Y;
 K_QUERY: Q U E R Y;
 K_RAISE: R A I S E;
-K_REAL_NAME: R E A L '_' N A M E;
 K_RECURSIVE: R E C U R S I V E;
 K_REFERENCES: R E F E R E N C E S;
 K_REGEXP: R E G E X P;
@@ -878,12 +969,12 @@ K_SAVEPOINT: S A V E P O I N T;
 K_SELECT: S E L E C T;
 K_SET: S E T;
 K_SHOW: S H O W;
-K_STATE: S T A T E;
 K_TABLE: T A B L E;
 K_TEMP: T E M P;
 K_TEMPORARY: T E M P O R A R Y;
 K_THEN: T H E N;
 K_TO: T O;
+K_TOKEN: T O K E N;
 K_TRANSACTION: T R A N S A C T I O N;
 K_TRIGGER: T R I G G E R;
 K_TRUE: T R U E;

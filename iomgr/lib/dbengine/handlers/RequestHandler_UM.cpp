@@ -12,6 +12,9 @@
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
+// Boost headers
+#include <boost/algorithm/hex.hpp>
+
 namespace siodb::iomgr::dbengine {
 
 void RequestHandler::executeCreateUserRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -33,8 +36,9 @@ void RequestHandler::executeDropUserRequest(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
 
-void RequestHandler::executeAlterUserRequest(
-        iomgr_protocol::DatabaseEngineResponse& response, const requests::AlterUserRequest& request)
+void RequestHandler::executeSetUserAttributesRequest(
+        iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::SetUserAttributesRequest& request)
 {
     response.set_has_affected_row_count(false);
     m_instance.updateUser(request.m_userName, request.m_params, m_userId);
@@ -64,15 +68,68 @@ void RequestHandler::executeDropUserAccessKeyRequest(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
 
-void RequestHandler::executeAlterUserAccessKeyRequest(
+void RequestHandler::executeSetUserAccessKeyAttributesRequest(
         iomgr_protocol::DatabaseEngineResponse& response,
-        const requests::AlterUserAccessKey& request)
+        const requests::SetUserAccessKeyAttributesRequest& request)
 {
     response.set_has_affected_row_count(false);
     m_instance.updateUserAccessKey(
             request.m_userName, request.m_keyName, request.m_params, m_userId);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+}
+
+void RequestHandler::executeRenameUserAccessKeyRequest(
+        iomgr_protocol::DatabaseEngineResponse& response,
+        [[maybe_unused]] const requests::RenameUserAccessKeyRequest& request)
+{
+    sendNotImplementedYet(response);
+}
+
+void RequestHandler::executeAddUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::AddUserTokenRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    const auto result = m_instance.createUserToken(request.m_userName, request.m_tokenName,
+            request.m_value, request.m_description, request.m_expirationTimestamp, m_userId);
+
+    if (!request.m_value) {
+        std::string tokenText = "token: ";
+        const std::size_t offset = tokenText.length();
+        tokenText.resize(offset + result.second.size() * 2);
+        boost::algorithm::hex_lower(
+                result.second.cbegin(), result.second.cend(), tokenText.begin() + offset);
+        response.add_freetext_message(std::move(tokenText));
+    }
+
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+}
+
+void RequestHandler::executeDropUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::DropUserTokenRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    m_instance.dropUserToken(
+            request.m_userName, request.m_tokenName, !request.m_ifExists, m_userId);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+}
+
+void RequestHandler::executeSetUserTokenAttributesRequest(
+        iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::SetUserTokenAttributesRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    m_instance.updateUserToken(request.m_userName, request.m_tokenName, request.m_params, m_userId);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+}
+
+void RequestHandler::executeRenameUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        [[maybe_unused]] const requests::RenameUserTokenRequest& request)
+{
+    sendNotImplementedYet(response);
 }
 
 }  // namespace siodb::iomgr::dbengine

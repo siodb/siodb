@@ -191,11 +191,11 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
                 m_name, columnValues.size(), columnCount - 1);
     }
 
-    auto columns = getColumnsOrderedByPosition();
-    std::vector<Variant> orderedColumnValues(columns.size() - 1);
+    const auto& columnsByPosition = m_currentColumns.byPosition();
+    std::vector<Variant> orderedColumnValues(columnCount - 1);
 
     // vector<bool> was always suboptimal, so use vector<char>
-    std::vector<char> columnPresent(columns.size());
+    std::vector<char> columnPresent(columnCount);
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
     const auto& columnsByName = m_currentColumns.byName();
 
@@ -210,9 +210,9 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
 
         const auto it = columnsByName.find(columnName);
         if (it == columnsByName.end()) {
+            const auto column = columnsByPosition.find(0)->m_column;
             errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorColumnDoesNotExist,
-                    columns[0]->getTable().getDatabaseName(), columns[0]->getTableName(),
-                    columnName));
+                    column->getTable().getDatabaseName(), column->getTableName(), columnName));
             continue;
         }
 
@@ -235,6 +235,15 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
 
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
+    // Start from column [1], skip TRID
+    for (std::size_t i = 1; i < columnCount; ++i) {
+        if (columnPresent[i]) continue;
+        const auto column = columnsByPosition.find(i)->m_column;
+        // NOTE: For now, always use current column definition.
+        const auto columnDefinition = column->getCurrentColumnDefinition();
+        orderedColumnValues.at(i - 1) = columnDefinition->getDefaultValue();
+    }
+
     return doInsertRowUnlocked(orderedColumnValues, transactionParameters, customTrid);
 }
 
@@ -256,14 +265,15 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
     const auto requiredValueCount = columnCount - 1;
     if (currentValueCount < requiredValueCount) {
         columnValues.resize(requiredValueCount);
-        // Place a copy of a default value, if defined,
-        // into the added elements of columnValues.
+        // Place a copy of a default value, if defined, into the added elements of columnValues.
         const auto& columns = m_currentColumnSet->getColumns();
         for (std::size_t i = currentValueCount; i < requiredValueCount; ++i) {
             const auto& columnSetColumn = columns.at(i + 1);
             const auto column = findColumnChecked(columnSetColumn->getColumnId());
-            const auto columnDefinition =
-                    column->findColumnDefinitionChecked(columnSetColumn->getColumnDefinitionId());
+            //const auto columnDefinition =
+            //        column->findColumnDefinitionChecked(columnSetColumn->getColumnDefinitionId());
+            // NOTE: For now, always use current column definition.
+            const auto columnDefinition = column->getCurrentColumnDefinition();
             columnValues.at(i) = columnDefinition->getDefaultValue();
         }
     }
@@ -445,6 +455,12 @@ void Table::setLastSystemTrid(std::uint64_t lastSystemTrid)
     m_masterColumn->setLastSystemTrid(lastSystemTrid);
 }
 
+void Table::setLastUserTrid(std::uint64_t lastUserTrid)
+{
+    // NOTE: This function cannot be moved to header or inlined due to compilation dependencies.
+    m_masterColumn->setLastUserTrid(lastUserTrid);
+}
+
 ColumnDefinitionPtr Table::findColumnDefinitionChecked(std::uint64_t columnDefinitionId)
 {
     const auto columnDefinitionRecord = m_database.findColumnDefinitionRecord(columnDefinitionId);
@@ -469,11 +485,11 @@ std::string&& Table::validateTableName(std::string&& tableName)
 
 void Table::createMasterColumn(std::uint64_t firstUserTrid)
 {
-    m_masterColumn = createColumn(
-            ColumnSpecification(Database::kMasterColumnName, Column::kMasterColumnDataType,
-                    isSystemTable() ? kSystemTableDataFileDataAreaSize
-                                    : kDefaultDataFileDataAreaSize),
-            firstUserTrid);
+    m_masterColumn =
+            createColumn(ColumnSpecification(kMasterColumnName, Column::kMasterColumnDataType,
+                                 isSystemTable() ? kSystemTableDataFileDataAreaSize
+                                                 : kDefaultDataFileDataAreaSize),
+                    firstUserTrid);
 }
 
 void Table::loadColumnsUnlocked()
@@ -496,7 +512,7 @@ void Table::loadColumnsUnlocked()
     m_currentColumns.swap(currentColumns);
 
     // Finally, update master column
-    m_masterColumn = findColumnCheckedUnlocked(Database::kMasterColumnName);
+    m_masterColumn = findColumnCheckedUnlocked(kMasterColumnName);
 }
 
 ColumnSetPtr Table::createColumnSetUnlocked()
@@ -591,8 +607,8 @@ std::optional<std::uint32_t> Table::getColumnPositionUnlocked(uint64_t columnId)
     return result;
 }
 
-std::optional<std::uint32_t> Table::getColumnPositionUnlocked(const std::string& columnName) const
-        noexcept
+std::optional<std::uint32_t> Table::getColumnPositionUnlocked(
+        const std::string& columnName) const noexcept
 {
     std::optional<std::uint32_t> result;
     const auto& index = m_currentColumns.byName();

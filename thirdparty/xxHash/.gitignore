@@ -1,2 +1,4 @@
 *.tar
+
+# Add new folders here, do not remove previous
 xxHash-0.7.2

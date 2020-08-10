@@ -4,6 +4,9 @@
 
 #pragma once
 
+// Common project headers
+#include "../crt_ext/stddef_ext.h"
+
 #ifdef _DEBUG
 
 // Project headers
@@ -20,7 +23,11 @@
 
 #define DEBUG_TRACE(x) std::cerr << ::getpid() << ' ' << ::gettid() << " >>> " << x << std::endl
 
-#else  // _DEBUG
+#define DEBUG_DECL(t, v) x
+
+#define DEBUG_DECL_LOCAL(x) x
+
+#else
 
 #define DEBUG_SYSCALLS_LIBRARY_GUARD \
     do {                             \
@@ -30,6 +37,8 @@
     do {               \
     } while (false)
 
-#endif  // _DEBUG
+#define DEBUG_DECL_LOCAL(x) \
+    do {                    \
+    } while (false)
 
-#define VOID_PTR(p) ((void*) (p))
+#endif  // _DEBUG

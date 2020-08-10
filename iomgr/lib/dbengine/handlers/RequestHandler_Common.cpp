@@ -36,7 +36,7 @@ RequestHandler::RequestHandler(
     : m_instance(instance)
     , m_connectionIo(connectionIo)
     , m_userId(userId)
-    , m_currentDatabaseName(Database::kSystemDatabaseName)
+    , m_currentDatabaseName(kSystemDatabaseName)
 {
     m_instance.findDatabaseChecked(m_currentDatabaseName)->use();
 }
@@ -133,6 +133,16 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::DropDatabaseRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kRenameDatabase: {
+                executeRenameDatabaseRequest(
+                        response, dynamic_cast<const requests::RenameDatabaseRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kSetDatabaseAttributes: {
+                executeSetDatabaseAttributesRequest(response,
+                        dynamic_cast<const requests::SetDatabaseAttributesRequest&>(request));
+                break;
+            }
             case requests::DBEngineRequestType::kUseDatabase: {
                 executeUseDatabaseRequest(
                         response, dynamic_cast<const requests::UseDatabaseRequest&>(request));
@@ -153,6 +163,11 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::RenameTableRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kSetTableAttributes: {
+                executeSetTableAttributesRequest(response,
+                        dynamic_cast<const requests::SetTableAttributesRequest&>(request));
+                break;
+            }
             case requests::DBEngineRequestType::kAddColumn: {
                 executeAddColumnRequest(
                         response, dynamic_cast<const requests::AddColumnRequest&>(request));
@@ -163,9 +178,14 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::DropColumnRequest&>(request));
                 break;
             }
-            case requests::DBEngineRequestType::kAlterColumn: {
-                executeAlterColumnRequest(
-                        response, dynamic_cast<const requests::AlterColumnRequest&>(request));
+            case requests::DBEngineRequestType::kRenameColumn: {
+                executeRenameColumnRequest(
+                        response, dynamic_cast<const requests::RenameColumnRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kRedefineColumn: {
+                executeRedefineColumnRequest(
+                        response, dynamic_cast<const requests::RedefineColumnRequest&>(request));
                 break;
             }
             case requests::DBEngineRequestType::kCreateIndex: {
@@ -188,9 +208,9 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::DropUserRequest&>(request));
                 break;
             }
-            case requests::DBEngineRequestType::kAlterUser: {
-                executeAlterUserRequest(
-                        response, dynamic_cast<const requests::AlterUserRequest&>(request));
+            case requests::DBEngineRequestType::kSetUserAttributes: {
+                executeSetUserAttributesRequest(
+                        response, dynamic_cast<const requests::SetUserAttributesRequest&>(request));
                 break;
             }
             case requests::DBEngineRequestType::kAddUserAccessKey: {
@@ -203,14 +223,37 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::DropUserAccessKeyRequest&>(request));
                 break;
             }
-            case requests::DBEngineRequestType::kAlterUserAccessKey: {
-                executeAlterUserAccessKeyRequest(
-                        response, dynamic_cast<const requests::AlterUserAccessKey&>(request));
+            case requests::DBEngineRequestType::kSetUserAccessKeyAttributes: {
+                executeSetUserAccessKeyAttributesRequest(response,
+                        dynamic_cast<const requests::SetUserAccessKeyAttributesRequest&>(request));
                 break;
             }
-            default: {
-                throw std::invalid_argument("Unknown request type");
+            case requests::DBEngineRequestType::kRenameUserAccessKey: {
+                executeRenameUserAccessKeyRequest(response,
+                        dynamic_cast<const requests::RenameUserAccessKeyRequest&>(request));
+                break;
             }
+            case requests::DBEngineRequestType::kAddUserToken: {
+                executeAddUserTokenRequest(
+                        response, dynamic_cast<const requests::AddUserTokenRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kDropUserToken: {
+                executeDropUserTokenRequest(
+                        response, dynamic_cast<const requests::DropUserTokenRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kSetUserTokenAttributes: {
+                executeSetUserTokenAttributesRequest(response,
+                        dynamic_cast<const requests::SetUserTokenAttributesRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kRenameUserToken: {
+                executeRenameUserTokenRequest(
+                        response, dynamic_cast<const requests::RenameUserTokenRequest&>(request));
+                break;
+            }
+            default: throw std::invalid_argument("Unknown request type");
         }
     } catch (const UserVisibleDatabaseError& userDbErrorEx) {
         addUserVisibleDatabaseErrorToResponse(
@@ -478,7 +521,7 @@ ColumnSpecification RequestHandler::convertTableColumnDefinition(
             case ConstraintType::kDefaultValue: {
                 const auto& src =
                         dynamic_cast<const requests::DefaultValueConstraint&>(*constraint);
-                constraintSpecs.emplace_back(std::string(src.m_name), ConstraintType::kNotNull,
+                constraintSpecs.emplace_back(std::string(src.m_name), ConstraintType::kDefaultValue,
                         requests::ExpressionPtr(src.m_value->clone()), std::nullopt);
                 break;
             }

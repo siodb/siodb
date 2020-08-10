@@ -63,6 +63,17 @@ constexpr std::array<const char*, 12> kMonthShortName {
 
 ///////////////////// struct RawDate ///////////////////////////////////////
 
+RawDate::RawDate(std::time_t t) noexcept
+{
+    std::tm tm;
+    gmtime_r(&t, &tm);
+    m_hasTimePart = false;
+    m_dayOfWeek = tm.tm_wday;
+    m_dayOfMonth = tm.tm_mday - 1;
+    m_month = tm.tm_mon;
+    m_year = tm.tm_year + 1900;
+}
+
 bool RawDate::operator==(const RawDate& other) const noexcept
 {
 #ifdef SIODB_PLATFORM_SUPPORTS_UNALIGNED_DATA_ACCESS
@@ -113,7 +124,26 @@ bool RawDate::operator>=(const RawDate& other) const noexcept
     return m_dayOfMonth >= other.m_dayOfMonth;
 }
 
+std::time_t RawDate::toEpochTimestamp() const noexcept
+{
+    std::tm tm {0, 0, 0, static_cast<int>(m_dayOfMonth + 1), static_cast<int>(m_month),
+            static_cast<int>(m_year) - 1900, 0, 0, 0, 0, 0};
+    return std::mktime(&tm);
+}
+
 ///////////////////// struct RawTime ///////////////////////////////////////
+
+RawTime::RawTime(std::time_t t) noexcept
+{
+    std::tm tm;
+    gmtime_r(&t, &tm);
+    m_reserved1 = 0;
+    m_nanos = 0;
+    m_seconds = tm.tm_sec;
+    m_minutes = tm.tm_min;
+    m_hours = tm.tm_hour;
+    m_reserved2 = 0;
+}
 
 bool RawTime::operator==(const RawTime& other) const noexcept
 {
@@ -175,7 +205,30 @@ bool RawTime::operator>=(const RawTime& other) const noexcept
     return m_nanos >= other.m_nanos;
 }
 
+std::time_t RawTime::toEpochTimestamp() const noexcept
+{
+    return static_cast<std::time_t>(m_seconds) + static_cast<std::time_t>(60) * m_minutes
+           + static_cast<std::time_t>(3600) * m_hours;
+}
+
 ///////////////////// struct RawDateTime ///////////////////////////////////////
+
+RawDateTime::RawDateTime(std::time_t t) noexcept
+{
+    std::tm tm;
+    gmtime_r(&t, &tm);
+    m_datePart.m_hasTimePart = true;
+    m_datePart.m_dayOfWeek = tm.tm_wday;
+    m_datePart.m_dayOfMonth = tm.tm_mday - 1;
+    m_datePart.m_month = tm.tm_mon;
+    m_datePart.m_year = tm.tm_year + 1900;
+    m_timePart.m_reserved1 = 0;
+    m_timePart.m_nanos = 0;
+    m_timePart.m_seconds = tm.tm_sec;
+    m_timePart.m_minutes = tm.tm_min;
+    m_timePart.m_hours = tm.tm_hour;
+    m_timePart.m_reserved2 = 0;
+}
 
 std::uint8_t* RawDateTime::serialize(std::uint8_t* buffer) const noexcept
 {
@@ -392,11 +445,11 @@ std::string RawDateTime::formatDefault() const
     int size;
     if (m_datePart.m_hasTimePart) {
         // String date month and day starts from 1. Internal format starts from 0
-        size = std::snprintf(buffer, kMaxDateTimeStringLength, kDefaultDateTimeScanString,
+        size = std::snprintf(buffer, kMaxDateTimeStringLength, kDefaultDateTimePrintString,
                 m_datePart.m_year, m_datePart.m_month + 1, m_datePart.m_dayOfMonth + 1,
                 m_timePart.m_hours, m_timePart.m_minutes, m_timePart.m_seconds, m_timePart.m_nanos);
     } else {
-        size = std::snprintf(buffer, kMaxDateStringLength, kDefaultDateScanString,
+        size = std::snprintf(buffer, kMaxDateStringLength, kDefaultDatePrintString,
                 m_datePart.m_year, m_datePart.m_month + 1, m_datePart.m_dayOfMonth + 1);
     }
     return std::string(buffer, size);
@@ -460,6 +513,20 @@ bool RawDateTime::operator>=(const RawDateTime& other) const noexcept
         return m_timePart >= other.m_timePart;
     else
         return !other.m_datePart.m_hasTimePart;
+}
+
+std::time_t RawDateTime::toEpochTimestamp() const noexcept
+{
+    int hh = 0, mm = 0, ss = 0;
+    if (m_datePart.m_hasTimePart) {
+        hh = static_cast<int>(m_timePart.m_hours);
+        mm = static_cast<int>(m_timePart.m_minutes);
+        ss = static_cast<int>(m_timePart.m_seconds);
+    }
+    std::tm tm {ss, mm, hh, static_cast<int>(m_datePart.m_dayOfMonth + 1),
+            static_cast<int>(m_datePart.m_month), static_cast<int>(m_datePart.m_year) - 1900, 0, 0,
+            0, 0, 0};
+    return std::mktime(&tm);
 }
 
 ///////////////////// Utility functions ///////////////////////////////////////

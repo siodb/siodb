@@ -46,15 +46,6 @@ public:
     /** False boolean value string */
     static constexpr const char* kFalseString = "false";
 
-    /** Default date/time format */
-    static constexpr const char* kDefaultDateTimeFormat = "%Y-%m-%d %H:%M:%S";
-
-    /** Default date format */
-    static constexpr const char* kDefaultDateFormat = "%Y-%m-%d";
-
-    /** Default time format */
-    static constexpr const char* kDefaultTimeFormat = "%H:%M:%S";
-
 public:
     /** Date/time value creation tag */
     struct AsDateTime {
@@ -1902,8 +1893,8 @@ private:
     static const char* getDateTimeFormat(std::size_t strLen)
     {
         if (SIODB_UNLIKELY(strLen == 0)) throw std::invalid_argument("String length is 0");
-        return strLen > RawDateTime::kMaxDateStringLength ? kDefaultDateTimeFormat
-                                                          : kDefaultDateFormat;
+        return strLen > RawDateTime::kMaxDateStringLength ? RawDateTime::kDefaultDateTimeFormat
+                                                          : RawDateTime::kDefaultDateFormat;
     }
 
     /**

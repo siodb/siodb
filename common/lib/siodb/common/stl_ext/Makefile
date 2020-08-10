@@ -7,7 +7,7 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../../../../mk/Prolog.mk
 
-TARGET_LIB:=siodb_common_stl_ext
+TARGET_COMMON_LIB:=siodb_common_stl_ext
 
 CXX_SRC:= \
 	detail/throw_std_exceptions.cpp  \
@@ -27,6 +27,7 @@ CXX_HDR:= \
 	cstdint_ext.h  \
 	event.h  \
 	lru_cache.h  \
+	n3876.h  \
 	ostream_ext.h  \
 	stdexcept_ext.h  \
 	string_ext.h  \

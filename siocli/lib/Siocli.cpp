@@ -6,6 +6,8 @@
 
 // Project headers
 #include "Client.h"
+#include "SqlDump.h"
+#include "SqlQueryException.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -16,8 +18,8 @@
 #include <siodb/common/net/NetConstants.h>
 #include <siodb/common/net/TcpConnection.h>
 #include <siodb/common/net/UnixConnection.h>
-#include <siodb/common/options/DatabaseInstanceSocket.h>
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbInstance.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
@@ -37,6 +39,7 @@
 // STL headers
 #include <algorithm>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -54,7 +57,6 @@
 #include <boost/program_options/variables_map.hpp>
 
 namespace {
-
 const std::string kDefaultHost(siodb::kLocalhost);
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
 const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
@@ -96,8 +98,12 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()("user,u",
                 boost::program_options::value<std::string>()->default_value(osUserName),
                 "User name");
+        desc.add_options()("verify-certificates,V", "Verify certificates");
         desc.add_options()("plaintext,P", "Use plaintext connection");
         desc.add_options()("no-echo,N", "Do not commands if not on the terminal");
+        desc.add_options()("export,e", boost::program_options::value<std::string>(),
+                "Export selected database SQL dump");
+        desc.add_options()("export-all,E", "Export all databases SQL dump");
         desc.add_options()("help,h", "Produce help message");
 
         // Parse options
@@ -112,17 +118,28 @@ extern "C" int siocliMain(int argc, char** argv)
             return 0;
         }
 
+        const auto exportDatabase = vm.count("export") > 0;
+        const auto exportAllDatabases = vm.count("export-all") > 0;
+        if (exportDatabase && exportAllDatabases) {
+            std::cerr << "Only one of '--export' and '--export-all' can be specified." << std::endl;
+            return 1;
+        }
+        const auto exportSomething = exportDatabase || exportAllDatabases;
+
         // Handle options
-        ClientParameters params;
+        siodb::cli::ClientParameters params;
         params.m_instance = vm["admin"].as<std::string>();
         params.m_host = vm["host"].as<std::string>();
         params.m_port = vm["port"].as<int>();
         params.m_exitOnError = !stdinIsTerminal && vm.count("keep-going") == 0;
         params.m_user = vm["user"].as<std::string>();
         const auto identityFile = vm["identity-file"].as<std::string>();
-        params.m_identityKey = loadUserIdentityKey(identityFile.c_str());
         params.m_stdinIsTerminal = stdinIsTerminal;
         params.m_echoCommandsWhenNotOnATerminal = vm.count("no-echo") == 0;
+        params.m_verifyCertificates = vm.count("verify-certificates") > 0;
+
+        if (exportDatabase)
+            params.m_exportDatabaseName = boost::to_upper_copy(vm["export"].as<std::string>());
 
         if (vm.count("plaintext") > 0)
             params.m_encryption = false;
@@ -132,45 +149,31 @@ extern "C" int siocliMain(int argc, char** argv)
             params.m_encryption = params.m_instance.empty();
         }
 
+        params.m_identityKey = siodb::cli::loadUserIdentityKey(identityFile.c_str());
+
+        if (exportSomething) return exportSqlDump(params);
+
         // Print logo
         std::cout << "Siodb client v." << SIODB_VERSION_MAJOR << '.' << SIODB_VERSION_MINOR << '.'
-                  << SIODB_VERSION_PATCH << "\nCopyright (C) " << SIODB_COPYRIGHT_YEARS
-                  << " Siodb GmbH. All rights reserved." << std::endl;
+                  << SIODB_VERSION_PATCH
+#ifdef _DEBUG
+                  << " (debug build)"
+#endif
+                  << "\nCompiled on " << __DATE__ << ' ' << __TIME__ << "\nCopyright (C) "
+                  << SIODB_COPYRIGHT_YEARS << " Siodb GmbH. All rights reserved." << std::endl;
 
         // Ignore SIGPIPE
         signal(SIGPIPE, SIG_IGN);
 
         // Execute command prompt
-        return commandPrompt(params);
+        return siodb::cli::commandPrompt(params);
     } catch (std::exception& ex) {
         std::cerr << "Error: " << ex.what() << '.' << std::endl;
         return 2;
     }
 }
 
-namespace {
-
-std::string loadUserIdentityKey(const char* path)
-{
-    std::string key;
-    siodb::FdGuard fd(::open(path, O_RDONLY));
-    if (!fd.isValidFd()) stdext::throw_system_error("Can't open user identity key");
-
-    struct stat st;
-    if (::fstat(fd.getFd(), &st) < 0) stdext::throw_system_error("Can't stat user identity key");
-
-    if (static_cast<std::size_t>(st.st_size) > siodb::kMaxAccessKeySize) {
-        throw std::runtime_error(stdext::string_builder()
-                                 << "User identity key is larger than " << siodb::kMaxAccessKeySize
-                                 << " bytes got " << st.st_size);
-    }
-
-    key.resize(st.st_size);
-    if (::readExact(fd.getFd(), key.data(), key.size(), kIgnoreSignals) != key.size())
-        stdext::throw_system_error("Can't read user identity key");
-
-    return key;
-}
+namespace siodb::cli {
 
 int commandPrompt(const ClientParameters& params)
 {
@@ -274,9 +277,8 @@ int commandPrompt(const ClientParameters& params)
 
                     if (params.m_encryption) {
                         tlsClient = std::make_unique<siodb::crypto::TlsClient>();
-                        // Code below is for the certificate verification.
-                        // Uncommenting it will lead to refusing self-signed certificates
-                        // tlsClient->enableCertificateVerification();
+
+                        if (params.m_verifyCertificates) tlsClient->enableCertificateVerification();
 
                         auto tlsConnection = tlsClient->connectToServer(connectionFd);
 
@@ -324,6 +326,88 @@ int commandPrompt(const ClientParameters& params)
     return 0;
 }
 
+int exportSqlDump(const ClientParameters& params)
+{
+    std::unique_ptr<siodb::io::IoBase> connectionIo;
+    std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
+    if (params.m_instance.empty()) {
+        auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
+
+        if (params.m_encryption) {
+            tlsClient = std::make_unique<siodb::crypto::TlsClient>();
+
+            if (params.m_verifyCertificates) tlsClient->enableCertificateVerification();
+
+            auto tlsConnection = tlsClient->connectToServer(connectionFd);
+
+            auto x509Certificate = SSL_get_peer_certificate(tlsConnection->getSsl());
+            if (x509Certificate == nullptr)
+                throw siodb::crypto::OpenSslError("SSL_get_peer_certificate failed");
+
+            connectionIo = std::move(tlsConnection);
+        } else
+            connectionIo = std::make_unique<siodb::io::FdIo>(connectionFd, true);
+    } else {
+        // Admin connection is always non-secure
+        const auto instanceSocketPath = siodb::composeInstanceSocketPath(params.m_instance);
+        auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
+        connectionIo = std::make_unique<siodb::io::FdIo>(connectionFd, true);
+    }
+
+    siodb::cli::authenticate(params.m_identityKey, params.m_user, *connectionIo);
+
+    try {
+        const auto currentTime =
+                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::cout << "-- Siodb SQL dump\n"
+                  << "-- Hostname: " << params.m_host << '\n'
+                  << "-- Instance: " << params.m_instance << '\n';
+
+        if (!params.m_exportDatabaseName.empty())
+            std::cout << "-- Database: " << params.m_exportDatabaseName << '\n';
+
+        std::cout << "-- Timestamp: "
+                  << std::put_time(std::localtime(&currentTime), "%Y.%m.%d %H:%M:%S") << '\n';
+
+        if (params.m_exportDatabaseName.empty())
+            siodb::siocli::dumpAllDatabases(*connectionIo, std::cout);
+        else
+            siodb::siocli::dumpDatabase(*connectionIo, std::cout, params.m_exportDatabaseName);
+    } catch (const siodb::SqlQueryException& sqlQueryException) {
+        std::cerr << sqlQueryException.what() << ":\n";
+        for (const auto& errMsg : sqlQueryException.getErrors())
+            std::cerr << "code: " << errMsg.status_code() << ", message: " << errMsg.text() << '\n';
+
+        std::cerr << std::flush;
+        return 2;
+    }
+
+    return 0;
+}
+
+std::string loadUserIdentityKey(const char* path)
+{
+    siodb::FdGuard fd(::open(path, O_RDONLY));
+    if (!fd.isValidFd()) stdext::throw_system_error("Can't open user identity key");
+
+    struct stat st;
+    if (::fstat(fd.getFd(), &st) < 0) stdext::throw_system_error("Can't stat user identity key");
+
+    if (static_cast<std::size_t>(st.st_size) > siodb::kMaxUserAccessKeySize) {
+        throw std::runtime_error(stdext::string_builder()
+                                 << "User identity key of size " << st.st_size
+                                 << " bytes is longer than allowed maximum size "
+                                 << siodb::kMaxUserAccessKeySize << " bytes");
+    }
+
+    std::string key;
+    key.resize(st.st_size);
+    if (::readExact(fd.getFd(), key.data(), key.size(), kIgnoreSignals) != key.size())
+        stdext::throw_system_error("Can't read user identity key");
+
+    return key;
+}
+
 SingleWordCommandType decodeSingleWordCommand(const std::string& command) noexcept
 {
     if (command == "exit" || command == "quit")
@@ -333,4 +417,4 @@ SingleWordCommandType decodeSingleWordCommand(const std::string& command) noexce
     return SingleWordCommandType::kUnknownCommand;
 }
 
-}  // anonymous namespace
+}  // namespace siodb::cli

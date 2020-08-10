@@ -47,10 +47,10 @@ public:
             std::uint32_t responseId, std::uint32_t responseCount);
 
 private:
-    // DDL queries
+    // DDL requests
 
     /**
-     * Executes SQL create database request.
+     * Executes SQL CREATE DATABASE request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -58,7 +58,7 @@ private:
             const requests::CreateDatabaseRequest& request);
 
     /**
-     * Executes SQL create table request.
+     * Executes SQL CREATE TABLE request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -66,7 +66,7 @@ private:
             const requests::CreateTableRequest& request);
 
     /**
-     * Executes SQL add column request.
+     * Executes SQL ALTER TABLE ADD COLUMN request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -74,7 +74,7 @@ private:
             const requests::AddColumnRequest& request);
 
     /**
-     * Executes SQL create index request.
+     * Executes SQL CREATE INDEX request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -82,8 +82,7 @@ private:
             const requests::CreateIndexRequest& request);
 
     /**
-     *
-     * Executes drop database request.
+     * Executes DROP DATABASE request.
      * @param response Response object.
      * @param request Request.
      */
@@ -91,7 +90,23 @@ private:
             const requests::DropDatabaseRequest& request);
 
     /**
-     * Executes use database request.
+     * Executes ALTER DATABASE RENAME TO request.
+     * @param response Response object.
+     * @param request Request.
+     */
+    void executeRenameDatabaseRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::RenameDatabaseRequest& request);
+
+    /**
+     * Executes ALTER DATABASE SET attributes request.
+     * @param response Response object.
+     * @param request Request.
+     */
+    void executeSetDatabaseAttributesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::SetDatabaseAttributesRequest& request);
+
+    /**
+     * Executes USE DATABASE request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -99,7 +114,7 @@ private:
             const requests::UseDatabaseRequest& request);
 
     /**
-     * Executes SQL drop table request.
+     * Executes SQL DROP TABLE request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -107,7 +122,7 @@ private:
             const requests::DropTableRequest& request);
 
     /**
-     * Executes SQL drop column request.
+     * Executes SQL ALTER TABLE DROP COLUMN request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -115,7 +130,15 @@ private:
             const requests::DropColumnRequest& request);
 
     /**
-     * Executes SQL drop index request.
+     * Executes SQL ALTER TABLE ALTER COLUMN RENAME TO request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRenameColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::RenameColumnRequest& request);
+
+    /**
+     * Executes SQL DROP INDEX request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -123,15 +146,15 @@ private:
             const requests::DropIndexRequest& request);
 
     /**
-     * Executes SQL ALTER COLUMN request.
+     * Executes SQL ALTER TABLE ALTER COLUMN request.
      * @param response Response object.
      * @param request Request object.
      */
-    void executeAlterColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
-            const requests::AlterColumnRequest& request);
+    void executeRedefineColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::RedefineColumnRequest& request);
 
     /**
-     * Executes SQL attach database request.
+     * Executes SQL ATTACH DATABASE request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -139,7 +162,7 @@ private:
             const requests::AttachDatabaseRequest& request);
 
     /**
-     * Executes SQL detach database request.
+     * Executes SQL DETACH DATABASE request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -147,17 +170,25 @@ private:
             const requests::DetachDatabaseRequest& request);
 
     /**
-     * Executes SQL rename table request.
+     * Executes SQL RENAME TABLE request.
      * @param response Response object.
      * @param request Request object.
      */
     void executeRenameTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::RenameTableRequest& request);
 
-    //** DML queries */
+    /**
+     * Executes SQL ALTER TABLE SET attributes request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeSetTableAttributesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::SetTableAttributesRequest& request);
+
+    // DML requests
 
     /**
-     * Executes SQL select request.
+     * Executes SQL SELECT request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -165,7 +196,7 @@ private:
             const requests::SelectRequest& request);
 
     /**
-     * Executes SQL update request.
+     * Executes SQL UPDATE request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -173,7 +204,7 @@ private:
             const requests::UpdateRequest& request);
 
     /**
-     * Executes SQL delete request.
+     * Executes SQL DELETE request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -181,17 +212,17 @@ private:
             const requests::DeleteRequest& request);
 
     /**
-     * Executes SQL insert request.
+     * Executes SQL INSERT request.
      * @param response Response object.
      * @param request Request object.
      */
     void executeInsertRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::InsertRequest& request);
 
-    //** TCL queries */
+    // TC requests
 
     /**
-     * Executes SQL begin transaction request.
+     * Executes SQL BEGIN TRANSACTION request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -199,7 +230,7 @@ private:
             const requests::BeginTransactionRequest& request);
 
     /**
-     * Executes SQL commit transaction request.
+     * Executes SQL COMMIT TRANSACTION request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -207,7 +238,7 @@ private:
             const requests::CommitTransactionRequest& request);
 
     /**
-     * Executes SQL rollback transaction request.
+     * Executes SQL ROLLBACK TRANSACTION request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -215,7 +246,7 @@ private:
             const requests::RollbackTransactionRequest& request);
 
     /**
-     * Executes SQL savepoint request.
+     * Executes SQL SAVEPOINT request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -223,15 +254,17 @@ private:
             const requests::SavepointRequest& request);
 
     /**
-     * Executes SQL release request.
+     * Executes SQL RELEASE request.
      * @param response Response object.
      * @param request Request object.
      */
     void executeReleaseRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::ReleaseRequest& request);
 
+    // UM requests
+
     /**
-     * Executes SQL create user request
+     * Executes SQL CREATE USER request
      * @param response Response object.
      * @param request Request object.
      */
@@ -239,7 +272,7 @@ private:
             const requests::CreateUserRequest& request);
 
     /**
-     * Executes SQL drop user request.
+     * Executes SQL DROP USER request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -247,15 +280,15 @@ private:
             const requests::DropUserRequest& request);
 
     /**
-     * Executes SQL alter user set state request.
+     * Executes SQL ALTER USER SET attributes request.
      * @param response Response object.
      * @param request Request object.
      */
-    void executeAlterUserRequest(iomgr_protocol::DatabaseEngineResponse& response,
-            const requests::AlterUserRequest& request);
+    void executeSetUserAttributesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::SetUserAttributesRequest& request);
 
     /**
-     * Executes SQL alter user add access key request.
+     * Executes SQL ALTER USER ADD ACCESS KEY request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -263,7 +296,7 @@ private:
             const requests::AddUserAccessKeyRequest& request);
 
     /**
-     * Executes SQL alter user drop access key request.
+     * Executes SQL ALTER USER DROP ACCESS KEY request.
      * @param response Response object.
      * @param request Request object.
      */
@@ -271,12 +304,52 @@ private:
             const requests::DropUserAccessKeyRequest& request);
 
     /**
-     * Executes SQL alter user alter access key request.
+     * Executes SQL ALTER USER ALTER ACCESS KEY SET attributes request.
      * @param response Response object.
      * @param request Request object.
      */
-    void executeAlterUserAccessKeyRequest(iomgr_protocol::DatabaseEngineResponse& response,
-            const requests::AlterUserAccessKey& request);
+    void executeSetUserAccessKeyAttributesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::SetUserAccessKeyAttributesRequest& request);
+
+    /**
+     * Executes SQL ALTER USER ALTER ACCESS KEY RENAME TO request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRenameUserAccessKeyRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::RenameUserAccessKeyRequest& request);
+
+    /**
+     * Executes SQL ALTER USER ADD TOKEN request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeAddUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::AddUserTokenRequest& request);
+
+    /**
+     * Executes SQL ALTER USER DROP TOKEN request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeDropUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::DropUserTokenRequest& request);
+
+    /**
+     * Executes SQL ALTER USER ALTER TOKEN SET attributes request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeSetUserTokenAttributesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::SetUserTokenAttributesRequest& request);
+
+    /**
+     * Executes SQL ALTER USER ALTER TOKEN RENAME TO request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRenameUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::RenameUserTokenRequest& request);
 
     /**
      * Executes SQL SHOW DATABASES request.

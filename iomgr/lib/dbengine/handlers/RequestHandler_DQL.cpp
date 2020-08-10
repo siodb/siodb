@@ -384,11 +384,10 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    const auto sysDb = m_instance.findDatabaseChecked(Database::kSystemDatabaseName);
-    const auto sysDbTable = sysDb->findTableChecked(Database::kSysDatabasesTableName);
-
-    const auto nameColumn = sysDbTable->findColumnChecked(Database::kSysDatabases_Name_ColumnName);
-    const auto uuidColumn = sysDbTable->findColumnChecked(Database::kSysDatabases_Uuid_ColumnName);
+    const auto sysDb = m_instance.findDatabaseChecked(kSystemDatabaseName);
+    const auto sysDbTable = sysDb->findTableChecked(kSysDatabasesTableName);
+    const auto nameColumn = sysDbTable->findColumnChecked(kSysDatabases_Name_ColumnName);
+    const auto uuidColumn = sysDbTable->findColumnChecked(kSysDatabases_Uuid_ColumnName);
 
     addColumnToResponse(response, *nameColumn, "");
     addColumnToResponse(response, *uuidColumn, "");

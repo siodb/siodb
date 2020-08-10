@@ -13,8 +13,8 @@
 
 // Common project headers
 #include <siodb/common/log/Log.h>
-#include <siodb/common/options/DatabaseInstance.h>
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbInstance.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/string_builder.h>
 
@@ -582,4 +582,110 @@ TEST(DDL, CreateTable)
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_EQ(rowLength, 0U);
     }
+}
+
+TEST(DDL, CreateTableWithDefaultValue)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    const std::string statement(
+            "CREATE TABLE DDL_TEST_TABLE_WITH_DEFAULT_VALUE (id INTEGER DEFAULT 5)");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto createTableRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::CustomProtobufInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response.message_size(), 0);
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+}
+
+TEST(DDL, CreateTableWithNotNullAndDefaultValue)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    const std::string statement(
+            "CREATE TABLE DEFAULT_VALUE_TEST(A integer not null default 100, B integer not null)");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto createTableRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::CustomProtobufInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response.message_size(), 0);
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+}
+
+TEST(DDL, SetTableAttributes_NextTrid)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    const std::string statement1("CREATE TABLE DDL_TEST_TABLE_444 (TEST_INTEGER INTEGER)");
+    parser_ns::SqlParser parser1(statement1);
+    parser1.parse();
+
+    const auto createTableRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser1.findStatement(0));
+
+    requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response1;
+    siodb::protobuf::CustomProtobufInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response1, inputStream);
+
+    EXPECT_EQ(response1.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response1.message_size(), 0);
+    EXPECT_FALSE(response1.has_affected_row_count());
+    EXPECT_EQ(response1.response_id(), 0U);
+    EXPECT_EQ(response1.response_count(), 1U);
+
+    /// ----------- ALTER TABLE -----------
+    const std::string statement2("ALTER TABLE DDL_TEST_TABLE_444 SET NEXT_TRID=222");
+    parser_ns::SqlParser parser2(statement2);
+    parser2.parse();
+
+    const auto alterTableRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser2.findStatement(0));
+
+    requestHandler->executeRequest(*alterTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response2;
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response2, inputStream);
+    EXPECT_EQ(response2.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response2.message_size(), 0);
+    EXPECT_FALSE(response2.has_affected_row_count());
+    EXPECT_EQ(response2.response_id(), 0U);
+    EXPECT_EQ(response2.response_count(), 1U);
 }

@@ -12,6 +12,7 @@ include $(MK)/MainTargets.mk
 
 # List of all subdirs to recurse into
 SUBDIRS:= \
+	boost_ext  \
 	config  \
 	crt_ext  \
 	crypto  \

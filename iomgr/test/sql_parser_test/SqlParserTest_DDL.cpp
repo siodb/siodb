@@ -21,6 +21,7 @@ TEST(DDL, AttachDatabase)
             "ATTACH DATABASE 'c44efa74-d912-4e13-a4cb-03847349531d' AS my_database");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -41,6 +42,7 @@ TEST(DDL, DetachDatabase)
     const std::string statement("DETACH DATABASE my_database");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -58,6 +60,7 @@ TEST(DDL, CreateDatabase)
     const std::string statement("CREATE DATABASE my_database");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -78,6 +81,7 @@ TEST(DDL, CreateTempDatabase)
     const std::string statement("CREATE TEMP DATABASE my_database");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -100,6 +104,7 @@ TEST(DDL, CreateDatabaseWithOptions)
             "'fksgksgjrekgjerkglerjg'");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -122,6 +127,7 @@ TEST(DDL, DropDatabase)
     const std::string statement("DROP DATABASE my_database");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -140,6 +146,7 @@ TEST(DDL, DropDatabaseIfExists)
     const std::string statement("DROP DATABASE IF EXISTS my_database");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -152,7 +159,104 @@ TEST(DDL, DropDatabaseIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
-TEST(DDL, CreateTable)
+TEST(DDL, RenameDatabase)
+{
+    // Parse statement and prepare request
+    const std::string statement("ALTER DATABASE my_database RENAME TO my_new_database");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameDatabase);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::RenameDatabaseRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_newDatabase, "MY_NEW_DATABASE");
+    EXPECT_FALSE(request.m_ifExists);
+}
+
+TEST(DDL, RenameDatabaseIfExists)
+{
+    // Parse statement and prepare request
+    const std::string statement("ALTER DATABASE my_database RENAME IF EXISTS TO my_new_database");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameDatabase);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::RenameDatabaseRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_newDatabase, "MY_NEW_DATABASE");
+    EXPECT_TRUE(request.m_ifExists);
+}
+
+TEST(DDL, AlterDatabaseSetAttributes)
+{
+    // Parse statement and prepare request
+    const std::string statement("ALTER DATABASE my_database SET DESCRIPTION='my database'");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSetDatabaseAttributes);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::SetDatabaseAttributesRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    ASSERT_TRUE(request.m_params.m_description.has_value());
+    EXPECT_EQ(*request.m_params.m_description, "my database");
+}
+
+TEST(DDL, CreateTable1)
+{
+    // Parse statement and prepare request
+    const std::string statement(
+            "CREATE TABLE my_database.my_table (\n"
+            "  TEXT_COL TEXT DEFAULT 'Hello, World!!!',\n"
+            "  NUMERIC_COL1 DOUBLE DEFAULT 5.0,\n"
+            "  NUMERIC_COL2 DOUBLE DEFAULT -5.0,\n"
+            "  NUMERIC_COL3 DOUBLE DEFAULT (5.0 + 10.0)\n"
+            ");");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+    //parser.dump(std::cout);
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateTable);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::CreateTableRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_table, "MY_TABLE");
+
+    // Check columns
+    ASSERT_EQ(request.m_columns.size(), 4U);
+    EXPECT_EQ(request.m_columns[0].m_name, "TEXT_COL");
+    EXPECT_EQ(request.m_columns[1].m_name, "NUMERIC_COL1");
+    EXPECT_EQ(request.m_columns[2].m_name, "NUMERIC_COL2");
+    EXPECT_EQ(request.m_columns[3].m_name, "NUMERIC_COL3");
+    EXPECT_EQ(request.m_columns[0].m_dataType, siodb::COLUMN_DATA_TYPE_TEXT);
+    EXPECT_EQ(request.m_columns[1].m_dataType, siodb::COLUMN_DATA_TYPE_DOUBLE);
+    EXPECT_EQ(request.m_columns[2].m_dataType, siodb::COLUMN_DATA_TYPE_DOUBLE);
+    EXPECT_EQ(request.m_columns[3].m_dataType, siodb::COLUMN_DATA_TYPE_DOUBLE);
+}
+
+TEST(DDL, CreateTable2)
 {
     // Parse statement and prepare request
     const std::string statement(
@@ -165,6 +269,8 @@ TEST(DDL, CreateTable)
             ");");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+    //parser.dump(std::cout);
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -231,9 +337,11 @@ TEST(DDL, DropTableIfExists)
 TEST(DDL, AlterTableRenameTo)
 {
     // Parse statement and prepare request
-    const std::string statement("ALTER TABLE my_database.my_table RENAME TO my_table2");
+    const std::string statement("ALTER TABLE my_table RENAME TO my_table2");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+    //parser.dump(std::cout);
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -242,7 +350,7 @@ TEST(DDL, AlterTableRenameTo)
 
     // Check request
     const auto& request = dynamic_cast<const requests::RenameTableRequest&>(*dbeRequest);
-    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_database, "");
     EXPECT_EQ(request.m_oldTable, "MY_TABLE");
     EXPECT_EQ(request.m_newTable, "MY_TABLE2");
     EXPECT_FALSE(request.m_ifExists);
@@ -254,6 +362,7 @@ TEST(DDL, AlterTableRenameToIfExists)
     const std::string statement("ALTER TABLE my_database.my_table RENAME IF EXISTS TO my_table2");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -268,6 +377,27 @@ TEST(DDL, AlterTableRenameToIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
+TEST(DDL, AlterTableSetTableAttributes)
+{
+    // Parse statement and prepare request
+    const std::string statement("ALTER TABLE my_database.my_table SET next_trid=288449");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSetTableAttributes);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::SetTableAttributesRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_table, "MY_TABLE");
+    ASSERT_TRUE(request.m_nextTrid.has_value());
+    EXPECT_EQ(*request.m_nextTrid, 288449U);
+}
+
 TEST(DDL, AlterTableAddColumn)
 {
     // Parse statement and prepare request
@@ -276,6 +406,7 @@ TEST(DDL, AlterTableAddColumn)
             " ADD COLUMN last_name TEXT NOT NULL");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -296,6 +427,7 @@ TEST(DDL, AlterTableDropColumn)
     const std::string statement("ALTER TABLE my_database.my_table DROP COLUMN column1;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -318,6 +450,7 @@ TEST(DDL, AlterTableDropColumnIfExists)
             " DROP COLUMN IF EXISTS column1;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -332,6 +465,75 @@ TEST(DDL, AlterTableDropColumnIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
+TEST(DDL, AlterTableRenameColumn)
+{
+    // Parse statement and prepare request
+    const std::string statement(
+            "ALTER TABLE my_database.my_table ALTER COLUMN column1 RENAME TO column1a;");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameColumn);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::RenameColumnRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_table, "MY_TABLE");
+    EXPECT_EQ(request.m_column, "COLUMN1");
+    EXPECT_EQ(request.m_newColumn, "COLUMN1A");
+    EXPECT_FALSE(request.m_ifExists);
+}
+
+TEST(DDL, AlterTableRenameColumnIfExists)
+{
+    // Parse statement and prepare request
+    const std::string statement(
+            "ALTER TABLE my_database.my_table ALTER COLUMN column1 RENAME IF EXISTS TO column1a;");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameColumn);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::RenameColumnRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_table, "MY_TABLE");
+    EXPECT_EQ(request.m_column, "COLUMN1");
+    EXPECT_EQ(request.m_newColumn, "COLUMN1A");
+    EXPECT_TRUE(request.m_ifExists);
+}
+
+TEST(DDL, AlterTableRedefineColumn)
+{
+    // Parse statement and prepare request
+    const std::string statement("ALTER TABLE my_database.my_table ALTER COLUMN column1 TEXT;");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRedefineColumn);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::RedefineColumnRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    EXPECT_EQ(request.m_table, "MY_TABLE");
+    EXPECT_EQ(request.m_newColumn.m_name, "COLUMN1");
+    EXPECT_EQ(request.m_newColumn.m_dataType, siodb::COLUMN_DATA_TYPE_TEXT);
+    EXPECT_EQ(request.m_newColumn.m_dataBlockDataAreaSize, siodb::kDefaultDataFileDataAreaSize);
+    EXPECT_TRUE(request.m_newColumn.m_constraints.empty());
+}
+
 TEST(DDL, CreateIndex)
 {
     // Parse statement and prepare request
@@ -342,6 +544,7 @@ TEST(DDL, CreateIndex)
             "  explicit_desc_column DESC);\n");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -376,6 +579,7 @@ TEST(DDL, CreateIndexIfNotExists)
             "  explicit_desc_column DESC);\n");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -410,6 +614,7 @@ TEST(DDL, CreateUniqueIndex)
             "  explicit_desc_column DESC);\n");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -440,6 +645,7 @@ TEST(DDL, DropIndex)
     const std::string statement("DROP INDEX my_database.my_index;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 
@@ -459,6 +665,7 @@ TEST(DDL, DropIndexIfExists)
     const std::string statement("DROP INDEX IF EXISTS my_database.my_index;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
+
     const auto dbeRequest =
             parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
 

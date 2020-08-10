@@ -4,6 +4,17 @@
 
 #include "TestContext.h"
 
+TestContext::TestContext()
+{
+    m_values.reserve(6);
+    m_values.emplace_back(std::uint64_t(1));
+    m_values.emplace_back("121 Anselmo str.");
+    m_values.emplace_back(std::int32_t(-25));
+    m_values.emplace_back(1230.0165432);
+    m_values.emplace_back(siodb::RawDateTime("2019-12-19", siodb::RawDateTime::kDefaultDateFormat));
+    m_values.emplace_back();
+}
+
 const dbengine::Variant& TestContext::getColumnValue(
         [[maybe_unused]] std::size_t tableIndex, std::size_t columnIndex)
 {

@@ -5,10 +5,13 @@
 #pragma once
 
 // Project headers
+#include "DBEngineRequestPtr.h"
 #include "DBEngineRequestType.h"
 #include "expr/Expression.h"
+#include "../UpdateDatabaseParameters.h"
 #include "../UpdateUserAccessKeyParameters.h"
 #include "../UpdateUserParameters.h"
+#include "../UpdateUserTokenParameters.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -36,9 +39,6 @@ public:
     /** Request type */
     const DBEngineRequestType m_requestType;
 };
-
-/** DB engine request unique pointer shortcut type */
-using DBEngineRequestPtr = std::unique_ptr<DBEngineRequest>;
 
 /** Join type for tables */
 enum class TableJoinType {
@@ -499,6 +499,54 @@ struct DropDatabaseRequest : public DBEngineRequest {
     const bool m_ifExists;
 };
 
+/** ALTER DATABASE RENAME TO request */
+struct RenameDatabaseRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class RenameDatabaseRequest.
+     * @param database Database name.
+     * @param newDatabase New database name.
+     * @param ifExists Indicates that operation should not fail if database doesn't exist.
+     */
+    RenameDatabaseRequest(std::string&& database, std::string&& newDatabase, bool ifExists) noexcept
+        : DBEngineRequest(DBEngineRequestType::kRenameDatabase)
+        , m_database(std::move(database))
+        , m_newDatabase(std::move(newDatabase))
+        , m_ifExists(ifExists)
+    {
+    }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** New database name */
+    const std::string m_newDatabase;
+
+    /** Indicates that operation should not fail if database doesn't exist */
+    const bool m_ifExists;
+};
+
+/** ALTER DATABASE SET attributes request */
+struct SetDatabaseAttributesRequest : public DBEngineRequest {
+    /** 
+     * Initializes object of class SetDatabaseAttributesRequest.
+     * @param database Database name.
+     * @param description New description.
+     */
+    SetDatabaseAttributesRequest(std::string&& database,
+            std::optional<std::optional<std::string>>&& description) noexcept
+        : DBEngineRequest(DBEngineRequestType::kSetDatabaseAttributes)
+        , m_database(std::move(database))
+        , m_params(std::move(description))
+    {
+    }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Update parameters */
+    const UpdateDatabaseParameters m_params;
+};
+
 /** USE DATABASE request */
 struct UseDatabaseRequest : public DBEngineRequest {
     /**
@@ -678,14 +726,14 @@ struct CheckConstraint : public Constraint {
      * @param name Constraint name.
      * @param expression Expression to be checked.
      */
-    explicit CheckConstraint(std::string&& name, std::string&& expression) noexcept
+    explicit CheckConstraint(std::string&& name, ExpressionPtr&& expression) noexcept
         : Constraint(ConstraintType::kCheck, std::move(name))
         , m_expression(std::move(expression))
     {
     }
 
     /** Expression to be checked */
-    const std::string m_expression;
+    const ExpressionPtr m_expression;
 };
 
 /** Collation types */
@@ -834,6 +882,33 @@ struct RenameTableRequest : public DBEngineRequest {
     const bool m_ifExists;
 };
 
+/** ALTER TABLE SET attributes request */
+struct SetTableAttributesRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class SetTableAttributesRequest.
+     * @param database Database name.
+     * @param table Table name.
+     * @param nextTrid Next TRID attribute.
+     */
+    SetTableAttributesRequest(std::string&& database, std::string&& table,
+            std::optional<std::uint64_t>&& nextTrid) noexcept
+        : DBEngineRequest(DBEngineRequestType::kSetTableAttributes)
+        , m_database(std::move(database))
+        , m_table(std::move(table))
+        , m_nextTrid(std::move(nextTrid))
+    {
+    }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
+
+    /** Next TRID attribute */
+    const std::optional<std::uint64_t> m_nextTrid;
+};
+
 /** ALTER TABLE ADD COLUMN request */
 struct AddColumnRequest : public DBEngineRequest {
     /**
@@ -893,22 +968,24 @@ struct DropColumnRequest : public DBEngineRequest {
     const bool m_ifExists;
 };
 
-/** ALTER TABLE ALTER COLUMN request */
-struct AlterColumnRequest : public DBEngineRequest {
+/** ALTER TABLE ALTER COLUMN RENAME TO request */
+struct RenameColumnRequest : public DBEngineRequest {
     /**
-     * Initializes object of class AlterColumnRequest.
+     * Initializes object of class RenameColumnRequest.
      * @param database Database name.
      * @param table Table name.
      * @param column Column name.
-     * @param column New column definition.
+     * @param newColumn New column name.
+     * @param ifExists Indicates that operation should not fail if column doesn't exist.
      */
-    AlterColumnRequest(std::string&& database, std::string&& table, std::string&& column,
-            ColumnDefinition&& newColumn) noexcept
-        : DBEngineRequest(DBEngineRequestType::kAlterColumn)
+    RenameColumnRequest(std::string&& database, std::string&& table, std::string&& column,
+            std::string&& newColumn, bool ifExists = false) noexcept
+        : DBEngineRequest(DBEngineRequestType::kRenameColumn)
         , m_database(std::move(database))
         , m_table(std::move(table))
         , m_column(std::move(column))
         , m_newColumn(std::move(newColumn))
+        , m_ifExists(ifExists)
     {
     }
 
@@ -920,6 +997,36 @@ struct AlterColumnRequest : public DBEngineRequest {
 
     /** Column name */
     const std::string m_column;
+
+    /** New column name */
+    const std::string m_newColumn;
+
+    /** Indicates that operation should not fail if column doesn't exist */
+    const bool m_ifExists;
+};
+
+/** ALTER TABLE ALTER COLUMN request */
+struct RedefineColumnRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class RedefineColumnRequest.
+     * @param database Database name.
+     * @param table Table name.
+     * @param newColumn New column definition.
+     */
+    RedefineColumnRequest(
+            std::string&& database, std::string&& table, ColumnDefinition&& newColumn) noexcept
+        : DBEngineRequest(DBEngineRequestType::kRedefineColumn)
+        , m_database(std::move(database))
+        , m_table(std::move(table))
+        , m_newColumn(std::move(newColumn))
+    {
+    }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
 
     /** New column definition */
     const ColumnDefinition m_newColumn;
@@ -1065,19 +1172,20 @@ struct DropUserRequest : public DBEngineRequest {
     const bool m_ifExists;
 };
 
-/** ALTER USER SET <option> request */
-struct AlterUserRequest : public DBEngineRequest {
+/** ALTER USER SET attributes request */
+struct SetUserAttributesRequest : public DBEngineRequest {
     /** 
-     * Initializes object of class AlterUserRequest.
+     * Initializes object of class SetUserAttributesRequest.
      * @param userName User name.
      * @param realName New real name.
      * @param description New description.
      * @param active New state.
      */
-    AlterUserRequest(std::string&& userName, std::optional<std::optional<std::string>>&& realName,
+    SetUserAttributesRequest(std::string&& userName,
+            std::optional<std::optional<std::string>>&& realName,
             std::optional<std::optional<std::string>>&& description,
             std::optional<bool>&& active) noexcept
-        : DBEngineRequest(DBEngineRequestType::kAlterUser)
+        : DBEngineRequest(DBEngineRequestType::kSetUserAttributes)
         , m_userName(std::move(userName))
         , m_params(std::move(realName), std::move(description), std::move(active))
     {
@@ -1132,7 +1240,7 @@ struct DropUserAccessKeyRequest : public DBEngineRequest {
      * Initializes object of class DropUserAccessKeyRequest.
      * @param userName User account name.
      * @param keyName Key name.
-     * @param ifExists Indicated that IF EXISTS flag present.
+     * @param ifExists Indicates that IF EXISTS flag present.
      */
     DropUserAccessKeyRequest(std::string&& userName, std::string&& keyName, bool ifExists) noexcept
         : DBEngineRequest(DBEngineRequestType::kDropUserAccessKey)
@@ -1152,18 +1260,19 @@ struct DropUserAccessKeyRequest : public DBEngineRequest {
     const bool m_ifExists;
 };
 
-/** ALTER USER ALTER ACCESS KEY request */
-struct AlterUserAccessKey : public DBEngineRequest {
+/** ALTER USER ALTER ACCESS KEY SET attributes request */
+struct SetUserAccessKeyAttributesRequest : public DBEngineRequest {
     /**
-     * Initializes object of class DropUserAccessKeyRequest.
+     * Initializes object of class SetUserAccessKeyAttributesRequest.
      * @param userName User account name.
      * @param keyName Key name.
+     * @param description Key description.
      * @param active Key state.
      */
-    AlterUserAccessKey(std::string&& userName, std::string&& keyName,
+    SetUserAccessKeyAttributesRequest(std::string&& userName, std::string&& keyName,
             std::optional<std::optional<std::string>>&& description,
             std::optional<bool>&& active) noexcept
-        : DBEngineRequest(DBEngineRequestType::kAlterUserAccessKey)
+        : DBEngineRequest(DBEngineRequestType::kSetUserAccessKeyAttributes)
         , m_userName(std::move(userName))
         , m_keyName(std::move(keyName))
         , m_params(std::move(description), std::move(active))
@@ -1178,6 +1287,163 @@ struct AlterUserAccessKey : public DBEngineRequest {
 
     /** Update parameters */
     const UpdateUserAccessKeyParameters m_params;
+};
+
+/** ALTER USER ALTER ACCESS KEY RENAME TO request */
+struct RenameUserAccessKeyRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class RenameUserAccessKeyRequest.
+     * @param userName User account name.
+     * @param keyName Key name.
+     * @param newKeyName New key name.
+     * @param ifExists Indicates that IF EXISTS flag present.
+     */
+    RenameUserAccessKeyRequest(std::string&& userName, std::string&& keyName,
+            std::string&& newKeyName, bool ifExists) noexcept
+        : DBEngineRequest(DBEngineRequestType::kRenameUserAccessKey)
+        , m_userName(std::move(userName))
+        , m_keyName(std::move(keyName))
+        , m_newKeyName(std::move(newKeyName))
+        , m_ifExists(ifExists)
+    {
+    }
+
+    /** User account name */
+    const std::string m_userName;
+
+    /** Key name */
+    const std::string m_keyName;
+
+    /** New key name */
+    const std::string m_newKeyName;
+
+    /** IF EXISTS flag */
+    const bool m_ifExists;
+};
+
+/** ALTER USER ADD TOKEN request */
+struct AddUserTokenRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class AddUserTokenRequest.
+     * @param userName User account name.
+     * @param tokenName Token name.
+     * @param value Token value. 
+     * @param expirationTimestamp Token expiration timestamp.
+     * @param description Token description.
+     */
+    AddUserTokenRequest(std::string&& userName, std::string&& tokenName,
+            std::optional<BinaryValue>&& value, std::optional<std::time_t>&& expirationTimestamp,
+            std::optional<std::string>&& description) noexcept
+        : DBEngineRequest(DBEngineRequestType::kAddUserToken)
+        , m_userName(std::move(userName))
+        , m_tokenName(std::move(tokenName))
+        , m_value(std::move(value))
+        , m_expirationTimestamp(std::move(expirationTimestamp))
+        , m_description(std::move(description))
+    {
+    }
+
+    /** User account name */
+    const std::string m_userName;
+
+    /** Token name */
+    const std::string m_tokenName;
+
+    /** Token text */
+    const std::optional<BinaryValue> m_value;
+
+    /** Token expiration timestamp */
+    const std::optional<std::time_t> m_expirationTimestamp;
+
+    /** Token description */
+    const std::optional<std::string> m_description;
+};
+
+/** ALTER USER DROP TOKEN request */
+struct DropUserTokenRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class DropUserTokenRequest.
+     * @param userName User account name.
+     * @param tokenName Token name.
+     * @param ifExists Indicates that IF EXISTS flag present.
+     */
+    DropUserTokenRequest(std::string&& userName, std::string&& tokenName, bool ifExists) noexcept
+        : DBEngineRequest(DBEngineRequestType::kDropUserToken)
+        , m_userName(std::move(userName))
+        , m_tokenName(std::move(tokenName))
+        , m_ifExists(ifExists)
+    {
+    }
+
+    /** User account name */
+    const std::string m_userName;
+
+    /** Token name */
+    const std::string m_tokenName;
+
+    /** IF EXISTS flag */
+    const bool m_ifExists;
+};
+
+/** ALTER USER ALTER ACCESS KEY SET attributes request */
+struct SetUserTokenAttributesRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class SetUserTokenAttributesRequest.
+     * @param userName User account name.
+     * @param tokenName Token name.
+     * @param expirationTimestamp Token expiration timestamp.
+     * @param description Token description.
+     */
+    SetUserTokenAttributesRequest(std::string&& userName, std::string&& tokenName,
+            std::optional<std::optional<std::time_t>>&& expirationTimestamp,
+            std::optional<std::optional<std::string>>&& description) noexcept
+        : DBEngineRequest(DBEngineRequestType::kSetUserTokenAttributes)
+        , m_userName(std::move(userName))
+        , m_tokenName(std::move(tokenName))
+        , m_params(std::move(expirationTimestamp), std::move(description))
+    {
+    }
+
+    /** User account name */
+    const std::string m_userName;
+
+    /** Key name */
+    const std::string m_tokenName;
+
+    /** Update parameters */
+    const UpdateUserTokenParameters m_params;
+};
+
+/** ALTER USER ALTER TOKEN RENAME TO request */
+struct RenameUserTokenRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class RenameUserTokenRequest.
+     * @param userName User account name.
+     * @param tokenName Token name.
+     * @param newTokenName New token name.
+     * @param ifExists Indicates that IF EXISTS flag present.
+     */
+    RenameUserTokenRequest(std::string&& userName, std::string&& tokenName,
+            std::string&& newTokenName, bool ifExists) noexcept
+        : DBEngineRequest(DBEngineRequestType::kRenameUserToken)
+        , m_userName(std::move(userName))
+        , m_tokenName(std::move(tokenName))
+        , m_newTokenName(std::move(newTokenName))
+        , m_ifExists(ifExists)
+    {
+    }
+
+    /** User account name */
+    const std::string m_userName;
+
+    /** Token name */
+    const std::string m_tokenName;
+
+    /** New token name */
+    const std::string m_newTokenName;
+
+    /** IF EXISTS flag */
+    const bool m_ifExists;
 };
 
 /** SHOW DATABASES request */

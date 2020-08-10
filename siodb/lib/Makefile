@@ -10,12 +10,12 @@ include ../../mk/Prolog.mk
 TARGET_LIB:=siodb
 
 CXX_SRC:= \
-	IOMgrMonitor.cpp \
+	IOManagerMonitor.cpp \
 	Siodb.cpp \
 	SiodbConnectionManager.cpp
 
 CXX_HDR:= \
-	IOMgrMonitor.h  \
+	IOManagerMonitor.h  \
 	SiodbConnectionManager.h
 
 include $(MK)/Main.mk

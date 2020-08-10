@@ -7,12 +7,14 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../../../mk/Prolog.mk
 
-TARGET_EXE:=rawdatetime_test
+TARGET_EXE:=datetime_test
 
 CXX_SRC:= \
+	ConstructionTest.cpp  \
+	ConversionTest.cpp  \
 	EqualityOperatorTest.cpp  \
-	RelationalOperatorTest.cpp  \
-	Main.cpp
+	Main.cpp  \
+	RelationalOperatorTest.cpp
 
 CXXFLAGS+=-I../../lib
 

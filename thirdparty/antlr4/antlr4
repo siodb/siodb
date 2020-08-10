@@ -1,3 +1,0 @@
-#!/bin/sh
-java -Xmx500M -cp "/usr/local/lib/antlr-4.8-complete.jar:$CLASSPATH" org.antlr.v4.Tool $*
-exit $?

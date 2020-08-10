@@ -23,9 +23,9 @@ CXX_SRC:= \
 CXX_HDR:= \
 	RequestHandlerTest_TestEnv.h
 
-CXXFLAGS+=-I../../lib -I$(GENERATED_FILES_ROOT) -I/usr/local/include/antlr4-runtime
+CXXFLAGS+=-I../../lib -I$(GENERATED_FILES_ROOT)
 
-TARGET_OWN_LIBS:=iomgr
+TARGET_OWN_LIBS:=iomgr_dbengine
 
 TARGET_COMMON_LIBS:=iomgr_shared unit_test crypto options log net proto protobuf io sys \
 	utils data stl_ext crt_ext

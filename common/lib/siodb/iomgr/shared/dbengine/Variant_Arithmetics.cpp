@@ -22,9 +22,7 @@ Variant Variant::operator-() const
         case VariantType::kUInt64: return -m_value.m_ui64;
         case VariantType::kFloat: return -m_value.m_float;
         case VariantType::kDouble: return -m_value.m_double;
-        default: {
-            throw WrongVariantTypeError(m_valueType, "Value is not numeric");
-        }
+        default: throw WrongVariantTypeError(m_valueType, "Value is not numeric");
     }
 }
 
@@ -41,9 +39,7 @@ Variant Variant::operator+() const
         case VariantType::kUInt64: return +m_value.m_ui64;
         case VariantType::kFloat: return +m_value.m_float;
         case VariantType::kDouble: return +m_value.m_double;
-        default: {
-            throw WrongVariantTypeError(m_valueType, "Value is not numeric");
-        }
+        default: throw WrongVariantTypeError(m_valueType, "Value is not numeric");
     }
 }
 
@@ -58,9 +54,7 @@ Variant Variant::operator~() const
         case VariantType::kUInt32: return ~m_value.m_ui32;
         case VariantType::kInt64: return ~m_value.m_i64;
         case VariantType::kUInt64: return ~m_value.m_ui64;
-        default: {
-            throw WrongVariantTypeError(m_valueType, "Value is not numeric");
-        }
+        default: throw WrongVariantTypeError(m_valueType, "Value is not numeric");
     }
 }
 
@@ -921,7 +915,6 @@ Variant Variant::operator%(const Variant& other) const
                 case VariantType::kUInt32: return getInt16() % other.getUInt32();
                 case VariantType::kInt64: return getInt16() % other.getInt64();
                 case VariantType::kUInt64: return getInt16() % other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for % operation");
@@ -939,7 +932,6 @@ Variant Variant::operator%(const Variant& other) const
                 case VariantType::kUInt32: return getUInt16() % other.getUInt32();
                 case VariantType::kInt64: return getUInt16() % other.getInt64();
                 case VariantType::kUInt64: return getUInt16() % other.getUInt64();
-
                 default: {
                     throw VariantTypeCastError(m_valueType, other.getValueType(),
                             "Incompatible operator types for % operation");

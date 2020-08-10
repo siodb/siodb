@@ -10,7 +10,7 @@
 // Common project headers
 #include <siodb/common/config/SiodbVersion.h>
 #include <siodb/common/log/Log.h>
-#include <siodb/common/options/DatabaseInstance.h>
+#include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
 #include <siodb/common/utils/FdGuard.h>
@@ -53,7 +53,7 @@ namespace {
 
 int run(int argc, char** argv)
 {
-    auto instanceOptions = std::make_shared<siodb::config::InstanceOptions>();
+    auto instanceOptions = std::make_shared<siodb::config::SiodbOptions>();
     std::string instanceName;
     siodb::FdGuard client;
     bool adminMode = false;
@@ -121,7 +121,12 @@ int run(int argc, char** argv)
         }
 
         LOG_INFO << "Siodb Connection Worker v." << SIODB_VERSION_MAJOR << '.'
-                 << SIODB_VERSION_MINOR << '.' << SIODB_VERSION_PATCH << '.';
+                 << SIODB_VERSION_MINOR << '.' << SIODB_VERSION_PATCH
+#ifdef _DEBUG
+                 << " (debug build)"
+#endif
+                ;
+        LOG_INFO << "Compiled on " << __DATE__ << ' ' << __TIME__;
         LOG_INFO << "Copyright (C) " << SIODB_COPYRIGHT_YEARS
                  << " Siodb GmbH. All rights reserved.";
 

@@ -15,6 +15,8 @@
 #include <string>
 #include <system_error>
 
+namespace siodb::cli {
+
 /**
  * Executes given command on the server and prints out results.
  * @param requestId Unique request identifier.
@@ -27,7 +29,7 @@
  * @throw std::runtime_error if @ref stopOnError is true and SQL error happened.
  */
 void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
-        siodb::io::IoBase& connectionIo, std::ostream& os, bool stopOnError);
+        io::IoBase& connectionIo, std::ostream& os, bool stopOnError);
 
 /**
  * Authenticates user.
@@ -35,5 +37,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
  * @param userName Name of a user.
  * @param connectionIo Connection IO.
  */
-void authenticate(const std::string& identityKey, const std::string& userName,
-        siodb::io::IoBase& connectionFd);
+void authenticate(
+        const std::string& identityKey, const std::string& userName, io::IoBase& connectionFd);
+
+}  // namespace siodb::cli

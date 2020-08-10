@@ -7,19 +7,16 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../../../../mk/Prolog.mk
 
-TARGET_LIB:=siodb_common_options
+TARGET_COMMON_LIB:=siodb_common_options
 
 CXX_SRC:= \
-	DatabaseInstance.cpp  \
-	DatabaseInstanceSocket.cpp  \
-	InstanceOptions.cpp
+	SiodbInstance.cpp  \
+	SiodbOptions.cpp
 
 CXX_HDR:= \
-	detail/DatabaseOptionsDetail.h  \
-	DatabaseInstance.h  \
-	DatabaseInstanceSocket.h  \
-	InstanceOptions.h  \
-	InvalidConfigurationOptionError.h  \
-	LogOptions.h
+	InvalidConfigurationError.h  \
+	LogOptions.h  \
+	SiodbInstance.h  \
+	SiodbOptions.h
 
 include $(MK)/Main.mk

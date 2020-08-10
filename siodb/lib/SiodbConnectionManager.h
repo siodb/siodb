@@ -5,7 +5,7 @@
 #pragma once
 
 // Common project headers
-#include <siodb/common/options/InstanceOptions.h>
+#include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // STL headers
@@ -23,15 +23,15 @@ namespace siodb {
 class SiodbConnectionManager {
 public:
     /**
-     * Initialized object of class SiodbConnectionManager.
+     * Initializes object of class SiodbConnectionManager.
      * @param socketDomain Socket domain, can be AF_UNIX, AF_INET or AF_INET6.
      * @param checkUser Check user for UNIX socket.
      * @param instanceOptions Database options.
      */
-    explicit SiodbConnectionManager(int socketDomain, bool checkUser,
+    SiodbConnectionManager(int socketDomain, bool checkUser,
             const config::ConstInstaceOptionsPtr& instanceOptions);
 
-    /** Cleans up object */
+    /** De-initializes object */
     ~SiodbConnectionManager();
 
     DECLARE_NONCOPYABLE(SiodbConnectionManager);
@@ -40,8 +40,8 @@ private:
     /** Connection listener thread entry point */
     void connectionListenerThreadMain();
 
-    /** Dead connection recycler thread entry point */
-    void deadConnectionRecyclerThreadMain();
+    /** Dead connection cleanup thread entry point */
+    void deadConnectionCleanupThreadMain();
 
     /**
      * Removes dead connection handlers.
@@ -65,19 +65,17 @@ private:
     int acceptUnixConnection(int serverFd);
 
     /**
-     * Validates listener socket domain.
-     * @param socketDomain TCP/IP socket domain type.
-     * @return socketDomain if it is valid.
-     * @throw std::invalid_argument if socketDomain is invalid.
+     * Creates log context name.
+     * @return Log context name.
      */
-    static int checkSocketDomain(int socketDomain);
+    std::string createLogContextName() const;
 
 private:
     /** Socket domain */
     const int m_socketDomain;
 
-    /** Socket type string */
-    const char* const m_socketTypeName;
+    /** Log context name */
+    const std::string m_logContext;
 
     /** Whether to check user for UNIX socket */
     const bool m_checkUser;
@@ -91,30 +89,25 @@ private:
     /** Exit request flag */
     std::atomic<bool> m_exitRequested;
 
-    /** Dead connection recycling period */
-    std::chrono::milliseconds m_deadConnectionRecyclingPeriod;
-
     /** Connection threads access synchronization object */
     std::mutex m_connectionHandlersMutex;
 
-    /** Dead connection recycling therad awake condition */
-    std::condition_variable m_deadConnectionRecyclerThreadAwakeCondition;
+    /** Dead connection cleanup therad awake condition */
+    std::condition_variable m_deadConnectionCleanupThreadAwakeCondition;
 
     /** Connection handlers */
     std::unordered_set<pid_t> m_connectionHandlers;
 
     /** Dead connection monitor thread */
-    std::thread m_deadConnectionRecyclerThread;
+    std::thread m_deadConnectionCleanupThread;
 
     /** Connection listener thread */
     std::thread m_connectionListenerThread;
 
     /** Log context name */
-    static constexpr const char* kLogContext = "SiodbConnectionManager: ";
+    static constexpr const char* kLogContextBase = "SiodbConnectionManager";
 
-    /** Period of checking that connection handler process is dead
-     *  when termination is requested
-     */
+    /** Period of checking that connection handler process is dead when termination is requested */
     static constexpr auto kTerminateConnectionsCheckPeriod = std::chrono::milliseconds(500);
 };
 

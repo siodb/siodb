@@ -1,6 +1,6 @@
 @echo off
 
-Git short aliases for some commands
+REM Git short aliases for some commands
 REM https://pastebin.com/u4FPKaE1
 
 git config --global alias.co checkout
@@ -15,3 +15,5 @@ git config --global alias.mkbr "checkout -b"
 git config --global alias.track "checkout --track"
 git config --global alias.amd "commit --amend --no-edit --date=now"
 git config --global alias.fpush "push -f"
+git config --global alias.au "add -u"
+git config --global alias.wip "commit -m wip"

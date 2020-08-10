@@ -86,7 +86,7 @@ TEST(Comparisons, CompareString1)
 TEST(Comparisons, CompareDateAndString)
 {
     TestContext context;
-    const auto date = siodb::RawDateTime("2019-12-23", dbengine::Variant::kDefaultDateFormat);
+    const auto date = siodb::RawDateTime("2019-12-23", siodb::RawDateTime::kDefaultDateFormat);
     const std::string str = "2019-12-24";
 
     auto expr = makeEqual(date, str);
@@ -129,7 +129,7 @@ TEST(Comparisons, CompareDateAndString)
 TEST(Comparisons, CompareDateAndInvalidDateString)
 {
     TestContext context;
-    const auto date = siodb::RawDateTime("2019-12-23", dbengine::Variant::kDefaultDateFormat);
+    const auto date = siodb::RawDateTime("2019-12-23", siodb::RawDateTime::kDefaultDateFormat);
     const std::string str = "2019-Invalid";
 
     auto expr = makeEqual(date, str);

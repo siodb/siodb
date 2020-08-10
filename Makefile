@@ -4,10 +4,9 @@
 
 # Global Makefile for Siodb
 
-
 .PHONY: all clean full-clean siodb conn_worker iomgr siocli \
 	clean-common clean-siodb clean-conn_worker clean-iomgr \
-	clean-siocli help debug release
+	clean-siocli help debug debug-no-ut release release-no-ut
 
 all:
 	@date
@@ -29,6 +28,16 @@ debug:
 	$(MAKE) all -C extra_files
 	@date
 
+debug-no-ut:
+	@date
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C common
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C siodb
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C conn_worker
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C iomgr
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C siocli
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C extra_files
+	@date
+
 release:
 	@date
 	$(MAKE) DEBUG=0 all -C common
@@ -37,6 +46,16 @@ release:
 	$(MAKE) DEBUG=0 all -C iomgr
 	$(MAKE) DEBUG=0 all -C siocli
 	$(MAKE) DEBUG=0 all -C extra_files
+	@date
+
+release-no-ut:
+	@date
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C common
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C siodb
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C conn_worker
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C iomgr
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C siocli
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C extra_files
 	@date
 
 clean:

@@ -7,9 +7,6 @@
 // Project headers
 #include "Database.h"
 
-// STL headers
-#include <optional>
-
 namespace siodb::iomgr::dbengine {
 
 /** System database */
@@ -64,6 +61,12 @@ public:
     std::uint64_t generateNextUserAccessKeyId();
 
     /**
+     * Generates new unique user token ID.
+     * @return New user tokenID.
+     */
+    std::uint64_t generateNextUserTokenId();
+
+    /**
      * Generates new unique database ID.
      * @param system Indicates that database ID should be in the system range
      * @return New database ID.
@@ -89,6 +92,13 @@ public:
      * @param tp Transaction parameters.
      */
     void recordUserAccessKey(const UserAccessKey& accessKey, const TransactionParameters& tp);
+
+    /**
+     * Records user token into the appropriate system table.
+     * @param token A token.
+     * @param tp Transaction parameters.
+     */
+    void recordUserToken(const UserToken& token, const TransactionParameters& tp);
 
     /**
      * Records database into the appropriate system table.
@@ -126,6 +136,13 @@ public:
     void deleteUserAccessKey(std::uint64_t accessKeyId, std::uint32_t currentUserId);
 
     /**
+     * Deletes user token record.
+     * @param tokenId User token ID.
+     * @param currentUserId Current user ID.
+     */
+    void deleteUserToken(std::uint64_t tokenId, std::uint32_t currentUserId);
+
+    /**
      * Updates existing user.
      * @param userId User ID.
      * @param params Update parameters.
@@ -145,22 +162,33 @@ public:
             std::uint32_t currentUserId);
 
     /**
-     * Creates sample tables for demo purposes.
+     * Updates user token.
+     * @param accessKeyId User token ID.
+     * @param params Update parameters.
      * @param currentUserId Current user ID.
      */
-    void createDemoTables(std::uint32_t currentUserId);
+    void updateUserToken(std::uint64_t tokenId, const UpdateUserTokenParameters& params,
+            std::uint32_t currentUserId);
 
 private:
-    /** User access key registries map bu user ID. */
+    /** User access key registry map by user ID. */
     using UserAccessKeyRegistries = std::unordered_map<std::uint32_t, UserAccessKeyRegistry>;
+
+    /** User token registry map by user ID. */
+    using UserTokenRegistries = std::unordered_map<std::uint32_t, UserTokenRegistry>;
 
 private:
     /**
-     * Reads list of known user access keyss from the system table.
-     * @param[out] userAccessKeyRegistries Collection of the user access key registries.
-     * @return Number of keys read.
+     * Reads list of known user access keys from the system table.
+     * @return Collection of the user access key registries.
      */
-    std::size_t readAllUserAccessKeys(UserAccessKeyRegistries& userAccessKeyRegistries);
+    UserAccessKeyRegistries readAllUserAccessKeys();
+
+    /**
+     * Reads list of known user tokens from the system table.
+     * @return Collection of the user token registries.
+     */
+    UserTokenRegistries readAllUserTokens();
 
 private:
     /** Table SYS_USERS */
@@ -168,6 +196,9 @@ private:
 
     /** Table SYS_USER_KEYS */
     TablePtr m_sysUserAccessKeysTable;
+
+    /** Table SYS_USER_TOKENS */
+    TablePtr m_sysUserTokensTable;
 
     /** Table SYS_DATABASES */
     TablePtr m_sysDatabasesTable;

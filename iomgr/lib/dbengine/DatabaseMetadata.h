@@ -15,18 +15,21 @@ namespace siodb::iomgr::dbengine {
 /** Database metadata includes various persistent parameters. */
 class DatabaseMetadata {
 public:
+    /** Current metadata version */
+    static constexpr std::uint64_t kCurrentVersion = 0;
+
+    /** Current schema version */
+    static constexpr std::uint64_t kCurrentSchemaVersion = 0;
+
+    /** Marker value */
+    static constexpr std::uint64_t kMarker = 0x0123456789ABCDEFULL;
+
+public:
     /**
      * Initializes object of class DatabaseMetadata.
      * @param userId Database initialization transaction user.
      */
-    explicit DatabaseMetadata(std::uint32_t userId) noexcept
-        : m_marker(kMarker)
-        , m_version(kCurrentVersion)
-        , m_lastTransactionId(0)
-        , m_lastAtomicOperationId(0)
-        , m_initTransactionParams(userId, ++m_lastTransactionId)
-    {
-    }
+    explicit DatabaseMetadata(std::uint32_t userId) noexcept;
 
     /** Copy construction disabled. */
     DatabaseMetadata(const DatabaseMetadata&) = delete;
@@ -35,21 +38,36 @@ public:
     DatabaseMetadata(DatabaseMetadata&&) = delete;
 
     /**
-     * Adjusts byte order of the all data if necessary.
-     * @return true if byte order was adjusted, false if adjustement was not required.
-     * @throw std::runtime_error if it wasn't possible to determine
-     *        whether byte order adjustement is required or not.
+     * Returns metadata version.
+     * @return Metadata version or 0xFFFFFFFFFFFFFFFFULL id failed to decode version.
      */
-    bool adjustByteOrder();
+    std::uint64_t getVersion() const noexcept;
 
     /**
-     * Retuns database initialization transaction parameters.
+     * Returns database initialization transaction parameters.
      * @return Database initialization transaction parameters object.
      */
     const auto& getInitTransactionParams() const noexcept
     {
         return m_initTransactionParams;
     }
+
+    /**
+     * Returns database schema version.
+     * @return Database schema version.
+     */
+    auto getSchemaVersion() const noexcept
+    {
+        return m_schemaVersion;
+    }
+
+    /**
+     * Adjusts byte order of the all data if necessary.
+     * @return true if byte order was adjusted, false if adjustement was not required.
+     * @throw std::runtime_error if it wasn't possible to determine
+     *        whether byte order adjustement is required or not.
+     */
+    bool adjustByteOrder();
 
     /**
      * Generates next transaction ID.
@@ -77,8 +95,8 @@ private:
     /** Marker that is used to detect endianness. */
     std::uint64_t m_marker;
 
-    /** Data version. Always little-endian value. Use ::pbeDecodeUInt64() to read it correctly. */
-    std::uint64_t m_version;
+    /** Metadata version. Always little-endian value. Use ::pbeDecodeUInt64() to read it correctly. */
+    std::uint8_t m_version[8];
 
     /** Last transaction ID */
     std::atomic<std::uint64_t> m_lastTransactionId;
@@ -89,11 +107,8 @@ private:
     /** Database initialization transaction parameters */
     const TransactionParameters m_initTransactionParams;
 
-    /** Current medatata version */
-    static constexpr std::uint64_t kCurrentVersion = 1;
-
-    /** Marker value */
-    static constexpr std::uint64_t kMarker = 0x0123456789ABCDEFULL;
+    /** Database schema version */
+    std::uint64_t m_schemaVersion;
 };
 
 }  // namespace siodb::iomgr::dbengine

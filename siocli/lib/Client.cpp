@@ -15,6 +15,7 @@
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 #include <siodb/common/stl_ext/bitmask.h>
+#include <siodb/common/stl_ext/buffer.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_ext/utility_ext.h>
@@ -40,27 +41,27 @@
 // utf8cpp headers
 #include <utf8cpp/utf8.h>
 
+namespace siodb::cli {
+
 void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
-        siodb::io::IoBase& connectionIo, std::ostream& os, bool stopOnError)
+        io::IoBase& connectionIo, std::ostream& os, bool stopOnError)
 {
     auto startTime = std::chrono::steady_clock::now();
     // Send command to server as protobuf message
-    siodb::client_protocol::Command command;
+    client_protocol::Command command;
     command.set_request_id(requestId);
     command.set_text(std::move(commandText));
-    siodb::protobuf::writeMessage(
-            siodb::protobuf::ProtocolMessageType::kCommand, command, connectionIo);
+    protobuf::writeMessage(protobuf::ProtocolMessageType::kCommand, command, connectionIo);
 
     std::size_t responseId = 0, responseCount = 0;
     do {
         // Read server response
         // Allow EINTR to cause I/O error when exit signal detected.
-        const siodb::utils::DefaultErrorCodeChecker errorCodeChecker;
+        const utils::DefaultErrorCodeChecker errorCodeChecker;
 
-        siodb::client_protocol::ServerResponse response;
-        siodb::protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
-        siodb::protobuf::readMessage(
-                siodb::protobuf::ProtocolMessageType::kServerResponse, response, input);
+        client_protocol::ServerResponse response;
+        protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
+        protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
 
 #ifdef _DEBUG
         std::cerr << "\ndebug: ==================================================================="
@@ -142,7 +143,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
             google::protobuf::io::CodedInputStream codedInput(&input);
 
             struct ColumnPrintInfo {
-                siodb::ColumnDataType type;
+                ColumnDataType type;
                 std::size_t width;
             };
 
@@ -154,11 +155,20 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
             for (int i = 0; i < columnCount; ++i) {
                 const auto& column = response.column_description(i);
                 const auto columnDataWidth =
-                        getColumnDataWidth(column.type(), column.name().length());
-
+                        detail::getColumnDataWidth(column.type(), column.name().length());
                 columnPrintInfo.push_back({column.type(), columnDataWidth});
                 nullAllowed |= column.is_null();
             }
+
+#ifdef _DEBUG
+            std::cerr << "\ndebug: Columns: " << columnCount << '\n';
+            for (int i = 0; i < columnCount; ++i) {
+                const auto& column = response.column_description(i);
+                std::cerr << "debug: [" << i << "] name: '" << column.name()
+                          << "' type: " << static_cast<int>(column.type()) << '\n';
+            }
+            std::cerr << std::endl;
+#endif
 
             // Print column names
             for (int i = 0; i < columnCount; ++i) {
@@ -191,8 +201,9 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                 }
                 if (rowLength == 0) break;
 
-                stdext::bitmask nullBitmask;
                 // Server is going to provide next row, read it.
+
+                stdext::bitmask nullBitmask;
                 if (nullAllowed) {
                     nullBitmask.resize(columnCount, false);
                     if (!codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size())) {
@@ -203,19 +214,13 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                     }
                 }
 
-                for (int col = 0; col < columnCount; ++col) {
-                    if (col > 0) {
-                        os << ' ';  // one space
-                    }
+                for (int i = 0; i < columnCount; ++i) {
+                    if (i > 0) os << ' ';  // one space
 
-                    auto columnType = columnPrintInfo[col].type;
-                    if (nullAllowed && nullBitmask.get(col)) {
-                        columnType = siodb::COLUMN_DATA_TYPE_UNKNOWN;
-                        columnPrintInfo[col].width = kNullDataWidth;
-                    }
-
-                    if (!receiveAndPrintColumnData(
-                                codedInput, columnType, columnPrintInfo[col].width, os)) {
+                    if (nullAllowed && nullBitmask.get(i))
+                        detail::printNull(columnPrintInfo[i].width, os);
+                    else if (!detail::receiveAndPrintColumnData(codedInput, columnPrintInfo[i].type,
+                                     columnPrintInfo[i].width, os)) {
                         std::ostringstream err;
                         err << "Can't read from server: " << std::strerror(input.GetErrno());
                         throw std::system_error(
@@ -244,18 +249,18 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
     } while (responseId < responseCount);
 }
 
-void authenticate(const std::string& identityKey, const std::string& userName,
-        siodb::io::IoBase& connectionIo)
+void authenticate(
+        const std::string& identityKey, const std::string& userName, io::IoBase& connectionIo)
 {
-    siodb::client_protocol::BeginSessionRequest beginSessionRequest;
+    client_protocol::BeginSessionRequest beginSessionRequest;
     beginSessionRequest.set_user_name(userName);
-    siodb::protobuf::writeMessage(siodb::protobuf::ProtocolMessageType::kClientBeginSessionRequest,
+    protobuf::writeMessage(protobuf::ProtocolMessageType::kClientBeginSessionRequest,
             beginSessionRequest, connectionIo);
 
-    siodb::client_protocol::BeginSessionResponse beginSessionResponse;
-    const siodb::utils::DefaultErrorCodeChecker errorCodeChecker;
-    siodb::protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
-    siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kClientBeginSessionResponse,
+    client_protocol::BeginSessionResponse beginSessionResponse;
+    const utils::DefaultErrorCodeChecker errorCodeChecker;
+    protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
+    protobuf::readMessage(protobuf::ProtocolMessageType::kClientBeginSessionResponse,
             beginSessionResponse, input);
 
     if (!beginSessionResponse.session_started()) {
@@ -269,20 +274,18 @@ void authenticate(const std::string& identityKey, const std::string& userName,
     }
 
     const auto& challenge = beginSessionResponse.challenge();
-    siodb::crypto::DigitalSignatureKey key;
+    crypto::DigitalSignatureKey key;
     key.parseFromString(identityKey);
     auto signature = key.signMessage(challenge);
 
-    siodb::client_protocol::ClientAuthenticationRequest authRequest;
+    client_protocol::ClientAuthenticationRequest authRequest;
     authRequest.set_signature(std::move(signature));
-    siodb::protobuf::writeMessage(
-            siodb::protobuf::ProtocolMessageType::kClientAuthenticationRequest, authRequest,
-            connectionIo);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kClientAuthenticationRequest, authRequest, connectionIo);
 
-    siodb::client_protocol::ClientAuthenticationResponse authResponse;
-    siodb::protobuf::readMessage(
-            siodb::protobuf::ProtocolMessageType::kClientAuthenticationResponse, authResponse,
-            input);
+    client_protocol::ClientAuthenticationResponse authResponse;
+    protobuf::readMessage(
+            protobuf::ProtocolMessageType::kClientAuthenticationResponse, authResponse, input);
 
     if (authResponse.has_message()) {
         std::cerr << "Authentication error: " << authResponse.message().status_code() << " "
@@ -292,10 +295,11 @@ void authenticate(const std::string& identityKey, const std::string& userName,
     if (!authResponse.authenticated()) throw std::runtime_error("User authentication error");
 }
 
-namespace {
+}  // namespace siodb::cli
 
-using DataTypeWidthArray =
-        std::array<std::size_t, static_cast<size_t>(siodb::COLUMN_DATA_TYPE_MAX)>;
+namespace siodb::cli::detail {
+
+using DataTypeWidthArray = std::array<std::size_t, static_cast<size_t>(COLUMN_DATA_TYPE_MAX)>;
 
 constexpr DataTypeWidthArray kDefaultDataWidths {
         kBoolDefaultDataWidth,  // COLUMN_DATA_TYPE_BOOL = 0,
@@ -325,13 +329,16 @@ constexpr DataTypeWidthArray kDefaultDataWidths {
         kUuidDefaultDataWidth  // COLUMN_DATA_TYPE_UUID = 24,
 };
 
-static_assert(kDefaultDataWidths[siodb::COLUMN_DATA_TYPE_DOUBLE] == kDoubleDefaultDataWidth);
+static_assert(kDefaultDataWidths[COLUMN_DATA_TYPE_DOUBLE] == kDoubleDefaultDataWidth);
 
-const char* kInvalidDayOfWeekShortName = "???";
-const char* kInvalidMonthShortName = "???";
-const char* kAm = "AM";
-const char* kPm = "PM";
-const char* kUndefinedAmPm = "??";
+constexpr const char* kNullLiteral = "NULL";
+constexpr const char* kSpaceLiteral = " ";
+
+constexpr const char* kInvalidDayOfWeekShortName = "???";
+constexpr const char* kInvalidMonthShortName = "???";
+constexpr const char* kAm = "AM";
+constexpr const char* kPm = "PM";
+constexpr const char* kUndefinedAmPm = "??";
 
 constexpr const char* kBlobDisplayPrefix = "0x";
 constexpr auto kBlobDisplayPrefixLength = ct_strlen(kBlobDisplayPrefix);
@@ -347,25 +354,24 @@ static_assert(kLobDisplaySuffixLength < kBinaryDefaultDataWidth - kBlobDisplayPr
 const auto kBlobPrintableLengthDecreaseForLobSuffix =
         (kLobDisplaySuffixLength / 2) + (kLobDisplaySuffixLength % 2);
 
-std::size_t getColumnDataWidth(siodb::ColumnDataType type, std::size_t nameLength)
+std::size_t getColumnDataWidth(ColumnDataType type, std::size_t nameLength)
 {
-    return (type >= 0 && type < siodb::COLUMN_DATA_TYPE_MAX)
+    return (type >= 0 && type < COLUMN_DATA_TYPE_MAX)
                    ? std::max(kDefaultDataWidths[type], nameLength)
                    : nameLength;
 }
 
-bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
-        siodb::ColumnDataType type, std::size_t width, std::ostream& os)
+bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is, ColumnDataType type,
+        std::size_t width, std::ostream& os)
 {
-    siodb::io::StreamFormatGuard formatGuard(os);
+    io::StreamFormatGuard formatGuard(os);
     switch (type) {
-        case siodb::COLUMN_DATA_TYPE_UNKNOWN: {
-            os.width(width);
-            os << "null";
+        case COLUMN_DATA_TYPE_UNKNOWN: {
+            printNull(width, os);
             return true;
         }
 
-        case siodb::COLUMN_DATA_TYPE_BOOL: {
+        case COLUMN_DATA_TYPE_BOOL: {
             std::uint8_t data = 0;
             if (is.ReadRaw(&data, sizeof(data))) {
                 os.width(width);
@@ -375,7 +381,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_INT8: {
+        case COLUMN_DATA_TYPE_INT8: {
             std::int8_t data = 0;
             if (is.ReadRaw(&data, sizeof(data))) {
                 os.width(width);
@@ -385,7 +391,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_UINT8: {
+        case COLUMN_DATA_TYPE_UINT8: {
             std::uint8_t data = 0;
             if (is.ReadRaw(&data, sizeof(data))) {
                 os.width(width);
@@ -395,7 +401,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_INT16: {
+        case COLUMN_DATA_TYPE_INT16: {
             std::int16_t data = 0;
             if (is.ReadRaw(&data, sizeof(data))) {
                 boost::endian::little_to_native_inplace(data);
@@ -406,7 +412,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_UINT16: {
+        case COLUMN_DATA_TYPE_UINT16: {
             std::uint16_t data = 0;
             if (is.ReadRaw(&data, sizeof(data))) {
                 boost::endian::little_to_native_inplace(data);
@@ -417,7 +423,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_INT32: {
+        case COLUMN_DATA_TYPE_INT32: {
             std::int32_t data = 0;
             if (is.ReadVarint32(reinterpret_cast<std::uint32_t*>(&data))) {
                 os.width(width);
@@ -427,7 +433,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_UINT32: {
+        case COLUMN_DATA_TYPE_UINT32: {
             std::uint32_t data = 0;
             if (is.ReadVarint32(&data)) {
                 os.width(width);
@@ -437,7 +443,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_INT64: {
+        case COLUMN_DATA_TYPE_INT64: {
             std::int64_t data = 0;
             if (is.ReadVarint64(reinterpret_cast<std::uint64_t*>(&data))) {
                 os.width(width);
@@ -447,7 +453,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_UINT64: {
+        case COLUMN_DATA_TYPE_UINT64: {
             std::uint64_t data = 0;
             if (is.ReadVarint64(&data)) {
                 os.width(width);
@@ -457,7 +463,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_FLOAT: {
+        case COLUMN_DATA_TYPE_FLOAT: {
             float data = 0.0f;
             if (is.ReadLittleEndian32(reinterpret_cast<std::uint32_t*>(&data))) {
                 os.width(width);
@@ -468,7 +474,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_DOUBLE: {
+        case COLUMN_DATA_TYPE_DOUBLE: {
             double data = 0.0;
             if (is.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&data))) {
                 os.width(width);
@@ -479,7 +485,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return false;
         }
 
-        case siodb::COLUMN_DATA_TYPE_TEXT: {
+        case COLUMN_DATA_TYPE_TEXT: {
             std::uint32_t clobLength = 0;
             // Read length
             if (!is.ReadVarint32(&clobLength)) return false;
@@ -639,19 +645,21 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             // Fill up to required length
             auto printedWidth = printableWidth;
             if (printSuffix) printedWidth += kLobDisplaySuffixLength;
-            if (printedWidth < kTextDefaultDataWidth) {
-                os.width(kTextDefaultDataWidth - printedWidth);
-                os << " ";  // IMPORTANT: must be string, not single character
-            }
+            const auto trailWidth =
+                    printedWidth < kTextDefaultDataWidth ? kTextDefaultDataWidth - printedWidth : 0;
 
             // Print string and leftover
             os.width(0);
             os << buffer;
             if (printSuffix) os << kLobDisplaySuffix;
+            if (trailWidth > 0) {
+                os.width(trailWidth);
+                os << kSpaceLiteral;
+            }
 
             // Read remaining data
             if (sampleLength < clobLength) {
-                std::vector<char> buffer2(kLobReadBufferSize);
+                stdext::buffer<char> buffer2(kLobReadBufferSize);
                 auto remaining = clobLength - sampleLength;
                 while (remaining > 0) {
                     const auto readSize = std::min(remaining, buffer2.size());
@@ -662,7 +670,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             return true;
         }
 
-        case siodb::COLUMN_DATA_TYPE_BINARY: {
+        case COLUMN_DATA_TYPE_BINARY: {
             std::uint32_t blobLength = 0;
             if (!is.ReadVarint32(&blobLength)) return false;
 
@@ -670,7 +678,7 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             std::uint8_t buffer[(kBinaryDefaultDataWidth - kBlobDisplayPrefixLength) / 2];
             const auto sampleLength =
                     std::min(static_cast<std::size_t>(blobLength), sizeof(buffer));
-            if (blobLength > 0) {
+            if (sampleLength > 0) {
                 if (!is.ReadRaw(buffer, sampleLength)) return false;
             }
 
@@ -680,14 +688,6 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
             if (printableLength < blobLength) {
                 printSuffix = true;
                 printableLength -= kBlobPrintableLengthDecreaseForLobSuffix;
-            }
-
-            // Fill up to required length
-            auto printedWidth = printableLength * 2 + kBlobDisplayPrefixLength;
-            if (printSuffix) printedWidth += kLobDisplaySuffixLength;
-            if (printedWidth < kBinaryDefaultDataWidth) {
-                os.width(kBinaryDefaultDataWidth - printedWidth - 1);
-                os << " ";  // IMPORTANT: must be string, not single character
             }
 
             // Print sample
@@ -704,9 +704,17 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
                 os << kLobDisplaySuffix;
             }
 
+            // Fill up to required length
+            auto printedWidth = printableLength * 2 + kBlobDisplayPrefixLength;
+            if (printSuffix) printedWidth += kLobDisplaySuffixLength;
+            if (printedWidth < kBinaryDefaultDataWidth) {
+                os.width(kBinaryDefaultDataWidth - printedWidth - 1);
+                os << kSpaceLiteral;
+            }
+
             // Read remaining data
             if (sampleLength < blobLength) {
-                std::vector<char> buffer2(kLobReadBufferSize);
+                stdext::buffer<char> buffer2(kLobReadBufferSize);
                 auto remaining = blobLength - sampleLength;
                 while (remaining > 0) {
                     const auto readSize = std::min(remaining, buffer2.size());
@@ -714,21 +722,23 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
                     remaining -= readSize;
                 }
             }
+
             return true;
         }
 
-        case siodb::COLUMN_DATA_TYPE_TIMESTAMP: {
+        case COLUMN_DATA_TYPE_TIMESTAMP: {
             // Read value
-            siodb::RawDateTime dateTime;
-            if (!siodb::protobuf::readRawDateTime(is, dateTime)) return false;
+            RawDateTime dateTime;
+            if (!protobuf::readRawDateTime(is, dateTime)) return false;
 
             // Print value
             char buffer[kTimestampDefaultDataWidth * 2];
-            const auto dayOfWeek = siodb::getDayOfWeekShortName(dateTime.m_datePart.m_dayOfWeek);
-            const auto month = siodb::getDayMonthShortName(dateTime.m_datePart.m_month);
+            const auto dayOfWeek = getDayOfWeekShortName(dateTime.m_datePart.m_dayOfWeek);
+            const auto month = getDayMonthShortName(dateTime.m_datePart.m_month);
             std::pair<unsigned, bool> hours;
-            const auto hoursValid = siodb::convertHours24To12(dateTime.m_timePart.m_hours, hours);
-            std::snprintf(buffer, sizeof(buffer), "%.3s %.3s %02u %d %02u:%02u:%02u.%09u %.2s",
+            const auto hoursValid = convertHours24To12(dateTime.m_timePart.m_hours, hours);
+            std::size_t length = std::snprintf(buffer, sizeof(buffer),
+                    "%.3s %.3s %02u %d %02u:%02u:%02u.%09u %.2s",
                     dayOfWeek ? dayOfWeek : kInvalidDayOfWeekShortName,
                     month ? month : kInvalidMonthShortName, dateTime.m_datePart.m_dayOfMonth + 1,
                     dateTime.m_datePart.m_year,
@@ -736,11 +746,13 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
                     dateTime.m_timePart.m_minutes, dateTime.m_timePart.m_seconds,
                     dateTime.m_timePart.m_nanos,
                     hoursValid ? (hours.second ? kPm : kAm) : kUndefinedAmPm);
-            os.width(width);
             os << buffer;
+            if (length < width) {
+                os.width(width - length);
+                os << kSpaceLiteral;
+            }
             return true;
         }
-
         default: {
             std::ostringstream err;
             err << "Unsupported column data type " << static_cast<int>(type);
@@ -749,4 +761,13 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is,
     }
 }
 
-}  // anonymous namespace
+void printNull(std::size_t width, std::ostream& os)
+{
+    os << kNullLiteral;
+    if (width > ::ct_strlen(kNullLiteral)) {
+        os.width(width - ::ct_strlen(kNullLiteral));
+        os << kSpaceLiteral;
+    }
+}
+
+}  // namespace siodb::cli::detail

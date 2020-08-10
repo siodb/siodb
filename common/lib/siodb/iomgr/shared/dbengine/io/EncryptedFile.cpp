@@ -96,7 +96,7 @@ std::size_t EncryptedFile::read(std::uint8_t* buffer, std::size_t size, off_t of
 std::size_t EncryptedFile::write(
         const std::uint8_t* buffer, std::size_t size, off_t offset) noexcept
 {
-    DEBUG_TRACE("EncryptedFile::WRITE: buffer=" << VOID_PTR(buffer) << " size=" << size
+    DEBUG_TRACE("EncryptedFile::WRITE: buffer=" << CONST_VOID_PTR(buffer) << " size=" << size
                                                 << " offset=" << offset);
 
     if (offset < 0) {
@@ -154,7 +154,7 @@ bool EncryptedFile::extend(off_t length) noexcept
 std::size_t EncryptedFile::readInternal(
         std::uint8_t* buffer, std::size_t size, off_t offset) noexcept
 {
-    DEBUG_TRACE("EncryptedFile::readInternal: buffer=" << VOID_PTR(buffer) << " size=" << size
+    DEBUG_TRACE("EncryptedFile::readInternal: buffer=" << CONST_VOID_PTR(buffer) << " size=" << size
                                                        << " offset=" << offset);
 
     std::size_t totalBytesRead = 0;
@@ -227,8 +227,8 @@ std::size_t EncryptedFile::readInternal(
 std::size_t EncryptedFile::writeInternal(
         const std::uint8_t* buffer, std::size_t size, off_t offset) noexcept
 {
-    DEBUG_TRACE("EncryptedFile::writeInternal: buffer=" << VOID_PTR(buffer) << " size=" << size
-                                                        << " offset=" << offset);
+    DEBUG_TRACE("EncryptedFile::writeInternal: buffer=" << CONST_VOID_PTR(buffer) << " size="
+                                                        << size << " offset=" << offset);
 
     std::size_t totalBytesWritten = 0;
 

@@ -3,6 +3,7 @@
 - [Environment Preparation](#environment-preparation)
   - [Ubuntu 18.04 LTS](#ubuntu-1804-lts)
   - [Ubuntu 20.04 LTS](#ubuntu-2004-lts)
+  - [Debian 10](#debian-10)
   - [CentOS 7](#centos-7)
   - [CentOS 8](#centos-8)
   - [RHEL 7](#rhel-7)
@@ -18,22 +19,92 @@
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Required tools and libraries
-sudo apt install build-essential cmake doxygen gdb graphviz gcc-8 g++-8 libboost1.65-dev \
-    libboost-log1.65-dev libboost-program-options1.65-dev libcurl4-openssl-dev \
-    libssl-dev openjdk-8-jdk-headless pkg-config uuid-dev clang-format-8 \
-    ubuntu-dbgsym-keyring
+sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
+    graphviz gcc-8 g++-8 libboost1.65-dev libboost-log1.65-dev \
+    libboost-program-options1.65-dev libcurl4-openssl-dev libtool libssl-dev \
+    lsb-release openjdk-11-jdk-headless python pkg-config uuid-dev \
+    clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
-    /usr/lib/llvm-8/bin/clang-format 1
+    /usr/lib/llvm-10/bin/clang-format 1
 sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
-    /usr/lib/llvm-8/bin/git-clang-format 1
-sudo update-alternatives --set clang-format /usr/lib/llvm-8/bin/clang-format
-sudo update-alternatives --set git-clang-format /usr/lib/llvm-8/bin/git-clang-format
+    /usr/lib/llvm-10/bin/git-clang-format 1
+sudo update-alternatives --set clang-format /usr/lib/llvm-10/bin/clang-format
+sudo update-alternatives --set git-clang-format \
+    /usr/lib/llvm-10/bin/git-clang-format
+```
+
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+
+### Ubuntu 20.04 LTS
+
+Run following commands:
+
+```bash
+cd $HOME
+
+# Required tools and libraries
+sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
+    graphviz libboost1.71-dev libboost-log1.71-dev \
+    libboost-program-options1.71-dev libcurl4-openssl-dev libtool libssl-dev \
+    lsb-release openjdk-11-jdk-headless pkg-config python2 uuid-dev \
+    clang-format-10 ubuntu-dbgsym-keyring
+
+# Set up alternatives for the clang-format
+sudo update-alternatives --install /usr/bin/clang-format clang-format \
+    /usr/lib/llvm-10/bin/clang-format 1
+sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
+    /usr/lib/llvm-10/bin/git-clang-format 1
+sudo update-alternatives --set clang-format /usr/lib/llvm-10/bin/clang-format
+sudo update-alternatives --set git-clang-format /usr/lib/llvm-10/bin/git-clang-format
+
+# Link Python 2 (required by Google Test fuse script)
+sudo ln -s /usr/bin/python2 /usr/bin/python
+```
+
+Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+
+### Debian 10
+
+Run following commands:
+
+```bash
+cd $HOME
+
+# Required tools and libraries
+sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
+    graphviz libboost1.67-dev libboost-log1.67-dev \
+    libboost-program-options1.67-dev libcurl4-openssl-dev libtool libssl-dev \
+    lsb-release openjdk-11-jdk-headless pkg-config python2 uuid-dev wget
+
+# Install clang-9. This one is for SLES, but works on the Debian 10 too.
+sudo apt install -y libncurses5
+mkdir /tmp/getllvm
+cd /tmp/getllvm
+wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+tar --no-same-owner -xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+sudo mkdir -p /usr/local/lib
+sudo mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3 /usr/local/lib
+cd $HOME
+rm -rf /tmp/getllvm
+
+# Set up alternatives for the clang-format
+sudo update-alternatives --install /usr/bin/clang-format clang-format \
+    /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format 1
+sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
+    /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format 1
+sudo update-alternatives --set clang-format \
+  /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format
+sudo update-alternatives --set git-clang-format \
+  /usr/local/lib/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format
+
+# Link Python 2 (required by Google Test fuse script)
+sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
@@ -66,16 +137,16 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Enable additional repositories
-sudo yum -y install \
+sudo yum install -y \
     https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.8-1.x86_64.rpm \
     https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 
 # Enable software collections
-sudo yum -y install centos-release-scl
+sudo yum install -y centos-release-scl
 
 # Update your system
 sudo yum -y update
@@ -84,12 +155,13 @@ sudo yum -y update
 sudo yum remove git*
 
 # Install latest git
-sudo yum install git
+sudo yum install -y git
 
 # Install required tools and libraries
-sudo yum -y install cmake3 curl gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
-    libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
-    wget zlib-devel python
+sudo yum install -y autoconf automake boost169-devel cmake3 curl \
+    devtoolset-8-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
+    libatomic libcurl-devel libtool libuuid-devel openssl-devel pkgconfig \
+    python redhat-lsb uuid-devel wget which zlib-devel
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -103,59 +175,28 @@ sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
 --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
 --family cmake
 
-# Install clang-9. This one is for SLES, but works on the CentOS 7 too.
+# Install clang-9. This one is for SLES, but works for the CentOS 7 too.
 mkdir /tmp/getllvm
 cd /tmp/getllvm
 wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
-sudo cp -Rf local /usr
-sudo ldconfig
-sudo mandb
+tar --no-same-owner -xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+rm -f clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3 /usr/local/lib64
+sudo alternatives --install /usr/local/bin/clang-format clang-format \
+    /usr/local/lib64/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format 20 \
+    --slave /usr/local/bin/git-clang-format git-clang-format \
+    /usr/local/lib64/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format
 cd $HOME
 rm -rf /tmp/getllvm
+
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
-```
 
-Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
-
-- You can check what is latest version here: [OpenSSL Downloads](https://www.openssl.org/source/)
-  (for example, latest version is 1.1.1g at the moment of writing this).
-- You can get detailed installation instructions, for example, on the following web pages:
-  - [How To Install OpenSSL 1.1.1d in CentOS](https://www.hostnextra.com/kb/how-to-install-openssl-1-1-1d-in-centos/)
-  - [Installing OpenSSL on CentOS 7](https://cloudwafer.com/blog/installing-openssl-on-centos-7/)
-
-Below instructions are based on the mentioned above sources:
-
-```shell
-# Define lastest OpenSSL version
-export LATEST_OPENSSL_VERSION=1.1.1g
-
-# Download, build, test install
-cd /usr/local/src
-sudo wget https://www.openssl.org/source/openssl-${LATEST_OPENSSL_VERSION}.tar.gz
-sudo yum update -y
-sudo yum install yum install perl-core libtemplate-perl zlib-devel
-sudo tar xaf openssl-${LATEST_OPENSSL_VERSION}.tar.gz
-cd openssl-${LATEST_OPENSSL_VERSION}
-sudo ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
-sudo make -j4
-sudo make -j4 test
-sudo make -j4 install
-sudo /bin/sh -c 'echo "/usr/local/ssl/lib" > /etc/ld.so.conf.d/openssl-'${LATEST_OPENSSL_VERSION}'.conf'
-sudo ldconfig -v
-sudo mv /bin/openssl /bin/openssl.backup
-sudo /bin/sh -c 'echo "OPENSSL_PATH=/usr/local/ssl/bin" > /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "export OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "PATH=\$PATH:\$OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "export PATH" >> /etc/profile.d/openssl.sh'
-sudo chmod +x /etc/profile.d/openssl.sh
-source /etc/profile.d/openssl.sh
-which openssl
-openssl version -a
+# Create links for the libatomic - required by Oat++
+sudo ln -s /usr/lib/libatomic.so.1.0.0 /usr/lib/libatomic.so
+sudo ln -s /usr/lib64/libatomic.so.1.0.0 /usr/lib64/libatomic.so
 ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
@@ -164,37 +205,22 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Enable additional repositories
-sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
 # Update your system
-sudo yum -y update
+sudo dnf -y update
 
 # Install required tools and libraries
-sudo yum -y install cmake curl gcc gcc-c++ boost-devel libcurl-devel \
-          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb \
-          wget zlib-devel python2
+sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
+    git-clang-format java-11-openjdk-headless libatomic libcurl-devel libtool \
+    libuuid-devel openssl-devel python2 pkgconfig redhat-lsb wget which \
+    zlib-devel
 
-# Install clang-9. This one is for SLES, but works on the CentOS 8 too.
-mkdir /tmp/getllvm
-cd /tmp/getllvm
-wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
-sudo cp -Rf local /usr
-sudo ldconfig
-sudo mandb
-cd $HOME
-rm -rf /tmp/getllvm
-
-# Permanently tell ldconfig to scan /usr/local/lib when updating cache
-sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
-sudo ldconfig
-
-# Link python 2
+# Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
@@ -204,11 +230,11 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Enable additional repositories
-sudo yum -y install \
+sudo yum install -y \
     https://packages.endpoint.com/rhel/7/os/x86_64/endpoint-repo-1.7-1.x86_64.rpm \
     https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 
@@ -222,12 +248,13 @@ sudo yum -y update
 sudo yum remove git*
 
 # Install latest git
-sudo yum install git
+sudo yum install -y git
 
 # Install required tools and libraries
-sudo yum -y install cmake3 curl gcc gcc-c++ devtoolset-8-toolchain boost169-devel libcurl-devel \
-          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb uuid-devel \
-          wget zlib-devel python
+sudo yum install -y autoconf automake boost169-devel cmake3 curl \
+    devtoolset-8-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
+    libatomic libcurl-devel lubtool libuuid-devel openssl-devel pkgconfig \
+    python redhat-lsb uuid-devel wget which zlib-devel
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -241,59 +268,27 @@ sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
 --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
 --family cmake
 
-# Install clang-9. This one is for SLES, but works on the CentOS 7 too.
+# Install clang-9. This one is for SLES, but works for the RHEL 7 too.
 mkdir /tmp/getllvm
 cd /tmp/getllvm
 wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
-sudo cp -Rf local /usr
-sudo ldconfig
-sudo mandb
+tar --no-same-owner -xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+rm -f clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
+mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3 /usr/local/lib64
+sudo alternatives --install /usr/local/bin/clang-format clang-format \
+    /usr/local/lib64/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/clang-format 20 \
+    --slave /usr/local/bin/git-clang-format git-clang-format \
+    /usr/local/lib64/clang+llvm-9.0.0-x86_64-linux-sles11.3/bin/git-clang-format
 cd $HOME
 rm -rf /tmp/getllvm
 
 # Permanently tell ldconfig to scan /usr/local/lib when updating cache
 sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
 sudo ldconfig
-```
 
-Install latest version of the OpenSSL 1.1.1 into `/usr/local/ssl/`.
-
-- You can check what is latest version here: [OpenSSL Downloads](https://www.openssl.org/source/)
-  (for example, latest version is 1.1.1g at the moment of writing this).
-- You can get detailed installation instructions, for example, on the following web pages:
-  - [How To Install OpenSSL 1.1.1d in CentOS](https://www.hostnextra.com/kb/how-to-install-openssl-1-1-1d-in-centos/)
-  - [Installing OpenSSL on CentOS 7](https://cloudwafer.com/blog/installing-openssl-on-centos-7/)
-
-Below instructions are based on the mentioned above sources:
-
-```shell
-# Define lastest OpenSSL version
-export LATEST_OPENSSL_VERSION=1.1.1g
-
-# Download, build, test install
-cd /usr/local/src
-sudo wget https://www.openssl.org/source/openssl-${LATEST_OPENSSL_VERSION}.tar.gz
-sudo yum update -y
-sudo yum install yum install perl-core libtemplate-perl zlib-devel
-sudo tar xaf openssl-${LATEST_OPENSSL_VERSION}.tar.gz
-cd openssl-${LATEST_OPENSSL_VERSION}
-sudo ./config --prefix=/usr/local/ssl --openssldir=/usr/local/ssl shared zlib
-sudo make -j4
-sudo make -j4 test
-sudo make -j4 install
-sudo /bin/sh -c 'echo "/usr/local/ssl/lib" > /etc/ld.so.conf.d/openssl-'${LATEST_OPENSSL_VERSION}'.conf'
-sudo ldconfig -v
-sudo mv /bin/openssl /bin/openssl.backup
-sudo /bin/sh -c 'echo "OPENSSL_PATH=/usr/local/ssl/bin" > /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "export OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "PATH=$PATH:$OPENSSL_PATH" >> /etc/profile.d/openssl.sh'
-sudo /bin/sh -c 'echo "export $PATH" >> /etc/profile.d/openssl.sh'
-sudo chmod +x /etc/profile.d/openssl.sh
-source /etc/profile.d/openssl.sh
-which openssl
-openssl version -a
+# Create links for the libatomic - required by Oat++
+sudo ln -s /usr/lib/libatomic.so.1.0.0 /usr/lib/libatomic.so
+sudo ln -s /usr/lib64/libatomic.so.1.0.0 /usr/lib64/libatomic.so
 ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
@@ -302,37 +297,22 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Run following commands:
 
-```shell
+```bash
 cd $HOME
 
 # Enable additional repositories
-sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
 # Update your system
-sudo yum -y update
+sudo dnf -y update
 
 # Install required tools and libraries
-sudo yum -y install cmake curl gcc gcc-c++ boost-devel libcurl-devel \
-          libuuid-devel openssl-devel java-1.8.0-openjdk-headless redhat-lsb \
-          wget zlib-devel python2
+sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
+    git-clang-format java-11-openjdk-headless libatomic libcurl-devel libtool \
+    libuuid-devel openssl-devel python2 pkgconfig redhat-lsb wget which \
+    zlib-devel
 
-# Install clang-9. This one is for SLES, but works on the CentOS 8 too.
-mkdir /tmp/getllvm
-cd /tmp/getllvm
-wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-tar xaf clang+llvm-9.0.0-x86_64-linux-sles11.3.tar.xz
-mv -f clang+llvm-9.0.0-x86_64-linux-sles11.3  local
-sudo cp -Rf local /usr
-sudo ldconfig
-sudo mandb
-cd $HOME
-rm -rf /tmp/getllvm
-
-# Permanently tell ldconfig to scan /usr/local/lib when updating cache
-sudo /bin/sh -c 'echo "/usr/local/lib" >/etc/ld.so.conf.d/usr-local-lib.conf'
-sudo ldconfig
-
-# Link python 2
+# Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
@@ -344,7 +324,7 @@ Change current directory to the root of siodb Git repository and execute followi
 
 **NOTE:** Adjust make parameter `-j4` to number of CPUs/cores available on the your build machine.
 
-```shell
+```bash
 
 # Clone Siodb repository or your Siodb fork, like this:
 mkdir ~/projects
@@ -354,46 +334,60 @@ git clone git@github.com:siodb/siodb.git
 # Enter repository root directory
 cd siodb
 
+# Install source code formatting hook for git
+cp -fv tools/git/clang-format.hook .git/hooks/pre-commit
+
 # CentOS 7/RHEL 7 ONLY: Enable devtoolset-8
 scl enable devtoolset-8 bash
 
-# Install source code formatting hook for git
-cp -fv tools/git_hooks/siodb-clang-format.hook .git/hooks/pre-commit
+# Enter third party libraries directory
+cd thirdparty
 
-# Build and install Google Protobuf library
-cd thirdparty/protobuf
-tar xaf protobuf-all-3.11.4.tar.xz
-cd protobuf-3.11.4
-./configure
+# Source third-party library versions, directory paths, compiler options
+source thirdparty_versions.sh
+source thirdparty_options.sh
+
+# CentOS 7/RHEL7 ONLY:
+# Install newer version of the OpenSSL
+sudo yum install -y perl-core zlib-devel
+cd openssl
+tar --no-same-owner -xaf openssl-${SIODB_OPENSSL_VERSION}.tar.xz
+cd openssl-${SIODB_OPENSSL_VERSION}
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -Wl,-rpath -Wl,${SIODB_OPENSSL_PREFIX}/lib" \
+    ./config --prefix=${SIODB_OPENSSL_PREFIX} --openssldir=${SIODB_OPENSSL_PREFIX} shared zlib
 make -j4
-sudo make install
-sudo ldconfig
+make -j4 test
+sudo make -j4 install
 cd ../..
 
-# Build and install Utf8cpp library
-cd utf8cpp
-tar xaf utfcpp-3.1.tar.xz
-cd utfcpp-3.1
+# Install ANTLR4 executables
+cd antlr4
+sudo ./install.sh ${SIODB_ANTLR4_PREFIX}
+cd ..
+
+# Build and isntall ANTLR4 runtime library
+cd antlr4-cpp-runtime
+tar --no-same-owner -xaf antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source.tar.xz
+cd antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DUTF8_TESTS=Off ..
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_ANTLR4_CPP_RUNTIME_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
 make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
 
-# Install ANTLR4 executables
-cd antlr4
-sudo ./install.sh
-cd ..
-
-# Build and isntall ANTLR4 runtime library
-cd antlr4-cpp-runtime
-tar xaf antlr4-cpp-runtime-4.8-source.tar.xz
-cd antlr4-cpp-runtime-4.8-source
+# Build and install date library
+cd date
+tar --no-same-owner -xaf date-${SIODB_LIBDATE_VERSION}.tar.xz
+cd date-${SIODB_LIBDATE_VERSION}
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_LIBDATE_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          -DUSE_SYSTEM_TZ_DB=ON -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
 make -j4
 sudo make install
 sudo ldconfig
@@ -401,32 +395,93 @@ cd ../../..
 
 # Build and install Google Test library
 cd googletest
-tar xaf googletest-release-1.8.1.tar.xz
-cd googletest-release-1.8.1/googlemock/scripts
-./fuse_gmock_files.py gtest-gmock-1.8.1
-sudo cp -Rf gtest-gmock-1.8.1 /usr/local/include
+tar --no-same-owner -xaf googletest-release-${SIODB_GTEST_VERSION}.tar.xz
+cd googletest-release-${SIODB_GTEST_VERSION}/googlemock/scripts
+./fuse_gmock_files.py include
+sudo mkdir -p "${SIODB_GTEST_PREFIX}"
+sudo cp -Rf include "${SIODB_GTEST_PREFIX}"
 cd ../../../..
 
-# Build and install date library
-cd date
-tar xaf date-20190911.tar.xz
-cd date-20190911
+# Build and install Oat++ library
+cd oatpp
+tar --no-same-owner -xaf oatpp-${SIODB_OATPP_VERSION}.tar.xz
+cd oatpp-${SIODB_OATPP_VERSION}
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_TZ_DB=ON \
-      -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_OATPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
 make -j4
 sudo make install
+sudo ldconfig
+cd ../../..
+
+# Build and install Google Protobuf library
+cd protobuf
+tar --no-same-owner -xaf protobuf-all-${SIODB_PROTOBUF_VERSION}.tar.xz
+cd protobuf-${SIODB_PROTOBUF_VERSION}
+./autogen.sh
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -L${SIODB_PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib" \
+    ./configure "--prefix=${SIODB_PROTOBUF_PREFIX}" --enable-shared --enable-static
+make -j4
+sudo make install
+sudo ldconfig
+
+# Fix protoc if needed
+${SIODB_PROTOBUF_PREFIX}/bin/protoc
+if [[ $? != 0 ]]; then
+    cd src
+    cp -f protoc protoc.tmp
+    sed -i "s+./.libs/libprotobuf.so ./.libs/libprotoc.so+-L${SIODB_PROTOBUF_PREFIX}/lib -lprotobuf -lprotoc -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib+g" protoc.tmp
+    rm -f ./.libs/protoc ./.libs/lt-protoc
+    ./protoc.tmp
+    rm -f protoc.tmp
+    cp -f ./.libs/lt-protoc ./.libs/protoc
+    ldd ./.libs/protoc
+    sudo install -t "${SIODB_PROTOBUF_PREFIX}/bin" ./.libs/protoc
+    cd ..
+fi
+
+cd ../..
+
+# Build and install Utf8cpp library
+cd utf8cpp
+tar --no-same-owner -xaf utfcpp-${SIODB_UTF8CPP_VERSION}.tar.xz
+cd utfcpp-${SIODB_UTF8CPP_VERSION}
+mkdir build
+cd build
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_UTF8CPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          -DUTF8_TESTS=Off ..
+make -j4
+sudo make install
+sudo ldconfig
 cd ../../..
 
 # Build and install xxHash library
 cd xxHash
-tar xaf xxHash-0.7.2.tar.xz
-cd xxHash-0.7.2
-make -j4
+tar --no-same-owner -xaf xxHash-${SIODB_XXHASH_VERSION}.tar.xz
+cd xxHash-${SIODB_XXHASH_VERSION}
+mkdir build
+cd build
+
+# CentOS and RHEL
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -Wl,-rpath -Wl,${SIODB_XXHASH_PREFIX}/lib64" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_XXHASH_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          ../cmake_unofficial
+
+# Ubuntu, Debian
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -Wl,-rpath -Wl,${SIODB_XXHASH_PREFIX}/lib" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_XXHASH_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+          ../cmake_unofficial
+
+sudo make -j4
 sudo make install
 sudo ldconfig
-cd ../..
+cd ../../..
 
 # Build and install message compiler
 cd ../tools/message_compiler
@@ -439,41 +494,88 @@ cd ../..
 
 One-time system setup commands (with explanation):
 
-```shell
-sudo useradd -M siodb
+```bash
+# Change to siodb repository root, CHANGE THIS to actua directory
+cd siodb
+
+# Add Siodb user and group
+sudo useradd -s /sbin/nologin -d /var/lib/siodb siodb
 sudo usermod -L siodb
 
+# Create Siodb instance configuration directory
+sudo mkdir -p /etc/siodb/instances
+sudo chown -R siodb:siodb /etc/siodb
+sudo chmod -R 0770 /etc/siodb
+
+# Create default instance configuration
+sudo -u siodb /etc/siodb/instances/siodb
+sudo cp config/siodb.conf /etc/siodb/instances/siodb/config
+sudo chmod 0600 /etc/siodb/instances/siodb/config
+sudo chown siodb:siodb /etc/siodb/instances/siodb/config
+sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/system_db_key bs=16 count=1
+sudo chmod 0600 /etc/siodb/instances/siodb/system_db_key
+sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/initial_access_key
+sudo chmod 0600 /etc/siodb/instances/siodb/initial_access_key
+sudo chown siodb:siodb /etc/siodb/instances/siodb/initial_access_key
+
+# Create default data directory
 sudo mkdir -p /var/lib/siodb
 sudo chown -R siodb:siodb /var/lib/siodb
 sudo chmod -R 0770 /var/lib/siodb
 
+# Create default log directory
 sudo mkdir -p /var/log/siodb
 sudo chown -R siodb:siodb /var/log/siodb
 sudo chmod -R 0770 /var/log/siodb
 
+# Create UNIX socket directory
 sudo mkdir -p /run/siodb/
 sudo chown -R siodb:siodb /run/siodb
 sudo chmod -R 0770 /run/siodb
 
+# Make UNIX socket directory persistent across reboots
+sudo /bin/sh -c 'echo "d /run/siodb 0770 siodb siodb -" >/usr/lib/tmpfiles.d/siodb.conf'
+
+# Create lock file directory
 sudo mkdir -p /run/lock/siodb/
 sudo chown -R siodb:siodb /run/lock/siodb
 sudo chmod -R 0770 /run/lock/siodb
 
-sudo /bin/sh -c 'echo "d /run/siodb 0770 siodb siodb -" >/usr/lib/tmpfiles.d/siodb.conf'
+# Make lock file directory persistent across reboots
 sudo /bin/sh -c 'echo "d /run/lock/siodb 0770 siodb siodb -" >>/usr/lib/tmpfiles.d/siodb.conf'
+
+# Adjust file descriptor limits for the user siodb
 sudo /bin/sh -c 'echo "siodb hard nofile 524288" >>/etc/security/limits.conf'
 sudo /bin/sh -c 'echo "siodb soft nofile 524288" >>/etc/security/limits.conf'
 ```
 
-To allow your own user run siodb:
+To allow running Siodb under your own user instead of user `siodb`:
 
-```shell
+```bash
+# Add self to the group siodb
 sudo usermod -a -G siodb `whoami`
+
+# Adjust file descriptor limits
 sudo /bin/sh -c 'echo "'`whoami`' hard nofile 524288" >>/etc/security/limits.conf'
 sudo /bin/sh -c 'echo "'`whoami`' soft nofile 524288" >>/etc/security/limits.conf'
 ```
 
 and re-login.
+
+To allow running SQL tests under your own user (may be required on the CentOS and RHEL):
+
+```bash
+# 1. Performs above steps to allow running Siodb under your own user.
+
+# 2. Adjust Siodb defult instance configuration file permissions
+sudo chmod 0660 /etc/siodb/instances/siodb/config
+sudo chmod 0660 /etc/siodb/instances/siodb/system_db_key
+sudo chmod 0660 /etc/siodb/instances/siodb/initial_access_key
+
+# 3. Edit default instance configuration file /etc/siodb/instances/siodb/config
+#    set following parameter to "true"
+allow_group_permissions_on_config_files = true
+```
 
 ## Compiling Siodb
 

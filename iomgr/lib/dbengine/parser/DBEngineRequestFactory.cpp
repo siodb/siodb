@@ -8,6 +8,7 @@
 #include "AntlrHelpers.h"
 #include "antlr_wrappers/SiodbParserWrapper.h"
 #include "expr/AllColumnsExpression.h"
+#include "expr/ConstantExpression.h"
 
 // Common project headers
 #include "expr/ExpressionFactory.h"
@@ -25,7 +26,14 @@ namespace siodb::iomgr::dbengine::parser {
 
 namespace {
 
-bool parseStateNode(antlr4::tree::ParseTree* node, const char* errorMessage)
+/**
+ * Parses active/inactive state.
+ * @param node A node to parse from.
+ * @param errorMessage Error message to use if parsing error occurs.
+ * @return true for the ACTIVE state, false for the INACTIVE state.
+ * @throw std::invalid_argument if state could not be parsed.
+ */
+bool parseState(antlr4::tree::ParseTree* node, const char* errorMessage)
 {
     switch (helpers::getTerminalType(node)) {
         case SiodbParser::K_ACTIVE: return true;
@@ -34,28 +42,53 @@ bool parseStateNode(antlr4::tree::ParseTree* node, const char* errorMessage)
     }
 }
 
+/**
+ * Parses string as expiration timestamp.
+ * @param s A string to parse.
+ * @return Expiration timestamp as epoch seconds.
+ * @throw std::runtime_error if parsing failed.
+ */
+time_t parseExpirationTimestamp(const std::string& s)
+{
+    const Variant t(s, Variant::AsDateTime());
+    return t.getDateTime().toEpochTimestamp();
+}
+
 }  // namespace
 
 const std::unordered_map<std::string, siodb::ColumnDataType>
         DBEngineRequestFactory::m_siodbDataTypeMap {
+                {"BOOLEAN", siodb::COLUMN_DATA_TYPE_BOOL},
                 {"INTEGER", siodb::COLUMN_DATA_TYPE_INT32},
                 {"INT", siodb::COLUMN_DATA_TYPE_INT32},
+                {"INT32", siodb::COLUMN_DATA_TYPE_INT32},
                 {"UINT", siodb::COLUMN_DATA_TYPE_UINT32},
+                {"UINT32", siodb::COLUMN_DATA_TYPE_UINT32},
+                {"INT8", siodb::COLUMN_DATA_TYPE_INT8},
                 {"TINYINT", siodb::COLUMN_DATA_TYPE_INT8},
+                {"UINT8", siodb::COLUMN_DATA_TYPE_UINT8},
                 {"TINYUINT", siodb::COLUMN_DATA_TYPE_UINT8},
+                {"INT16", siodb::COLUMN_DATA_TYPE_INT16},
                 {"SMALLINT", siodb::COLUMN_DATA_TYPE_INT16},
+                {"UINT16", siodb::COLUMN_DATA_TYPE_UINT16},
                 {"SMALLUINT", siodb::COLUMN_DATA_TYPE_UINT16},
+                {"INT64", siodb::COLUMN_DATA_TYPE_INT64},
                 {"BIGINT", siodb::COLUMN_DATA_TYPE_INT64},
+                {"UINT64", siodb::COLUMN_DATA_TYPE_UINT64},
                 {"BIGUINT", siodb::COLUMN_DATA_TYPE_UINT64},
                 {"SMALLREAL", siodb::COLUMN_DATA_TYPE_FLOAT},
                 {"REAL", siodb::COLUMN_DATA_TYPE_DOUBLE},
                 {"FLOAT", siodb::COLUMN_DATA_TYPE_FLOAT},
                 {"DOUBLE", siodb::COLUMN_DATA_TYPE_DOUBLE},
                 {"TEXT", siodb::COLUMN_DATA_TYPE_TEXT},
+                {"NTEXT", siodb::COLUMN_DATA_TYPE_TEXT},
                 {"CHAR", siodb::COLUMN_DATA_TYPE_TEXT},
                 {"VARCHAR", siodb::COLUMN_DATA_TYPE_TEXT},
                 {"BLOB", siodb::COLUMN_DATA_TYPE_BINARY},
+                {"BINARY", siodb::COLUMN_DATA_TYPE_BINARY},
                 {"TIMESTAMP", siodb::COLUMN_DATA_TYPE_TIMESTAMP},
+                {"XML", siodb::COLUMN_DATA_TYPE_XML},
+                {"JSON", siodb::COLUMN_DATA_TYPE_JSON},
         };
 
 requests::DBEngineRequestPtr DBEngineRequestFactory::createRequest(antlr4::tree::ParseTree* node)
@@ -84,39 +117,98 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRequest(antlr4::tree:
         case SiodbParser::RuleDetach_stmt: return createDetachDatabaseRequest(node);
         case SiodbParser::RuleCreate_database_stmt: return createCreateDatabaseRequest(node);
         case SiodbParser::RuleDrop_database_stmt: return createDropDatabaseRequest(node);
+        case SiodbParser::RuleAlter_database_stmt: {
+            auto keyword = helpers::findTerminal(node, SiodbParser::K_RENAME);
+            if (keyword) return createRenameDatabaseRequest(node);
+
+            keyword = helpers::findTerminal(node, SiodbParser::K_SET);
+            if (keyword) return createSetDatabaseAttributesRequest(node);
+
+            throw std::runtime_error("ALTER DATABASE: unsupported operation");
+        }
         case SiodbParser::RuleUse_database_stmt: return createUseDatabaseRequest(node);
         case SiodbParser::RuleCreate_table_stmt: return createCreateTableRequest(node);
         case SiodbParser::RuleDrop_table_stmt: return createDropTableRequest(node);
         case SiodbParser::RuleAlter_table_stmt: {
-            auto keyword = helpers::findTerminal(node, SiodbParser::K_RENAME);
-            if (keyword) return createRenameTableRequest(node);
-
-            keyword = helpers::findTerminal(node, SiodbParser::K_ADD);
-            if (keyword) return createAddColumnRequest(node);
-
-            keyword = helpers::findTerminal(node, SiodbParser::K_DROP);
-            if (keyword) return createDropColumnRequest(node);
-
-            throw std::runtime_error("ALTER TABLE unsupported transformation");
+            if (helpers::hasTerminalChild(node, SiodbParser::K_RENAME)) {
+                return helpers::hasTerminalChild(node, SiodbParser::K_COLUMN)
+                               ? createRenameColumnRequest(node)
+                               : createRenameTableRequest(node);
+            }
+            if (helpers::hasTerminalChild(node, SiodbParser::K_ADD))
+                return createAddColumnRequest(node);
+            if (helpers::hasTerminalChild(node, SiodbParser::K_DROP))
+                return createDropColumnRequest(node);
+            if (helpers::hasTerminalChild(node, SiodbParser::K_SET))
+                return createSetTableAttributesRequest(node);
+            if (helpers::hasTerminalChild(node, SiodbParser::K_ALTER, 1))
+                return createRedefineColumnRequest(node);
+            throw std::runtime_error("ALTER TABLE: unsupported operation");
         }
         case SiodbParser::RuleCreate_index_stmt: return createCreateIndexRequest(node);
         case SiodbParser::RuleDrop_index_stmt: return createDropIndexRequest(node);
         case SiodbParser::RuleCreate_user_stmt: return createCreateUserRequest(node);
         case SiodbParser::RuleDrop_user_stmt: return createDropUserRequest(node);
         case SiodbParser::RuleAlter_user_stmt: {
-            auto keywordTerminal = helpers::getTerminalType(node->children.at(3));
-            if (keywordTerminal == SiodbParser::K_ADD)
-                return createAddUserAccessKeyRequest(node);
-            else if (keywordTerminal == SiodbParser::K_DROP)
-                return createDropUserAccessKeyRequest(node);
-            else if (keywordTerminal == SiodbParser::K_ALTER) {
-                //  K_ALTER K_ACCESS KEY user_key_name SET user_key_option_list case
-                return createAlterUserAccessKeyRequest(node);
-            } else if (keywordTerminal == SiodbParser::K_SET) {
-                // SET user_option case
-                return createAlterUserRequest(node);
+            const auto operationType = helpers::getTerminalType(node->children.at(3));
+            switch (operationType) {
+                case SiodbParser::K_ADD: {
+                    const auto objectType = helpers::getTerminalType(node->children.at(4));
+                    switch (objectType) {
+                        case SiodbParser::K_ACCESS: return createAddUserAccessKeyRequest(node);
+                        case SiodbParser::K_TOKEN: return createAddUserTokenRequest(node);
+                        default:
+                            throw std::runtime_error("ALTER USER ADD: unsupported object type");
+                    }
+                }
+                case SiodbParser::K_DROP: {
+                    const auto objectType = helpers::getTerminalType(node->children.at(4));
+                    switch (objectType) {
+                        case SiodbParser::K_ACCESS: return createDropUserAccessKeyRequest(node);
+                        case SiodbParser::K_TOKEN: return createDropUserTokenRequest(node);
+                        default:
+                            throw std::runtime_error("ALTER USER DROP: unsupported object type");
+                    }
+                }
+                case SiodbParser::K_ALTER: {
+                    const auto objectType = helpers::getTerminalType(node->children.at(4));
+                    switch (objectType) {
+                        case SiodbParser::K_ACCESS: {
+                            const auto actionType = helpers::getTerminalType(node->children.at(7));
+                            switch (actionType) {
+                                case SiodbParser::K_SET: {
+                                    return createSetUserAccessKeyAttributesRequest(node);
+                                }
+                                case SiodbParser::K_RENAME: {
+                                    return createRenameUserAccessKeyRequest(node);
+                                }
+                                default: {
+                                    throw std::runtime_error(
+                                            "ALTER USER ALTER ACCESS KEY: unsupported action");
+                                }
+                            }
+                        }
+                        case SiodbParser::K_TOKEN: {
+                            const auto actionType = helpers::getTerminalType(node->children.at(6));
+                            switch (actionType) {
+                                case SiodbParser::K_SET:
+                                    return createSetUserTokenAttributesRequest(node);
+                                case SiodbParser::K_RENAME: {
+                                    return createRenameUserTokenRequest(node);
+                                }
+                                default: {
+                                    throw std::runtime_error(
+                                            "ALTER USER ALTER TOKEN: unsupported action");
+                                }
+                            }
+                        }
+                        default:
+                            throw std::runtime_error("ALTER USER ALTER: unsupported object type");
+                    }
+                }
+                case SiodbParser::K_SET: return createSetUserAttributesRequest(node);
+                default: throw std::runtime_error("ALTER USER: unsupported operation");
             }
-            throw std::runtime_error("ALTER TABLE unsupported transformation");
         }
         default: {
             throw std::invalid_argument(
@@ -143,7 +235,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForGener
 requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForSimpleSelectStatement(
         antlr4::tree::ParseTree* node)
 {
-    ExpressionFactory exprFactory(false);
+    ExpressionFactory exprFactory;
     std::string database;
     std::vector<requests::SourceTable> tables;
     std::vector<requests::ResultExpression> columns;
@@ -163,7 +255,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForSimpl
                     if (i >= node->children.size())
                         throw std::runtime_error("SELECT: LIMIT does not contain expression");
 
-                    if (node->children.size() + 2 > i
+                    if (node->children.size() > i + 2
                             && helpers::getTerminalType(node->children[i + 1])
                                        == SiodbParser::COMMA) {
                         // '... LIMIT <OFFSET> , <LIMIT> ...' case
@@ -239,7 +331,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createInsertRequest(
     if (tableIdNode)
         table = boost::to_upper_copy(tableIdNode->getText());
     else
-        throw std::invalid_argument("INSERT missing table ID");
+        throw std::invalid_argument("INSERT: missing table ID");
 
     // Capture column IDs
     std::vector<std::string> columns;
@@ -263,7 +355,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createInsertRequest(
 
     if (!valuesFound) throw std::runtime_error("INSERT missing VALUES keyword");
 
-    ExpressionFactory exprFactory(false);
+    ExpressionFactory exprFactory;
     std::vector<std::vector<requests::ConstExpressionPtr>> values;
     if (!columns.empty()) values.reserve(columns.size());
     bool inValueGroup = false;
@@ -324,7 +416,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createUpdateRequest(
                 if (tableNameNode)
                     tableName = boost::to_upper_copy(tableNameNode->getText());
                 else
-                    throw std::invalid_argument("UPDATE missing table ID");
+                    throw std::invalid_argument("UPDATE: missing table ID");
 
                 // Capture table alias
                 const auto tableAliasNode = helpers::findTerminal(
@@ -371,7 +463,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createUpdateRequest(
                             std::string column;
                             if (columnNode->children.size() == 1) {
                                 // Only column name is expected
-                                column = boost::to_upper_copy(columnNode->children[0]->getText());
+                                column = helpers::extractObjectName(columnNode, 0);
                             } else {
                                 // Normally should never happen
                                 throw std::runtime_error("UPDATE SET statement is broken");
@@ -451,7 +543,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDeleteRequest(
                 if (tableNameNode)
                     tableName = boost::to_upper_copy(tableNameNode->getText());
                 else
-                    throw std::invalid_argument("DELETE missing table ID");
+                    throw std::invalid_argument("DELETE: missing table ID");
 
                 // Capture table alias
                 const auto tableAliasNode = helpers::findTerminal(
@@ -464,7 +556,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDeleteRequest(
                 if (terminalType == SiodbParser::K_WHERE) {
                     ++i;
                     if (i >= node->children.size())
-                        throw std::runtime_error("DELETE, WHERE does not contain expression");
+                        throw std::runtime_error("DELETE: WHERE does not contain expression");
 
                     ExpressionFactory exprFactory(true);
                     where = exprFactory.createExpression(node->children[i]);
@@ -583,7 +675,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAttachDatabaseRequest
         databaseUuid =
                 boost::uuids::string_generator()(helpers::unquoteString(uuidNode->getText()));
     } else
-        throw std::invalid_argument("ATTACH DATABASE missing database UUID");
+        throw std::invalid_argument("ATTACH DATABASE: missing database UUID");
 
     // Capture database ID
     std::string database;
@@ -592,7 +684,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAttachDatabaseRequest
     if (databaseIdNode)
         database = boost::to_upper_copy(databaseIdNode->getText());
     else
-        throw std::invalid_argument("ATTACH DATABASE missing database ID");
+        throw std::invalid_argument("ATTACH DATABASE: missing database ID");
 
     return std::make_unique<requests::AttachDatabaseRequest>(
             std::move(databaseUuid), std::move(database));
@@ -608,11 +700,10 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDetachDatabaseRequest
     if (databaseIdNode)
         database = boost::to_upper_copy(databaseIdNode->getText());
     else
-        throw std::invalid_argument("DETACH DATABASE missing database ID");
+        throw std::invalid_argument("DETACH DATABASE: missing database ID");
 
     // Check for "IF EXISTS" clause
-    const auto ifNode = helpers::findTerminal(node, SiodbParser::K_IF);
-    const bool ifExists = (ifNode != nullptr);
+    const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
 
     return std::make_unique<requests::DetachDatabaseRequest>(std::move(database), ifExists);
 }
@@ -622,7 +713,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateDatabaseRequest
 {
     // Normally should never happen
     if (node->children.size() < 3)
-        throw std::invalid_argument("CREATE DATABASE request is malformed");
+        throw std::invalid_argument("CREATE DATABASE: malformed statement");
 
     // Database node could be 2 or 3 ( in case of CREATE TEMPORARY DATABASE <name>)
     bool temporary = false;
@@ -635,36 +726,35 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateDatabaseRequest
         databaseNodeIndex = 3;
         temporary = true;
     } else
-        throw std::invalid_argument("CREATE DATABASE missing database name");
+        throw std::invalid_argument("CREATE DATABASE: missing database name");
 
-    auto database = boost::to_upper_copy(node->children[databaseNodeIndex]->getText());
+    auto database = helpers::extractObjectName(node, databaseNodeIndex);
 
     //  <name> + WITH + <List of options>
     requests::ConstExpressionPtr cipherId, cipherKeySeed;
     if (node->children.size() == databaseNodeIndex + 3) {
         if (helpers::getNonTerminalType(node->children[databaseNodeIndex + 2])
-                != SiodbParser::RuleCreate_database_option_list)
-            throw std::invalid_argument("CREATE DATABASE missing option list");
+                != SiodbParser::RuleCreate_database_attr_list)
+            throw std::invalid_argument("CREATE DATABASE: missing option list");
 
-        auto optionsListNode = node->children[databaseNodeIndex + 2];
-        // skip comma (option ',' option ... )
-        for (std::size_t i = 0; i < optionsListNode->children.size(); i += 2) {
-            auto optionNode = optionsListNode->children[i];
-            ExpressionFactory exprFactory(false);
-            switch (helpers::getTerminalType(optionNode->children.at(0))) {
+        const auto attrListNode = node->children[databaseNodeIndex + 2];
+        ExpressionFactory exprFactory;
+        for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+            auto attrNode = attrListNode->children[i];
+            switch (helpers::getTerminalType(attrNode->children.at(0))) {
                 case SiodbParser::K_CIPHER_ID: {
-                    cipherId = exprFactory.createExpression(optionNode->children.at(2));
+                    cipherId = exprFactory.createExpression(attrNode->children.at(2));
                     break;
                 }
                 case SiodbParser::K_CIPHER_KEY_SEED: {
-                    cipherKeySeed = exprFactory.createExpression(optionNode->children.at(2));
+                    cipherKeySeed = exprFactory.createExpression(attrNode->children.at(2));
                     break;
                 }
-                default: throw std::invalid_argument("CREATE DATABASE invalid option");
+                default: throw std::invalid_argument("CREATE DATABASE: invalid attribute");
             }
         }
     } else if (node->children.size() != databaseNodeIndex + 1)
-        throw std::invalid_argument("CREATE DATABASE request is malformed");
+        throw std::invalid_argument("CREATE DATABASE: malformed statement");
 
     return std::make_unique<requests::CreateDatabaseRequest>(
             std::move(database), temporary, std::move(cipherId), std::move(cipherKeySeed));
@@ -673,20 +763,44 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateDatabaseRequest
 requests::DBEngineRequestPtr DBEngineRequestFactory::createDropDatabaseRequest(
         antlr4::tree::ParseTree* node)
 {
-    // Capture database ID
-    std::string database;
-    const auto databaseIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode)
-        database = boost::to_upper_copy(databaseIdNode->getText());
-    else
-        throw std::invalid_argument("DROP DATABASE missing database ID");
-
-    // Check for "IF EXISTS" clause
-    const auto ifNode = helpers::findTerminal(node, SiodbParser::K_IF);
-    const bool ifExists = (ifNode != nullptr);
-
+    const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
+    auto database = helpers::extractObjectName(node, ifExists ? 4 : 2);
     return std::make_unique<requests::DropDatabaseRequest>(std::move(database), ifExists);
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameDatabaseRequest(
+        antlr4::tree::ParseTree* node)
+{
+    auto database = helpers::extractObjectName(node, 2);
+    const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
+    auto newDatabase = helpers::extractObjectName(node, ifExists ? 7 : 5);
+    return std::make_unique<requests::RenameDatabaseRequest>(
+            std::move(database), std::move(newDatabase), ifExists);
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createSetDatabaseAttributesRequest(
+        [[maybe_unused]] antlr4::tree::ParseTree* node)
+{
+    auto database = helpers::extractObjectName(node, 2);
+    std::optional<std::optional<std::string>> description;
+    const auto attrListNode = node->children.at(4);
+    for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+        const auto attrNode = attrListNode->children[i];
+        switch (helpers::getTerminalType(attrNode->children.at(0))) {
+            case SiodbParser::K_DESCRIPTION: {
+                const auto valueNode = attrNode->children.at(2);
+                description = (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                                      ? std::optional<std::string>()
+                                      : std::optional<std::string>(
+                                              helpers::unquoteString(valueNode->getText()));
+                break;
+            }
+            default:
+                throw std::invalid_argument("ALTER DATABASE SET ATTRIBUTES: invalid attribute");
+        }
+    }
+    return std::make_unique<requests::SetDatabaseAttributesRequest>(
+            std::move(database), std::move(description));
 }
 
 requests::DBEngineRequestPtr DBEngineRequestFactory::createUseDatabaseRequest(
@@ -699,7 +813,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createUseDatabaseRequest(
     if (databaseIdNode)
         database = boost::to_upper_copy(databaseIdNode->getText());
     else
-        throw std::invalid_argument("USE DATABASE missing database ID");
+        throw std::invalid_argument("USE DATABASE: missing database ID");
 
     return std::make_unique<requests::UseDatabaseRequest>(std::move(database));
 }
@@ -707,18 +821,22 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createUseDatabaseRequest(
 requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
         antlr4::tree::ParseTree* node)
 {
+    const auto tableSpecNode = helpers::findNonTerminalChild(node, SiodbParser::RuleTable_spec);
+
     // Capture database ID
     std::string database;
-    const auto databaseIdNode = helpers::findNonTerminal(node, SiodbParser::RuleDatabase_name);
+    const auto databaseIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
     if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
 
     // Capture table ID
     std::string table;
-    const auto tableIdNode = helpers::findNonTerminal(node, SiodbParser::RuleTable_name);
+    const auto tableIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
     if (tableIdNode)
         table = boost::to_upper_copy(tableIdNode->getText());
     else
-        throw std::invalid_argument("CREATE TABLE missing table ID");
+        throw std::invalid_argument("CREATE TABLE: missing table ID");
 
     // Capture column definitions
     std::vector<requests::ColumnDefinition> columns;
@@ -728,14 +846,14 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
         // Find column ID
         const auto columnIdNode = helpers::findTerminal(
                 columnDefNode, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
-        if (!columnIdNode) throw std::invalid_argument("CREATE TABLE missing column ID");
+        if (!columnIdNode) throw std::invalid_argument("CREATE TABLE: missing column ID");
         auto columnName = boost::to_upper_copy(columnIdNode->getText());
 
         // Find column data type
         const auto typeNameNode =
                 helpers::findNonTerminal(columnDefNode, SiodbParser::RuleType_name);
         if (typeNameNode == nullptr)
-            throw std::invalid_argument("CREATE TABLE missing column data type");
+            throw std::invalid_argument("CREATE TABLE: missing column data type");
 
         // Capture data type
         std::ostringstream typeName;
@@ -788,18 +906,24 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
             // Check for UNIQUE constraint
             terminal = helpers::findTerminal(constraintNode, SiodbParser::K_UNIQUE);
             if (terminal) {
-                // TODO(102): Parse columns
                 std::vector<std::string> columns;
+                columns.push_back(columnName);
                 constraints.emplace_back(std::make_unique<requests::UniqueConstraint>(
                         std::move(constraintName), std::move(columns)));
                 continue;
             }
 
             // Check for DEFAULT constraint
-            terminal = helpers::findTerminal(constraintNode, SiodbParser::K_DEFAULT);
-            if (terminal) {
-                // TODO(102): Parse default value
-                requests::ExpressionPtr defaultValue;
+            auto terminalIndex = helpers::findTerminalChild(constraintNode, SiodbParser::K_DEFAULT);
+            if (terminalIndex != std::numeric_limits<std::size_t>::max()) {
+                //DBG_LOG_DEBUG("Parsing default value for column " << columnName);
+                auto expressionIndex = terminalIndex + 1;
+                const auto terminalType =
+                        helpers::getTerminalType(constraintNode->children[expressionIndex]);
+                if (terminalType == SiodbParser::OPEN_PAR) ++expressionIndex;
+                ExpressionFactory exprFactory;
+                auto defaultValue =
+                        exprFactory.createExpression(constraintNode->children[expressionIndex]);
                 constraints.emplace_back(std::make_unique<requests::DefaultValueConstraint>(
                         std::move(constraintName), std::move(defaultValue)));
                 continue;
@@ -827,8 +951,8 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
             // Check for CHECK constraint
             terminal = helpers::findTerminal(constraintNode, SiodbParser::K_CHECK);
             if (terminal) {
-                // TODO(102): Parse CHECK expression
-                std::string expression;
+                // TODO: Parse CHECK expression
+                requests::ExpressionPtr expression;
                 constraints.emplace_back(std::make_unique<requests::CheckConstraint>(
                         std::move(constraintName), std::move(expression)));
                 continue;
@@ -860,24 +984,25 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
 requests::DBEngineRequestPtr DBEngineRequestFactory::createDropTableRequest(
         antlr4::tree::ParseTree* node)
 {
+    const auto tableSpecNode = helpers::findNonTerminalChild(node, SiodbParser::RuleTable_spec);
+
     // Capture database ID
     std::string database;
-    const auto databaseIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+    const auto databaseIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
     if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
 
     // Capture table ID
     std::string table;
-    const auto tableIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+    const auto tableIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
     if (tableIdNode)
         table = boost::to_upper_copy(tableIdNode->getText());
     else
-        throw std::invalid_argument("DROP TABLE missing table ID");
+        throw std::invalid_argument("DROP TABLE: missing table ID");
 
     // Check for "IF EXISTS" clause
-    const auto ifNode = helpers::findTerminal(node, SiodbParser::K_IF);
-    const bool ifExists = (ifNode != nullptr);
+    const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
 
     return std::make_unique<requests::DropTableRequest>(
             std::move(database), std::move(table), ifExists);
@@ -886,20 +1011,22 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropTableRequest(
 requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameTableRequest(
         antlr4::tree::ParseTree* node)
 {
+    const auto tableSpecNode = node->children.at(2);
+
     // Capture database ID
     std::string database;
-    const auto databaseIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+    const auto databaseIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
     if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
 
     // Capture old table ID
     std::string oldTable;
-    const auto oldTableIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+    const auto oldTableIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
     if (oldTableIdNode)
         oldTable = boost::to_upper_copy(oldTableIdNode->getText());
     else
-        throw std::invalid_argument("ALTER TABLE RENAME TO missing table ID");
+        throw std::invalid_argument("ALTER TABLE RENAME TO: missing table ID");
 
     // Capture new table ID
     std::string newTable;
@@ -908,45 +1035,95 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameTableRequest(
     if (newTableIdNode)
         newTable = boost::to_upper_copy(newTableIdNode->getText());
     else
-        throw std::invalid_argument("ALTER TABLE RENAME TO missing new table ID");
+        throw std::invalid_argument("ALTER TABLE RENAME TO: missing new table ID");
 
     // Check for "IF EXISTS" clause
-    const auto ifNode = helpers::findTerminal(node, SiodbParser::K_IF);
-    const bool ifExists = (ifNode != nullptr);
+    const bool ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
 
     return std::make_unique<requests::RenameTableRequest>(
             std::move(database), std::move(oldTable), std::move(newTable), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createAddColumnRequest(
+requests::DBEngineRequestPtr DBEngineRequestFactory::createSetTableAttributesRequest(
         antlr4::tree::ParseTree* node)
 {
+    const auto tableSpecNode = node->children.at(2);
+
     // Capture database ID
     std::string database;
-    const auto databaseIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+    const auto databaseIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
     if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
 
     // Capture table ID
     std::string table;
-    const auto tableIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+    const auto tableIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
     if (tableIdNode)
         table = boost::to_upper_copy(tableIdNode->getText());
     else
-        throw std::invalid_argument("ALTER TABLE ADD COLUMN missing table ID");
+        throw std::invalid_argument("ALTER TABLE SET ATTRIBUTES: missing table ID");
+
+    std::optional<std::uint64_t> nextTrid;
+
+    const auto attrListNode = helpers::findNonTerminal(node, SiodbParser::RuleTable_attr_list);
+    if (attrListNode == nullptr)
+        throw std::invalid_argument("ALTER TABLE SET ATTRIBUTES: missing attribute list");
+    for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+        const auto attrNode = attrListNode->children[i];
+        switch (helpers::getTerminalType(attrNode->children.at(0))) {
+            case SiodbParser::K_NEXT_TRID: {
+                const auto value = attrNode->children.at(2)->getText();
+                try {
+                    size_t index = 0;
+                    nextTrid = std::stoull(value, &index, 10);
+                    if (index != value.length()) throw std::invalid_argument("");
+                } catch (std::exception& ex) {
+                    throw std::invalid_argument(
+                            "ALTER TABLE SET ATTRIBUTES: invalid integer value of the attribute "
+                            "NEXT_TRID");
+                }
+                break;
+            }
+            default: throw std::invalid_argument("ALTER TABLE SET ATTRIBUTES: invalid attribute");
+        }
+    }
+
+    return std::make_unique<requests::SetTableAttributesRequest>(
+            std::move(database), std::move(table), std::move(nextTrid));
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createAddColumnRequest(
+        antlr4::tree::ParseTree* node)
+{
+    const auto tableSpecNode = node->children.at(2);
+
+    // Capture database ID
+    std::string database;
+    const auto databaseIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+
+    // Capture table ID
+    std::string table;
+    const auto tableIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+    if (tableIdNode)
+        table = boost::to_upper_copy(tableIdNode->getText());
+    else
+        throw std::invalid_argument("ALTER TABLE ADD COLUMN: missing table ID");
 
     // Find column ID
     const auto columnIdNode =
             helpers::findTerminal(node, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
-    if (!columnIdNode) throw std::invalid_argument("ALTER TABLE ADD COLUMN missing column ID");
+    if (!columnIdNode) throw std::invalid_argument("ALTER TABLE ADD COLUMN: missing column ID");
     auto columnName = boost::to_upper_copy(columnIdNode->getText());
 
     // Find column data type
     const auto typeNameNode =
             helpers::findTerminal(node, SiodbParser::RuleType_name, SiodbParser::IDENTIFIER);
     if (typeNameNode == nullptr)
-        throw std::invalid_argument("ALTER TABLE ADD COLUMN missing column data type");
+        throw std::invalid_argument("ALTER TABLE ADD COLUMN: missing column data type");
     const auto columnDataType = getColumnDataType(boost::to_upper_copy(typeNameNode->getText()));
 
     // Fill new column info
@@ -960,20 +1137,22 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAddColumnRequest(
 requests::DBEngineRequestPtr DBEngineRequestFactory::createDropColumnRequest(
         antlr4::tree::ParseTree* node)
 {
+    const auto tableSpecNode = node->children.at(2);
+
     // Capture database ID
     std::string database;
-    const auto databaseIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+    const auto databaseIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
     if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
 
     // Capture table ID
     std::string table;
-    const auto tableIdNode =
-            helpers::findTerminal(node, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+    const auto tableIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
     if (tableIdNode)
         table = boost::to_upper_copy(tableIdNode->getText());
     else
-        throw std::invalid_argument("ALTER TABLE DROP COLUMN missing table ID");
+        throw std::invalid_argument("ALTER TABLE DROP COLUMN: missing table ID");
 
     // Capture column ID
     std::string column;
@@ -982,14 +1161,80 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropColumnRequest(
     if (columnIdNode)
         column = boost::to_upper_copy(columnIdNode->getText());
     else
-        throw std::invalid_argument("ALTER TABLE DROP COLUMN missing table ID");
+        throw std::invalid_argument("ALTER TABLE DROP COLUMN: missing table ID");
 
     // Check for "IF EXISTS" clause
-    const auto ifNode = helpers::findTerminal(node, SiodbParser::K_IF);
-    const bool ifExists = (ifNode != nullptr);
+    const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
 
     return std::make_unique<requests::DropColumnRequest>(
             std::move(database), std::move(table), std::move(column), ifExists);
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameColumnRequest(
+        antlr4::tree::ParseTree* node)
+{
+    const auto tableSpecNode = node->children.at(2);
+
+    std::string database;
+    const auto databaseIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+
+    std::string table;
+    const auto tableIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+    if (tableIdNode)
+        table = boost::to_upper_copy(tableIdNode->getText());
+    else
+        throw std::invalid_argument("ALTER TABLE ALTER COLUMN RENAME TO: missing table ID");
+
+    auto column = boost::to_upper_copy(node->children.at(5)->getText());
+    const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
+    auto newColumn = helpers::extractObjectName(node, ifExists ? 10 : 8);
+
+    return std::make_unique<requests::RenameColumnRequest>(std::move(database), std::move(table),
+            std::move(column), std::move(newColumn), ifExists);
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createRedefineColumnRequest(
+        antlr4::tree::ParseTree* node)
+{
+    const auto tableSpecNode = node->children.at(2);
+
+    // Capture database ID
+    std::string database;
+    const auto databaseIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+
+    // Capture table ID
+    std::string table;
+    const auto tableIdNode = helpers::findTerminal(
+            tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+    if (tableIdNode)
+        table = boost::to_upper_copy(tableIdNode->getText());
+    else
+        throw std::invalid_argument("ALTER TABLE ALTER COLUMN: missing table ID");
+
+    // Find column ID
+    const auto columnIdNode =
+            helpers::findTerminal(node, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
+    if (!columnIdNode) throw std::invalid_argument("ALTER TABLE ALTER COLUMN: missing column ID");
+    auto columnName = boost::to_upper_copy(columnIdNode->getText());
+
+    // Find column data type
+    const auto typeNameNode =
+            helpers::findTerminal(node, SiodbParser::RuleType_name, SiodbParser::IDENTIFIER);
+    if (typeNameNode == nullptr)
+        throw std::invalid_argument("ALTER TABLE ALTER COLUMN: missing column data type");
+    const auto columnDataType = getColumnDataType(boost::to_upper_copy(typeNameNode->getText()));
+
+    // Fill new column info
+    requests::ColumnDefinition column(
+            std::move(columnName), columnDataType, kDefaultDataFileDataAreaSize, {});
+
+    return std::make_unique<requests::RedefineColumnRequest>(
+            std::move(database), std::move(table), std::move(column));
 }
 
 requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateIndexRequest(
@@ -1008,7 +1253,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateIndexRequest(
     if (indexNameNode)
         index = boost::to_upper_copy(indexNameNode->getText());
     else
-        throw std::invalid_argument("CREATE INDEX missing index name");
+        throw std::invalid_argument("CREATE INDEX: missing index name");
 
     // Capture table ID
     std::string table;
@@ -1017,7 +1262,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateIndexRequest(
     if (tableIdNode)
         table = boost::to_upper_copy(tableIdNode->getText());
     else
-        throw std::invalid_argument("CREATE INDEX missing table ID");
+        throw std::invalid_argument("CREATE INDEX: missing table ID");
 
     // Capture column definitions
     std::vector<requests::IndexColumnDefinition> columns;
@@ -1027,7 +1272,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateIndexRequest(
         // Find column ID
         const auto columnIdNode =
                 helpers::findTerminal(e, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
-        if (!columnIdNode) throw std::invalid_argument("CREATE INDEX missing column ID");
+        if (!columnIdNode) throw std::invalid_argument("CREATE INDEX: missing column ID");
 
         // Find sort order
         const bool sortDescending = helpers::findTerminal(e, SiodbParser::K_DESC) != nullptr;
@@ -1064,7 +1309,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropIndexRequest(
     if (indexNameNode)
         index = boost::to_upper_copy(indexNameNode->getText());
     else
-        throw std::invalid_argument("DROP INDEX missing index name");
+        throw std::invalid_argument("DROP INDEX: missing index name");
 
     // Check for "IF EXISTS" clause
     const auto ifNode = helpers::findTerminal(node, SiodbParser::K_IF);
@@ -1078,25 +1323,24 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateUserRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
-    if (node->children.size() < 3) throw std::invalid_argument("CREATE USER request is malformed");
+    if (node->children.size() < 3) throw std::invalid_argument("CREATE USER: malformed statement");
 
     // Get node text as is without 'GetAnyText' call.
-    auto name = boost::to_upper_copy(node->children[2]->getText());
+    auto name = helpers::extractObjectName(node, 2);
     std::optional<std::string> realName, description;
     bool active = true;
 
     //  <name> + WITH + <List of options>
     if (node->children.size() > 4) {
-        if (helpers::getNonTerminalType(node->children[4]) != SiodbParser::RuleUser_option_list)
-            throw std::invalid_argument("CREATE USER missing options list");
+        if (helpers::getNonTerminalType(node->children[4]) != SiodbParser::RuleUser_attr_list)
+            throw std::invalid_argument("CREATE USER: missing options list");
 
-        const auto optionsListNode = node->children[4];
-        // skip comma (option ',' option ... )
-        for (std::size_t i = 0; i < optionsListNode->children.size(); i += 2) {
-            const auto optionNode = optionsListNode->children[i];
-            switch (helpers::getTerminalType(optionNode->children.at(0))) {
+        const auto attrListNode = node->children[4];
+        for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+            const auto attrNode = attrListNode->children[i];
+            switch (helpers::getTerminalType(attrNode->children.at(0))) {
                 case SiodbParser::K_REAL_NAME: {
-                    const auto valueNode = optionNode->children.at(2);
+                    const auto valueNode = attrNode->children.at(2);
                     if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
                         realName.reset();
                     else
@@ -1104,19 +1348,19 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateUserRequest(
                     break;
                 }
                 case SiodbParser::K_DESCRIPTION: {
-                    const auto valueNode = optionNode->children.at(2);
+                    const auto valueNode = attrNode->children.at(2);
                     if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
                         description.reset();
                     else
-                        description = helpers::unquoteString(optionNode->children.at(2)->getText());
+                        description = helpers::unquoteString(attrNode->children.at(2)->getText());
                     break;
                 }
                 case SiodbParser::K_STATE: {
-                    active = parseStateNode(
-                            optionNode->children.at(2), "CREATE USER invalid user state");
+                    active =
+                            parseState(attrNode->children.at(2), "CREATE USER: invalid user state");
                     break;
                 }
-                default: throw std::invalid_argument("CREATE USER invalid option");
+                default: throw std::invalid_argument("CREATE USER: invalid attribute");
             }
         }
     }
@@ -1129,95 +1373,86 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
-    if (node->children.size() < 3) throw std::invalid_argument("DROP USER request is malformed");
+    if (node->children.size() < 3) throw std::invalid_argument("DROP USER: request is malformed");
 
     // Get node text as is without 'GetAnyText' call.
-    auto name = boost::to_upper_copy(node->children[2]->getText());
+    auto name = helpers::extractObjectName(node, 2);
     return std::make_unique<requests::DropUserRequest>(std::move(name), false);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createAlterUserRequest(
+requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserAttributesRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
-    if (node->children.size() < 5)
-        throw std::invalid_argument("ALTER USER <username> SET <option_list> request is malformed");
+    if (node->children.size() < 5) throw std::invalid_argument("ALTER USER: malformed statement");
 
-    // Get node text as is without 'GetAnyText' call.
-    auto name = boost::to_upper_copy(node->children[2]->getText());
+    auto name = helpers::extractObjectName(node, 2);
 
     std::optional<std::optional<std::string>> realName, description;
     std::optional<bool> active;
 
-    const auto optionsListNode = node->children[4];
+    const auto attrListNode = node->children[4];
     // skip comma (option ',' option ... )
-    for (std::size_t i = 0; i < optionsListNode->children.size(); i += 2) {
-        const auto optionNode = optionsListNode->children[i];
-        switch (helpers::getTerminalType(optionNode->children.at(0))) {
+    for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+        const auto attrNode = attrListNode->children[i];
+        switch (helpers::getTerminalType(attrNode->children.at(0))) {
             case SiodbParser::K_REAL_NAME: {
-                const auto valueNode = optionNode->children.at(2);
-                if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL) {
-                    // It is optional optional, just reset() doesn't work here.
-                    realName = std::optional<std::string>();
-                } else {
-                    realName = std::optional<std::string>(
-                            helpers::unquoteString(valueNode->getText()));
-                }
+                const auto valueNode = attrNode->children.at(2);
+                realName = (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                                   ? std::optional<std::string>()
+                                   : std::optional<std::string>(
+                                           helpers::unquoteString(valueNode->getText()));
                 break;
             }
             case SiodbParser::K_DESCRIPTION: {
-                const auto valueNode = optionNode->children.at(2);
-                if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL) {
-                    // It is optional optional, just reset() doesn't work here.
-                    description = std::optional<std::string>();
-                } else {
-                    description = std::optional<std::string>(
-                            helpers::unquoteString(optionNode->children.at(2)->getText()));
-                }
+                const auto valueNode = attrNode->children.at(2);
+                description = (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                                      ? std::optional<std::string>()
+                                      : std::optional<std::string>(
+                                              helpers::unquoteString(valueNode->getText()));
                 break;
             }
             case SiodbParser::K_STATE: {
-                active = parseStateNode(
-                        optionNode->children.at(2), "ALTER USER: invalid user state");
+                active = parseState(attrNode->children.at(2), "ALTER USER: invalid user state");
                 break;
             }
-            default: throw std::invalid_argument("ALTER USER: invalid option");
+            default: throw std::invalid_argument("ALTER USER: invalid attribute");
         }
     }
 
-    return std::make_unique<requests::AlterUserRequest>(
+    return std::make_unique<requests::SetUserAttributesRequest>(
             std::move(name), std::move(realName), std::move(description), std::move(active));
 }
 
 requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserAccessKeyRequest(
         antlr4::tree::ParseTree* node)
 {
-    // Get node text as is without 'GetAnyText' call.
-    auto userName = boost::to_upper_copy(node->children.at(2)->getText());
-    auto keyName = boost::to_upper_copy(node->children.at(6)->getText());
+    auto userName = helpers::extractObjectName(node, 2);
+    auto keyName = helpers::extractObjectName(node, 6);
     auto keyText = helpers::unquoteString(node->children.at(7)->getText());
     std::optional<std::string> description;
     bool active = true;
 
-    if (node->children.size() > 8) {
-        auto optionsListNode = node->children[8];
-        for (std::size_t i = 0; i < optionsListNode->children.size(); i += 2) {
-            const auto optionNode = optionsListNode->children[i];
-            switch (helpers::getTerminalType(optionNode->children.at(0))) {
+    if (node->children.size() > 9) {
+        const auto attrListNode = node->children[9];
+        for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+            const auto attrNode = attrListNode->children[i];
+            switch (helpers::getTerminalType(attrNode->children.at(0))) {
                 case SiodbParser::K_DESCRIPTION: {
-                    const auto valueNode = optionNode->children.at(2);
+                    const auto valueNode = attrNode->children.at(2);
                     if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
                         description.reset();
                     else
-                        description = helpers::unquoteString(optionNode->children.at(2)->getText());
+                        description = helpers::unquoteString(attrNode->children.at(2)->getText());
                     break;
                 }
                 case SiodbParser::K_STATE: {
-                    active = parseStateNode(
-                            optionNode->children.at(2), "ALTER USER ADD KEY: invalid key state");
+                    active = parseState(attrNode->children.at(2),
+                            "ALTER USER ADD ACCESS KEY: invalid key state");
                     break;
                 }
-                default: throw std::invalid_argument("ALTER USER ADD KEY: inavlid option");
+                default:
+                    throw std::invalid_argument("ALTER USER ADD ACCESS KEY: invalid attribute");
             }
         }
     }
@@ -1229,54 +1464,175 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserAccessKeyReque
 requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserAccessKeyRequest(
         antlr4::tree::ParseTree* node)
 {
-    // Get node text as is without 'GetAnyText' call.
-    auto userName = boost::to_upper_copy(node->children.at(2)->getText());
-    auto keyName = boost::to_upper_copy(node->children.at(6)->getText());
+    auto userName = helpers::extractObjectName(node, 2);
+    const bool ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
+    auto keyName = helpers::extractObjectName(node, ifExists ? 8 : 6);
     return std::make_unique<requests::DropUserAccessKeyRequest>(
-            std::move(userName), std::move(keyName), false);
+            std::move(userName), std::move(keyName), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createAlterUserAccessKeyRequest(
+requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserAccessKeyAttributesRequest(
         antlr4::tree::ParseTree* node)
 {
-    // Get node text as is without 'GetAnyText' call.
-    auto userName = boost::to_upper_copy(node->children.at(2)->getText());
-    auto keyName = boost::to_upper_copy(node->children.at(6)->getText());
+    auto userName = helpers::extractObjectName(node, 2);
+    auto keyName = helpers::extractObjectName(node, 6);
     std::optional<std::optional<std::string>> description;
     std::optional<bool> active;
 
-    auto optionsListNode = node->children.at(8);
-    for (std::size_t i = 0; i < optionsListNode->children.size(); i += 2) {
-        const auto optionNode = optionsListNode->children[i];
-        switch (helpers::getTerminalType(optionNode->children.at(0))) {
+    const auto attrListNode = node->children.at(8);
+    for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+        const auto attrNode = attrListNode->children[i];
+        switch (helpers::getTerminalType(attrNode->children.at(0))) {
             case SiodbParser::K_DESCRIPTION: {
-                const auto valueNode = optionNode->children.at(2);
-                if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
-                    description = std::optional<std::string>();
-                else {
-                    description = std::optional<std::string>(
-                            helpers::unquoteString(optionNode->children.at(2)->getText()));
-                }
+                const auto valueNode = attrNode->children.at(2);
+                description = (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                                      ? std::optional<std::string>()
+                                      : std::optional<std::string>(helpers::unquoteString(
+                                              attrNode->children.at(2)->getText()));
                 break;
             }
             case SiodbParser::K_STATE: {
-                active = parseStateNode(
-                        optionNode->children.at(2), "ALTER USER ALTER KEY: invalid key state");
+                active = parseState(
+                        attrNode->children.at(2), "ALTER USER ALTER ACCESS KEY: invalid key state");
                 break;
             }
-            default: throw std::invalid_argument("ALTER USER ALTER KEY: inavlid option");
+            default: throw std::invalid_argument("ALTER USER ALTER ACCESS KEY: invalid attribute");
         }
     }
 
-    return std::make_unique<requests::AlterUserAccessKey>(
+    return std::make_unique<requests::SetUserAccessKeyAttributesRequest>(
             std::move(userName), std::move(keyName), std::move(description), std::move(active));
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameUserAccessKeyRequest(
+        antlr4::tree::ParseTree* node)
+{
+    auto userName = helpers::extractObjectName(node, 2);
+    auto keyName = helpers::extractObjectName(node, 6);
+    const bool ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
+    auto newKeyName = helpers::extractObjectName(node, ifExists ? 11 : 9);
+    return std::make_unique<requests::RenameUserAccessKeyRequest>(
+            std::move(userName), std::move(keyName), std::move(newKeyName), ifExists);
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserTokenRequest(
+        antlr4::tree::ParseTree* node)
+{
+    auto userName = helpers::extractObjectName(node, 2);
+    auto tokenName = helpers::extractObjectName(node, 5);
+    std::optional<BinaryValue> tokenValue;
+    std::optional<std::time_t> expirationTimestamp;
+    std::optional<std::string> description;
+    antlr4::tree::ParseTree* attrListNode = nullptr;
+
+    if (node->children.size() > 6) {
+        auto node6 = node->children.at(6);
+        if (helpers::getTerminalType(node6) == SiodbParser::K_WITH)
+            attrListNode = node->children.at(7);
+        else {
+            auto v = ExpressionFactory::createConstantValue(node6->children.at(0));
+            tokenValue = std::move(v.getBinary());
+            if (node->children.size() > 8) attrListNode = node->children.at(8);
+        }
+    }
+
+    if (attrListNode) {
+        for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+            const auto attrNode = attrListNode->children[i];
+            const auto valueNode = attrNode->children.at(2);
+            const bool isNullValue = helpers::getTerminalType(valueNode) == SiodbParser::K_NULL;
+            switch (helpers::getTerminalType(attrNode->children.at(0))) {
+                case SiodbParser::K_DESCRIPTION: {
+                    if (isNullValue)
+                        description.reset();
+                    else
+                        description = helpers::unquoteString(attrNode->children.at(2)->getText());
+                    break;
+                }
+                case SiodbParser::K_EXPIRATION_TIMESTAMP: {
+                    if (isNullValue)
+                        expirationTimestamp.reset();
+                    else {
+                        expirationTimestamp = parseExpirationTimestamp(
+                                helpers::unquoteString(attrNode->children.at(2)->getText()));
+                    }
+                    break;
+                }
+                default: throw std::invalid_argument("ALTER USER ADD TOKEN: invalid attribute");
+            }
+        }
+    }
+
+    return std::make_unique<requests::AddUserTokenRequest>(std::move(userName),
+            std::move(tokenName), std::move(tokenValue), std::move(expirationTimestamp),
+            std::move(description));
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserTokenRequest(
+        antlr4::tree::ParseTree* node)
+{
+    auto userName = helpers::extractObjectName(node, 2);
+    const bool ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
+    auto tokenName = helpers::extractObjectName(node, ifExists ? 7 : 5);
+    return std::make_unique<requests::DropUserTokenRequest>(
+            std::move(userName), std::move(tokenName), ifExists);
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserTokenAttributesRequest(
+        antlr4::tree::ParseTree* node)
+{
+    auto userName = helpers::extractObjectName(node, 2);
+    auto tokenName = helpers::extractObjectName(node, 5);
+    std::optional<std::optional<std::time_t>> expirationTimestamp;
+    std::optional<std::optional<std::string>> description;
+    if (node->children.size() > 7) {
+        const auto attrListNode = node->children.at(7);
+        for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
+            const auto attrNode = attrListNode->children[i];
+            const auto valueNode = attrNode->children.at(2);
+            const bool isNullValue = helpers::getTerminalType(valueNode) == SiodbParser::K_NULL;
+            switch (helpers::getTerminalType(attrNode->children.at(0))) {
+                case SiodbParser::K_DESCRIPTION: {
+                    description = isNullValue ? std::optional<std::string>()
+                                              : std::optional<std::string>(helpers::unquoteString(
+                                                      attrNode->children.at(2)->getText()));
+                    break;
+                }
+                case SiodbParser::K_EXPIRATION_TIMESTAMP: {
+                    expirationTimestamp =
+                            isNullValue ? std::optional<std::time_t>()
+                                        : std::optional<std::time_t>(
+                                                parseExpirationTimestamp(helpers::unquoteString(
+                                                        attrNode->children.at(2)->getText())));
+                    break;
+                }
+                default: {
+                    throw std::invalid_argument(
+                            "ALTER USER ALTER TOKEN SET ATTRIBUTES: invalid attribute");
+                }
+            }
+        }
+    }
+    return std::make_unique<requests::SetUserTokenAttributesRequest>(std::move(userName),
+            std::move(tokenName), std::move(expirationTimestamp), std::move(description));
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameUserTokenRequest(
+        [[maybe_unused]] antlr4::tree::ParseTree* node)
+{
+    auto userName = helpers::extractObjectName(node, 2);
+    auto tokenName = helpers::extractObjectName(node, 5);
+    const bool ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
+    auto newTokenName = helpers::extractObjectName(node, ifExists ? 10 : 8);
+    return std::make_unique<requests::RenameUserTokenRequest>(
+            std::move(userName), std::move(tokenName), std::move(newTokenName), ifExists);
 }
 
 siodb::ColumnDataType DBEngineRequestFactory::getColumnDataType(const std::string& typeName)
 {
     const auto it = m_siodbDataTypeMap.find(typeName);
     if (it != m_siodbDataTypeMap.end()) return it->second;
-    throw std::invalid_argument("Type '" + typeName + "' is not supported");
+    throw std::invalid_argument("Data type '" + typeName + "' is not supported");
 }
 
 requests::ResultExpression DBEngineRequestFactory::createResultExpression(
@@ -1292,7 +1648,7 @@ requests::ResultExpression DBEngineRequestFactory::createResultExpression(
     else if (childrenCount == 3
              && helpers::getTerminalType(node->children[2]) == SiodbParser::STAR) {
         expression = std::make_unique<requests::AllColumnsExpression>(
-                boost::to_upper_copy(node->children[0]->getText()));
+                helpers::extractObjectName(node, 0));
     }
     // case: expr ( K_AS? column_alias)?
     else if (childrenCount > 0
@@ -1303,7 +1659,7 @@ requests::ResultExpression DBEngineRequestFactory::createResultExpression(
         if (childrenCount > 1
                 && helpers::getNonTerminalType(node->children.back())
                            == SiodbParser::RuleColumn_alias) {
-            alias = boost::to_upper_copy(boost::to_upper_copy(node->children.back()->getText()));
+            alias = helpers::extractObjectName(node, node->children.size() - 1);
         }
     } else
         throw std::invalid_argument("Result column node is invalid");
@@ -1314,8 +1670,8 @@ void DBEngineRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node, std:
         std::vector<requests::SourceTable>& tables,
         std::vector<requests::ResultExpression>& columns, requests::ConstExpressionPtr& where)
 {
-    std::size_t i = 0;
-    for (; i < node->children.size(); ++i) {
+    ExpressionFactory exprFactory(true);
+    for (std::size_t i = 0, n = node->children.size(); i < n; ++i) {
         const auto e = node->children[i];
         const auto nonTerminalType = helpers::getNonTerminalType(e);
         switch (nonTerminalType) {
@@ -1324,16 +1680,13 @@ void DBEngineRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node, std:
                 break;
             }
             case SiodbParser::RuleTable_or_subquery: {
-                // Capture database ID
                 const auto databaseIdNode =
                         helpers::findNonTerminal(e, SiodbParser::RuleDatabase_name);
                 if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
 
-                // Capture table ID
                 const auto tableIdNode = helpers::findNonTerminal(e, SiodbParser::RuleTable_name);
                 if (tableIdNode) {
                     auto tableName = boost::to_upper_copy(tableIdNode->getText());
-                    // Capture table alias
                     std::string tableAlias;
                     const auto tableAliasIdNode =
                             helpers::findNonTerminal(e, SiodbParser::RuleTable_alias);
@@ -1350,8 +1703,6 @@ void DBEngineRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node, std:
                     ++i;
                     if (i >= node->children.size())
                         throw std::runtime_error("SELECT: WHERE does not contain expression");
-
-                    ExpressionFactory exprFactory(true);
                     where = exprFactory.createExpression(node->children[i]);
                 }
                 break;

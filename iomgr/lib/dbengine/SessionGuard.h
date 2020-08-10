@@ -7,20 +7,17 @@
 // Project headers
 #include "Instance.h"
 
-// Common project headers
-#include <siodb/common/utils/Uuid.h>
-
 namespace siodb::iomgr::dbengine {
 
-/** A helper class for scoped session ending */
+/** A helper class for the scoped session management. */
 class SessionGuard {
 public:
     /**
      * Initializes object of class SessionGuard.
-     * @param instance Instance.
+     * @param instance Database engine instance.
      * @param sessionUuid Active session UUID.
      */
-    SessionGuard(const InstancePtr& instance, const Uuid& sessionUuid) noexcept
+    SessionGuard(Instance& instance, const Uuid& sessionUuid) noexcept
         : m_instance(instance)
         , m_sessionUuid(sessionUuid)
     {
@@ -35,15 +32,15 @@ public:
     ~SessionGuard()
     {
         try {
-            m_instance->endSession(m_sessionUuid);
+            m_instance.endSession(m_sessionUuid);
         } catch (std::exception& e) {
-            // ignore exception
+            // ignore exceptions
         }
     }
 
 private:
-    /** Instance */
-    const InstancePtr m_instance;
+    /** Database engine instance */
+    Instance& m_instance;
 
     /** Active session UUID */
     const Uuid m_sessionUuid;

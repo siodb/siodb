@@ -5,7 +5,6 @@
 #include "ConnWorkerConnectionHandler.h"
 
 // Common project headers
-#include <siodb/common/crypto/RandomGenerator.h>
 #include <siodb/common/io/FdIo.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/ConnectionError.h>
@@ -16,6 +15,7 @@
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/utils/ErrorCodeChecker.h>
+#include <siodb/common/utils/RandomUtils.h>
 #include <siodb/common/utils/SignalHandlers.h>
 
 // STL headers
@@ -35,15 +35,16 @@
 namespace siodb::conn_worker {
 
 namespace {
+
 std::string createChallenge()
 {
-    siodb::crypto::RandomGenerator generator;
-    constexpr auto kMinMaxDifference = kMaxChallengeLength - kMinChallengeLength;
-    const auto challengeSize =
-            kMinChallengeLength
-            + (generator.getRandomValue<std::size_t>() % (kMinMaxDifference + 1));
+    constexpr auto kMinMaxDifference = kMaxChallengeSize - kMinChallengeSize;
+    std::size_t rv = 0;
+    siodb::utils::getRandomBytes(reinterpret_cast<std::uint8_t*>(&rv), sizeof(rv));
+    const auto challengeSize = kMinChallengeSize + rv % (kMinMaxDifference + 1);
     std::string challenge(challengeSize, '\0');
-    generator.getRandomBytes(reinterpret_cast<unsigned char*>(challenge.data()), challenge.size());
+    siodb::utils::getRandomBytes(
+            reinterpret_cast<std::uint8_t*>(challenge.data()), challenge.size());
     return challenge;
 }
 
@@ -225,12 +226,12 @@ void ConnWorkerConnectionHandler::closeConnection()
 // ----- internals -----
 
 void ConnWorkerConnectionHandler::responseToClientWithError(
-        int requestId, const char* text, int errCode)
+        int requestId, const char* text, int errorCode)
 {
     client_protocol::ServerResponse response;
     response.set_request_id(requestId);
     const auto message = response.add_message();
-    message->set_status_code(errCode);
+    message->set_status_code(errorCode);
     message->set_text(text);
     protobuf::writeMessage(protobuf::ProtocolMessageType::kServerResponse, response, *m_clientIo);
 }

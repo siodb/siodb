@@ -6,6 +6,8 @@
 
 // CRT headers
 #include <cstdint>
+#include <cstring>
+#include <ctime>
 
 // STL headers
 #include <string>
@@ -14,10 +16,11 @@
 namespace siodb {
 
 #pragma pack(push, 1)
+
 /** Date value. */
 struct RawDate {
     /** Used to indicate that time part present in serialize form . Otherwise must be zero. */
-    unsigned m_hasTimePart : 1;
+    bool m_hasTimePart : 1;
 
     /** Day of week: 0...6 Sun-Sat */
     unsigned m_dayOfWeek : 3;
@@ -28,17 +31,59 @@ struct RawDate {
     /** Month: 0...11 -> Jan ... Dec */
     unsigned m_month : 4;
 
-    /** Year -262144 ... +262143 */
+    /** Year: -262144 ... +262143 */
     int m_year : 19;
 
+    /** Minimum year */
     static constexpr int kMinYear = -262144;
+
+    /** Maximum year */
     static constexpr int kMaxYear = 262143;
+
+    /** Minimum month */
     static constexpr int kMinMonth = 0;
+
+    /** Maximum month */
     static constexpr int kMaxMonth = 11;
+
+    /** Minimum day */
     static constexpr int kMinDay = 0;
+
+    /** Maximum day */
     static constexpr int kMaxDay = 30;
+
+    /** Minimum day of week */
     static constexpr int kMinDayOfWeek = 0;
+
+    /** Maximum day of week */
     static constexpr int kMaxDayOfWeek = 6;
+
+    /** Initializes structure RawDate. */
+    RawDate() noexcept = default;
+
+    /**
+     * Initializes structure RawDate from an epoch timestamp.
+     * @param t Epoch timestamp.
+     */
+    explicit RawDate(std::time_t t) noexcept;
+
+    /**
+     * Initializes structure RawDate.
+     * @param year Year: -262144 ... +262143.
+     * @param month Month: 0...11 -> Jan ... Dec.
+     * @param dayOfMonth Day of month: 0...30 -> 1 ... 31.
+     * @param dayOfWeek Day of week: 0...6 Sun-Sat.
+     * @param hasTimePart Time part presence flag.
+     */
+    constexpr RawDate(int year, unsigned month, unsigned dayOfMonth, unsigned dayOfWeek,
+            bool hasTimePart = false) noexcept
+        : m_hasTimePart(hasTimePart)
+        , m_dayOfWeek(dayOfWeek)
+        , m_dayOfMonth(dayOfMonth)
+        , m_month(month)
+        , m_year(year)
+    {
+    }
 
     /**
      * Compares date with other RawDate
@@ -87,12 +132,25 @@ struct RawDate {
     {
         return !(*this > other);
     }
+
+    /**
+     * Converts this time into UNIX epoch timestamp.
+     * @return Corresponding UNIX epoch timestamp.
+     */
+    std::time_t toEpochTimestamp() const noexcept;
 };
+
+#pragma pack(pop)
+
+/** Zero date constant */
+constexpr const RawDate kZeroRawDate = RawDate(0, 0, 0, 6, false);
+
+#pragma pack(push, 1)
 
 /** Time value. */
 struct RawTime {
     /** Reserved, must be 0, likely will be TZ presence flag. */
-    unsigned m_reserved1 : 1;
+    bool m_reserved1 : 1;
 
     /** Number of nanoseconds */
     unsigned m_nanos : 30;
@@ -107,7 +165,7 @@ struct RawTime {
     unsigned m_hours : 5;
 
     /** Fill up to 64 bits */
-    unsigned m_reserved2 : 16;
+    int m_reserved2 : 16;
 
     /** Minimum hours value */
     static constexpr int kMinHours = 0;
@@ -132,6 +190,32 @@ struct RawTime {
 
     /** Maximum nanoseconds value */
     static constexpr int kMaxNanoseconds = 999999999;
+
+    /** Initializes structure RawTime. */
+    RawTime() noexcept = default;
+
+    /**
+     * Initializes structure RawTime from an epoch timestamp.
+     * @param t Epoch timestamp.
+     */
+    explicit RawTime(std::time_t t) noexcept;
+
+    /**
+     * Initializes structure RawTime.
+     * @param hours Hours: 0...23.
+     * @param minutes Minutes: 0...59.
+     * @param seconds Seconds: 0...59.
+     * @param nanos Nanoseconds: 0...99999999.
+     */
+    constexpr RawTime(unsigned hours, unsigned minutes, unsigned seconds, unsigned nanos) noexcept
+        : m_reserved1(0)
+        , m_nanos(nanos)
+        , m_seconds(seconds)
+        , m_minutes(minutes)
+        , m_hours(hours)
+        , m_reserved2(0)
+    {
+    }
 
     /**
      * Compares this object with other RawTime
@@ -180,11 +264,18 @@ struct RawTime {
     {
         return !(*this > other);
     }
+
+    /**
+     * Converts this date into UNIX epoch timestamp.
+     * @return Corresponding UNIX epoch timestamp.
+     */
+    std::time_t toEpochTimestamp() const noexcept;
 };
 
 #pragma pack(pop)
 
-constexpr const RawTime kZeroRawTime {0, 0, 0, 0, 0, 0};
+/** Zero time constant */
+constexpr const RawTime kZeroRawTime = RawTime(0, 0, 0, 0);
 
 /** Date time value. */
 struct RawDateTime {
@@ -212,8 +303,23 @@ struct RawDateTime {
     /** Default Datetime scan string format */
     static constexpr const char* kDefaultDateTimeScanString = "%6d-%02d-%02d %02d:%02d:%02d.%d";
 
-    /** Default Datetime scan string format */
+    /** Default Datetime print string format */
+    static constexpr const char* kDefaultDateTimePrintString = "%d-%02d-%02d %02d:%02d:%02d.%d";
+
+    /** Default Date scan string format */
     static constexpr const char* kDefaultDateScanString = "%6d-%02d-%02d";
+
+    /** Default Date print string format */
+    static constexpr const char* kDefaultDatePrintString = "%d-%02d-%02d";
+
+    /** Default date/time format */
+    static constexpr const char* kDefaultDateTimeFormat = "%Y-%m-%d %H:%M:%S";
+
+    /** Default date format */
+    static constexpr const char* kDefaultDateFormat = "%Y-%m-%d";
+
+    /** Default time format */
+    static constexpr const char* kDefaultTimeFormat = "%H:%M:%S";
 
     /* Initializes structure RawDateTime. */
     RawDateTime() noexcept = default;
@@ -225,9 +331,21 @@ struct RawDateTime {
      * @throw out_of_range if date range is invalid
      * @throw invalid_argument if date string can't be parsed
      */
-    RawDateTime(const std::string& s, const char* format)
+    RawDateTime(const std::string& s, const char* format = kDefaultDateTimeFormat)
     {
         parse(s, format);
+    }
+
+    /**
+     * Initializes structure RawDateTime from a string using default format.
+     * @param s A string.
+     * @param format Datetime string format.
+     * @throw out_of_range if date range is invalid
+     * @throw invalid_argument if date string can't be parsed
+     */
+    RawDateTime(const char* s, const char* format = kDefaultDateTimeFormat)
+    {
+        parse(s, std::strlen(s), format);
     }
 
     /**
@@ -238,9 +356,45 @@ struct RawDateTime {
      * @throw out_of_range if date range is invalid
      * @throw invalid_argument if date string can't be parsed
      */
-    RawDateTime(const char* s, std::size_t len, const char* format)
+    RawDateTime(const char* s, std::size_t len, const char* format = kDefaultDateTimeFormat)
     {
         parse(s, len, format);
+    }
+
+    /**
+     * Initializes structure RawDateTime from an epoch timestamp.
+     * @param t Epoch timestamp.
+     */
+    RawDateTime(std::time_t t) noexcept;
+
+    /**
+     * Initializes structure RawDateTime from an epoch timestamp.
+     * @param year Year: -262144 ... +262143.
+     * @param month Month: 0...11 -> Jan ... Dec.
+     * @param dayOfMonth Day of month: 0...30 -> 1 ... 31.
+     * @param dayOfWeek Day of week: 0...6 Sun-Sat.
+     */
+    RawDateTime(int year, unsigned month, unsigned dayOfMonth, unsigned dayOfWeek) noexcept
+        : m_datePart(year, month, dayOfMonth, dayOfWeek, false)
+    {
+    }
+
+    /**
+     * Initializes structure RawDateTime from an epoch timestamp.
+     * @param year Year: -262144 ... +262143.
+     * @param month Month: 0...11 -> Jan ... Dec.
+     * @param dayOfMonth Day of month: 0...30 -> 1 ... 31.
+     * @param dayOfWeek Day of week: 0...6 Sun-Sat.
+     * @param hours Hours: 0...23.
+     * @param minutes Minutes: 0...59.
+     * @param seconds Seconds: 0...59.
+     * @param nanos Nanoseconds: 0...99999999.
+     */
+    RawDateTime(int year, unsigned month, unsigned dayOfMonth, unsigned dayOfWeek, unsigned hours,
+            unsigned minutes, unsigned seconds, unsigned nanos) noexcept
+        : m_timePart(hours, minutes, seconds, nanos)
+        , m_datePart(year, month, dayOfMonth, dayOfWeek, true)
+    {
     }
 
     /**
@@ -358,6 +512,12 @@ struct RawDateTime {
     {
         return !(*this > other);
     }
+
+    /**
+     * Converts this date/time into UNIX epoch timestamp.
+     * @return Corresponding UNIX epoch timestamp.
+     */
+    std::time_t toEpochTimestamp() const noexcept;
 
     /** Time part */
     RawTime m_timePart;

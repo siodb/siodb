@@ -29,6 +29,7 @@ fi
 
 echo "Copying config file"
 cp -f ${config_file} ${instance_cfg_dir}/config
+chown siodb:siodb ${instance_cfg_dir}/config
 
 echo "Copying system db key file"
 if [[ -f ${system_db_key_file} ]]; then
@@ -36,6 +37,7 @@ if [[ -f ${system_db_key_file} ]]; then
 else
     cp -f siodb.system_db_key ${instance_cfg_dir}/system_db_key
 fi
+chown siodb:siodb ${instance_cfg_dir}/system_db_key
 
 if [[ ${is_creating} -eq 1 ]]; then
     echo "Instance configuration created."

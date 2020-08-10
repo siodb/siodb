@@ -1,3 +1,7 @@
+-- Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+-- Use of this source code is governed by a license that can be found
+-- in the LICENSE file.
+
 create database erp_camellia128
 with cipher_id='camellia128', cipher_key_seed = 'myencryptionkeycamellia128' ;
 
@@ -89,120 +93,126 @@ and tab.trid < 4096
 limit 3, 7 ;
 
 create table table_all_datatypes (
-test_integer integer,
-test_int int,
-test_uint uint,
-test_tinyint tinyint,
-test_tinyuint tinyuint,
-test_smallint smallint,
-test_smalluint smalluint,
-test_bigint bigint,
-test_biguint biguint,
-test_smallreal smallreal,
-test_real real,
-test_float float,
-test_double double,
-test_text text,
-test_char char,
-test_varchar varchar,
-test_blob blob,
-test_timestamp timestamp) ;
+    test_integer integer,
+    test_int int,
+    test_uint uint,
+    test_tinyint tinyint,
+    test_tinyuint tinyuint,
+    test_smallint smallint,
+    test_smalluint smalluint,
+    test_bigint bigint,
+    test_biguint biguint,
+    test_smallreal smallreal,
+    test_real real,
+    test_float float,
+    test_double double,
+    test_text text,
+    test_char char,
+    test_varchar varchar,
+    test_blob blob,
+    test_timestamp timestamp
+) ;
 
-insert into table_all_datatypes values (
-382,
--182,
-4294967295,
--127,
-127,
--32767,
-65535,
--4611686018427387904,
-9223372036854775808,
-45.3112,
-45.3112,
-45.3112,
-4125.3112,
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'a',
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'0x73696f6462',
-'2016-02-29 12:10:29.123456789'
-), (
-382,
--182,
-4294967295,
--127,
-127,
--32767,
-65535,
--4611686018427387904,
-9223372036854775808,
-45.3112,
-45.3112,
-45.3112,
-4125.3112,
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'a',
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'0x73696f6462',
-'2016-02-29 12:10:29.123456789'
-), (
-382,
--182,
-4294967295,
--127,
-127,
--32767,
-65535,
--4611686018427387904,
-9223372036854775808,
-45.3112,
-45.3112,
-45.3112,
-4125.3112,
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'a',
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'0x73696f6462',
-'2016-02-29 12:10:29.123456789'
-), (
-382,
--182,
-4294967295,
--127,
-127,
--32767,
-65535,
--4611686018427387904,
-9223372036854775808,
-45.3112,
-45.3112,
-45.3112,
-4125.3112,
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'a',
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'0x73696f6462',
-'2016-02-29 12:10:29.123456789'
-), (
-382,
--182,
-4294967295,
--127,
-127,
--32767,
-65535,
--4611686018427387904,
-9223372036854775808,
-45.3112,
-45.3112,
-45.3112,
-4125.3112,
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'a',
-'az#@é)&☻❤♫☀")çue&"&éé篇题为',
-'0x73696f6462',
-'2016-02-29 12:10:29.123456789'
+insert into table_all_datatypes values
+(
+    382,
+    -182,
+    4294967295,
+    -127,
+    127,
+    -32767,
+    65535,
+    -4611686018427387904,
+    9223372036854775808,
+    45.3112,
+    45.3112,
+    45.3112,
+    4125.3112,
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    'a',
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    '0x73696f6462',
+    '2016-02-29 12:10:29.123456789'
+),
+(
+    382,
+    -182,
+    4294967295,
+    -127,
+    127,
+    -32767,
+    65535,
+    -4611686018427387904,
+    9223372036854775808,
+    45.3112,
+    45.3112,
+    45.3112,
+    4125.3112,
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    'a',
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    '0x73696f6462',
+    '2016-02-29 12:10:29.123456789'
+),
+(
+    382,
+    -182,
+    4294967295,
+    -127,
+    127,
+    -32767,
+    65535,
+    -4611686018427387904,
+    9223372036854775808,
+    45.3112,
+    45.3112,
+    45.3112,
+    4125.3112,
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    'a',
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    '0x73696f6462',
+    '2016-02-29 12:10:29.123456789'
+),
+(
+    382,
+    -182,
+    4294967295,
+    -127,
+    127,
+    -32767,
+    65535,
+    -4611686018427387904,
+    9223372036854775808,
+    45.3112,
+    45.3112,
+    45.3112,
+    4125.3112,
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    'a',
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    '0x73696f6462',
+    '2016-02-29 12:10:29.123456789'
+),
+(
+    382,
+    -182,
+    4294967295,
+    -127,
+    127,
+    -32767,
+    65535,
+    -4611686018427387904,
+    9223372036854775808,
+    45.3112,
+    45.3112,
+    45.3112,
+    4125.3112,
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    'a',
+    'az#@é)&☻❤♫☀")çue&"&éé篇题为',
+    '0x73696f6462',
+    '2016-02-29 12:10:29.123456789'
 );
 
 update table_all_datatypes set test_integer   = 23                   where trid = 1 ;
@@ -224,8 +234,16 @@ update table_all_datatypes set test_varchar   = '☻❤&☻CSFQ34&é☻&☻'   w
 update table_all_datatypes set test_blob      = '0x4c23b23a5d21f5'   where trid = 2 ;
 update table_all_datatypes set test_timestamp = current_timestamp    where trid = 3 ;
 
+create table attr_test(f integer);
+insert into attr_test values (1);
+alter table attr_test set next_trid=222;
+insert into attr_test values (2);
+select * from attr_test;
+
+create table default_value_test(a integer not null default 100, b integer not null);
+insert into default_value_test values(1, 1);
+insert into default_value_test(b) values(2);
+select * from default_value_test;
 
 use database sys ;
-
 drop database erp_camellia128 ;
-

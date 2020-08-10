@@ -54,6 +54,9 @@ MSG Error IndexDoesNotExist2  Index '%1%'.[%2%] doesn't exist
 MSG Error UserDoesNotExist    User '%1%' doesn't exist
 MSG Error UserIdDoesNotExist  User #%1% doesn't exist
 MSG Error UserAccessKeyDoesNotExist  User access key '%1%'.'%2%' doesn't exist
+MSG Error UserAccessKeyIdDoesNotExist  User access key #%1% doesn't exist
+MSG Error UserTokenDoesNotExist  User token '%1%'.'%2%' doesn't exist
+MSG Error UserTokenIdDoesNotExist  User token #%1% doesn't exist
 
 # OBJECT ALREADY EXISTS
 MSG Error InstanceAlreadyExists  Instance already exists
@@ -65,6 +68,7 @@ MSG Error IndexAlreadyExists          Index '%1%'.'%2%' already exists
 MSG Error ConstraintAlreadyExists     Constraint '%1%'.'%2%' already exists
 MSG Error UserAlreadyExists           User '%1%' already exists
 MSG Error UserAccessKeyAlreadyExists  User access key '%1%'.'%2%' already exists
+MSG Error UserTokenAlreadyExists      User token '%1%'.'%2%' already exists
 
 # INVALID NAMES
 MSG Error InvalidDatabaseName  Invalid database name '%1%'
@@ -79,6 +83,7 @@ MSG Error InvalidConstraintName  Invalid constraint name '%1%'
 MSG Error InvalidConstraintNameInTable  Invalid constraint name '%1%'.'%2%'.'%3%'
 MSG Error InvalidUserName           Invalid user name '%1%'
 MSG Error InvalidUserAccessKeyName  Invalid user access key name '%1%'
+MSG Error InvalidUserTokenName  Invalid user token name '%1%'
 
 # INVALID OBJECT TYPE
 MSG Error InvalidConstraintType    Constraint '%1%'.'%2%'.'%3%' has invalid constraint type
@@ -138,11 +143,12 @@ MSG Error CannotDropSuperUser  Can't drop superuser
 
 # ALTER USER
 MSG Error CannotChangeSuperUserState              Can't change superuser state
-MSG Error UserAccessKeyIsInvalid                  User access key '%1%'.'%2%' is invalid
-MSG Error UserAccessKeyIsLargerThanMax            User access key '%1%'.'%2%' length %3% is larger than maximum %4%
+MSG Error InvalidUserAccessKey                    Invalid key in attempt to create user access key '%1%'.'%2%'
+MSG Error UserAccessKeyIsTooLong                  User access key '%1%'.'%2%' size %3% is larger than maximum allowed size %4%
 MSG Error CannotDeleteLastSuperUserAccessKey      Can't delete last superuser access key '%1%'
 MSG Error CannotDeactivateLastSuperUserAccessKey  Can't deactivate last superuser access key '%1%'
 MSG Error AlterUserAccessKeyFailed                Alter user access key '%1%'.'%2%' failed
+MSG Error InvalidUserToken                        Invalid token value in attempt to create user token '%1%'.'%2%'
 
 # CREATE DATABASE
 MSG Error CannotCreateTemporaryDatabase  Temporary databases are not supported yet
@@ -153,6 +159,11 @@ MSG Error CipherKeySeedIsNotString       CIPHER_KEY_SEED must be string
 MSG Error CannotDropSystemDatabase   Can't drop system database
 MSG Error CannotDropUsedDatabase     Can't drop database '%1%' which is currently in use
 MSG Error CannotDropCurrentDatabase  Can't drop current database '%1%'
+
+# RENAME DATABASE
+MSG Error CannotRenameSystemDatabase   Can't rename system database
+MSG Error CannotRenameUsedDatabase     Can't rename database '%1%' which is currently in use
+MSG Error CannotRenameCurrentDatabase  Can't rename current database '%1%'
 
 # CREATE TABLE
 MSG Error TableTypeNotSupported  Table type %1% is not supported yet
@@ -169,6 +180,9 @@ MSG Error SessionDoesNotExist  Session '%1%' doesn't exist
 # UNSUPPORTED FEATURES
 MSG Error ConstraintNotSupported   Constraint type #%4% is not supported (constraint definition '%1%'.%2% (%3%.%2%)
 MSG Error ConstraintNotSupported2  Constraint type #%4% is not supported
+
+# INVALID ATTRIBUTES
+MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2%'
 
 ##########################################
 # INTERNAL MESSAGES
@@ -192,13 +206,14 @@ MSG Fatal InvalidSystemDatabaseEncryptionKey  System database encryption key fil
 MSG Fatal CannotReadSystemDatabaseEncryptionKey  Can't read system database encryption key file %1%: (%2%) %3%
 MSG Fatal CannotStatSuperUserKey                 Can't stat super user access key file %1%
 MSG Fatal CannotOpenSuperUserKey                 Can't open super user access key file %1%
-MSG Fatal SuperUserAccessKeyIsLargerThanMax      Super user initial access key length %1% is larger than maximum %2%
+MSG Fatal SuperUserAccessKeyIsTooLong      Super user initial access key length %1% is larger than maximum %2%
 
 MSG Error CannotCreateDatabaseMetadataFile  Can't create metadata file '%1%' for the database '%2%' (%3%): (%4%) %5%
 MSG Error CannotOpenDatabaseMetadataFile    Can't open metadata file '%1%' for the database '%2%' (%3%): (%4%) %5%
 MSG Error CannotReadDatabaseMetadataFile    Can't read from metadata file for the database '%1%' (%2%): (%3%) %4%
 MSG Error CannotWriteDatabaseMetadataFile   Can't write to metadata for the database '%1%' (%2%): (%3%) %4%
 MSG Warning CannotRemoveDatabaseDataDirectory  Can't remove data directory for the database '%1%' (%2%): (%3%) %4%
+MSG Error DatabaseMetadataFileCorrupted     Metadata file '%1%' for the database '%2%' (%3%) is corrupted: %4%
 
 MSG Error CannotCreateInstanceDataDir   Can't create instance data directory %1%: (%2%) %3%
 MSG Error CannotClearInstanceDataDir    Can't clear instance directory %1%: (%2%) %3%
@@ -411,6 +426,21 @@ MSG Error InvalidIndexColumns  Index '%1%'.'%2%'.'%3%' has empty column list
 
 # User
 ID -107000
+
+# User access key
+ID -108000
 MSG Error InvalidUserForUserAccessKey Invalid user #%1% for the user access key #%2%
+MSG Error DuplicateUserAccessKeyId    Duplicate user access key id %2% for the user '%1%'
+
+# User token
+ID -109000
+MSG Error InvalidUserForUserToken  Invalid user #%1% for the user token #%2%
+MSG Error CannotGenerateUserToken  Can't generate new token: %1%
+MSG Error DuplicateUserTokenId     Duplicate user token id %2% for the user '%1%'
+MSG Error DuplicateUserTokenValue  Duplicate user token value for the user token '%1%'.'%2%'
+ 
+# Invalid attributes
+# ID -110000
+MSG Error InvalidLastUserTrid Invalid last user TRID %5% for the table '%1%'.'%2%' (%3%.%4%)
 
 # END

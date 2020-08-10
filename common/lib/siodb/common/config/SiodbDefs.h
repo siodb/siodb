@@ -48,7 +48,6 @@ constexpr const char* kIOManagerExecutable = "siodb_iomgr";
 
 /** Siodb internal time intervals */
 constexpr int kUserConnectionWorkerShutdownTimeoutMs = 5 * 1000;
-constexpr int kDeadConnectionRecyclingPeriodMs = 30 * 1000;
 constexpr auto kIomgrInitializationCheckPeriod = std::chrono::seconds(1);
 
 /** Siocli editor history size */
@@ -106,12 +105,15 @@ constexpr const std::size_t kMaxBinaryLength = 0xFFFF;
 constexpr const std::size_t kMaxBlobLength = 0xFFFFFFFF;
 
 /** Minumum challenge length  */
-constexpr const std::size_t kMinChallengeLength = 128;
+constexpr const std::size_t kMinChallengeSize = 128;
 
 /** Maximum challenge length   */
-constexpr const std::size_t kMaxChallengeLength = 1024;
+constexpr const std::size_t kMaxChallengeSize = 1024;
 
-/** Maximum access key length  */
-constexpr const std::size_t kMaxAccessKeySize = 16 * 1024;
+/** Maximum user access key size  */
+constexpr const std::size_t kMaxUserAccessKeySize = 8 * 1024;
+
+/** Maximum user token size */
+constexpr const std::size_t kMaxUserTokenSize = 1024;
 
 }  // namespace siodb

@@ -13,7 +13,7 @@ CXX_SRC:=SiocliMain.cpp
 
 TARGET_OWN_LIBS:=siocli
 
-TARGET_COMMON_LIBS:=crypto options data net proto protobuf io sys utils stl_ext crt_ext
+TARGET_COMMON_LIBS:=crypto options data net proto protobuf io sys utils stl_ext crt_ext iomgr_shared
 
 TARGET_LIBS:=-lboost_filesystem -lboost_program_options -lboost_system -lprotobuf -lcrypto -lssl
 

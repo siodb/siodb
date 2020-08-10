@@ -4,16 +4,14 @@
 
 #pragma once
 
-namespace siodb {
+namespace siodb::iomgr {
 
 /** IO Manager exit codes */
 enum IOManagerExitCode {
     kIOManagerExitCode_Success = 0,
     kIOManagerExitCode_InvalidConfig = 1,
-    kIOManagerExitCode_DatabaseEngineIntializationFailed = 2,
-    kIOManagerExitCode_ConnectionCreationFailed = 3,
-    kIOManagerExitCode_LogInitializationFailed = 4,
-    kIOManagerExitCode_InitializationFailed = 5,
+    kIOManagerExitCode_LogInitializationFailed = 2,
+    kIOManagerExitCode_InitializationFailed = 3
 };
 
-}  // namespace siodb
+}  // namespace siodb::iomgr

@@ -8,8 +8,8 @@
 #include "dbengine/reg/ConstraintRecord.h"
 #include "dbengine/reg/DatabaseRecord.h"
 #include "dbengine/reg/IndexRecord.h"
+#include "dbengine/reg/RegistryRecordUuidChecker.h"
 #include "dbengine/reg/TableRecord.h"
-#include "dbengine/reg/UserAccessKeyRecord.h"
 #include "dbengine/reg/UserPermissionRecord.h"
 #include "dbengine/reg/UserRecord.h"
 
@@ -29,16 +29,16 @@ template<class Record>
 void checkRecord(
         const Record& src, std::size_t expectedSize, unsigned version = Record::kClassVersion)
 {
-    const auto size = src.getSerializedSize(version);
-    ASSERT_EQ(size, expectedSize);
+    const auto computedSize = src.getSerializedSize(version);
+    ASSERT_EQ(computedSize, expectedSize);
 
-    stdext::buffer<std::uint8_t> buffer(size + kExtraBufferSize);
+    stdext::buffer<std::uint8_t> buffer(computedSize + kExtraBufferSize);
     const auto end = src.serializeUnchecked(buffer.data(), version);
     const auto actualSize = static_cast<std::size_t>(end - buffer.data());
-    ASSERT_EQ(actualSize, size);
+    ASSERT_EQ(actualSize, computedSize);
 
     Record dest;
-    dest.deserialize(buffer.data(), size);
+    dest.deserialize(buffer.data(), computedSize);
     ASSERT_EQ(dest, src);
 }
 
@@ -50,6 +50,11 @@ void checkEmptyRecord(std::size_t expectedSize, unsigned version = Record::kClas
 }
 
 }  // namespace
+
+TEST(Serialization, CheckUuidUniqueness)
+{
+    dbengine::checkRegistryRecordUuids();
+}
 
 TEST(Serialization, ColumnDefinitionConstraintRecord_Empty)
 {
@@ -223,6 +228,21 @@ TEST(Serialization, UserAccessKeyRecord_Filled)
     checkRecord(src, kSerializedSize);
 }
 
+TEST(Serialization, UserTokenRecord_Empty)
+{
+    constexpr std::size_t kSerializedSize = 23;
+    checkEmptyRecord<dbengine::UserTokenRecord>(kSerializedSize);
+}
+
+TEST(Serialization, UserTokenRecord_Filled)
+{
+    constexpr std::size_t kSerializedSize = 64;
+    const dbengine::UserTokenRecord src(0x100, 0x10000, "user1-token1",
+            siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 1,
+            "my token");
+    checkRecord(src, kSerializedSize);
+}
+
 TEST(Serialization, UserPermissionRecord_Empty)
 {
     constexpr std::size_t kSerializedSize = 24;
@@ -239,20 +259,21 @@ TEST(Serialization, UserPermissionRecord_Filled)
 
 TEST(Serialization, UserRecord_Empty)
 {
-    constexpr std::size_t kSerializedSize = 23;
+    constexpr std::size_t kSerializedSize = 24;
     checkEmptyRecord<dbengine::UserRecord>(kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled1)
 {
-    constexpr std::size_t kSerializedSize = 49;
-    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true, {});
+    constexpr std::size_t kSerializedSize = 50;
+    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true, {}, {});
     checkRecord(src, kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled2)
 {
-    constexpr std::size_t kSerializedSize = 483;
+    constexpr std::size_t kSerializedSize = 484;
+
     dbengine::UserAccessKeyRegistry userAccessKeys;
     userAccessKeys.emplace(0x100, 0x10000, "user1-key1",
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9UkQ "
@@ -266,7 +287,73 @@ TEST(Serialization, UserRecord_Filled2)
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9Uke "
             "user1@host3",
             "my ssh key 3 zzzz", true);
-    const dbengine::UserRecord src(
-            0x100, "user1", "John Doe", "first user", true, std::move(userAccessKeys));
+
+    dbengine::UserTokenRegistry userTokens;
+
+    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true,
+            std::move(userAccessKeys), std::move(userTokens));
+
+    checkRecord(src, kSerializedSize);
+}
+
+TEST(Serialization, UserRecord_Filled3)
+{
+    constexpr std::size_t kSerializedSize = 547;
+
+    dbengine::UserAccessKeyRegistry userAccessKeys;
+    userAccessKeys.emplace(0x100, 0x10000, "user1-key1",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9UkQ "
+            "user1@host",
+            "my ssh key 1 xx", true);
+    userAccessKeys.emplace(0x101, 0x10000, "user1-key2",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9UkX "
+            "user1@host2",
+            "my ssh key 2 yyy", true);
+    userAccessKeys.emplace(0x102, 0x10000, "user1-key3",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9Uke "
+            "user1@host3",
+            "my ssh key 3 zzzz", true);
+
+    dbengine::UserTokenRegistry userTokens;
+    userTokens.emplace(0x100, 0x10000, "user1-token1",
+            siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+            std::nullopt, "my token");
+
+    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true,
+            std::move(userAccessKeys), std::move(userTokens));
+
+    checkRecord(src, kSerializedSize);
+}
+
+TEST(Serialization, UserRecord_Filled4)
+{
+    constexpr std::size_t kSerializedSize = 629;
+
+    dbengine::UserAccessKeyRegistry userAccessKeys;
+    userAccessKeys.emplace(0x100, 0x10000, "user1-key1",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9UkQ "
+            "user1@host",
+            "my ssh key 1 xx", true);
+    userAccessKeys.emplace(0x101, 0x10000, "user1-key2",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9UkX "
+            "user1@host2",
+            "my ssh key 2 yyy", true);
+    userAccessKeys.emplace(0x102, 0x10000, "user1-key3",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9Uke "
+            "user1@host3",
+            "my ssh key 3 zzzz", true);
+
+    dbengine::UserTokenRegistry userTokens;
+    userTokens.emplace(0x100, 0x10000, "user1-token1",
+            siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+            std::nullopt, "my token");
+    userTokens.emplace(0x101, 0x10000, "user2-token2",
+            siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 1, 2, 3, 4,
+                    5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+            1, "my token 2");
+
+    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true,
+            std::move(userAccessKeys), std::move(userTokens));
+
     checkRecord(src, kSerializedSize);
 }

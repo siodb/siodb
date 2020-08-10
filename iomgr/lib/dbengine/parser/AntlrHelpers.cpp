@@ -7,20 +7,14 @@
 // Project headers
 #include "antlr_wrappers/SiodbParserWrapper.h"
 
+// Boost headers
+#include <boost/algorithm/string/case_conv.hpp>
+
 namespace siodb::iomgr::dbengine::parser::helpers {
 
-std::string& unquoteString(std::string& s)
+std::string extractObjectName(const antlr4::tree::ParseTree* node, std::size_t childNodeIndex)
 {
-    s.pop_back();
-    s.erase(0, 1);
-    return s;
-}
-
-std::string&& unquoteString(std::string&& s)
-{
-    s.pop_back();
-    s.erase(0, 1);
-    return std::move(s);
+    return boost::to_upper_copy(node->children.at(childNodeIndex)->getText());
 }
 
 std::size_t getStatementCount(const antlr4::tree::ParseTree* tree) noexcept
@@ -31,8 +25,8 @@ std::size_t getStatementCount(const antlr4::tree::ParseTree* tree) noexcept
     if (context->getRuleIndex() == SiodbParser::RuleSql_stmt) return 1;
 
     std::size_t result = 0;
-    for (const auto e : tree->children)
-        result += getStatementCount(e);
+    for (const auto childNode : tree->children)
+        result += getStatementCount(childNode);
     return result;
 }
 
@@ -53,8 +47,8 @@ antlr4::tree::ParseTree* findStatement(const antlr4::tree::ParseTree* node,
     }
 
     // Check statements under this node.
-    for (const auto e : node->children) {
-        const auto node1 = findStatement(e, statementIndex, nextIndex);
+    for (const auto childNode : node->children) {
+        const auto node1 = findStatement(childNode, statementIndex, nextIndex);
         if (node1) return node1;
     }
     return nullptr;
@@ -67,9 +61,19 @@ antlr4::tree::ParseTree* findNonTerminal(antlr4::tree::ParseTree* node, const si
 
     if (context->getRuleIndex() == type) return node;
 
-    for (const auto e : node->children) {
-        const auto node1 = findNonTerminal(e, type);
+    for (const auto childNode : node->children) {
+        const auto node1 = findNonTerminal(childNode, type);
         if (node1) return node1;
+    }
+    return nullptr;
+}
+
+antlr4::tree::ParseTree* findNonTerminalChild(
+        antlr4::tree::ParseTree* node, const size_t type) noexcept
+{
+    for (const auto childNode : node->children) {
+        const auto context = dynamic_cast<antlr4::RuleContext*>(childNode);
+        if (context && context->getRuleIndex() == type) return childNode;
     }
     return nullptr;
 }
@@ -93,11 +97,40 @@ antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* node, std::size_t
     }
 
     // Search for the terminal recursively.
-    for (const auto e : node->children) {
-        const auto node1 = findTerminal(e, type);
+    for (const auto childNode : node->children) {
+        const auto node1 = findTerminal(childNode, type);
         if (node1) return node1;
     }
     return nullptr;
+}
+
+std::size_t findTerminalChild(antlr4::tree::ParseTree* node, std::size_t type) noexcept
+{
+    std::size_t index = 0;
+    for (const auto childNode : node->children) {
+        const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(childNode);
+        if (terminal) {
+            const auto symbol = terminal->getSymbol();
+            if (symbol && symbol->getType() == type) return index;
+        }
+        ++index;
+    }
+    return std::numeric_limits<std::size_t>::max();
+}
+
+bool hasTerminalChild(
+        antlr4::tree::ParseTree* node, std::size_t type, std::size_t startIndex) noexcept
+{
+    if (startIndex < node->children.size()) {
+        for (auto it = node->children.begin() + startIndex; it != node->children.end(); ++it) {
+            const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(*it);
+            if (terminal) {
+                const auto symbol = terminal->getSymbol();
+                if (symbol && symbol->getType() == type) return true;
+            }
+        }
+    }
+    return false;
 }
 
 std::size_t getNonTerminalType(antlr4::tree::ParseTree* node) noexcept
@@ -116,13 +149,14 @@ std::size_t getTerminalType(antlr4::tree::ParseTree* node) noexcept
 
 std::string getAnyNameText(antlr4::tree::ParseTree* node)
 {
-    switch (helpers::getTerminalType(node->children.at(0))) {
+    const auto firstChild = node->children.at(0);
+    switch (helpers::getTerminalType(firstChild)) {
         case SiodbParser::IDENTIFIER: return node->getText();
         case SiodbParser::STRING_LITERAL: return unquoteString(node->getText());
         default: break;
     }
 
-    switch (helpers::getNonTerminalType(node->children.at(0))) {
+    switch (helpers::getNonTerminalType(firstChild)) {
         case SiodbParser::RuleAttribute:
         case SiodbParser::RuleKeyword: return node->getText();
         default: break;
@@ -132,7 +166,7 @@ std::string getAnyNameText(antlr4::tree::ParseTree* node)
     if (node->children.size() == 3) return getAnyNameText(node->children[1]);
 
     // No match
-    throw std::invalid_argument("AnyName node is invalid or not supported");
+    throw std::invalid_argument("any_name node is invalid or unsupported");
 }
 
 }  // namespace siodb::iomgr::dbengine::parser::helpers
