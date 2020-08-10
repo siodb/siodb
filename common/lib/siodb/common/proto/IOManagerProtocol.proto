@@ -71,6 +71,9 @@ message DatabaseEngineResponse {
 
     /** Tags. */
     repeated Tag tag = 9;
+
+    /** REST HTTP status code */
+    uint32 rest_status_code = 10;
 }
 
 /** Begin authentication request */
@@ -111,4 +114,52 @@ message AuthenticateUserResponse {
 
     /** ID of started session. */
     string session_id = 3;
+}
+
+/** Rest verbs */
+enum RestVerb {
+    GET = 0;
+    POST = 1;
+    PATCH = 2;
+    DELETE = 3;
+};
+
+/** Database object type */
+enum DatabaseObjectType {
+    DATABASE = 0;
+    TABLE = 1;
+    ROW = 2;
+};
+
+/** Request from REST server to IOMgr. */
+message DatabaseEngineRestRequest {
+
+    /** Request ID */
+    uint64 request_id = 1;
+
+    /** REST verb */
+    RestVerb verb = 2;
+
+    /** Object type */
+    DatabaseObjectType object_type = 3;
+    
+    oneof object_identifier {
+        /** Numeric object ID */
+        uint64 object_id = 4;
+
+        /** Object ID string */
+        string object_sid = 5;
+        
+        /** Object name */
+        string object_name = 6;
+    }
+
+    /** User name */
+    string user_name = 7;
+
+    /** Token */
+    string token = 8;
+
+    /** Payload (e.g. JSON data) */
+    string payload = 9;
 }
