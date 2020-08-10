@@ -12,12 +12,16 @@
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/utils/Debug.h>
 
+// CRT headers
+#include <cctype>
+
 // STL headers
 #include <algorithm>
 #include <iomanip>
 #include <random>
 
 // Boost headers
+#include <boost/algorithm/hex.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 namespace parser_ns = dbengine::parser;
@@ -48,10 +52,11 @@ struct TestUserAccessKey {
 };
 
 struct TestUserToken {
-    void create(bool newToken) const;
+    void create(bool newToken);
     void drop(bool tokenExists) const;
     void alter(bool tokenExists) const;
     void checkExists(bool mustExist) const;
+    void check(bool mustBeValid) const;
 
     std::string m_userName;
     std::string m_tokenName;
@@ -72,7 +77,7 @@ void TestUser::create(bool newUser) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     const std::string stateActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "CREATE USER " << m_name << " WITH STATE = " << stateActiveStr << ", REAL_NAME = '"
        << m_realName << '\'';
 
@@ -137,7 +142,7 @@ void TestUser::alter(bool userExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     const std::string stateActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "ALTER USER " << m_name << " SET STATE = " << stateActiveStr << ", REAL_NAME = '"
        << m_realName << '\'';
 
@@ -173,7 +178,7 @@ void TestUser::checkExists(bool mustExist) const
 
     std::string sql;
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "SELECT * FROM SYS.SYS_USERS WHERE name = '" << boost::to_upper_copy(m_name)
            << "' AND REAL_NAME = '" << m_realName << "' AND STATE = " << (m_active ? '1' : '0');
         sql = ss.str();
@@ -220,7 +225,7 @@ void TestUserAccessKey::create(bool newKey) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     const std::string keyActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    std::stringstream ss;
+    std::ostringstream ss;
 
     ss << "ALTER USER " << m_userName << " ADD ACCESS KEY " << m_keyName << " '" << m_keyText
        << "' WITH STATE = " << keyActiveStr;
@@ -252,7 +257,7 @@ void TestUserAccessKey::create(bool newKey) const
 void TestUserAccessKey::drop(bool keyExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "ALTER USER " << m_userName << " DROP ACCESS KEY " << m_keyName;
     parser_ns::SqlParser parser(ss.str());
     parser.parse();
@@ -280,7 +285,7 @@ void TestUserAccessKey::drop(bool keyExists) const
 void TestUserAccessKey::alter(bool keyExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::stringstream ss;
+    std::ostringstream ss;
     const std::string keyActiveStr = m_active ? "ACTIVE" : "INACTIVE";
     ss << "ALTER USER " << m_userName << " ALTER ACCESS KEY " << m_keyName
        << " SET STATE = " << keyActiveStr;
@@ -311,7 +316,7 @@ void TestUserAccessKey::alter(bool keyExists) const
 void TestUserAccessKey::checkExists(bool mustExist) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "SELECT * FROM SYS.SYS_USER_ACCESS_KEYS WHERE NAME = '" << boost::to_upper_copy(m_keyName)
        << "' AND TEXT = '" << m_keyText << "' AND STATE = " << (m_active ? '1' : '0');
 
@@ -352,10 +357,10 @@ void TestUserAccessKey::checkExists(bool mustExist) const
     ASSERT_EQ(rowLength, 0U);
 }
 
-void TestUserToken::create(bool newToken) const
+void TestUserToken::create(bool newToken)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::stringstream ss;
+    std::ostringstream ss;
 
     ss << "ALTER USER " << m_userName << " ADD TOKEN " << m_tokenName;
     if (m_tokenValue) {
@@ -397,15 +402,31 @@ void TestUserToken::create(bool newToken) const
     EXPECT_EQ(response.response_count(), 1U);
 
     ASSERT_EQ(response.message_size(), newToken ? 0 : 1);
+
     if (newToken) {
-        ASSERT_EQ(response.freetext_message_size(), m_tokenValue ? 0 : 1);
+        const int expectedFreeTextCount = m_tokenValue ? 0 : 1;
+        ASSERT_EQ(response.freetext_message_size(), expectedFreeTextCount);
+        if (expectedFreeTextCount > 0) {
+            const auto& tokenMsg = response.freetext_message(0);
+            ASSERT_TRUE(tokenMsg.size() > 7);
+            ASSERT_EQ((tokenMsg.size() - 7) % 2, 0U);
+            ASSERT_EQ(tokenMsg.substr(0, 7), "token: ");
+            for (std::size_t i = 7, n = tokenMsg.length(); i < n; ++i) {
+                ASSERT_TRUE(std::isxdigit(tokenMsg[i]));
+            }
+            siodb::BinaryValue tokenValue((tokenMsg.size() - 7) / 2);
+            boost::algorithm::unhex(
+                    tokenMsg.data() + 7, tokenMsg.data() + tokenMsg.length(), tokenValue.data());
+            m_tokenValue = std::move(tokenValue);
+            std::cout << tokenMsg << std::endl;
+        }
     }
 }
 
 void TestUserToken::drop(bool tokenExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "ALTER USER " << m_userName << " DROP TOKEN " << m_tokenName;
     parser_ns::SqlParser parser(ss.str());
     parser.parse();
@@ -433,7 +454,7 @@ void TestUserToken::drop(bool tokenExists) const
 void TestUserToken::alter(bool tokenExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "ALTER USER " << m_userName << " ALTER TOKEN " << m_tokenName
        << " SET EXPIRATION_TIMESTAMP = ";
     if (m_expirationTimestamp) {
@@ -472,7 +493,7 @@ void TestUserToken::alter(bool tokenExists) const
 void TestUserToken::checkExists(bool mustExist) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "SELECT * FROM SYS.SYS_USER_TOKENS WHERE NAME = '" << boost::to_upper_copy(m_tokenName)
        << "' AND EXPIRATION_TIMESTAMP";
     if (m_expirationTimestamp) {
@@ -520,6 +541,42 @@ void TestUserToken::checkExists(bool mustExist) const
     }
     ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
     ASSERT_EQ(rowLength, 0U);
+}
+
+void TestUserToken::check(bool mustBeValid) const
+{
+    ASSERT_TRUE(m_tokenValue.has_value());
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    std::ostringstream ss;
+    ss << "CHECK TOKEN " << m_userName << '.' << m_tokenName << " x'";
+    {
+        std::string tokenStr;
+        tokenStr.resize(m_tokenValue->size() * 2, ' ');
+        boost::algorithm::hex_lower(m_tokenValue->cbegin(), m_tokenValue->cend(), tokenStr.begin());
+        ss << tokenStr;
+    }
+    ss << '\'';
+    parser_ns::SqlParser parser(ss.str());
+    parser.parse();
+
+    const auto dbeRequest =
+            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::CustomProtobufInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response.message_size(), mustBeValid ? 0 : 1);
+
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
 }
 
 }  // anonymous namespace
@@ -746,7 +803,6 @@ TEST(UM, CreateTokenWithValue)
         for (std::size_t i = 0, n = (*token.m_tokenValue).size(); i < n; ++i)
             (*token.m_tokenValue)[i] = dist(gen);
         if (expirationTimestamp > 0) token.m_expirationTimestamp = expirationTimestamp;
-
         token.create(true);
         token.checkExists(true);
         ++tokenIndex;
@@ -814,10 +870,10 @@ TEST(UM, AlterExistingToken)
     token.create(true);
     token.checkExists(true);
 
-    //token.m_expirationTimestamp = 1596669999;
-    //token.checkExists(false);
-    //token.alter(true);
-    //token.checkExists(true);
+    token.m_expirationTimestamp = 1596669999;
+    token.checkExists(false);
+    token.alter(true);
+    token.checkExists(true);
 }
 
 TEST(UM, AlterNonExistingToken)
@@ -835,4 +891,74 @@ TEST(UM, AlterNonExistingToken)
 
     token.checkExists(false);
     token.alter(false);
+}
+
+TEST(UM, CheckValidToken)
+{
+    TestUser user;
+    user.m_name = "CheckValidToken_user";
+    user.m_realName = "UserRealName";
+    user.create(true);
+    user.checkExists(true);
+
+    TestUserToken token;
+    token.m_userName = user.m_name;
+    token.m_tokenName = "ChecValidToken_token";
+
+    token.create(true);
+    token.checkExists(true);
+    token.check(true);
+}
+
+TEST(UM, CheckInvalidToken)
+{
+    TestUser user;
+    user.m_name = "CheckInvalidToken_user";
+    user.m_realName = "UserRealName";
+    user.create(true);
+    user.checkExists(true);
+
+    TestUserToken token;
+    token.m_userName = user.m_name;
+    token.m_tokenName = "CheckInvalidToken_token";
+
+    token.create(true);
+    token.checkExists(true);
+    token.m_tokenValue->at(0)++;
+    token.check(false);
+}
+
+TEST(UM, CheckNonExistingToken)
+{
+    TestUser user;
+    user.m_name = "CheckNonExistingToken_user";
+    user.m_realName = "UserRealName";
+    user.create(true);
+    user.checkExists(true);
+
+    TestUserToken token;
+    token.m_userName = user.m_name;
+    token.m_tokenName = "CheckNonExistingToken_token";
+    siodb::BinaryValue bv {0, 1, 2, 3};
+    token.m_tokenValue = std::move(bv);
+
+    token.check(false);
+}
+
+TEST(UM, CheckExpiredToken)
+{
+    TestUser user;
+    user.m_name = "CheckExpiredToken_user";
+    user.m_realName = "UserRealName";
+    user.create(true);
+    user.checkExists(true);
+
+    TestUserToken token;
+    token.m_userName = user.m_name;
+    token.m_tokenName = "CheckExpiredToken_token";
+    token.m_expirationTimestamp = std::time(nullptr) - 86400;
+
+    token.create(true);
+    token.checkExists(true);
+    token.check(false);
 }

@@ -530,3 +530,27 @@ TEST(UM, AlterUserRenameTokenIfExists)
     EXPECT_EQ(request.m_newTokenName, "TOKEN_NAME");
     EXPECT_TRUE(request.m_ifExists);
 }
+
+TEST(UM, CheckUserToken)
+{
+    const std::string statement =
+            "CHECK TOKEN user_name.tokenName x'0123456789abcdef0123456789abcdef'";
+    siodb::iomgr::dbengine::parser::SqlParser parser(statement);
+    parser.parse();
+
+    const auto dbeRequest = siodb::iomgr::dbengine::parser::DBEngineRequestFactory::createRequest(
+            parser.findStatement(0));
+
+    ASSERT_EQ(dbeRequest->m_requestType,
+            siodb::iomgr::dbengine::requests::DBEngineRequestType::kCheckUserToken);
+
+    const auto& request =
+            dynamic_cast<const siodb::iomgr::dbengine::requests::CheckUserTokenRequest&>(
+                    *dbeRequest);
+
+    EXPECT_EQ(request.m_userName, "USER_NAME");
+    EXPECT_EQ(request.m_tokenName, "TOKENNAME");
+    const siodb::BinaryValue tokenValue {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23,
+            0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+    EXPECT_EQ(request.m_tokenValue, tokenValue);
+}

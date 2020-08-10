@@ -253,6 +253,11 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::RenameUserTokenRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kCheckUserToken: {
+                executeCheckUserTokenRequest(
+                        response, dynamic_cast<const requests::CheckUserTokenRequest&>(request));
+                break;
+            }
             default: throw std::invalid_argument("Unknown request type");
         }
     } catch (const UserVisibleDatabaseError& userDbErrorEx) {

@@ -9,6 +9,7 @@
 #include "../ThrowDatabaseError.h"
 
 // Common project headers
+#include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
@@ -94,11 +95,11 @@ void RequestHandler::executeAddUserTokenRequest(iomgr_protocol::DatabaseEngineRe
             request.m_value, request.m_description, request.m_expirationTimestamp, m_userId);
 
     if (!request.m_value) {
-        std::string tokenText = "token: ";
-        const std::size_t offset = tokenText.length();
-        tokenText.resize(offset + result.second.size() * 2);
+        constexpr auto prefixLen = ::ct_strlen(kTokenResponsePrefix);
+        std::string tokenText(prefixLen + result.second.size() * 2, ' ');
+        std::strcpy(tokenText.data(), kTokenResponsePrefix);
         boost::algorithm::hex_lower(
-                result.second.cbegin(), result.second.cend(), tokenText.begin() + offset);
+                result.second.cbegin(), result.second.cend(), tokenText.begin() + prefixLen);
         response.add_freetext_message(std::move(tokenText));
     }
 
@@ -130,6 +131,16 @@ void RequestHandler::executeRenameUserTokenRequest(iomgr_protocol::DatabaseEngin
         [[maybe_unused]] const requests::RenameUserTokenRequest& request)
 {
     sendNotImplementedYet(response);
+}
+
+void RequestHandler::executeCheckUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::CheckUserTokenRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    m_instance.checkUserToken(
+            request.m_userName, request.m_tokenName, request.m_tokenValue, m_userId);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
 }
 
 }  // namespace siodb::iomgr::dbengine

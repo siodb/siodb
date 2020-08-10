@@ -11,6 +11,9 @@
 // Common project headers
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
+// OpenSSL
+#include <openssl/sha.h>
+
 namespace siodb::iomgr::dbengine {
 
 UserToken::UserToken(User& user, std::uint64_t id, std::string&& name, BinaryValue&& value,
@@ -18,7 +21,7 @@ UserToken::UserToken(User& user, std::uint64_t id, std::string&& name, BinaryVal
     : m_user(user)
     , m_id(id)
     , m_name(validateName(std::move(name)))
-    , m_value(std::move(value))
+    , m_value(validateValue(std::move(value)))
     , m_expirationTimestamp(std::move(expirationTimestamp))
     , m_description(std::move(description))
 {
@@ -34,6 +37,23 @@ UserToken::UserToken(User& user, const UserTokenRecord& tokenRecord)
 {
 }
 
+bool UserToken::checkValue(const BinaryValue& value, bool allowExpiredToken) const noexcept
+{
+    if (!allowExpiredToken && isExpired()) return false;
+    uint8_t hash[kHashSize];
+    hashValue(value, m_value.data(), hash);
+    return std::memcmp(hash, m_value.data() + UserToken::kSaltSize, UserToken::kHashSize) == 0;
+}
+
+void UserToken::hashValue(const BinaryValue& value, const uint8_t* salt, uint8_t* hash) noexcept
+{
+    ::SHA512_CTX ctx;
+    ::SHA512_Init(&ctx);
+    ::SHA512_Update(&ctx, salt, kSaltSize);
+    ::SHA512_Update(&ctx, value.data(), value.size());
+    ::SHA512_Final(hash, &ctx);
+}
+
 // ----- internals -----
 
 User& UserToken::validateUser(User& user, const UserTokenRecord& tokenRecord)
@@ -47,6 +67,12 @@ std::string&& UserToken::validateName(std::string&& accessKeyName)
 {
     if (isValidDatabaseObjectName(accessKeyName)) return std::move(accessKeyName);
     throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenName, accessKeyName);
+}
+
+BinaryValue&& UserToken::validateValue(BinaryValue&& tokenValue) const
+{
+    if (tokenValue.size() == kHashSize + kSaltSize) return std::move(tokenValue);
+    throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenHashedValue, m_name);
 }
 
 }  // namespace siodb::iomgr::dbengine

@@ -13,10 +13,11 @@
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/crypto/DigitalSignatureKey.h>
+#include <siodb/common/utils/RandomUtils.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
-// OpenSSL
-#include <openssl/sha.h>
+// Boost headers
+#include <boost/algorithm/hex.hpp>
 
 namespace siodb::iomgr::dbengine {
 
@@ -112,6 +113,7 @@ UserTokenPtr User::addToken(std::uint64_t id, std::string&& name, const BinaryVa
             std::find_if(m_tokens.begin(), m_tokens.end(), [id, &name](const auto& token) noexcept {
                 return token->getId() == id || token->getName() == name;
             });
+
     if (it != m_tokens.end()) {
         if ((*it)->getId() == id)
             throwDatabaseError(IOManagerMessageId::kErrorDuplicateUserTokenId, m_name, id);
@@ -119,16 +121,17 @@ UserTokenPtr User::addToken(std::uint64_t id, std::string&& name, const BinaryVa
             throwDatabaseError(IOManagerMessageId::kErrorUserTokenAlreadyExists, m_name, name);
     }
 
-    if (checkToken(value) != CheckTokenResult::kNotFound)
-        throwDatabaseError(IOManagerMessageId::kErrorUserTokenAlreadyExists, m_name, name);
+    if (value.size() == 0 || value.size() < UserToken::kMinSize
+            || value.size() > UserToken::kMaxSize)
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenValue2);
 
-    if (value.size() == 0 || value.size() > siodb::kMaxUserTokenSize) {
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserToken, m_name, name);
-    }
+    if (checkToken(value, true)) throwDatabaseError(IOManagerMessageId::kErrorDuplicateUserToken);
 
-    auto hash = hashTokenValue(value);
+    BinaryValue savedValue(UserToken::kSaltSize + UserToken::kHashSize);
+    utils::getRandomBytes(savedValue.data(), UserToken::kSaltSize);
+    UserToken::hashValue(value, savedValue.data(), savedValue.data() + UserToken::kSaltSize);
 
-    auto token = std::make_shared<UserToken>(*this, id, std::move(name), std::move(hash),
+    auto token = std::make_shared<UserToken>(*this, id, std::move(name), std::move(savedValue),
             std::move(expirationTimestamp), std::move(description));
     m_tokens.push_back(token);
     return token;
@@ -143,20 +146,57 @@ void User::deleteToken(const std::string& name)
     m_tokens.erase(it);
 }
 
-User::CheckTokenResult User::checkToken(const BinaryValue& tokenValue) const
-{
-    if (m_tokens.empty()) return CheckTokenResult::kNotFound;
-    const auto hash = hashTokenValue(tokenValue);
-    const auto it = std::find_if(m_tokens.cbegin(), m_tokens.cend(),
-            [&hash](const auto& token) { return token->getValue() == hash; });
-    if (it == m_tokens.cend()) return CheckTokenResult::kNotFound;
-    return (*it)->isExpired() ? CheckTokenResult::kExpired : CheckTokenResult::kSuccess;
-}
-
 std::size_t User::getActiveTokenCount() const noexcept
 {
     return std::count_if(m_tokens.begin(), m_tokens.end(),
             [](const auto& token) noexcept { return !token->isExpired(); });
+}
+
+bool User::authenticate(const std::string& signature, const std::string& challenge) const
+{
+    if (!isActive()) return false;
+    const auto itKey =
+            std::find_if(m_accessKeys.cbegin(), m_accessKeys.cend(), [&](const auto& accessKey) {
+                if (!accessKey->isActive()) return false;
+                siodb::crypto::DigitalSignatureKey key;
+                try {
+                    key.parseFromString(accessKey->getText());
+                    return key.verifySignature(challenge, signature);
+                } catch (std::exception& e) {
+                    return false;
+                }
+            });
+    return itKey != m_accessKeys.cend();
+}
+
+bool User::authenticate(const std::string& tokenValue) const
+{
+    // Validate and parse token value
+    if (tokenValue.empty() || tokenValue.length() % 2 != 0
+            || tokenValue.length() > UserToken::kMaxSize * 2)
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenValue1);
+    BinaryValue bv(tokenValue.length() / 2);
+    try {
+        boost::algorithm::unhex(tokenValue.cbegin(), tokenValue.cend(), bv.begin());
+    } catch (...) {
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenValue1);
+    }
+
+    // Check that user is active
+    if (!isActive()) return false;
+
+    // Check token
+    return checkToken(bv);
+}
+
+bool User::checkToken(const BinaryValue& tokenValue, bool allowExpiredToken) const noexcept
+{
+    if (!m_tokens.empty()) {
+        for (const auto& token : m_tokens) {
+            if (token->checkValue(tokenValue, allowExpiredToken)) return true;
+        }
+    }
+    return false;
 }
 
 // ----- internals -----
@@ -179,17 +219,6 @@ UserTokenPtr User::findTokenUnlocked(const std::string& name) const noexcept
     auto it = std::find_if(m_tokens.begin(), m_tokens.end(),
             [&name](const auto& token) noexcept { return token->getName() == name; });
     return (it == m_tokens.end()) ? nullptr : *it;
-}
-
-BinaryValue User::hashTokenValue(const BinaryValue& tokenValue) const
-{
-    BinaryValue hash(64);
-    ::SHA512_CTX ctx;
-    ::SHA512_Init(&ctx);
-    ::SHA512_Update(&ctx, m_name.c_str(), m_name.length());
-    ::SHA512_Update(&ctx, tokenValue.data(), tokenValue.size());
-    ::SHA512_Final(hash.data(), &ctx);
-    return hash;
 }
 
 }  // namespace siodb::iomgr::dbengine

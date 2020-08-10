@@ -44,14 +44,6 @@ public:
     static constexpr std::uint32_t kSuperUserId = 1;
 
 public:
-    /** Result of checking token */
-    enum CheckTokenResult {
-        kSuccess,
-        kNotFound,
-        kExpired,
-    };
-
-public:
     /**
      * Initializes object of class User for the new user.
      * @param userIdGenerator User ID generator object (usually system database).
@@ -231,17 +223,33 @@ public:
     void deleteToken(const std::string& name);
 
     /**
-     * Checks if token matches to user.
-     * @param tokenValue Token value.
-     * @return Check result value.
-     */
-    CheckTokenResult checkToken(const BinaryValue& tokenValue) const;
-
-    /**
      * Returns active token count.
      * @return Active token count.
      */
     std::size_t getActiveTokenCount() const noexcept;
+
+    /**
+     * Authenticate with access key.
+     * @param signature Signed challenge with user private key.
+     * @param challenge Random challenge.
+     * @return true on authentication success, false otherwise.
+     */
+    bool authenticate(const std::string& signature, const std::string& challenge) const;
+
+    /**
+     * Authenticate with token.
+     * @param tokenValue Token value.
+     * @return true on authentication success, false otherwise.
+     */
+    bool authenticate(const std::string& tokenValue) const;
+
+    /**
+     * Check user token match.
+     * @param tokenValue Token value.
+     * @param allowExpiredToken Allow expired token to match.
+     * @return true if token matched, false otherwise.
+     */
+    bool checkToken(const BinaryValue& tokenValue, bool allowExpiredToken = false) const noexcept;
 
 private:
     /**
@@ -265,13 +273,6 @@ private:
      * @return Token object or nullptr if it doesn't exist.
      */
     UserTokenPtr findTokenUnlocked(const std::string& name) const noexcept;
-
-    /**
-     * Hashes token value.
-     * @param tokenValue Token value.
-     * @return Token hash.
-     */
-    BinaryValue hashTokenValue(const BinaryValue& tokenValue) const;
 
 private:
     /** User name */

@@ -14,6 +14,19 @@ namespace siodb::iomgr::dbengine {
 /** User access key */
 class UserToken {
 public:
+    /** Minimum token size */
+    static constexpr std::size_t kMinSize = 16;
+
+    /** Maximum token size */
+    static constexpr std::size_t kMaxSize = 1024;
+
+    /** Salt size */
+    static constexpr std::size_t kSaltSize = 64;
+
+    /** Hash size. We use SHA-512 */
+    static constexpr std::size_t kHashSize = 64;
+
+public:
     /**
      * Initializes object of class UserToken for the new token.
      * @param user User object.
@@ -132,6 +145,23 @@ public:
         return m_expirationTimestamp && std::time(nullptr) >= *m_expirationTimestamp;
     }
 
+    /**
+     * Checks token value.
+     * @param value Token value.
+     * @param allowExpiredToken Allow expired token to match.
+     * @return true if value matched, false otherwise.
+     */
+    bool checkValue(const BinaryValue& value, bool allowExpiredToken = false) const noexcept;
+
+    /**
+     * Hashes token value.
+     * @param value Token value.
+     * @param salt Salt value.
+     * @param hash Resulting hash.
+     * @return Token hash.
+     */
+    static void hashValue(const BinaryValue& value, const uint8_t* salt, uint8_t* hash) noexcept;
+
 private:
     /**
      * Validates user.
@@ -143,12 +173,20 @@ private:
     static User& validateUser(User& user, const UserTokenRecord& tokenRecord);
 
     /**
-     * Validates user token name.
+     * Validates token name.
      * @param tokenName Token name.
-     * @return Same user access key name, if it is valid.
-     * @throw DatabaseError if user access key name is invalid.
+     * @return Same user token name, if it is valid.
+     * @throw DatabaseError if token key name is invalid.
      */
     static std::string&& validateName(std::string&& tokenName);
+
+    /**
+     * Validates token value.
+     * @param tokenValue Token name.
+     * @return Same user token value, if it is valid.
+     * @throw DatabaseError if token name is invalid.
+     */
+    BinaryValue&& validateValue(BinaryValue&& tokenValue) const;
 
 private:
     /** User object */

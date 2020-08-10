@@ -210,6 +210,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRequest(antlr4::tree:
                 default: throw std::runtime_error("ALTER USER: unsupported operation");
             }
         }
+        case SiodbParser::RuleCheck_user_token_stmt: return createCheckUserTokenRequest(node);
         default: {
             throw std::invalid_argument(
                     "Statement type " + std::to_string(statementType) + " is not supported");
@@ -1626,6 +1627,17 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameUserTokenReques
     auto newTokenName = helpers::extractObjectName(node, ifExists ? 10 : 8);
     return std::make_unique<requests::RenameUserTokenRequest>(
             std::move(userName), std::move(tokenName), std::move(newTokenName), ifExists);
+}
+
+requests::DBEngineRequestPtr DBEngineRequestFactory::createCheckUserTokenRequest(
+        antlr4::tree::ParseTree* node)
+{
+    auto userName = helpers::extractObjectName(node, 2);
+    auto tokenName = helpers::extractObjectName(node, 4);
+    auto v = ExpressionFactory::createConstantValue(node->children.at(5)->children.at(0));
+    auto tokenValue = std::move(v.getBinary());
+    return std::make_unique<requests::CheckUserTokenRequest>(
+            std::move(userName), std::move(tokenName), std::move(tokenValue));
 }
 
 siodb::ColumnDataType DBEngineRequestFactory::getColumnDataType(const std::string& typeName)

@@ -352,6 +352,14 @@ private:
             const requests::RenameUserTokenRequest& request);
 
     /**
+     * Executes CHECK TOKEN request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeCheckUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::CheckUserTokenRequest& request);
+
+    /**
      * Executes SQL SHOW DATABASES request.
      * @param response Response object.
      * @param request Request object.
@@ -470,6 +478,9 @@ private:
 
     /** Reserved expressions count */
     static constexpr std::size_t kReservedExpressionCount = 32;
+
+    /** Token prefix in the freetext message */
+    static constexpr const char* kTokenResponsePrefix = "token: ";
 };
 
 }  // namespace siodb::iomgr::dbengine
