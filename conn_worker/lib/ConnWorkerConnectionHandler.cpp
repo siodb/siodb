@@ -5,7 +5,7 @@
 #include "ConnWorkerConnectionHandler.h"
 
 // Common project headers
-#include <siodb/common/io/FdIo.h>
+#include <siodb/common/io/FdDevice.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/ConnectionError.h>
 #include <siodb/common/net/EpollHelpers.h>
@@ -62,7 +62,7 @@ ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(
         m_clientIo = std::move(m_tlsServer->acceptConnection(client.release(), true));
     } else {
         LOG_DEBUG << kLogContext << " established non-secure connection with client";
-        m_clientIo = std::make_unique<siodb::io::FdIo>(client.release(), true);
+        m_clientIo = std::make_unique<siodb::io::FdDevice>(client.release(), true);
     }
 
     if (!m_clientIo->isValid()) throw std::invalid_argument("Invalid client communication channel");
@@ -72,7 +72,7 @@ ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(
                        : m_dbOptions->m_ioManagerOptions.m_ipv6port;
 
     FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
-    auto iomgrIo = std::make_unique<io::FdIo>(fdGuard.getFd(), false);
+    auto iomgrIo = std::make_unique<io::FdDevice>(fdGuard.getFd(), false);
     fdGuard.release();
     iomgrIo->setAutoClose(true);
     m_ioMgrIo = std::move(iomgrIo);
@@ -134,7 +134,7 @@ void ConnWorkerConnectionHandler::run()
                                        : m_dbOptions->m_ioManagerOptions.m_ipv6port;
 
                     FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
-                    auto iomgrIo = std::make_unique<io::FdIo>(fdGuard.getFd(), false);
+                    auto iomgrIo = std::make_unique<io::FdDevice>(fdGuard.getFd(), false);
                     fdGuard.release();
                     iomgrIo->setAutoClose(true);
                     m_ioMgrIo = std::move(iomgrIo);

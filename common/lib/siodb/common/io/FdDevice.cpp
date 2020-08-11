@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "FdIo.h"
+#include "FdDevice.h"
 
 // Project headers
 #include "FileIO.h"
@@ -16,33 +16,33 @@
 
 namespace siodb::io {
 
-FdIo::FdIo(int fd, bool autoClose) noexcept
+FdDevice::FdDevice(int fd, bool autoClose) noexcept
     : m_fd(fd)
     , m_autoClose(autoClose)
 {
 }
 
-FdIo::~FdIo()
+FdDevice::~FdDevice()
 {
     if (m_autoClose && isValid()) close();
 }
 
-std::size_t FdIo::read(void* buffer, std::size_t size)
+std::size_t FdDevice::read(void* buffer, std::size_t size)
 {
     return ::read(m_fd, buffer, size);
 }
 
-std::size_t FdIo::write(const void* buffer, std::size_t size)
+std::size_t FdDevice::write(const void* buffer, std::size_t size)
 {
     return ::write(m_fd, buffer, size);
 }
 
-off_t FdIo::skip(std::size_t size)
+off_t FdDevice::skip(std::size_t size)
 {
     return ::lseek(m_fd, size, SEEK_CUR);
 }
 
-int FdIo::close()
+int FdDevice::close()
 {
     if (!isValid()) throw std::runtime_error("Invalid file descriptor");
 
@@ -51,7 +51,7 @@ int FdIo::close()
     return result;
 }
 
-bool FdIo::isValid() const
+bool FdDevice::isValid() const
 {
     return m_fd > 0;
 }

@@ -26,8 +26,8 @@
 namespace siodb::protobuf {
 
 CustomProtobufInputStream::CustomProtobufInputStream(
-        io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
-    : m_copyingInput(io, errorCodeChecker)
+        io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
+    : m_copyingInput(device, errorCodeChecker)
     , m_impl(&m_copyingInput, blockSize)
 {
 }
@@ -58,9 +58,9 @@ google::protobuf::int64 CustomProtobufInputStream::ByteCount() const
 }
 
 CustomProtobufInputStream::CopyingInputStream::CopyingInputStream(
-        io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker)
+        io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker)
     : m_errorCodeChecker(errorCodeChecker)
-    , m_io(io)
+    , m_device(device)
     , m_closeOnDelete(false)
     , m_closed(false)
     , m_errno(0)
@@ -82,7 +82,7 @@ bool CustomProtobufInputStream::CopyingInputStream::Close()
     GOOGLE_CHECK(!m_closed);
 
     m_closed = true;
-    if (!m_io.close()) {
+    if (!m_device.close()) {
         // The docs on close() do not specify whether a file descriptor is still
         // open after close() fails with EIO. However, the glibc source code
         // seems to indicate that it is not.
@@ -99,7 +99,7 @@ int CustomProtobufInputStream::CopyingInputStream::Read(void* buffer, int size)
 
     int result;
     do {
-        result = m_io.read(buffer, size);
+        result = m_device.read(buffer, size);
     } while (
             result < 0
             // Here is our custom logic comes into the game.
@@ -122,7 +122,7 @@ int CustomProtobufInputStream::CopyingInputStream::Skip(int count)
 {
     GOOGLE_CHECK(!m_closed);
 
-    if (!m_prevSeekFailed && m_io.skip(count) != (off_t) -1) {
+    if (!m_prevSeekFailed && m_device.skip(count) != (off_t) -1) {
         // Seek succeeded.
         return count;
     } else {

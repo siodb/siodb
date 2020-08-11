@@ -13,7 +13,7 @@
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/config/SiodbVersion.h>
 #include <siodb/common/crypto/TlsClient.h>
-#include <siodb/common/io/FdIo.h>
+#include <siodb/common/io/FdDevice.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/net/NetConstants.h>
 #include <siodb/common/net/TcpConnection.h>
@@ -179,7 +179,7 @@ int commandPrompt(const ClientParameters& params)
 {
     std::uint64_t requestId = 1;
     bool hasMoreInput = true;
-    std::unique_ptr<siodb::io::IoBase> connectionIo;
+    std::unique_ptr<siodb::io::IODevice> connection;
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
     const bool needPrompt = params.m_stdinIsTerminal;
 
@@ -269,7 +269,7 @@ int commandPrompt(const ClientParameters& params)
             }
 
             // Connect to server
-            if (!connectionIo || !connectionIo->isValid()) {
+            if (!connection || !connection->isValid()) {
                 if (params.m_instance.empty()) {
                     auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
                     std::cout << "Connected to " << params.m_host << ':' << params.m_port
@@ -286,9 +286,9 @@ int commandPrompt(const ClientParameters& params)
                         if (x509Certificate == nullptr)
                             throw siodb::crypto::OpenSslError("SSL_get_peer_certificate failed");
 
-                        connectionIo = std::move(tlsConnection);
+                        connection = std::move(tlsConnection);
                     } else
-                        connectionIo = std::make_unique<siodb::io::FdIo>(connectionFd, true);
+                        connection = std::make_unique<siodb::io::FdDevice>(connectionFd, true);
                 } else {
                     // Admin connection is always non-secure
                     const auto instanceSocketPath =
@@ -296,21 +296,21 @@ int commandPrompt(const ClientParameters& params)
                     auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
                     std::cout << "Connected to SIODB instance " << params.m_instance << " at "
                               << instanceSocketPath << " in the admin mode." << std::endl;
-                    connectionIo = std::make_unique<siodb::io::FdIo>(connectionFd, true);
+                    connection = std::make_unique<siodb::io::FdDevice>(connectionFd, true);
                 }
-                authenticate(params.m_identityKey, params.m_user, *connectionIo);
+                authenticate(params.m_identityKey, params.m_user, *connection);
                 requestId = 1;
             }
 
             // Execute command
             if (!command.empty()) {
-                executeCommandOnServer(requestId++, std::move(command), *connectionIo, std::cout,
+                executeCommandOnServer(requestId++, std::move(command), *connection, std::cout,
                         params.m_exitOnError);
             }
         } catch (std::exception& ex) {
             std::cerr << "Error: " << ex.what() << '.' << std::endl;
-            if (connectionIo && connectionIo->isValid()) {
-                connectionIo.reset();
+            if (connection && connection->isValid()) {
+                connection.reset();
                 if (params.m_instance.empty()) {
                     std::cout << "Connection to " << params.m_host << ':' << params.m_port
                               << " closed." << std::endl;
@@ -328,7 +328,7 @@ int commandPrompt(const ClientParameters& params)
 
 int exportSqlDump(const ClientParameters& params)
 {
-    std::unique_ptr<siodb::io::IoBase> connectionIo;
+    std::unique_ptr<siodb::io::IODevice> connection;
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
     if (params.m_instance.empty()) {
         auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
@@ -344,17 +344,17 @@ int exportSqlDump(const ClientParameters& params)
             if (x509Certificate == nullptr)
                 throw siodb::crypto::OpenSslError("SSL_get_peer_certificate failed");
 
-            connectionIo = std::move(tlsConnection);
+            connection = std::move(tlsConnection);
         } else
-            connectionIo = std::make_unique<siodb::io::FdIo>(connectionFd, true);
+            connection = std::make_unique<siodb::io::FdDevice>(connectionFd, true);
     } else {
         // Admin connection is always non-secure
         const auto instanceSocketPath = siodb::composeInstanceSocketPath(params.m_instance);
         auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
-        connectionIo = std::make_unique<siodb::io::FdIo>(connectionFd, true);
+        connection = std::make_unique<siodb::io::FdDevice>(connectionFd, true);
     }
 
-    siodb::cli::authenticate(params.m_identityKey, params.m_user, *connectionIo);
+    siodb::cli::authenticate(params.m_identityKey, params.m_user, *connection);
 
     try {
         const auto currentTime =
@@ -370,9 +370,9 @@ int exportSqlDump(const ClientParameters& params)
                   << std::put_time(std::localtime(&currentTime), "%Y.%m.%d %H:%M:%S") << '\n';
 
         if (params.m_exportDatabaseName.empty())
-            siodb::siocli::dumpAllDatabases(*connectionIo, std::cout);
+            siodb::siocli::dumpAllDatabases(*connection, std::cout);
         else
-            siodb::siocli::dumpDatabase(*connectionIo, std::cout, params.m_exportDatabaseName);
+            siodb::siocli::dumpDatabase(*connection, std::cout, params.m_exportDatabaseName);
     } catch (const siodb::SqlQueryException& sqlQueryException) {
         std::cerr << sqlQueryException.what() << ":\n";
         for (const auto& errMsg : sqlQueryException.getErrors())

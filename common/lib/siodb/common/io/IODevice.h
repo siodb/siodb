@@ -12,15 +12,13 @@
 
 namespace siodb::io {
 
-/**
- * A base class for input/output operations.
- */
-class IoBase {
+/** Base interface of the IO classes. */
+class IODevice {
 public:
     /**
-     * Deinitializes object of class FdIo.
+     * Deinitializes object of class FdDevice.
      */
-    virtual ~IoBase() = default;
+    virtual ~IODevice() = default;
 
     /**
      * Reads data from input.

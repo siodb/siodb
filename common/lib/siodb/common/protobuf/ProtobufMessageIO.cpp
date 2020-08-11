@@ -18,10 +18,10 @@
 namespace siodb::protobuf {
 
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
-        io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker)
+        io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker)
 {
     // Create input streams
-    CustomProtobufInputStream rawInput(io, errorCodeChecker);
+    CustomProtobufInputStream rawInput(device, errorCodeChecker);
     readMessage(messageType, message, rawInput);
 }
 
@@ -64,10 +64,10 @@ void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite&
 }
 
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
-        io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker)
+        io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker)
 {
     // Create output streams
-    CustomProtobufOutputStream rawOutput(io, errorCodeChecker);
+    CustomProtobufOutputStream rawOutput(device, errorCodeChecker);
     writeMessage(messageType, message, rawOutput);
 }
 

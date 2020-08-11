@@ -12,7 +12,7 @@
 #include "../dbengine/parser/SqlParser.h"
 
 // Common project headers
-#include <siodb/common/io/FdIo.h>
+#include <siodb/common/io/FdDevice.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/ConnectionError.h>
 #include <siodb/common/net/EpollHelpers.h>
@@ -36,7 +36,7 @@ IOManagerConnectionHandler::IOManagerConnectionHandler(
     , m_logContext(createLogContextName(clientFd.getFd()))
     , m_requestDispatcher(requestDispatcher)
 {
-    auto clientIo = std::make_unique<siodb::io::FdIo>(clientFd.getFd(), false);
+    auto clientIo = std::make_unique<siodb::io::FdDevice>(clientFd.getFd(), false);
     m_clientEpollFd.reset(net::createEpollFd(clientFd.getFd(), EPOLLIN));
     clientFd.release();
     clientIo->setAutoClose(true);

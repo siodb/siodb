@@ -44,14 +44,14 @@
 namespace siodb::cli {
 
 void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
-        io::IoBase& connectionIo, std::ostream& os, bool stopOnError)
+        io::IODevice& connection, std::ostream& os, bool stopOnError)
 {
     auto startTime = std::chrono::steady_clock::now();
     // Send command to server as protobuf message
     client_protocol::Command command;
     command.set_request_id(requestId);
     command.set_text(std::move(commandText));
-    protobuf::writeMessage(protobuf::ProtocolMessageType::kCommand, command, connectionIo);
+    protobuf::writeMessage(protobuf::ProtocolMessageType::kCommand, command, connection);
 
     std::size_t responseId = 0, responseCount = 0;
     do {
@@ -60,7 +60,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         const utils::DefaultErrorCodeChecker errorCodeChecker;
 
         client_protocol::ServerResponse response;
-        protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
+        protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
         protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
 
 #ifdef _DEBUG
@@ -250,16 +250,16 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
 }
 
 void authenticate(
-        const std::string& identityKey, const std::string& userName, io::IoBase& connectionIo)
+        const std::string& identityKey, const std::string& userName, io::IODevice& connection)
 {
     client_protocol::BeginSessionRequest beginSessionRequest;
     beginSessionRequest.set_user_name(userName);
     protobuf::writeMessage(protobuf::ProtocolMessageType::kClientBeginSessionRequest,
-            beginSessionRequest, connectionIo);
+            beginSessionRequest, connection);
 
     client_protocol::BeginSessionResponse beginSessionResponse;
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
+    protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
     protobuf::readMessage(protobuf::ProtocolMessageType::kClientBeginSessionResponse,
             beginSessionResponse, input);
 
@@ -281,7 +281,7 @@ void authenticate(
     client_protocol::ClientAuthenticationRequest authRequest;
     authRequest.set_signature(std::move(signature));
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kClientAuthenticationRequest, authRequest, connectionIo);
+            protobuf::ProtocolMessageType::kClientAuthenticationRequest, authRequest, connection);
 
     client_protocol::ClientAuthenticationResponse authResponse;
     protobuf::readMessage(

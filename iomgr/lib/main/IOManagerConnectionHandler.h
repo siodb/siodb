@@ -10,7 +10,7 @@
 #include "../dbengine/AuthenticationResult.h"
 
 // Common project headers
-#include <siodb/common/io/IoBase.h>
+#include <siodb/common/io/IODevice.h>
 #include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
@@ -113,7 +113,7 @@ private:
     FdGuard m_clientEpollFd;
 
     /** Client connection IO */
-    std::unique_ptr<siodb::io::IoBase> m_clientIo;
+    std::unique_ptr<siodb::io::IODevice> m_clientIo;
 
     /** User name */
     std::string m_userName;

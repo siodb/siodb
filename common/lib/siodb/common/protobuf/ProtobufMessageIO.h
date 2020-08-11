@@ -9,7 +9,7 @@
 #include "CustomProtobufOutputStream.h"
 #include "SiodbProtocolError.h"
 #include "SiodbProtocolMessageType.h"
-#include "../io/IoBase.h"
+#include "../io/IODevice.h"
 
 // STL headers
 #include <system_error>
@@ -23,15 +23,15 @@ namespace siodb::protobuf {
 
 /**
  * Reads protobuf message from an IO stream.
- * @param messageType message type identifier
- * @param message a message
- * @param io Input stream
+ * @param messageType Message type identifier.
+ * @param message A message.
+ * @param device Input device.
  * @param errorCodeChecker I/O error code checker object.
  * @throw std::system_error when I/O error happens.
  * @throw SiodbProtocolError when protocol error happens.
  */
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
-        io::IoBase& io,
+        io::IODevice& device,
         const utils::ErrorCodeChecker& errorCodeChecker = utils::DefaultErrorCodeChecker());
 
 /**
@@ -49,13 +49,13 @@ void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite&
  * Writes protobuf message to an IO stream.
  * @param messageType message type identifier.
  * @param message a message.
- * @param io Output stream.
+ * @param device Output device.
  * @param errorCodeChecker I/O error code checker object.
  * @throw std::system_error when I/O error happens.
  * @throw SiodbProtocolError when protocol error happens.
  */
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
-        io::IoBase& io,
+        io::IODevice& device,
         const utils::ErrorCodeChecker& errorCodeChecker = utils::DefaultErrorCodeChecker());
 
 /**

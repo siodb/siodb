@@ -5,24 +5,24 @@
 #pragma once
 
 // Project headers
-#include "IoBase.h"
+#include "IODevice.h"
 
 namespace siodb::io {
 
 /** File descriptor input/output */
-class FdIo final : public IoBase {
+class FdDevice final : public IODevice {
 public:
     /**
-     * Initializes object of class FdIo.
+     * Initializes object of class FdDevice.
      * @param fd File descriptor.
      * @param autoClose Auto close file on destructor.
      */
-    explicit FdIo(int fd, bool autoClose = false) noexcept;
+    explicit FdDevice(int fd, bool autoClose = false) noexcept;
 
     /**
-     * Deinitializes object of class FdIo.
+     * Deinitializes object of class FdDevice.
      */
-    ~FdIo() override;
+    ~FdDevice() override;
 
     /**
      * Reads data from secure channel.

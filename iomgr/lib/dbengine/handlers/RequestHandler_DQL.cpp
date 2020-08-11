@@ -270,7 +270,7 @@ void RequestHandler::executeSelectRequest(
     }
 
     utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::CustomProtobufOutputStream rawOutput(m_connectionIo, errorChecker);
+    protobuf::CustomProtobufOutputStream rawOutput(m_connection, errorChecker);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
@@ -397,7 +397,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     const auto databaseRecords = m_instance.getDatabaseRecordsOrderedByName();
 
     utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::CustomProtobufOutputStream rawOutput(m_connectionIo, errorChecker);
+    protobuf::CustomProtobufOutputStream rawOutput(m_connection, errorChecker);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 

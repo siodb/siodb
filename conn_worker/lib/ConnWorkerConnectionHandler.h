@@ -7,7 +7,7 @@
 // Common project headers
 #include <siodb/common/crypto/TlsConnection.h>
 #include <siodb/common/crypto/TlsServer.h>
-#include <siodb/common/io/IoBase.h>
+#include <siodb/common/io/IODevice.h>
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/CustomProtobufInputStream.h>
 #include <siodb/common/protobuf/CustomProtobufOutputStream.h>
@@ -105,10 +105,10 @@ private:
     const bool m_adminMode;
 
     /** IO for connection with Siodb client */
-    std::unique_ptr<io::IoBase> m_clientIo;
+    std::unique_ptr<io::IODevice> m_clientIo;
 
     /** IO for connection with IO manager */
-    std::unique_ptr<io::IoBase> m_ioMgrIo;
+    std::unique_ptr<io::IODevice> m_ioMgrIo;
 
     /** TLS server for handling secure connnection */
     std::unique_ptr<crypto::TlsServer> m_tlsServer;
