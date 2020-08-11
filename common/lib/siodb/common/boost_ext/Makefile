@@ -11,7 +11,6 @@ TARGET_COMMON_LIB:=siodb_common_boost_ext
 
 CXX_SRC:=
 
-CXX_HDR:= \
-	buffer_hash.hpp
+CXX_HDR:= buffer_hash.hpp
 
 include $(MK)/Main.mk

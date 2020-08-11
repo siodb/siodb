@@ -8,6 +8,7 @@
 .PHONY: all clean full-clean check-headers print-config
 
 include $(MK)/Toolchain.mk
+include $(MK)/Utils.mk
 
 ##### BUILD SETTINGS #####
 
@@ -24,8 +25,10 @@ OBJ:=$(addprefix $(THIS_OBJ_DIR),$(PROTO_CXX_SRC_N:.pb.cc=.pb.o) $(C_SRC:.c=.o) 
 DEP:=$(OBJ:.o=.d)
 
 # Header check
-CXX_CHK:=$(addprefix $(THIS_OBJ_DIR), $(CXX_HDR:.h=.cxx-hdr-check))
-C_CHK:=$(addprefix $(THIS_OBJ_DIR), $(C_HDR:.h=.c-hdr-check))
+CXX_CHK:=$(addprefix $(THIS_OBJ_DIR), $(addsuffix .cxx-hdr-check, $(CXX_HDR)))
+C_CHK:=$(addprefix $(THIS_OBJ_DIR), $(addsuffix .c-hdr-check, $(C_HDR)))
+
+CHK_DIRS:=$(addsuffix .,$(sort $(dir $(CXX_CHK)))) $(addsuffix .,$(sort $(dir $(C_CHK))))
 
 OBJ_DIRS:=$(addsuffix .,$(sort $(dir $(OBJ))))
 GENERATED_FILES_DIRS:=$(addsuffix .,$(sort $(dir $(PROTO_CXX_SRC))))
@@ -199,6 +202,7 @@ endif
 	$(PROTO_CXX_HDR)  \
 	$(PROTO_CXX_SRC)  \
 	$(OBJ_DIRS)  \
+	$(CHK_DIRS)  \
 	$(GENERATED_FILES_DIRS)  \
 	$(C_PCH_DEP)  \
 	$(CXX_PCH_DEP)  \
@@ -307,7 +311,7 @@ $(OBJ_DIR)/%.o : $(ROOT)/%.cpp $(PROTO_CXX_HDR) $(EXTRA_CXX_DEPS) $(CXX_PCH_DEP)
 	@echo CXX $@
 	$(NOECHO)$(CXX) -o $@ $(CXXFLAGS) $(CPPFLAGS) -c $<
 
-$(OBJ_DIR)/%.c-hdr-check : $(ROOT)/%.h $(EXTRA_C_DEPS) | $$(@D)/.
+$(OBJ_DIR)/%.h.c-hdr-check : $(ROOT)/%.h $(EXTRA_C_DEPS) | $$(@D)/.
 	@echo C_HEADER_CHECK $@
 	$(NOECHO)echo "#include \"$<\"" >"$@.c"
 	$(NOECHO)echo "int c_header_check_dummy(void);" >>"$@.c"
@@ -316,7 +320,7 @@ $(OBJ_DIR)/%.c-hdr-check : $(ROOT)/%.h $(EXTRA_C_DEPS) | $$(@D)/.
 	$(NOECHO)rm -f $@.c $@.o
 	$(NOECHO)touch $@
 
-$(OBJ_DIR)/%.cxx-hdr-check : $(ROOT)/%.h $(PROTO_CXX_HDR) $(EXTRA_CXX_DEPS) | $$(@D)/.
+$(OBJ_DIR)/%.h.cxx-hdr-check : $(ROOT)/%.h $(PROTO_CXX_HDR) $(EXTRA_CXX_DEPS) | $$(@D)/.
 	@echo CXX_HEADER_CHECK $@
 	$(NOECHO)echo "#include \"$<\"" >"$@.cpp"
 	$(NOECHO)echo "int cxx_header_check_dummy(void);" >>"$@.cpp"
@@ -325,6 +329,14 @@ $(OBJ_DIR)/%.cxx-hdr-check : $(ROOT)/%.h $(PROTO_CXX_HDR) $(EXTRA_CXX_DEPS) | $$
 	$(NOECHO)rm -f $@.cpp $@.o
 	$(NOECHO)touch $@
 
+$(OBJ_DIR)/%.hpp.cxx-hdr-check : $(ROOT)/%.hpp $(PROTO_CXX_HDR) $(EXTRA_CXX_DEPS) | $$(@D)/.
+	@echo CXX_HEADER_CHECK $@
+	$(NOECHO)echo "#include \"$<\"" >"$@.cpp"
+	$(NOECHO)echo "int cxx_header_check_dummy(void);" >>"$@.cpp"
+	$(NOECHO)echo "int test() { return cxx_header_check_dummy() + 1; }" >>"$@.cpp"
+	$(NOECHO)$(CXX) -o $@.o $(CXXFLAGS) $(CHECK_HEADERS_CXXFLAGS) $(CPPFLAGS) -c "$@.cpp"
+	$(NOECHO)rm -f $@.cpp $@.o
+	$(NOECHO)touch $@
 
 # Extra files
 
