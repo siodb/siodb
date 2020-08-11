@@ -229,7 +229,7 @@ public:
     std::size_t getActiveTokenCount() const noexcept;
 
     /**
-     * Authenticate with access key.
+     * Authenticates user with access key.
      * @param signature Signed challenge with user private key.
      * @param challenge Random challenge.
      * @return true on authentication success, false otherwise.
@@ -237,7 +237,7 @@ public:
     bool authenticate(const std::string& signature, const std::string& challenge) const;
 
     /**
-     * Authenticate with token.
+     * Authenticates user with token.
      * @param tokenValue Token value.
      * @return true on authentication success, false otherwise.
      */
