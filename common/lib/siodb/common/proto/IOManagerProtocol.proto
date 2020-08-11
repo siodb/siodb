@@ -143,25 +143,20 @@ message DatabaseEngineRestRequest {
     /** Object type */
     DatabaseObjectType object_type = 3;
     
-    oneof object_identifier {
-        /** Numeric object ID */
-        uint64 object_id = 4;
-
-        /** Object ID string */
-        string object_sid = 5;
+    /** Numeric object ID */
+    uint64 object_id = 4;
         
-        /** Object name */
-        string object_name = 6;
-    }
+    /** Object name */
+    string object_name = 5;
 
     /** User name */
-    string user_name = 7;
+    string user_name = 6;
 
     /** Token */
-    string token = 8;
+    string token = 7;
 
     /** Payload (e.g. JSON data) */
-    string payload = 9;
+    string payload = 8;
 }
 
 /** User token validation request */
