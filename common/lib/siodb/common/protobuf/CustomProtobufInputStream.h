@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "../io/IoBase.h"
+#include "../io/IODevice.h"
 #include "../utils/ErrorCodeChecker.h"
 
 // STL headers
@@ -32,12 +32,12 @@ public:
      * If a block_size is given, it specifies the number of bytes that
      * should be read and returned with each call to Next().  Otherwise,
      * a reasonable default is used.
-     * @param fd File descriptor.
+     * @param device I/O device.
      * @param errorChecker Error checker.
      * @param blockSize Block size.
      */
-    CustomProtobufInputStream(
-            io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize = -1);
+    CustomProtobufInputStream(io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker,
+            int blockSize = -1);
 
     /**
      * Flushes any buffers and closes the underlying file.  Returns false if
@@ -80,7 +80,7 @@ public:
 private:
     class CopyingInputStream : public google::protobuf::io::CopyingInputStream {
     public:
-        CopyingInputStream(io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker);
+        CopyingInputStream(io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker);
         ~CopyingInputStream();
 
         bool Close();
@@ -100,9 +100,13 @@ private:
         int Skip(int count);
 
     private:
+        /** Error code checker */
         const utils::ErrorCodeChecker& m_errorCodeChecker;
-        io::IoBase& m_io;
+        /** I/O device */
+        io::IODevice& m_device;
+        /** Indicaiton that stream should be closed in the destructor */
         bool m_closeOnDelete;
+        /** Indication of the closed stream */
         bool m_closed;
 
         /** The errno of the I/O error, if one has occurred. Otherwise, zero */

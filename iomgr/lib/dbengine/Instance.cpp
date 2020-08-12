@@ -15,7 +15,6 @@
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
-#include <siodb/common/crypto/DigitalSignatureKey.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbInstance.h>
@@ -420,16 +419,13 @@ std::pair<std::uint64_t, BinaryValue> Instance::createUserToken(const std::strin
     else {
         // Need to generate new token value
         result.second.resize(kGeneratedTokenLength);
-        DEBUG_DECL_LOCAL(std::size_t attemptNo = 1);
         do {
-            DBG_LOG_DEBUG("Generating token value, attempt #" << attemptNo);
             try {
                 utils::getRandomBytes(result.second.data(), result.second.size());
             } catch (std::exception& ex) {
                 throwDatabaseError(IOManagerMessageId::kErrorCannotGenerateUserToken, ex.what());
             }
-            DBG_LOG_DEBUG("Token value generated, attempt #" << attemptNo);
-        } while (user->checkToken(result.second) != User::CheckTokenResult::kNotFound);
+        } while (user->checkToken(result.second, true));
         v = result.second;
     }
 
@@ -509,6 +505,27 @@ void Instance::updateUserToken(const std::string& userName, const std::string& t
     m_systemDatabase->updateUserToken(userToken->getId(), params, currentUserId);
 }
 
+void Instance::checkUserToken(const std::string& userName, const std::string& tokenName,
+        const BinaryValue& tokenValue, [[maybe_unused]] std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_cacheMutex);
+
+    const auto& userIndex = m_userRegistry.byName();
+    const auto itUser = userIndex.find(userName);
+    if (itUser == userIndex.end())
+        throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
+
+    auto& tokenIndex = stdext::as_mutable(*itUser).m_tokens.byName();
+    const auto itToken = tokenIndex.find(tokenName);
+    if (itToken == tokenIndex.end())
+        throwDatabaseError(IOManagerMessageId::kErrorUserTokenDoesNotExist, userName, tokenName);
+
+    const auto user = findUserUnlocked(*itUser);
+    const auto userToken = user->findTokenChecked(tokenName);
+    if (!userToken->checkValue(tokenValue))
+        throwDatabaseError(IOManagerMessageId::kErrorUserTokenCheckFailed, userName, tokenName);
+}
+
 void Instance::beginUserAuthentication(const std::string& userName)
 {
     const auto user = findUserChecked(userName);
@@ -521,30 +538,19 @@ AuthenticationResult Instance::authenticateUser(
         const std::string& userName, const std::string& signature, const std::string& challenge)
 {
     const auto user = findUserChecked(userName);
-    const auto accessKeys = user->getAccessKeys();
-
-    if (!user->isActive()) throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
-
-    const auto itKey =
-            std::find_if(accessKeys.begin(), accessKeys.end(), [&](const auto& accessKey) {
-                if (!accessKey->isActive()) return false;
-
-                siodb::crypto::DigitalSignatureKey key;
-                try {
-                    key.parseFromString(accessKey->getText());
-                    return key.verifySignature(challenge, signature);
-                } catch (std::exception& e) {
-                    LOG_WARNING << "Instance: signature verification failed: " << e.what();
-                }
-
-                return false;
-            });
-
-    if (itKey == accessKeys.end())
+    if (!user->authenticate(signature, challenge))
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
-
     LOG_INFO << "Instance: User '" << userName << "' authenticated.";
+    return AuthenticationResult(user->getId(), beginSession());
+}
 
+AuthenticationResult Instance::authenticateUser(
+        const std::string& userName, const std::string& token)
+{
+    const auto user = findUserChecked(userName);
+    if (!user->authenticate(token))
+        throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
+    LOG_INFO << "Instance: User '" << userName << "' authenticated.";
     return AuthenticationResult(user->getId(), beginSession());
 }
 

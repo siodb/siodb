@@ -37,7 +37,7 @@ ColumnDataType SingleColumnExpression::getColumnDataType(const Context& context)
 
 MutableOrConstantString SingleColumnExpression::getExpressionText() const
 {
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "Column '";
     if (!m_tableName.empty()) ss << m_tableName << '.';
     ss << m_columnName << '\'';

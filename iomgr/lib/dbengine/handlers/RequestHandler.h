@@ -15,7 +15,7 @@
 #include "../reg/ColumnRecord.h"
 
 // Common project headers
-#include <siodb/common/io/IoBase.h>
+#include <siodb/common/io/IODevice.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/IOManagerProtocol.pb.h>
@@ -28,10 +28,10 @@ public:
     /**
      * Initializes object of class RequestHandler.
      * @param instance DBMS instance.
-     * @param connectionIo Connection with server file descriptor.
+     * @param connection Connection with server file descriptor.
      * @param userId Current user ID.
      */
-    RequestHandler(Instance& instance, siodb::io::IoBase& connectionIo, std::uint32_t userId);
+    RequestHandler(Instance& instance, siodb::io::IODevice& connection, std::uint32_t userId);
 
     /** De-initializes object of class RequestHandler */
     ~RequestHandler();
@@ -352,6 +352,14 @@ private:
             const requests::RenameUserTokenRequest& request);
 
     /**
+     * Executes CHECK TOKEN request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeCheckUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::CheckUserTokenRequest& request);
+
+    /**
      * Executes SQL SHOW DATABASES request.
      * @param response Response object.
      * @param request Request object.
@@ -448,7 +456,7 @@ private:
     Instance& m_instance;
 
     /** Connection IO descriptor */
-    siodb::io::IoBase& m_connectionIo;
+    siodb::io::IODevice& m_connection;
 
     /** Current user ID */
     const std::uint32_t m_userId;
@@ -470,6 +478,9 @@ private:
 
     /** Reserved expressions count */
     static constexpr std::size_t kReservedExpressionCount = 32;
+
+    /** Token prefix in the freetext message */
+    static constexpr const char* kTokenResponsePrefix = "token: ";
 };
 
 }  // namespace siodb::iomgr::dbengine

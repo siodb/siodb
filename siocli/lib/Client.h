@@ -5,7 +5,7 @@
 #pragma once
 
 // Common project headers
-#include <siodb/common/io/IoBase.h>
+#include <siodb/common/io/IODevice.h>
 
 // CRT headers
 #include <cstdint>
@@ -21,7 +21,7 @@ namespace siodb::cli {
  * Executes given command on the server and prints out results.
  * @param requestId Unique request identifier.
  * @param commandText A text of the command. This parameter will be moved.
- * @param connectionIo Connection IO.
+ * @param connection Connection IO.
  * @param os Output stream.
  * @param stopOnError Indicates that execution should stop on SQL error.
  * @throw std::system_error if I/O errors happened.
@@ -29,15 +29,15 @@ namespace siodb::cli {
  * @throw std::runtime_error if @ref stopOnError is true and SQL error happened.
  */
 void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
-        io::IoBase& connectionIo, std::ostream& os, bool stopOnError);
+        io::IODevice& connection, std::ostream& os, bool stopOnError);
 
 /**
  * Authenticates user.
  * @param identityKey Indentity key of a user.
  * @param userName Name of a user.
- * @param connectionIo Connection IO.
+ * @param connection Connection IO.
  */
 void authenticate(
-        const std::string& identityKey, const std::string& userName, io::IoBase& connectionFd);
+        const std::string& identityKey, const std::string& userName, io::IODevice& connectionFd);
 
 }  // namespace siodb::cli

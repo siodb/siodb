@@ -131,7 +131,7 @@ TEST(Query, SelectWithWhere)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_1 VALUES ";
         // a is always 300, b is [-0, 100, ..., 1000]
         std::int32_t bValue = 0;
@@ -230,7 +230,7 @@ TEST(Query, SelectWithWhereBetweenDatetime)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_2 VALUES";
         ss << "('2012-03-12'),";
         ss << "('2015-03-01'),";
@@ -323,7 +323,7 @@ TEST(Query, SelectWithWhereCompoundExpression)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_3 VALUES";
         ss << "(0.0, 0, 4000000),";
         ss << "(4.0, 2, 3000000),";
@@ -423,7 +423,7 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_4 VALUES ";
         ss << "(0, 100),";
         ss << "(1, 200),";
@@ -712,7 +712,7 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_6 VALUES";
         ss << "('2012-03-12', 'abc'),";
         ss << "('2015-03-01', 'bca'),";
@@ -820,7 +820,7 @@ TEST(Query, SelectFrom2Tables)
 
     /// ----------- INSERT_1 -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_1 VALUES (0),(1),(2),(3),(4)";
 
         const std::string statement(ss.str());
@@ -845,7 +845,7 @@ TEST(Query, SelectFrom2Tables)
 
     /// ----------- INSERT_2 -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_2 VALUES (6.0, false), (5.0, false), (4.0, "
               "false),(3.0, false), (2.0, true), (1.0, true), (0.0, true)";
 
@@ -946,7 +946,7 @@ TEST(Query, SelectWithExpression)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_8 VALUES (0, 0),(10, 1),(20, 2),(30, 3),(40, 4)";
 
         const std::string statement(ss.str());
@@ -1086,7 +1086,7 @@ TEST(Query, SelectWithExpressionWithNull)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.TEST_EXPRESSION VALUES (10)";
 
         const std::string statement(ss.str());
@@ -1403,7 +1403,7 @@ TEST(Query, SelectWithLimit)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_1 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
               "(8), (9)";
 
@@ -1484,7 +1484,7 @@ TEST(Query, SelectWithZeroLimit)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
               "(8), (9)";
 
@@ -1557,7 +1557,7 @@ TEST(Query, SelectWithNegativeLimit)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
               "(8), (9)";
 
@@ -1619,7 +1619,7 @@ TEST(Query, SelectWithLimitAndOffset)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), (4), (5), "
               "(6), (7), "
               "(8), (9)";
@@ -1702,7 +1702,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_2 VALUES (0), (1), (2), (3), (4), (5), "
               "(6), (7), "
               "(8), (9)";
@@ -1777,7 +1777,7 @@ TEST(Query, SelectWithNegativeOffset)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_3 VALUES (0), (1), (2), (3), (4), (5), "
               "(6), (7), "
               "(8), (9)";
@@ -1841,7 +1841,7 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
 
     /// ----------- INSERT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "INSERT INTO SYS.SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), "
               "(4), (5), "
               "(6), (7), "

@@ -312,6 +312,13 @@ private:
     static requests::DBEngineRequestPtr createRenameUserTokenRequest(antlr4::tree::ParseTree* node);
 
     /**
+     * Creates an CHECK TOKEN request.
+     * @param node Parse tree node with SQL statement.
+     * @return CHECK TOKEN request.
+     */
+    static requests::DBEngineRequestPtr createCheckUserTokenRequest(antlr4::tree::ParseTree* node);
+
+    /**
      * Parses SelectCore.
      * @param node Parse tree node with SelectCore node.
      * @param[out] database Database name.

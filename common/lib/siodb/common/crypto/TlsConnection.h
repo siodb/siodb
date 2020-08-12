@@ -7,7 +7,7 @@
 // Project headers
 #include "openssl_wrappers/Ssl.h"
 #include "openssl_wrappers/SslContext.h"
-#include "../io/IoBase.h"
+#include "../io/IODevice.h"
 
 namespace siodb::crypto {
 
@@ -18,7 +18,7 @@ enum class TlsConnectionType {
 };
 
 /** TLS connection */
-class TlsConnection final : public io::IoBase {
+class TlsConnection final : public io::IODevice {
 public:
     /**
      * Initializes object of class TlsConnection.

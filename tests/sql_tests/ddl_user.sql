@@ -31,7 +31,7 @@ select * from sys_user_access_keys;
 alter user nicolas add token mytoken1 with expiration_timestamp='2023-01-01 01:01:01';
 select * from sys_user_tokens;
 
-alter user nicolas add token mytoken2 x'0123456789abcdef';
+alter user nicolas add token mytoken2 x'0123456789abcdef0123456789abcdef';
 select * from sys_user_tokens;
 
 alter user nicolas alter token mytoken1 set expiration_timestamp='2021-01-01 01:01:01';
@@ -52,6 +52,9 @@ select * from sys_user_tokens;
 
 alter user nicolas drop token mytoken1;
 select * from sys_user_tokens;
+
+alter user nicolas add token mytoken3 x'0123456789abcdef0123456789abcdef01';
+check token nicolas.mytoken3 x'0123456789abcdef0123456789abcdef01';
 
 drop user nicolas;
 select * from sys_users;

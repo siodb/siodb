@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "../io/IoBase.h"
+#include "../io/IODevice.h"
 #include "../utils/ErrorCodeChecker.h"
 
 // STL headers
@@ -17,7 +17,7 @@
 namespace siodb::protobuf {
 
 /**
- * Our own version of protobuf output stream to be used with IoBase
+ * Our own version of protobuf output stream to be used with IODevice
  */
 class CustomProtobufOutputStream : public google::protobuf::io::ZeroCopyOutputStream {
 public:
@@ -26,12 +26,12 @@ public:
      * If a block_size is given, it specifies the number of bytes that
      * should be read and returned with each call to Next().  Otherwise,
      * a reasonable default is used.
-     * @param io Output descriptor.
+     * @param device Output device.
      * @param errorChecker Error checker.
      * @param blockSize Block size.
      */
-    explicit CustomProtobufOutputStream(
-            io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize = -1);
+    explicit CustomProtobufOutputStream(io::IODevice& device,
+            const utils::ErrorCodeChecker& errorCodeChecker, int blockSize = -1);
 
     /**
      * If an I/O error has occurred on this IO, this is the
@@ -61,7 +61,7 @@ public:
 private:
     class CopyingOutputStream : public google::protobuf::io::CopyingOutputStream {
     public:
-        CopyingOutputStream(io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker);
+        CopyingOutputStream(io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker);
 
         int GetErrno() const noexcept
         {
@@ -75,8 +75,8 @@ private:
         /** Error checker */
         const utils::ErrorCodeChecker& m_errorCodeChecker;
 
-        /** IO */
-        io::IoBase& m_io;
+        /** IO device*/
+        io::IODevice& m_device;
 
         /** The errno of the I/O error, if one has occurred. Otherwise, zero */
         int m_errno;

@@ -7,8 +7,8 @@
 namespace siodb::protobuf {
 
 CustomProtobufOutputStream::CustomProtobufOutputStream(
-        io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
-    : m_copyingOutput(io, errorCodeChecker)
+        io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
+    : m_copyingOutput(device, errorCodeChecker)
     , m_impl(&m_copyingOutput, blockSize)
 {
 }
@@ -29,9 +29,9 @@ google::protobuf::int64 CustomProtobufOutputStream::ByteCount() const
 }
 
 CustomProtobufOutputStream::CopyingOutputStream::CopyingOutputStream(
-        io::IoBase& io, const utils::ErrorCodeChecker& errorCodeChecker)
+        io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker)
     : m_errorCodeChecker(errorCodeChecker)
-    , m_io(io)
+    , m_device(device)
     , m_errno(0)
 {
 }
@@ -40,7 +40,7 @@ bool CustomProtobufOutputStream::CopyingOutputStream::Write(const void* buffer, 
 {
     int result = 0;
     do {
-        result = m_io.write(buffer, size);
+        result = m_device.write(buffer, size);
     } while (
             result < 0
             // Here is our custom logic comes into the game.

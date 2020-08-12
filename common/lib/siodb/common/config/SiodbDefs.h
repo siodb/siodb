@@ -113,7 +113,4 @@ constexpr const std::size_t kMaxChallengeSize = 1024;
 /** Maximum user access key size  */
 constexpr const std::size_t kMaxUserAccessKeySize = 8 * 1024;
 
-/** Maximum user token size */
-constexpr const std::size_t kMaxUserTokenSize = 1024;
-
 }  // namespace siodb

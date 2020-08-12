@@ -47,6 +47,7 @@ enum class DBEngineRequestType {
     kDropUserToken,
     kSetUserTokenAttributes,
     kRenameUserToken,
+    kCheckUserToken,
     kShowDatabases,
 };
 

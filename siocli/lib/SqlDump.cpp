@@ -344,13 +344,13 @@ void checkResponse(const client_protocol::ServerResponse& response)
 }
 
 client_protocol::ServerResponse sendCommand(
-        std::string&& command, io::IoBase& connectionIo, protobuf::CustomProtobufInputStream& input)
+        std::string&& command, io::IODevice& connection, protobuf::CustomProtobufInputStream& input)
 {
     static std::int64_t requestId = 0;
     client_protocol::Command clientCommand;
     clientCommand.set_request_id(requestId);
     clientCommand.set_text(std::move(command));
-    protobuf::writeMessage(protobuf::ProtocolMessageType::kCommand, clientCommand, connectionIo);
+    protobuf::writeMessage(protobuf::ProtocolMessageType::kCommand, clientCommand, connection);
 
     client_protocol::ServerResponse response;
     protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
@@ -362,12 +362,12 @@ client_protocol::ServerResponse sendCommand(
 }
 
 std::vector<DatabaseInfo> dumpDatabasesList(
-        io::IoBase& connectionIo, std::ostream& os, protobuf::CustomProtobufInputStream& input)
+        io::IODevice& connection, std::ostream& os, protobuf::CustomProtobufInputStream& input)
 {
     auto query = formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
             {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName,
                     kSysDatabases_CipherKey_ColumnName});
-    const auto response = sendCommand(std::move(query), connectionIo, input);
+    const auto response = sendCommand(std::move(query), connection, input);
 
     std::vector<DatabaseInfo> databases;
     databases.reserve(16);
@@ -396,7 +396,7 @@ std::vector<DatabaseInfo> dumpDatabasesList(
     return databases;
 }
 
-void dumpSpecificDatabase(io::IoBase& connectionIo, std::ostream& os,
+void dumpSpecificDatabase(io::IODevice& connection, std::ostream& os,
         protobuf::CustomProtobufInputStream& input, const std::string& databaseName)
 {
     std::ostringstream ss;
@@ -406,7 +406,7 @@ void dumpSpecificDatabase(io::IoBase& connectionIo, std::ostream& os,
        << " WHERE " << kSysDatabases_Name_ColumnName << " = '" << databaseName << '\'';
 
     std::string query = ss.str();
-    const auto response = sendCommand(std::move(query), connectionIo, input);
+    const auto response = sendCommand(std::move(query), connection, input);
 
     protobuf::CustomCodedInputStream codedInput(&input);
 
@@ -433,7 +433,7 @@ void dumpSpecificDatabase(io::IoBase& connectionIo, std::ostream& os,
         std::runtime_error("dumpSpecificDatabase: Unexpected database row with database received");
 }
 
-std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectionIo,
+std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IODevice& connection,
         protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
         std::int64_t columnSetId)
 {
@@ -447,7 +447,7 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectio
 
     std::string query = ss.str();
 
-    auto response = sendCommand(std::move(query), connectionIo, input);
+    auto response = sendCommand(std::move(query), connection, input);
 
     protobuf::CustomCodedInputStream codedInput(&input);
 
@@ -479,7 +479,7 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectio
     ss << constaintIds.back() << ')';
 
     query = ss.str();
-    response = sendCommand(std::move(query), connectionIo, input);
+    response = sendCommand(std::move(query), connection, input);
     std::vector<ColumnConstraint> constraints;
     while (true) {
         std::uint64_t rowLength = 0;
@@ -503,7 +503,7 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectio
            << " WHERE " << kMasterColumnName << " = " << constraint.m_constraintDefinitionId;
 
         query = ss.str();
-        response = sendCommand(std::move(query), connectionIo, input);
+        response = sendCommand(std::move(query), connection, input);
 
         const int columnCount = response.column_description_size();
 
@@ -533,7 +533,7 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IoBase& connectio
     return constraints;
 }
 
-std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
+std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
         protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
         std::int64_t currentColumnSetId)
 {
@@ -547,7 +547,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
 
     auto query = ss.str();
 
-    auto response = sendCommand(std::move(query), connectionIo, input);
+    auto response = sendCommand(std::move(query), connection, input);
     protobuf::CustomCodedInputStream codedInput(&input);
 
     std::vector<ColumnSetInfo> columnSetInfos;
@@ -580,7 +580,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
     ss << columnSetInfos.back().m_columnDefinitionId << ')';
     query = ss.str();
 
-    response = sendCommand(std::move(query), connectionIo, input);
+    response = sendCommand(std::move(query), connection, input);
 
     std::unordered_map<std::uint64_t, std::uint64_t> columnIdToColumnDefIdMap;
     std::vector<ColumnDefinitionInfo> columnDefInfos;
@@ -612,7 +612,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
     ss << columnDefInfos.back().m_columnId << ')';
 
     query = ss.str();
-    response = sendCommand(std::move(query), connectionIo, input);
+    response = sendCommand(std::move(query), connection, input);
 
     std::vector<ColumnInfo> columns;
     while (true) {
@@ -639,13 +639,13 @@ std::vector<ColumnInfo> receiveColumnList(io::IoBase& connectionIo,
 
     for (auto& column : columns) {
         column.m_constraints = receiveColumnConstraintsList(
-                connectionIo, input, databaseName, column.m_columnDefinitionId);
+                connection, input, databaseName, column.m_columnDefinitionId);
     }
 
     return columns;
 }
 
-std::vector<TableInfo> dumpTablesList(io::IoBase& connectionIo, std::ostream& os,
+std::vector<TableInfo> dumpTablesList(io::IODevice& connection, std::ostream& os,
         protobuf::CustomProtobufInputStream& input, const std::string& databaseName)
 {
     std::ostringstream ss;
@@ -658,7 +658,7 @@ std::vector<TableInfo> dumpTablesList(io::IoBase& connectionIo, std::ostream& os
        << kSysTables_Type_ColumnName << " = 1";
 
     auto query = ss.str();
-    auto response = sendCommand(std::move(query), connectionIo, input);
+    auto response = sendCommand(std::move(query), connection, input);
 
     std::vector<TableInfo> tableInfos;
     tableInfos.reserve(32);
@@ -681,8 +681,8 @@ std::vector<TableInfo> dumpTablesList(io::IoBase& connectionIo, std::ostream& os
     }
 
     for (auto& tableInfo : tableInfos) {
-        tableInfo.m_columns = receiveColumnList(
-                connectionIo, input, databaseName, tableInfo.m_currentColumnSetId);
+        tableInfo.m_columns =
+                receiveColumnList(connection, input, databaseName, tableInfo.m_currentColumnSetId);
 
         os << formCreateTableQuery(databaseName, tableInfo) << ';' << '\n';
     }
@@ -690,7 +690,7 @@ std::vector<TableInfo> dumpTablesList(io::IoBase& connectionIo, std::ostream& os
     return tableInfos;
 }
 
-void dumpTableData(io::IoBase& connectionIo, std::ostream& os,
+void dumpTableData(io::IODevice& connection, std::ostream& os,
         protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
         const TableInfo& table)
 {
@@ -699,7 +699,7 @@ void dumpTableData(io::IoBase& connectionIo, std::ostream& os,
     ss << formSelectAllQuery(databaseName, table.m_name);
 
     auto query = ss.str();
-    auto response = sendCommand(std::move(query), connectionIo, input);
+    auto response = sendCommand(std::move(query), connection, input);
 
     std::vector<TableInfo> tableInfos;
     tableInfos.reserve(32);
@@ -762,35 +762,35 @@ void dumpTableData(io::IoBase& connectionIo, std::ostream& os,
     }
 }
 
-void dumpDatabaseData(io::IoBase& connectionIo, std::ostream& os, const std::string& databaseName,
+void dumpDatabaseData(io::IODevice& connection, std::ostream& os, const std::string& databaseName,
         protobuf::CustomProtobufInputStream& input)
 {
-    auto tables = dumpTablesList(connectionIo, os, input, databaseName);
+    auto tables = dumpTablesList(connection, os, input, databaseName);
     for (const auto& table : tables)
-        dumpTableData(connectionIo, os, input, databaseName, table);
+        dumpTableData(connection, os, input, databaseName, table);
 }
 
 }  // namespace
 
-void dumpAllDatabases(io::IoBase& connectionIo, std::ostream& os)
+void dumpAllDatabases(io::IODevice& connection, std::ostream& os)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
+    protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
 
-    auto databases = dumpDatabasesList(connectionIo, os, input);
+    auto databases = dumpDatabasesList(connection, os, input);
     for (const auto& database : databases)
-        dumpDatabaseData(connectionIo, os, database.m_name, input);
+        dumpDatabaseData(connection, os, database.m_name, input);
 
     os << std::flush;
 }
 
-void dumpDatabase(io::IoBase& connectionIo, std::ostream& os, const std::string& databaseName)
+void dumpDatabase(io::IODevice& connection, std::ostream& os, const std::string& databaseName)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufInputStream input(connectionIo, errorCodeChecker);
+    protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
 
-    dumpSpecificDatabase(connectionIo, os, input, databaseName);
-    dumpDatabaseData(connectionIo, os, databaseName, input);
+    dumpSpecificDatabase(connection, os, input, databaseName);
+    dumpDatabaseData(connection, os, databaseName, input);
 
     os << std::flush;
 }

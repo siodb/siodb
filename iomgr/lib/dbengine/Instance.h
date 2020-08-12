@@ -293,6 +293,17 @@ public:
             const UpdateUserTokenParameters& params, std::uint32_t currentUserId);
 
     /**
+     * Checks user token.
+     * @param userName User name.
+     * @param tokenName Token name.
+     * @param tokenValue Token value.
+     * @param currentUserId Current user ID. 
+     * @throw DatabaseError if token mismatched.
+     */
+    void checkUserToken(const std::string& userName, const std::string& tokenName,
+            const BinaryValue& tokenValue, std::uint32_t currentUserId);
+
+    /**
      * Begins user Authentication.
      * @param userName User name.
      * @throw DatabaseError if some error has occurrred.
@@ -309,6 +320,15 @@ public:
      */
     AuthenticationResult authenticateUser(const std::string& userName, const std::string& signature,
             const std::string& challenge);
+
+    /**
+     * Authenticates user.
+     * @param userName User name.
+     * @param token User token.
+     * @return Pair (user ID, new session UUID).
+     * @throw DatabaseError if some error has occurrred.
+     */
+    AuthenticationResult authenticateUser(const std::string& userName, const std::string& token);
 
     /**
      * Closes session.

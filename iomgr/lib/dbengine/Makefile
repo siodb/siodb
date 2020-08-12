@@ -277,7 +277,7 @@ CXX_HDR:= \
 	reg/IndexColumnRegistry.h  \
 	reg/IndexRecord.h  \
 	reg/IndexRegistry.h  \
-	reg/RegistryRecordUuidChecker.р  \
+	reg/RegistryRecordUuidChecker.h  \
 	reg/TableRecord.h  \
 	reg/TableRegistry.h  \
 	reg/UserAccessKeyRecord.h  \

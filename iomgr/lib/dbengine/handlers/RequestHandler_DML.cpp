@@ -148,7 +148,7 @@ void RequestHandler::executeUpdateRequest(
     }
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeDeleteRequest(
@@ -202,7 +202,7 @@ void RequestHandler::executeDeleteRequest(
     }
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeInsertRequest(
@@ -316,7 +316,7 @@ void RequestHandler::executeInsertRequest(
     }
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 }  // namespace siodb::iomgr::dbengine

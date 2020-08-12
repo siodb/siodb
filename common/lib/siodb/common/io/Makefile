@@ -10,7 +10,7 @@ include ../../../../../mk/Prolog.mk
 TARGET_COMMON_LIB:=siodb_common_io
 
 CXX_SRC:= \
-	FdIo.cpp  \
+	FdDevice.cpp  \
 	MemoryMappedFile.cpp
 
 C_SRC:= \
@@ -18,8 +18,8 @@ C_SRC:= \
 
 CXX_HDR:= \
 	MemoryMappedFile.h \
-	FdIo.h  \
-	IoBase.h  \
+	FdDevice.h  \
+	IODevice.h  \
 	IOError.h  \
 	StreamFormatGuard.h
 

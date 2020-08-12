@@ -9,6 +9,7 @@
 #include "../ThrowDatabaseError.h"
 
 // Common project headers
+#include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
@@ -24,7 +25,7 @@ void RequestHandler::executeCreateUserRequest(iomgr_protocol::DatabaseEngineResp
     m_instance.createUser(
             request.m_name, request.m_realName, request.m_description, request.m_active, m_userId);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeDropUserRequest(
@@ -33,7 +34,7 @@ void RequestHandler::executeDropUserRequest(
     response.set_has_affected_row_count(false);
     m_instance.dropUser(request.m_name, !request.m_ifExists, m_userId);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeSetUserAttributesRequest(
@@ -43,7 +44,7 @@ void RequestHandler::executeSetUserAttributesRequest(
     response.set_has_affected_row_count(false);
     m_instance.updateUser(request.m_userName, request.m_params, m_userId);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeAddUserAccessKeyRequest(
@@ -54,7 +55,7 @@ void RequestHandler::executeAddUserAccessKeyRequest(
     m_instance.createUserAccessKey(request.m_userName, request.m_keyName, request.m_text,
             request.m_description, request.m_active, m_userId);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeDropUserAccessKeyRequest(
@@ -65,7 +66,7 @@ void RequestHandler::executeDropUserAccessKeyRequest(
     m_instance.dropUserAccessKey(
             request.m_userName, request.m_keyName, !request.m_ifExists, m_userId);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeSetUserAccessKeyAttributesRequest(
@@ -76,7 +77,7 @@ void RequestHandler::executeSetUserAccessKeyAttributesRequest(
     m_instance.updateUserAccessKey(
             request.m_userName, request.m_keyName, request.m_params, m_userId);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeRenameUserAccessKeyRequest(
@@ -94,16 +95,16 @@ void RequestHandler::executeAddUserTokenRequest(iomgr_protocol::DatabaseEngineRe
             request.m_value, request.m_description, request.m_expirationTimestamp, m_userId);
 
     if (!request.m_value) {
-        std::string tokenText = "token: ";
-        const std::size_t offset = tokenText.length();
-        tokenText.resize(offset + result.second.size() * 2);
+        constexpr auto prefixLen = ::ct_strlen(kTokenResponsePrefix);
+        std::string tokenText(prefixLen + result.second.size() * 2, ' ');
+        std::strcpy(tokenText.data(), kTokenResponsePrefix);
         boost::algorithm::hex_lower(
-                result.second.cbegin(), result.second.cend(), tokenText.begin() + offset);
+                result.second.cbegin(), result.second.cend(), tokenText.begin() + prefixLen);
         response.add_freetext_message(std::move(tokenText));
     }
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeDropUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -113,7 +114,7 @@ void RequestHandler::executeDropUserTokenRequest(iomgr_protocol::DatabaseEngineR
     m_instance.dropUserToken(
             request.m_userName, request.m_tokenName, !request.m_ifExists, m_userId);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeSetUserTokenAttributesRequest(
@@ -123,13 +124,23 @@ void RequestHandler::executeSetUserTokenAttributesRequest(
     response.set_has_affected_row_count(false);
     m_instance.updateUserToken(request.m_userName, request.m_tokenName, request.m_params, m_userId);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeRenameUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
         [[maybe_unused]] const requests::RenameUserTokenRequest& request)
 {
     sendNotImplementedYet(response);
+}
+
+void RequestHandler::executeCheckUserTokenRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::CheckUserTokenRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    m_instance.checkUserToken(
+            request.m_userName, request.m_tokenName, request.m_tokenValue, m_userId);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 }  // namespace siodb::iomgr::dbengine

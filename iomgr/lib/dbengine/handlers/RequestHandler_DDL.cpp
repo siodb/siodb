@@ -62,7 +62,7 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
             std::string(request.m_database), cipherId, std::move(cipherKey), m_userId, {});
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeCreateTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -98,7 +98,7 @@ void RequestHandler::executeCreateTableRequest(iomgr_protocol::DatabaseEngineRes
             std::string(request.m_table), TableType::kDisk, tableColumns, m_userId, {});
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeAddColumnRequest(
@@ -162,7 +162,7 @@ void RequestHandler::executeDropDatabaseRequest(iomgr_protocol::DatabaseEngineRe
     m_instance.dropDatabase(request.m_database, !request.m_ifExists, m_userId);
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeRenameDatabaseRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -206,7 +206,7 @@ void RequestHandler::executeUseDatabaseRequest(iomgr_protocol::DatabaseEngineRes
     tag->set_name(kCurrentDatabaseTag);
     tag->set_string_value(request.m_database);
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 void RequestHandler::executeDropTableRequest(
@@ -376,7 +376,7 @@ void RequestHandler::executeSetTableAttributesRequest(
     }
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 }  // namespace siodb::iomgr::dbengine

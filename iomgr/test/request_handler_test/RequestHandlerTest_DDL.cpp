@@ -240,7 +240,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         /// ----------- CREATE TABLE -----------
         // Create a table in current database
 
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "CREATE TABLE UseDatabase_ExistentDB_database." << tableName << " (TEST text)";
         parser_ns::SqlParser parser(ss.str());
         parser.parse();
@@ -282,7 +282,7 @@ TEST(DDL, UseDatabase_ExistentDB)
 
     /// ----------- SELECT -----------
     {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "SELECT * FROM " << tableName;
         parser_ns::SqlParser parser(ss.str());
         parser.parse();

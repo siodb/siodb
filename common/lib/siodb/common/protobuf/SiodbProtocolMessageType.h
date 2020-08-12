@@ -13,7 +13,6 @@ enum class ProtocolMessageType : unsigned {
     kServerResponse,  // message ServerResponse
     kDatabaseEngineRequest,  // message DatabaseEngineRequest
     kDatabaseEngineResponse,  // message DatabaseEngineResponse
-
     kClientBeginSessionRequest,  // message BeginSessionRequest
     kClientBeginSessionResponse,  // message BeginSessionResponse
     kClientAuthenticationRequest,  // message ClientAuthenticationRequest
@@ -22,6 +21,8 @@ enum class ProtocolMessageType : unsigned {
     kBeginAuthenticateUserResponse,  // message BeginAuthenticateUserResponse
     kAuthenticateUserRequest,  // message AuthenticateUserRequest
     kAuthenticateUserResponse,  // message AuthenticateUserResponse
+    kDatabaseEngineRestRequest,  // message DatabaseEngineRestRequest
+    kValidateUserTokenRequest,  // message ValidateUserTokenRequest
 
     kMax  // message type limit
 };

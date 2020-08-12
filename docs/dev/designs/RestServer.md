@@ -17,6 +17,7 @@ Siodb must provide a new table `sys_user_tokens` with following columns:
 |USER_ID|UINT64|Yes|User ID|
 |NAME|TEXT|Yes|Token name|
 |VALUE|BINARY|Yes|Token value|
+|EXPIRATION_TIMESTAMP|TIMESTAMP|No|Token expiration timestamp|
 |DESCRIPTION|TEXT|No|Token description|
 
 New token is generated using SQL command:
@@ -25,17 +26,38 @@ New token is generated using SQL command:
 ALTER USER <user_name> CREATE TOKEN <token_name>;
 ```
 
+Generated tokens are guaranteed at least to be unique among all currently existing tokens for the
+mentioned used. Generated token is returned in the `DatabaseEngineReponse.freetext_message` in the
+following format: `token: xxxxxxxx...xx`, where `xx...` are hexadecimal digits. There must be even
+number of hexadecimal digits. Token is not stored in the database in this cleartext form, and if
+token lost there is no way to renew it. In such case new token should be generated.
+
+Token can be assigned expiration time:
+
+```sql
+ALTER USER <user_name> CREATE TOKEN <token_name> WITH EXPIRATION_TIME='yyyy-mm-dd hh:mm:ss';
+```
+
+It is possible to add token with supplied value:
+
+```sql
+ALTER USER <user_name> CREATE TOKEN <token_name> x'xxxx...xx';
+```
+
+Supplied value must be unique among existing tokens for the designated user,
+otherwise token will not be created.
+
 It is possible to delete a token with following SQL commands:
 
 ```sql
 ALTER USER <user_name> DROP TOKEN <token_name>;
 ```
 
-Generated tokens are guaranteed at least to be unique among all currently existing tokes.
-
 Client must provide a valid token to access and manipulate the data. For example:
 
-```curl -H "Authorization: Bearer xxxxxxxxxxxxxx" https://siodb-srv:50443/<path>```
+```curl -H "Authorization: Basic xxxx" https://siodb-srv:50443/<path>```
+
+where `xxxx` is base64-encoded pair `user name:user token`.
 
 ## REST Paths (for the first version)
 
@@ -90,7 +112,7 @@ Result:
 
 - Returns JSON response.
 
-### PUT
+### PATCH
 
 URL:
 
@@ -126,7 +148,7 @@ Result:
 
 - Return JSON response.
 
-### POST/PUT/DELETE Success Response
+### POST/PATCH/DELETE Success Response
 
 ```json
 // HTTP OK = 200
@@ -137,7 +159,7 @@ Result:
 }
 ```
 
-### GET/POST/PUT/DELETE Error Response
+### GET/POST/PATCH/DELETE Error Response
 
 ```json
 // HTTP BAD_REQUEST = 400
@@ -161,36 +183,39 @@ Result:
 ### GET
 
 1. A client sends a query to the server, for example:
-`curl -H "Authorization: Bearer XXXXXXXXXXXX" https://siodb-srv:50443/request-path`
-2. REST server receives the request headers and queries the IOMgr to see
-    if the token is valid.
+`curl -H "Authorization: Basic xxxx" https://siodb-srv:50443/request-path`
+2. REST server receives the request headers and queries the IOMgr with `ValidateUserTokenRequest`
+   to see if the token is valid.
     - If valid: continues to the step 3
     - If invalid: returns HTTP status `401 Unauthorized`
 3. REST server receives the request body.
 4. REST server converts the request into a `DatabaseEngineRestRequest`.
 5. REST server sends the command to the IOMgr.
-6. IOMgr receives the `DatabaseEngineRestRequest`, process the JSON and sends the `DatabaseEngineResponse`
-along with the raw data the same way as for the SQL query.
-7. REST server converts `DatabaseEngineResponse` to JSON and
- sends the HTTP 1.1 header `Transfer-Encoding: chunked` and part of the JSON response.
-8. REST server receives N rows of the raw data, converts it to JSON and sends it to the client in the HTTP 1.1 chunks, chunked per N rows.
+6. IOMgr receives the `DatabaseEngineRestRequest`, re-evaluates token,
+   processes the JSON and sends the `DatabaseEngineResponse` and, if applicable, json data after it.
+7. REST server converts `DatabaseEngineResponse` to JSON and sends the HTTP 1.1 header
+   `Transfer-Encoding: chunked` and part of the JSON response.
+8. REST server receives JSON and forwards it to the client in the HTTP 1.1 chunks,
+   chunked per N bytes.
 9. Finally REST server sends zero-length chunk to indicate end of data.
 
 NOTE: All values from IOMgr would be converted into UTF-8 JSON.
 
-### POST, PUT, DELETE
+### POST, PATCH, DELETE
 
 1. A client sends a query to the server:
-`curl -H "Authorization: Bearer XXXXXXXXXXXX" https://siodb-srv:50443/<path>`
-2. REST server receives the request and queries the IOMgr to see if the token is valid.
+`curl -H "Authorization: Basic xxxx" https://siodb-srv:50443/<path>`
+2. REST server receives the request headers and queries the IOMgr with `ValidateUserTokenRequest`
+   to see if the token is valid.
     - If valid: it goes to step 3
     - If not valid, it return the message `Status::CODE_401, "Unauthorized"`
 3. REST server receives the request.
 4. REST server converts the request into a `DatabaseEngineRestRequest`.
 5. REST server sends the command to the IOMgr.
-6. IOMgr receives the request, process the JSON and send the `DatabaseEngineResponse`.
+6. IOMgr receives the request, re-evaluates token, processes the JSON and send the
+   `DatabaseEngineResponse` and, if applicable, JSON data after it.
 7. REST server writes into a JSON the response converted from `DatabaseEngineResponse`.
-8. REST server sends the JSON response to the client.
+8. REST server sends the JSON response to the client along with JSON data from iomgr.
 
 ## Configuration Parameters
 
@@ -205,5 +230,5 @@ NOTE: All values from IOMgr would be converted into UTF-8 JSON.
 - `rest_server.tls_certificate` - path to the TLS certificate file.
 - `rest_server.tls_certificate_chain` - path to the TLS certificate chain file.
 - `rest_server.tls_private_key` - path to the TLS private key file.
-- `rest_server.rows_per_http_chunk` - number of rows per HTTP chunk. Default value `0`.
-  `0` means do not use chunks.
+- `rest_server.chunk_size` - HTTP chunk size in bytes. Suffixes `k`, `K`, `m`, `M` change units
+  to kilobytes and megabytes respectively.

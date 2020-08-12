@@ -147,8 +147,9 @@ MSG Error InvalidUserAccessKey                    Invalid key in attempt to crea
 MSG Error UserAccessKeyIsTooLong                  User access key '%1%'.'%2%' size %3% is larger than maximum allowed size %4%
 MSG Error CannotDeleteLastSuperUserAccessKey      Can't delete last superuser access key '%1%'
 MSG Error CannotDeactivateLastSuperUserAccessKey  Can't deactivate last superuser access key '%1%'
-MSG Error AlterUserAccessKeyFailed                Alter user access key '%1%'.'%2%' failed
-MSG Error InvalidUserToken                        Invalid token value in attempt to create user token '%1%'.'%2%'
+MSG Error AlterUserAccessKeyFailed  Alter user access key '%1%'.'%2%' failed
+MSG Error InvalidUserTokenValue2    Invalid user token
+MSG Error DuplicateUserToken        Duplicate user token
 
 # CREATE DATABASE
 MSG Error CannotCreateTemporaryDatabase  Temporary databases are not supported yet
@@ -174,8 +175,11 @@ MSG Error CipherUnknown     Cipher '%1%' is unknown
 MSG Error InvalidCipherKey  Invalid key for the cipher '%1%'
 
 # AUTHENTICATION
-MSG Error UserAccessDenied     User '%1%' access denied
-MSG Error SessionDoesNotExist  Session '%1%' doesn't exist
+MSG Error UserAccessDenied        User '%1%' access denied
+MSG Error SessionDoesNotExist     Session '%1%' doesn't exist
+MSG Error UserTokenCheckFailed    User token '%1%'.'%2%' check failed
+MSG Error UserTokenMismatch       User '%1%' token mismatch
+MSG Error InvalidUserTokenValue1  Invalid user token
 
 # UNSUPPORTED FEATURES
 MSG Error ConstraintNotSupported   Constraint type #%4% is not supported (constraint definition '%1%'.%2% (%3%.%2%)
@@ -434,11 +438,11 @@ MSG Error DuplicateUserAccessKeyId    Duplicate user access key id %2% for the u
 
 # User token
 ID -109000
-MSG Error InvalidUserForUserToken  Invalid user #%1% for the user token #%2%
-MSG Error CannotGenerateUserToken  Can't generate new token: %1%
-MSG Error DuplicateUserTokenId     Duplicate user token id %2% for the user '%1%'
-MSG Error DuplicateUserTokenValue  Duplicate user token value for the user token '%1%'.'%2%'
- 
+MSG Error InvalidUserForUserToken      Invalid user #%1% for the user token #%2%
+MSG Error CannotGenerateUserToken      Can't generate new token: %1%
+MSG Error DuplicateUserTokenId         Duplicate user token id %2% for the user '%1%'
+MSG Error InvalidUserTokenHashedValue  Invalid user token hashed value for the token '%1%'
+
 # Invalid attributes
 # ID -110000
 MSG Error InvalidLastUserTrid Invalid last user TRID %5% for the table '%1%'.'%2%' (%3%.%4%)

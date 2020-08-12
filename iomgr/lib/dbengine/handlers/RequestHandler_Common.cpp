@@ -32,9 +32,9 @@
 namespace siodb::iomgr::dbengine {
 
 RequestHandler::RequestHandler(
-        Instance& instance, siodb::io::IoBase& connectionIo, std::uint32_t userId)
+        Instance& instance, siodb::io::IODevice& connection, std::uint32_t userId)
     : m_instance(instance)
-    , m_connectionIo(connectionIo)
+    , m_connection(connection)
     , m_userId(userId)
     , m_currentDatabaseName(kSystemDatabaseName)
 {
@@ -253,22 +253,27 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::RenameUserTokenRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kCheckUserToken: {
+                executeCheckUserTokenRequest(
+                        response, dynamic_cast<const requests::CheckUserTokenRequest&>(request));
+                break;
+            }
             default: throw std::invalid_argument("Unknown request type");
         }
     } catch (const UserVisibleDatabaseError& userDbErrorEx) {
         addUserVisibleDatabaseErrorToResponse(
                 response, userDbErrorEx.getErrorCode(), userDbErrorEx.what());
         protobuf::writeMessage(
-                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
     } catch (const InternalError& internalErrorEx) {
         addInternalDatabaseErrorToResponse(
                 response, internalErrorEx.getErrorCode(), internalErrorEx.what());
         protobuf::writeMessage(
-                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
     } catch (const IOError& ioErrorEx) {
         addIoErrorToResponse(response, ioErrorEx.getErrorCode(), ioErrorEx.what());
         protobuf::writeMessage(
-                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
     } catch (const CompoundDatabaseError& compoundError) {
         for (const auto& err : compoundError.getErrors()) {
             if (DatabaseError::isMessageIdInRange(
@@ -284,7 +289,7 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
             }
         }
         protobuf::writeMessage(
-                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
     }
 }
 
@@ -336,7 +341,7 @@ void RequestHandler::sendNotImplementedYet(iomgr_protocol::DatabaseEngineRespons
     msg->set_status_code(kFeatureNotImplementedErrorCode);
     msg->set_text("Not implemented yet");
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connectionIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 }
 
 std::size_t RequestHandler::getVariantSize(const Variant& value)

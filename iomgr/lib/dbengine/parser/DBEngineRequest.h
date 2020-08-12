@@ -1446,6 +1446,33 @@ struct RenameUserTokenRequest : public DBEngineRequest {
     const bool m_ifExists;
 };
 
+/** CHECK TOKEN request */
+struct CheckUserTokenRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class RenameUserTokenRequest.
+     * @param userName User account name.
+     * @param tokenName Token name.
+     * @param tokenValue Token value.
+     */
+    CheckUserTokenRequest(
+            std::string&& userName, std::string&& tokenName, BinaryValue&& tokenValue) noexcept
+        : DBEngineRequest(DBEngineRequestType::kCheckUserToken)
+        , m_userName(std::move(userName))
+        , m_tokenName(std::move(tokenName))
+        , m_tokenValue(std::move(tokenValue))
+    {
+    }
+
+    /** User account name */
+    const std::string m_userName;
+
+    /** Token name */
+    const std::string m_tokenName;
+
+    /** New token name */
+    const BinaryValue m_tokenValue;
+};
+
 /** SHOW DATABASES request */
 struct ShowDatabasesRequest : public DBEngineRequest {
     /** Initializes object of class ShowDatabasesRequest */

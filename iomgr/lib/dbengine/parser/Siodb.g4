@@ -42,6 +42,7 @@ sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
 		| analyze_stmt
 		| attach_stmt
 		| begin_stmt
+		| check_user_token_stmt
 		| commit_stmt
 		| compound_select_stmt
 		| create_database_stmt
@@ -146,6 +147,9 @@ begin_stmt:
 	K_BEGIN (K_DEFERRED | K_IMMEDIATE | K_EXCLUSIVE)? (
 		K_TRANSACTION transaction_name?
 	)?;
+
+check_user_token_stmt:
+	K_CHECK K_TOKEN user_name '.' user_token_name user_token_value;
 
 commit_stmt: (K_COMMIT | K_END) (K_TRANSACTION transaction_name?)?;
 

@@ -147,10 +147,10 @@ private:
     static User& validateUser(User& user, const UserAccessKeyRecord& accessKeyRecord);
 
     /**
-     * Validates user access key name.
-     * @param accessKeyName User access key name.
-     * @return Same user access key name, if it is valid.
-     * @throw DatabaseError if user access key name is invalid.
+     * Validates access key name.
+     * @param accessKeyName Access key name.
+     * @return Same access key name, if it is valid.
+     * @throw DatabaseError if access key name is invalid.
      */
     static std::string&& validateName(std::string&& accessKeyName);
 
