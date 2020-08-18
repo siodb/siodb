@@ -4,7 +4,7 @@
 
 // Project headers
 #include "RequestHandlerTest_TestEnv.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 
 // Common project headers
@@ -22,7 +22,7 @@ TEST(DML_Update, UpdateAllValues)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -42,7 +42,7 @@ TEST(DML_Update, UpdateAllValues)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -64,7 +64,7 @@ TEST(DML_Update, UpdateAllValues)
         parser.parse();
 
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -85,7 +85,7 @@ TEST(DML_Update, UpdateAllValues)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -129,7 +129,7 @@ TEST(DML_Update, UpdateWhereByTRID)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -148,7 +148,7 @@ TEST(DML_Update, UpdateWhereByTRID)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -170,7 +170,7 @@ TEST(DML_Update, UpdateWhereByTRID)
         parser.parse();
 
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -191,7 +191,7 @@ TEST(DML_Update, UpdateWhereByTRID)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -251,7 +251,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -276,7 +276,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -300,7 +300,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
         parser.parse();
 
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -321,7 +321,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -386,7 +386,7 @@ TEST(DML_Update, UpdateSeveralColumns)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -410,7 +410,7 @@ TEST(DML_Update, UpdateSeveralColumns)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -436,7 +436,7 @@ TEST(DML_Update, UpdateSeveralColumns)
         parser.parse();
 
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -457,7 +457,7 @@ TEST(DML_Update, UpdateSeveralColumns)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -510,7 +510,7 @@ TEST(DML_Update, UpdateConcatString)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -531,7 +531,7 @@ TEST(DML_Update, UpdateConcatString)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -553,7 +553,7 @@ TEST(DML_Update, UpdateConcatString)
         parser.parse();
 
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -574,7 +574,7 @@ TEST(DML_Update, UpdateConcatString)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);

@@ -20,6 +20,7 @@
 // Common project headers
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
+#include <siodb/common/stl_ext/algorithm_ext.h>
 #include <siodb/common/stl_ext/string_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FsUtils.h>
@@ -51,6 +52,21 @@ std::string Database::makeDisplayName() const
     std::ostringstream oss;
     oss << '\'' << m_name << '\'';
     return oss.str();
+}
+
+std::vector<std::string> Database::getTableNames(bool includeSystemTables) const
+{
+    std::lock_guard lock(m_mutex);
+    std::vector<std::string> result;
+    result.reserve(m_tableRegistry.size());
+    const auto& index = m_tableRegistry.byName();
+    stdext::transform_if(
+            index.cbegin(), index.cend(), std::back_inserter(result),
+            [](const auto& tableRecord) { return tableRecord.m_name; },
+            [includeSystemTables](const auto& tableRecord) {
+                return Database::isSystemTable(tableRecord.m_name) == includeSystemTables;
+            });
+    return result;
 }
 
 TablePtr Database::findTableChecked(const std::string& tableName)

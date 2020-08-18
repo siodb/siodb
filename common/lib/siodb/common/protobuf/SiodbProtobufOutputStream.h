@@ -19,7 +19,7 @@ namespace siodb::protobuf {
 /**
  * Our own version of protobuf output stream to be used with IODevice
  */
-class CustomProtobufOutputStream : public google::protobuf::io::ZeroCopyOutputStream {
+class SiodbProtobufOutputStream : public google::protobuf::io::ZeroCopyOutputStream {
 public:
     /**
      * Creates a stream that reads from the given IO.
@@ -30,7 +30,7 @@ public:
      * @param errorChecker Error checker.
      * @param blockSize Block size.
      */
-    explicit CustomProtobufOutputStream(io::IODevice& device,
+    explicit SiodbProtobufOutputStream(io::IODevice& device,
             const utils::ErrorCodeChecker& errorCodeChecker, int blockSize = -1);
 
     /**
@@ -87,7 +87,7 @@ private:
     CopyingOutputStream m_copyingOutput;
     google::protobuf::io::CopyingOutputStreamAdaptor m_impl;
 
-    GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(CustomProtobufOutputStream);
+    GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(SiodbProtobufOutputStream);
 };
 
 }  // namespace siodb::protobuf

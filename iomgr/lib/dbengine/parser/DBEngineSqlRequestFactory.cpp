@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "DBEngineRequestFactory.h"
+#include "DBEngineSqlRequestFactory.h"
 
 // Project headers
 #include "AntlrHelpers.h"
@@ -20,7 +20,7 @@
 #include <boost/uuid/string_generator.hpp>
 
 // Protobuf message headers
-#include <siodb/common/proto/CommonTypes.pb.h>
+#include <siodb/common/proto/CommonMessages.pb.h>
 
 namespace siodb::iomgr::dbengine::parser {
 
@@ -57,7 +57,7 @@ time_t parseExpirationTimestamp(const std::string& s)
 }  // namespace
 
 const std::unordered_map<std::string, siodb::ColumnDataType>
-        DBEngineRequestFactory::m_siodbDataTypeMap {
+        DBEngineSqlRequestFactory::m_siodbDataTypeMap {
                 {"BOOLEAN", siodb::COLUMN_DATA_TYPE_BOOL},
                 {"INTEGER", siodb::COLUMN_DATA_TYPE_INT32},
                 {"INT", siodb::COLUMN_DATA_TYPE_INT32},
@@ -91,7 +91,7 @@ const std::unordered_map<std::string, siodb::ColumnDataType>
                 {"JSON", siodb::COLUMN_DATA_TYPE_JSON},
         };
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createRequest(antlr4::tree::ParseTree* node)
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRequest(antlr4::tree::ParseTree* node)
 {
     if (!node) throw std::out_of_range("Statement doesn't exist");
 
@@ -220,12 +220,13 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRequest(antlr4::tree:
 
 // ----- internals -----
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForGeneralSelectStatement(
+requests::DBEngineRequestPtr
+DBEngineSqlRequestFactory::createSelectRequestForGeneralSelectStatement(
         [[maybe_unused]] antlr4::tree::ParseTree* node)
 {
     throw std::runtime_error("SELECT: unsupported syntax");
 
-    // TODO: Implement DBEngineRequestFactory::createSelectRequestForGeneralSelectStatement()
+    // TODO: Implement DBEngineSqlRequestFactory::createSelectRequestForGeneralSelectStatement()
 
     // TODO: Capture WHERE values
     // TODO: Capture GROUP BY values
@@ -233,7 +234,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForGener
     // TODO: Capture ORDER BY values
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForSimpleSelectStatement(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSelectRequestForSimpleSelectStatement(
         antlr4::tree::ParseTree* node)
 {
     ExpressionFactory exprFactory;
@@ -296,10 +297,11 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForSimpl
             std::move(orderBy), std::move(offset), std::move(limit));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForFactoredSelectStatement(
+requests::DBEngineRequestPtr
+DBEngineSqlRequestFactory::createSelectRequestForFactoredSelectStatement(
         antlr4::tree::ParseTree* node)
 {
-    // TODO: Implement DBEngineRequestFactory::createSelectRequestForFactoredSelectStatement()
+    // TODO: Implement DBEngineSqlRequestFactory::createSelectRequestForFactoredSelectStatement()
     const auto selectCoreCount = std::count_if(
             node->children.cbegin(), node->children.cend(), [](const auto e) noexcept {
                 return helpers::getNonTerminalType(e) == SiodbParser::RuleSelect_core;
@@ -316,7 +318,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSelectRequestForFacto
     // TODO: Capture ORDER BY values
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createInsertRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture database ID
@@ -392,7 +394,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createInsertRequest(
             std::move(database), std::move(table), std::move(columns), std::move(values));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createUpdateRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
         antlr4::tree::ParseTree* node)
 {
     const ExpressionFactory exprFactory(true);
@@ -520,7 +522,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createUpdateRequest(
             std::move(values), std::move(where));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDeleteRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDeleteRequest(
         antlr4::tree::ParseTree* node)
 {
     std::string database;
@@ -572,7 +574,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDeleteRequest(
             requests::SourceTable(std::move(tableName), std::move(tableAlias)), std::move(where));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createBeginTransactionRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createBeginTransactionRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture transaction type. Default one is "deferred".
@@ -604,7 +606,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createBeginTransactionReque
             transactionType, std::move(transaction));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createCommitTransactionRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCommitTransactionRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture transaction ID
@@ -616,7 +618,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCommitTransactionRequ
     return std::make_unique<requests::CommitTransactionRequest>(std::move(transaction));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createRollbackTransactionRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRollbackTransactionRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture transaction ID
@@ -635,7 +637,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRollbackTransactionRe
             std::move(transaction), std::move(savepoint));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSavepointRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSavepointRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture savepoint ID
@@ -650,7 +652,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSavepointRequest(
     return std::make_unique<requests::SavepointRequest>(std::move(savepoint));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createReleaseRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createReleaseRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture savepoint ID
@@ -665,7 +667,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createReleaseRequest(
     return std::make_unique<requests::SavepointRequest>(std::move(savepoint));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createAttachDatabaseRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAttachDatabaseRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture database UUID
@@ -691,7 +693,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAttachDatabaseRequest
             std::move(databaseUuid), std::move(database));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDetachDatabaseRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDetachDatabaseRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture database ID
@@ -709,7 +711,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDetachDatabaseRequest
     return std::make_unique<requests::DetachDatabaseRequest>(std::move(database), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateDatabaseRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
@@ -761,7 +763,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateDatabaseRequest
             std::move(database), temporary, std::move(cipherId), std::move(cipherKeySeed));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDropDatabaseRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropDatabaseRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
@@ -769,7 +771,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropDatabaseRequest(
     return std::make_unique<requests::DropDatabaseRequest>(std::move(database), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameDatabaseRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameDatabaseRequest(
         antlr4::tree::ParseTree* node)
 {
     auto database = helpers::extractObjectName(node, 2);
@@ -779,7 +781,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameDatabaseRequest
             std::move(database), std::move(newDatabase), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSetDatabaseAttributesRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetDatabaseAttributesRequest(
         [[maybe_unused]] antlr4::tree::ParseTree* node)
 {
     auto database = helpers::extractObjectName(node, 2);
@@ -804,7 +806,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSetDatabaseAttributes
             std::move(database), std::move(description));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createUseDatabaseRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUseDatabaseRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture database ID
@@ -819,7 +821,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createUseDatabaseRequest(
     return std::make_unique<requests::UseDatabaseRequest>(std::move(database));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = helpers::findNonTerminalChild(node, SiodbParser::RuleTable_spec);
@@ -982,7 +984,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateTableRequest(
             std::move(database), std::move(table), std::move(columns));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDropTableRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropTableRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = helpers::findNonTerminalChild(node, SiodbParser::RuleTable_spec);
@@ -1009,7 +1011,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropTableRequest(
             std::move(database), std::move(table), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameTableRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameTableRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
@@ -1045,7 +1047,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameTableRequest(
             std::move(database), std::move(oldTable), std::move(newTable), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSetTableAttributesRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetTableAttributesRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
@@ -1094,7 +1096,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSetTableAttributesReq
             std::move(database), std::move(table), std::move(nextTrid));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createAddColumnRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddColumnRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
@@ -1135,7 +1137,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAddColumnRequest(
             std::move(database), std::move(table), std::move(column));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDropColumnRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropColumnRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
@@ -1171,7 +1173,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropColumnRequest(
             std::move(database), std::move(table), std::move(column), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameColumnRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameColumnRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
@@ -1197,7 +1199,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameColumnRequest(
             std::move(column), std::move(newColumn), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createRedefineColumnRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRedefineColumnRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
@@ -1238,7 +1240,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRedefineColumnRequest
             std::move(database), std::move(table), std::move(column));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateIndexRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateIndexRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture database ID
@@ -1294,7 +1296,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateIndexRequest(
             std::move(index), std::move(columns), unique, ifDoesntExist);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDropIndexRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropIndexRequest(
         antlr4::tree::ParseTree* node)
 {
     // Capture database ID
@@ -1320,7 +1322,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropIndexRequest(
             std::move(database), std::move(index), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateUserRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateUserRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
@@ -1370,7 +1372,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCreateUserRequest(
             std::move(name), std::move(realName), std::move(description), active);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropUserRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
@@ -1381,7 +1383,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserRequest(
     return std::make_unique<requests::DropUserRequest>(std::move(name), false);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserAttributesRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAttributesRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
@@ -1425,7 +1427,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserAttributesRequ
             std::move(name), std::move(realName), std::move(description), std::move(active));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserAccessKeyRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserAccessKeyRequest(
         antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1462,7 +1464,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserAccessKeyReque
             std::move(keyName), std::move(keyText), std::move(description), active);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserAccessKeyRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropUserAccessKeyRequest(
         antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1472,7 +1474,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserAccessKeyRequ
             std::move(userName), std::move(keyName), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserAccessKeyAttributesRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAccessKeyAttributesRequest(
         antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1505,7 +1507,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserAccessKeyAttri
             std::move(userName), std::move(keyName), std::move(description), std::move(active));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameUserAccessKeyRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameUserAccessKeyRequest(
         antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1516,7 +1518,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameUserAccessKeyRe
             std::move(userName), std::move(keyName), std::move(newKeyName), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserTokenRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserTokenRequest(
         antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1569,7 +1571,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createAddUserTokenRequest(
             std::move(description));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserTokenRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropUserTokenRequest(
         antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1579,7 +1581,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createDropUserTokenRequest(
             std::move(userName), std::move(tokenName), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserTokenAttributesRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserTokenAttributesRequest(
         antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1618,7 +1620,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createSetUserTokenAttribute
             std::move(tokenName), std::move(expirationTimestamp), std::move(description));
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameUserTokenRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameUserTokenRequest(
         [[maybe_unused]] antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1629,7 +1631,7 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createRenameUserTokenReques
             std::move(userName), std::move(tokenName), std::move(newTokenName), ifExists);
 }
 
-requests::DBEngineRequestPtr DBEngineRequestFactory::createCheckUserTokenRequest(
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCheckUserTokenRequest(
         antlr4::tree::ParseTree* node)
 {
     auto userName = helpers::extractObjectName(node, 2);
@@ -1640,14 +1642,14 @@ requests::DBEngineRequestPtr DBEngineRequestFactory::createCheckUserTokenRequest
             std::move(userName), std::move(tokenName), std::move(tokenValue));
 }
 
-siodb::ColumnDataType DBEngineRequestFactory::getColumnDataType(const std::string& typeName)
+siodb::ColumnDataType DBEngineSqlRequestFactory::getColumnDataType(const std::string& typeName)
 {
     const auto it = m_siodbDataTypeMap.find(typeName);
     if (it != m_siodbDataTypeMap.end()) return it->second;
     throw std::invalid_argument("Data type '" + typeName + "' is not supported");
 }
 
-requests::ResultExpression DBEngineRequestFactory::createResultExpression(
+requests::ResultExpression DBEngineSqlRequestFactory::createResultExpression(
         antlr4::tree::ParseTree* node)
 {
     requests::ConstExpressionPtr expression;
@@ -1678,8 +1680,8 @@ requests::ResultExpression DBEngineRequestFactory::createResultExpression(
     return requests::ResultExpression(std::move(expression), std::move(alias));
 }
 
-void DBEngineRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node, std::string& database,
-        std::vector<requests::SourceTable>& tables,
+void DBEngineSqlRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node,
+        std::string& database, std::vector<requests::SourceTable>& tables,
         std::vector<requests::ResultExpression>& columns, requests::ConstExpressionPtr& where)
 {
     ExpressionFactory exprFactory(true);

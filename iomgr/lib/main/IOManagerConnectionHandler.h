@@ -5,9 +5,7 @@
 #pragma once
 
 // Project headers
-#include "ClientSession.h"
 #include "IOManagerRequestDispatcher.h"
-#include "../dbengine/AuthenticationResult.h"
 
 // Common project headers
 #include <siodb/common/io/IODevice.h>
@@ -32,9 +30,8 @@ namespace siodb::iomgr {
  * Handler for the connection with downstream client like client connection worker
  * or REST server.
  */
-class IOManagerConnectionHandler final
-    : public std::enable_shared_from_this<IOManagerConnectionHandler> {
-public:
+class IOManagerConnectionHandler : public std::enable_shared_from_this<IOManagerConnectionHandler> {
+protected:
     /**
      * Initializes object of class IOManagerConnectionHandler.
      * @param clientFd Client connection file descriptor guard.
@@ -42,8 +39,9 @@ public:
      */
     IOManagerConnectionHandler(IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd);
 
+public:
     /** Deinitializes object */
-    ~IOManagerConnectionHandler();
+    virtual ~IOManagerConnectionHandler();
 
     DECLARE_NONCOPYABLE(IOManagerConnectionHandler);
 
@@ -53,7 +51,7 @@ public:
      */
     bool isConnected() noexcept
     {
-        return m_clientIo->isValid();
+        return m_clientConnection->isValid();
     }
 
     /** 
@@ -63,15 +61,9 @@ public:
      */
     bool executeIOManagerRequest(const IOManagerRequest& request);
 
-    /** Closes connection. */
-    void closeConnection() noexcept;
-
-private:
-    /** Entry point of the connection handler thread. */
-    void threadMain();
-
-    /** Authenticates user on the connection. */
-    void authenticateUser();
+protected:
+    /** Thread logic implementation. */
+    virtual void threadLogicImpl() = 0;
 
     /**
      * Responds to server with error code.
@@ -83,6 +75,13 @@ private:
      */
     void sendErrorReponse(int requestId, const char* text, int errorCode);
 
+    /** Closes connection. */
+    void closeConnection() noexcept;
+
+private:
+    /** Entry point of the connection handler thread. */
+    void threadMain();
+
     /**
      * Creates log context name.
      * @param fd Connection file descriptor.
@@ -90,16 +89,7 @@ private:
      */
     std::string createLogContextName(int fd) const;
 
-private:
-    /** Error codes enumeration */
-    enum {
-        /** SQL parsing error */
-        kSqlParseError = 2,
-
-        /* Internal error happened */
-        kInternalError = 3,
-    };
-
+protected:
     /** Connection handler ID */
     const std::uint64_t m_id;
 
@@ -113,22 +103,16 @@ private:
     FdGuard m_clientEpollFd;
 
     /** Client connection IO */
-    std::unique_ptr<siodb::io::IODevice> m_clientIo;
-
-    /** User name */
-    std::string m_userName;
-
-    /** Authentication result */
-    dbengine::AuthenticationResult m_authResult;
-
-    /** Request handler object */
-    std::shared_ptr<dbengine::RequestHandler> m_requestHandler;
+    std::unique_ptr<siodb::io::IODevice> m_clientConnection;
 
     /** Client communication handler thread */
     std::unique_ptr<std::thread> m_thread;
 
     /** Conneciton handler ID counter */
     static std::atomic<std::uint64_t> s_idCounter;
+
+    /* Internal error message code */
+    static constexpr int kInternalError = 4;
 
     /** Log context name */
     static constexpr const char* kLogContextBase = "IOManagerConnectionHandler";

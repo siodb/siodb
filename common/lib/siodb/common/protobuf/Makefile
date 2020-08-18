@@ -10,17 +10,19 @@ include ../../../../../mk/Prolog.mk
 TARGET_COMMON_LIB:=siodb_common_protobuf
 
 CXX_SRC:= \
-	CustomCodedInputStream.cpp  \
-	CustomProtobufInputStream.cpp  \
-	CustomProtobufOutputStream.cpp  \
+	SiodbCodedInputStream.cpp  \
+	SiodbProtobufInputStream.cpp  \
+	SiodbProtobufOutputStream.cpp  \
+	ProtobufJsonIO.cpp  \
 	ProtobufMessageIO.cpp  \
 	ProtobufUtils.cpp  \
 	RawDateTimeIO.cpp
 
 CXX_HDR:= \
-	CustomCodedInputStream.h  \
-	CustomProtobufInputStream.h  \
-	CustomProtobufOutputStream.h  \
+	SiodbCodedInputStream.h  \
+	SiodbProtobufInputStream.h  \
+	SiodbProtobufOutputStream.h  \
+	ProtobufJsonIO.h  \
 	ProtobufMessageIO.h  \
 	ProtobufUtils.h  \
 	SiodbProtocolError.h  \

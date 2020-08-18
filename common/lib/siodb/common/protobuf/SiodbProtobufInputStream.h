@@ -25,7 +25,7 @@ namespace siodb::protobuf {
  * Also, it's conceivable that SignalAwareFileInputStream could someday be enhanced
  * to use zero-copy file descriptors on OSs which support them.
  */
-class CustomProtobufInputStream : public google::protobuf::io::ZeroCopyInputStream {
+class SiodbProtobufInputStream : public google::protobuf::io::ZeroCopyInputStream {
 public:
     /**
      * Creates a stream that reads from the given Unix file descriptor.
@@ -36,7 +36,7 @@ public:
      * @param errorChecker Error checker.
      * @param blockSize Block size.
      */
-    CustomProtobufInputStream(io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker,
+    SiodbProtobufInputStream(io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker,
             int blockSize = -1);
 
     /**
@@ -124,7 +124,7 @@ private:
     CopyingInputStream m_copyingInput;
     google::protobuf::io::CopyingInputStreamAdaptor m_impl;
 
-    GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(CustomProtobufInputStream);
+    GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(SiodbProtobufInputStream);
 };
 
 }  // namespace siodb::protobuf

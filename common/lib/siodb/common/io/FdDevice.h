@@ -6,6 +6,7 @@
 
 // Project headers
 #include "IODevice.h"
+#include "../utils/HelperMacros.h"
 
 namespace siodb::io {
 
@@ -20,44 +21,22 @@ public:
     explicit FdDevice(int fd, bool autoClose = false) noexcept;
 
     /**
-     * Deinitializes object of class FdDevice.
+     * Initializes object of class FdDevice from another object.
+     * @param src Source object.
      */
-    ~FdDevice() override;
+    FdDevice(FdDevice&& src) noexcept;
+
+    /** De-initializes object of class FdDevice. */
+    ~FdDevice();
+
+    DECLARE_NONCOPYABLE(FdDevice);
 
     /**
-     * Reads data from secure channel.
-     * @param data Data.
-     * @param size Size of data in bytes.
-     * @return Count of read bytes.
+     * Move assignment operator.
+     * @param src Source object.
+     * @return This object.
      */
-    std::size_t read(void* buffer, std::size_t size) override;
-
-    /**
-     * Writes data to file descriptor.
-     * @param data Data.
-     * @param size Size of data in bytes.
-     * @return Count of written bytes.
-     */
-    std::size_t write(const void* buffer, std::size_t size) override;
-
-    /**
-     * Skips data.
-     * @param size Count of bytes to skip.
-     * @return Offset from the beggining of file or -1 in case of error.
-     */
-    off_t skip(std::size_t size) override;
-
-    /**
-     * Closes file descriptor.
-     * @return 0 in case of success, other value means error.
-     */
-    int close() override;
-
-    /**
-     * Returns indication whether connection is valid or not.
-     * @return true if connection is valid false otherwise.
-     */
-    bool isValid() const override;
+    FdDevice& operator=(FdDevice&& src) noexcept;
 
     /**
      * Returns file descriptor.
@@ -69,29 +48,87 @@ public:
     }
 
     /**
-     * Sets automatic file descriptor close indication.
-     * @param autoClose automatic file descriptor close indication.
-     */
-    void setAutoClose(bool autoClose) noexcept
-    {
-        m_autoClose = autoClose;
-    }
-
-    /**
-     * Returns automatic file descriptor close indication.
-     * @return Automatic file descriptor close indication.
+     * Returns automatic file descriptor close flag.
+     * @return Automatic file descriptor close flag.
      */
     bool isAutoClose() const noexcept
     {
         return m_autoClose;
     }
 
+    /**
+     * Sets automatic file descriptor close flag.
+     * @param autoClose automatic file descriptor close flag.
+     */
+    void setAutoClose(bool autoClose = true) noexcept
+    {
+        m_autoClose = autoClose;
+    }
+
+    /**
+     * Returns indication that file descriptor is valid.
+     * @return true device if file descriptor is valid, false otherwise.
+     */
+    bool isValid() const override;
+
+    /**
+     * Reads data from file.
+     * @param buffer Data buffer.
+     * @param size Data size in bytes.
+     * @return Number of read bytes. Negative value indicates error.
+     */
+    std::ptrdiff_t read(void* buffer, std::size_t size) override;
+
+    /**
+     * Writes data to file.
+     * @param buffer Data buffer.
+     * @param size Size of data in bytes.
+     * @return Number of written bytes. Negative value indicates error.
+     */
+    std::ptrdiff_t write(const void* buffer, std::size_t size) override;
+
+    /**
+     * Skips data.
+     * @param size Number of bytes to skip.
+     * @return Offset from the beginning of file. Negative value indicates error.
+     */
+    off_t skip(std::size_t size) override;
+
+    /**
+     * Closes file descriptor.
+     * @return Zero on success, nonzero otherwise.
+     */
+    int close() override;
+
+    /**
+     * Swaps content with other object.
+     * @param other Other object.
+     */
+    void swap(FdDevice& other) noexcept;
+
+private:
+    /**
+     * Closes file descriptor.
+     * @return Zero on success, nonzero otherwise.
+     */
+    int doClose() noexcept;
+
 private:
     /** File descriptor */
     int m_fd;
 
-    /** Automatic file descriptor close indication */
+    /** Automatic file descriptor close flag */
     bool m_autoClose;
 };
+
+/**
+ * Swaps content of two device objects.
+ * @param a First object.
+ * @param b Second object.
+ */
+inline void swap(FdDevice& a, FdDevice& b) noexcept
+{
+    a.swap(b);
+}
 
 }  // namespace siodb::io

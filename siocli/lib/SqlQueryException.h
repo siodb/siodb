@@ -9,7 +9,7 @@
 #include <vector>
 
 // Protobuf message headers
-#include <siodb/common/proto/CommonTypes.pb.h>
+#include <siodb/common/proto/CommonMessages.pb.h>
 
 namespace siodb {
 

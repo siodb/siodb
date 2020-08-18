@@ -1,0 +1,35 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
+// @file Contains protobuf messages used for communication
+// between all Siodb service.
+
+syntax = "proto3";
+
+import "CommonMessages.proto";
+
+package siodb.common_protocol;
+
+option optimize_for=SPEED;
+
+/** Request for server version and capabilities information */
+message ServerInformationRequest {
+    /** Request identifier */
+    uint64 request_id = 1;
+}
+
+/** Server version and capabilities information */
+message ServerInformation {
+    /** Request identifier */
+    uint64 request_id = 1;
+
+    /** Server version "major" component */
+    uint32 version_major = 2;
+
+    /** Server version "minor" component */
+    uint32 version_minor = 3;
+
+    /** Server version "patch" component */
+    uint32 version_patch = 4;
+}

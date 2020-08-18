@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "CustomProtobufInputStream.h"
+#include "SiodbProtobufInputStream.h"
 
 // Project headers
 #include "../io/FileIO.h"
@@ -25,39 +25,39 @@
 
 namespace siodb::protobuf {
 
-CustomProtobufInputStream::CustomProtobufInputStream(
+SiodbProtobufInputStream::SiodbProtobufInputStream(
         io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
     : m_copyingInput(device, errorCodeChecker)
     , m_impl(&m_copyingInput, blockSize)
 {
 }
 
-bool CustomProtobufInputStream::Close()
+bool SiodbProtobufInputStream::Close()
 {
     return m_copyingInput.Close();
 }
 
-bool CustomProtobufInputStream::Next(const void** data, int* size)
+bool SiodbProtobufInputStream::Next(const void** data, int* size)
 {
     return m_impl.Next(data, size);
 }
 
-void CustomProtobufInputStream::BackUp(int count)
+void SiodbProtobufInputStream::BackUp(int count)
 {
     m_impl.BackUp(count);
 }
 
-bool CustomProtobufInputStream::Skip(int count)
+bool SiodbProtobufInputStream::Skip(int count)
 {
     return m_impl.Skip(count);
 }
 
-google::protobuf::int64 CustomProtobufInputStream::ByteCount() const
+google::protobuf::int64 SiodbProtobufInputStream::ByteCount() const
 {
     return m_impl.ByteCount();
 }
 
-CustomProtobufInputStream::CopyingInputStream::CopyingInputStream(
+SiodbProtobufInputStream::CopyingInputStream::CopyingInputStream(
         io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker)
     : m_errorCodeChecker(errorCodeChecker)
     , m_device(device)
@@ -68,7 +68,7 @@ CustomProtobufInputStream::CopyingInputStream::CopyingInputStream(
 {
 }
 
-CustomProtobufInputStream::CopyingInputStream::~CopyingInputStream()
+SiodbProtobufInputStream::CopyingInputStream::~CopyingInputStream()
 {
     if (m_closeOnDelete) {
         if (!Close()) {
@@ -77,7 +77,7 @@ CustomProtobufInputStream::CopyingInputStream::~CopyingInputStream()
     }
 }
 
-bool CustomProtobufInputStream::CopyingInputStream::Close()
+bool SiodbProtobufInputStream::CopyingInputStream::Close()
 {
     GOOGLE_CHECK(!m_closed);
 
@@ -93,7 +93,7 @@ bool CustomProtobufInputStream::CopyingInputStream::Close()
     return true;
 }
 
-int CustomProtobufInputStream::CopyingInputStream::Read(void* buffer, int size)
+int SiodbProtobufInputStream::CopyingInputStream::Read(void* buffer, int size)
 {
     GOOGLE_CHECK(!m_closed);
 
@@ -118,7 +118,7 @@ int CustomProtobufInputStream::CopyingInputStream::Read(void* buffer, int size)
     return result;
 }
 
-int CustomProtobufInputStream::CopyingInputStream::Skip(int count)
+int SiodbProtobufInputStream::CopyingInputStream::Skip(int count)
 {
     GOOGLE_CHECK(!m_closed);
 

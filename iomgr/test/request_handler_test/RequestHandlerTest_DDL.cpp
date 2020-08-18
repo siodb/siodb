@@ -7,7 +7,7 @@
 #include "dbengine/DatabaseError.h"
 #include "dbengine/Table.h"
 #include "dbengine/handlers/RequestHandler.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 #include "dbengine/parser/expr/ConstantExpression.h"
 
@@ -53,13 +53,13 @@ TEST(DDL, CreateDatabase)
             parser.parse();
 
             const auto createDatabaseRequest =
-                    parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                    parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
             requestHandler->executeRequest(
                     *createDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            siodb::protobuf::CustomProtobufInputStream inputStream(
+            siodb::protobuf::SiodbProtobufInputStream inputStream(
                     TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
             siodb::protobuf::readMessage(
@@ -83,12 +83,12 @@ TEST(DDL, CreateDatabase)
             parser.parse();
 
             const auto selectRequest =
-                    parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                    parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
             requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            siodb::protobuf::CustomProtobufInputStream inputStream(
+            siodb::protobuf::SiodbProtobufInputStream inputStream(
                     TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
             siodb::protobuf::readMessage(
                     siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response,
@@ -129,13 +129,13 @@ TEST(DDL, CreateDatabase)
             parser.parse();
 
             const auto dropDatabaseRequest =
-                    parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                    parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
             requestHandler->executeRequest(
                     *dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            siodb::protobuf::CustomProtobufInputStream inputStream(
+            siodb::protobuf::SiodbProtobufInputStream inputStream(
                     TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
             siodb::protobuf::readMessage(
@@ -159,12 +159,12 @@ TEST(DDL, DropDatabase_NonExistentDB)
     parser.parse();
 
     const auto dropDatabaseRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -185,12 +185,12 @@ TEST(DDL, DropDatabaseIfExists_NonExistentDB)
     parser.parse();
 
     const auto dropDatabaseRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -207,7 +207,7 @@ TEST(DDL, UseDatabase_ExistentDB)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -219,7 +219,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         parser.parse();
 
         const auto createDatabaseRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(
                 *createDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -246,7 +246,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         parser.parse();
 
         const auto createTableRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -266,7 +266,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         parser.parse();
 
         const auto useDatabaseRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*useDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -288,7 +288,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -316,12 +316,12 @@ TEST(DDL, UseDatabase_NonExistentDB)
     parser.parse();
 
     const auto dropDatabaseRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -338,7 +338,7 @@ TEST(DDL, DropUsedDatabase)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -350,13 +350,13 @@ TEST(DDL, DropUsedDatabase)
         parser.parse();
 
         const auto createDatabaseRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(
                 *createDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::CustomProtobufInputStream inputStream(
+        siodb::protobuf::SiodbProtobufInputStream inputStream(
                 TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -375,7 +375,7 @@ TEST(DDL, DropUsedDatabase)
         parser.parse();
 
         const auto useDatabaseRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*useDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -397,7 +397,7 @@ TEST(DDL, DropUsedDatabase)
         parser.parse();
 
         const auto useDatabaseRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*useDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -425,12 +425,12 @@ TEST(DDL, CreateDuplicateColumnTable)
     parser.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -449,7 +449,7 @@ TEST(DDL, CreateDuplicateColumnTable)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -481,12 +481,12 @@ TEST(DDL, CreateTable)
     parser.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -505,7 +505,7 @@ TEST(DDL, CreateTable)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -595,12 +595,12 @@ TEST(DDL, CreateTableWithDefaultValue)
     parser.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -624,12 +624,12 @@ TEST(DDL, CreateTableWithNotNullAndDefaultValue)
     parser.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -652,12 +652,12 @@ TEST(DDL, SetTableAttributes_NextTrid)
     parser1.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser1.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser1.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response1;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::SiodbProtobufInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -675,7 +675,7 @@ TEST(DDL, SetTableAttributes_NextTrid)
     parser2.parse();
 
     const auto alterTableRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser2.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser2.findStatement(0));
 
     requestHandler->executeRequest(*alterTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 

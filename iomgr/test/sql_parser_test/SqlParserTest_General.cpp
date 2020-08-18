@@ -4,7 +4,7 @@
 
 // Project headers
 #include "TestContext.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 
 // Google Test

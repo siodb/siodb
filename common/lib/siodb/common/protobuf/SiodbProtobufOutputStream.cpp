@@ -2,33 +2,33 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "CustomProtobufOutputStream.h"
+#include "SiodbProtobufOutputStream.h"
 
 namespace siodb::protobuf {
 
-CustomProtobufOutputStream::CustomProtobufOutputStream(
+SiodbProtobufOutputStream::SiodbProtobufOutputStream(
         io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
     : m_copyingOutput(device, errorCodeChecker)
     , m_impl(&m_copyingOutput, blockSize)
 {
 }
 
-bool CustomProtobufOutputStream::Next(void** data, int* size)
+bool SiodbProtobufOutputStream::Next(void** data, int* size)
 {
     return m_impl.Next(data, size);
 }
 
-void CustomProtobufOutputStream::BackUp(int count)
+void SiodbProtobufOutputStream::BackUp(int count)
 {
     m_impl.BackUp(count);
 }
 
-google::protobuf::int64 CustomProtobufOutputStream::ByteCount() const
+google::protobuf::int64 SiodbProtobufOutputStream::ByteCount() const
 {
     return m_impl.ByteCount();
 }
 
-CustomProtobufOutputStream::CopyingOutputStream::CopyingOutputStream(
+SiodbProtobufOutputStream::CopyingOutputStream::CopyingOutputStream(
         io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker)
     : m_errorCodeChecker(errorCodeChecker)
     , m_device(device)
@@ -36,7 +36,7 @@ CustomProtobufOutputStream::CopyingOutputStream::CopyingOutputStream(
 {
 }
 
-bool CustomProtobufOutputStream::CopyingOutputStream::Write(const void* buffer, int size)
+bool SiodbProtobufOutputStream::CopyingOutputStream::Write(const void* buffer, int size)
 {
     int result = 0;
     do {

@@ -8,7 +8,7 @@
 #include "dbengine/DatabaseError.h"
 #include "dbengine/Table.h"
 #include "dbengine/handlers/RequestHandler.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/expr/ConstantExpression.h"
 
 // Common project headers

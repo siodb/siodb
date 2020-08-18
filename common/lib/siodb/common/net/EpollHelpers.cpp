@@ -18,20 +18,13 @@ void epollWaitForData(int epollFd, bool ignoreEintr)
 {
     struct epoll_event epollEvent;
     while (true) {
-        const auto n = epoll_wait(epollFd, &epollEvent, 1, -1);
-        if (n < 0) {
-            if (ignoreEintr && errno == EINTR)
-                continue;
-            else
-                stdext::throw_system_error("epoll_wait failed");
+        if (epoll_wait(epollFd, &epollEvent, 1, -1) < 0) {
+            if (ignoreEintr && errno == EINTR) continue;
+            stdext::throw_system_error("epoll_wait failed");
         }
-
-        if (epollEvent.events & EPOLLERR)
-            throw ConnectionError("Connection closed");
-        else if (epollEvent.events & EPOLLHUP)
-            throw ConnectionError("Connection hangup");
-        else if (epollEvent.events & EPOLLIN)
-            return;
+        if (epollEvent.events & EPOLLERR) throw ConnectionError("Connection closed");
+        if (epollEvent.events & EPOLLHUP) throw ConnectionError("Connection hangup");
+        if (epollEvent.events & EPOLLIN) return;
     }
 }
 

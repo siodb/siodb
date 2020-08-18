@@ -4,7 +4,7 @@
 
 // Project headers
 #include "TestContext.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 #include "dbengine/parser/expr/AllExpressions.h"
 
@@ -21,7 +21,7 @@ TEST(Query, UseDatabase)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kUseDatabase);
@@ -38,7 +38,7 @@ TEST(Query, ShowDatabases)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kShowDatabases);

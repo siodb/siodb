@@ -43,43 +43,40 @@ TlsConnection::~TlsConnection()
     }
 }
 
-std::size_t TlsConnection::write(const void* data, std::size_t size)
+bool TlsConnection::isValid() const
 {
-    const int result = ::SSL_write(m_ssl, data, size);
-    if (result < 0) OpenSslError("SSL_write failed");
-    return result;
+    return m_ssl.isConnected();
 }
 
-std::size_t TlsConnection::read(void* data, std::size_t size)
+std::ptrdiff_t TlsConnection::read(void* data, std::size_t size)
 {
-    const int result = ::SSL_read(m_ssl, data, size);
-    if (result < 0) OpenSslError("SSL_read failed");
-    return result;
+    return ::SSL_read(m_ssl, data, size);
+}
+
+std::ptrdiff_t TlsConnection::write(const void* data, std::size_t size)
+{
+    return ::SSL_write(m_ssl, data, size);
 }
 
 off_t TlsConnection::skip(std::size_t size)
 {
     char buffer[4096];
     std::size_t remainingBytes = size;
-    while (remainingBytes > 0) {
+    while (size > 0) {
         const auto n = std::min(remainingBytes, sizeof(buffer));
-        remainingBytes -= read(buffer, n);
+        const auto m = read(buffer, n);
+        if (m < 0) break;
+        remainingBytes -= m;
     }
-    return size;
+    return size - remainingBytes;
 }
 
 int TlsConnection::close()
 {
     const auto fd = ::SSL_get_fd(m_ssl);
     const auto result = m_ssl.close();
-    if (result != 1) OpenSslError("SSL_close failed");
     if (m_autoCloseFd) return ::close(fd);
-    return 0;
-}
-
-bool TlsConnection::isValid() const
-{
-    return m_ssl.isConnected();
+    return result;
 }
 
 }  // namespace siodb::crypto

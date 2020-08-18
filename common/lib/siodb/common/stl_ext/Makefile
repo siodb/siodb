@@ -26,12 +26,13 @@ CXX_HDR:= \
 	chrono_ext.h  \
 	cstdint_ext.h  \
 	event.h  \
+	functional_ext.h  \
 	lru_cache.h  \
-	n3876.h  \
 	ostream_ext.h  \
 	stdexcept_ext.h  \
 	string_ext.h  \
 	system_error_ext.h  \
+	type_traits_ext.h  \
 	utility_ext.h
 
 include $(MK)/Main.mk

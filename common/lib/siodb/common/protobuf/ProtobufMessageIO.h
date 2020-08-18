@@ -5,15 +5,13 @@
 #pragma once
 
 // Project headers
-#include "CustomProtobufInputStream.h"
-#include "CustomProtobufOutputStream.h"
+#include "SiodbProtobufInputStream.h"
+#include "SiodbProtobufOutputStream.h"
 #include "SiodbProtocolError.h"
 #include "SiodbProtocolMessageType.h"
-#include "../io/IODevice.h"
 
 // Protobuf headers
 #include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/message_lite.h>
 
 namespace siodb::protobuf {
@@ -58,7 +56,7 @@ std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessage
  * @throw SiodbProtocolError when protocol error happens.
  */
 std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessageType* messageTypes,
-        std::size_t messageTypeCount, CustomProtobufInputStream& input,
+        std::size_t messageTypeCount, SiodbProtobufInputStream& input,
         ProtocolMessageFactory& messageFactory);
 
 /**
@@ -83,7 +81,7 @@ void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite&
  * @throw SiodbProtocolError when protocol error happens.
  */
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
-        CustomProtobufInputStream& input);
+        SiodbProtobufInputStream& input);
 
 /**
  * Writes protocol message to a device.
@@ -107,12 +105,12 @@ void writeMessage(ProtocolMessageType messageType, const google::protobuf::Messa
  * @throw SiodbProtocolError when protocol error happens.
  */
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
-        CustomProtobufOutputStream& output);
+        SiodbProtobufOutputStream& output);
 
 /**
  * Checks output stream state, reports error via exception, if any.
  * @param stream Stream to check.
  */
-void checkOutputStreamError(const CustomProtobufOutputStream& stream);
+void checkOutputStreamError(const SiodbProtobufOutputStream& stream);
 
 }  // namespace siodb::protobuf

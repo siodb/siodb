@@ -5,7 +5,7 @@
 #include "ProtobufMessageIO.h"
 
 // Project headers
-#include "CustomProtobufOutputStream.h"
+#include "SiodbProtobufOutputStream.h"
 #include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
 
@@ -19,7 +19,7 @@ namespace siodb::protobuf {
 
 namespace {
 
-void reportInputStreamError(const CustomProtobufInputStream& stream)
+void reportInputStreamError(const SiodbProtobufInputStream& stream)
 {
     const int errorCode = stream.GetErrno();
     if (errorCode != 0)
@@ -29,7 +29,7 @@ void reportInputStreamError(const CustomProtobufInputStream& stream)
 }
 
 ProtocolMessageType readMessageType(const ProtocolMessageType* messageTypes,
-        std::size_t messageTypeCount, CustomProtobufInputStream& input)
+        std::size_t messageTypeCount, SiodbProtobufInputStream& input)
 {
     std::uint32_t messageTypeId = 0;
     google::protobuf::io::CodedInputStream codedInput(&input);
@@ -66,19 +66,19 @@ std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessage
         std::size_t messageTypeCount, io::IODevice& input, ProtocolMessageFactory& messageFactory,
         const utils::ErrorCodeChecker& errorCodeChecker)
 {
-    CustomProtobufInputStream rawInput(input, errorCodeChecker);
+    SiodbProtobufInputStream rawInput(input, errorCodeChecker);
     return readMessage(messageTypes, messageTypeCount, rawInput, messageFactory);
 }
 
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
         io::IODevice& input, const utils::ErrorCodeChecker& errorCodeChecker)
 {
-    CustomProtobufInputStream rawInput(input, errorCodeChecker);
+    SiodbProtobufInputStream rawInput(input, errorCodeChecker);
     readMessage(messageType, message, rawInput);
 }
 
 std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessageType* messageTypes,
-        std::size_t messageTypeCount, CustomProtobufInputStream& input,
+        std::size_t messageTypeCount, SiodbProtobufInputStream& input,
         ProtocolMessageFactory& messageFactory)
 {
     std::unique_ptr<google::protobuf::MessageLite> message(
@@ -91,7 +91,7 @@ std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessage
 }
 
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
-        CustomProtobufInputStream& input)
+        SiodbProtobufInputStream& input)
 {
     readMessageType(&messageType, 1, input);
     google::protobuf::io::CodedInputStream codedInput(&input);
@@ -103,12 +103,12 @@ void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite&
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
         io::IODevice& output, const utils::ErrorCodeChecker& errorCodeChecker)
 {
-    CustomProtobufOutputStream rawOutput(output, errorCodeChecker);
+    SiodbProtobufOutputStream rawOutput(output, errorCodeChecker);
     writeMessage(messageType, message, rawOutput);
 }
 
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
-        CustomProtobufOutputStream& output)
+        SiodbProtobufOutputStream& output)
 {
     google::protobuf::io::CodedOutputStream codedOutput(&output);
 
@@ -127,7 +127,7 @@ void writeMessage(ProtocolMessageType messageType, const google::protobuf::Messa
     checkOutputStreamError(output);
 }
 
-void checkOutputStreamError(const CustomProtobufOutputStream& stream)
+void checkOutputStreamError(const SiodbProtobufOutputStream& stream)
 {
     const int errorCode = stream.GetErrno();
     if (errorCode != 0) stdext::throw_system_error(errorCode, "Write error");

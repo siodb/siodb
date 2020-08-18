@@ -168,18 +168,18 @@ extern "C" int siodbMain(int argc, char** argv)
                 std::this_thread::sleep_for(siodb::kIomgrInitializationCheckPeriod);
             }
 
-            if (!monitor.shouldRun()) throw std::runtime_error("Iomgr exited unexpectedly");
+            if (!monitor.shouldRun()) throw std::runtime_error("IO Manager exited unexpectedly");
 
             siodb::SiodbConnectionManager adminConnectionManager(AF_UNIX, true, instanceOptions);
 
             std::unique_ptr<siodb::SiodbConnectionManager> ipv4UserConnectionManager;
-            if (instanceOptions->m_generalOptions.m_ipv4port != 0) {
+            if (instanceOptions->m_generalOptions.m_ipv4Port != 0) {
                 ipv4UserConnectionManager = std::make_unique<siodb::SiodbConnectionManager>(
                         AF_INET, false, instanceOptions);
             }
 
             std::unique_ptr<siodb::SiodbConnectionManager> ipv6UserConnectionManager;
-            if (instanceOptions->m_generalOptions.m_ipv6port != 0) {
+            if (instanceOptions->m_generalOptions.m_ipv6Port != 0) {
                 ipv6UserConnectionManager = std::make_unique<siodb::SiodbConnectionManager>(
                         AF_INET6, false, instanceOptions);
             }

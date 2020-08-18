@@ -10,7 +10,7 @@ if [[ $# -lt 1 ]]; then
 fi
 
 if [[ $EUID -ne 0 ]]; then
-   echo "You must be root to do this." 1>&2
+   echo "Only root can do this." 1>&2
    exit 100
 fi
 
@@ -30,6 +30,9 @@ fi
 echo "Copying config file"
 cp -f ${config_file} ${instance_cfg_dir}/config
 chown siodb:siodb ${instance_cfg_dir}/config
+chmod u-x ${instance_cfg_dir}/config
+chmod g-x ${instance_cfg_dir}/config
+chmod o-rwx ${instance_cfg_dir}/config
 
 echo "Copying system db key file"
 if [[ -f ${system_db_key_file} ]]; then

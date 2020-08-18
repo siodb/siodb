@@ -2,12 +2,11 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-// @file Contains protobuf messages used to communicate between Siodb server
-// and IO manager.
+// @file Contains protobuf messages used to communicate with IOManager service.
 
 syntax = "proto3";
 
-import "CommonTypes.proto";
+import "CommonMessages.proto";
 
 package siodb.iomgr_protocol;
 
@@ -154,9 +153,6 @@ message DatabaseEngineRestRequest {
 
     /** Token */
     string token = 7;
-
-    /** Payload (e.g. JSON data) */
-    string payload = 8;
 }
 
 /** User token validation request */

@@ -8,8 +8,8 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "../Column.h"
 #include "../ColumnSet.h"
-#include "../Database.h"
 #include "../Index.h"
+#include "../SystemDatabase.h"
 #include "../Table.h"
 #include "../TableDataSet.h"
 #include "../ThrowDatabaseError.h"
@@ -270,7 +270,7 @@ void RequestHandler::executeSelectRequest(
     }
 
     utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::CustomProtobufOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::SiodbProtobufOutputStream rawOutput(m_connection, errorChecker);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
@@ -384,8 +384,8 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    const auto sysDb = m_instance.findDatabaseChecked(kSystemDatabaseName);
-    const auto sysDbTable = sysDb->findTableChecked(kSysDatabasesTableName);
+    auto& systemDatabase = m_instance.getSystemDatabase();
+    const auto sysDbTable = systemDatabase.findTableChecked(kSysDatabasesTableName);
     const auto nameColumn = sysDbTable->findColumnChecked(kSysDatabases_Name_ColumnName);
     const auto uuidColumn = sysDbTable->findColumnChecked(kSysDatabases_Uuid_ColumnName);
 
@@ -397,7 +397,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     const auto databaseRecords = m_instance.getDatabaseRecordsOrderedByName();
 
     utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::CustomProtobufOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::SiodbProtobufOutputStream rawOutput(m_connection, errorChecker);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 

@@ -12,7 +12,8 @@ TARGET_COMMON_LIB:=siodb_common_proto
 PROTO_SRC:= \
 	ClientProtocol.proto  \
 	ColumnDataType.proto  \
-	CommonTypes.proto  \
+	CommonProtocol.proto  \
+	CommonMessages.proto  \
 	IOManagerProtocol.proto  \
 	SystemTables.proto \
 
@@ -21,12 +22,18 @@ include $(MK)/Main.mk
 # Extra dependencies
 $(THIS_OBJ_DIR)/ClientProtocol.pb.o: \
 	$(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h  \
-	$(THIS_GENERATED_FILES_DIR)/CommonTypes.pb.h
+	$(THIS_GENERATED_FILES_DIR)/CommonMessages.pb.h
 
-$(THIS_OBJ_DIR)/CommonTypes.pb.o: $(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h
+$(THIS_OBJ_DIR)/CommonProtocol.pb.o: \
+	$(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h  \
+	$(THIS_GENERATED_FILES_DIR)/CommonMessages.pb.h
+
+$(THIS_OBJ_DIR)/CommonMessages.pb.o: \
+	$(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h
 
 $(THIS_OBJ_DIR)/IOManagerProtocol.pb.o: \
 	$(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h  \
-	$(THIS_GENERATED_FILES_DIR)/CommonTypes.pb.h
+	$(THIS_GENERATED_FILES_DIR)/CommonMessages.pb.h
 
-$(THIS_OBJ_DIR)/SystemTables.pb.o: $(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h
+$(THIS_OBJ_DIR)/SystemTables.pb.o: \
+	$(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h

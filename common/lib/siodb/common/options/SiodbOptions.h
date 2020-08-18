@@ -11,7 +11,6 @@
 #include "../utils/BinaryValue.h"
 
 // STL headers
-#include <chrono>
 #include <stdexcept>
 
 namespace siodb::config {
@@ -33,21 +32,24 @@ constexpr const char* kGeneralOptionMaxAdminConnections = "max_admin_connections
 constexpr const char* kGeneralOptionUserConnectionListenerBacklog =
         "user_connection_listener_backlog";
 constexpr const char* kGeneralOptionMaxUserConnections = "max_user_connections";
-constexpr const char* kGeneralOptionDeadConnectionCleanupPeriod = "dead_connection_cleanup_period";
+constexpr const char* kGeneralOptionDeadConnectionCleanupInterval =
+        "dead_connection_cleanup_interval";
 constexpr const char* kGeneralOptionAllowGroupPermissionsOnConfigFiles =
         "allow_group_permissions_on_config_files";
 
 // IO Manager options
-constexpr const char* kIOManagerOptionIpv4Port = "iomgr.ipv4_port";
-constexpr const char* kIOManagerOptionIpv6Port = "iomgr.ipv6_port";
+constexpr const char* kIOManagerOptionIpv4SqlPort = "iomgr.ipv4_port";
+constexpr const char* kIOManagerOptionIpv6SqlPort = "iomgr.ipv6_port";
+constexpr const char* kIOManagerOptionIpv4RestPort = "iomgr.rest.ipv4_port";
+constexpr const char* kIOManagerOptionIpv6RestPort = "iomgr.rest.ipv6_port";
 constexpr const char* kIOManagerOptionWorkerThreadNumber = "iomgr.worker_thread_number";
 constexpr const char* kIOManagerOptionWriterThreadNumber = "iomgr.writer_thread_number";
 constexpr const char* kIOManagerOptionUserCacheCapacity = "iomgr.user_cache_capacity";
 constexpr const char* kIOManagerOptionDatabaseCacheCapacity = "iomgr.database_cache_capacity";
 constexpr const char* kIOManagerOptionTableCacheCapacity = "iomgr.table_cache_capacity";
 constexpr const char* kIOManagerOptionBlockCacheCapacity = "iomgr.block_cache_capacity";
-constexpr const char* kIOManagerOptionDeadConnectionCleanupPeriod =
-        "iomgr.dead_connection_cleanup_period";
+constexpr const char* kIOManagerOptionDeadConnectionCleanupInterval =
+        "iomgr.dead_connection_cleanup_interval";
 
 // Encryption options
 constexpr const char* kEncryptionOptionDefaultCipherId = "encryption.default_cipher_id";
@@ -90,20 +92,22 @@ constexpr unsigned kDefaultMaxUserConnections = 10;
 constexpr unsigned kMaxMaxUserConnections = 32768;
 
 // Siodb dead connection cleanup period in seconds
-constexpr unsigned kMinOptionDeadConnectionCleanupPeriod = 3;
-constexpr unsigned kMaxOptionDeadConnectionCleanupPeriod = 3600;
-constexpr unsigned kDefaultOptionDeadConnectionCleanupPeriod = 30;
+constexpr unsigned kMinOptionDeadConnectionCleanupInterval = 3;
+constexpr unsigned kMaxOptionDeadConnectionCleanupInterval = 3600;
+constexpr unsigned kDefaultOptionDeadConnectionCleanupInterval = 30;
 
 // Allow group permission of config files
-constexpr bool kDefaultOptionAllowGroupPermissionsOnConfigFiles = false;
+constexpr bool kDefaultOptionAllowGroupPermissionsOnConfigFiles = true;
 
 // Default number of IO Manager worker threads
 constexpr const unsigned kDefaultIOManagerWorkerThreadNumber = 2;
 constexpr const unsigned kDefaultIOManagerWriterThreadNumber = 2;
 
 // Default IO Manager ports
-constexpr auto kDefaultIOManagerIpv4PortNumber = 50001;
-constexpr auto kDefaultIOManagerIpv6PortNumber = 0;
+constexpr auto kDefaultIOManagerIpv4SqlPortNumber = 50001;
+constexpr auto kDefaultIOManagerIpv6SqlPortNumber = 0;
+constexpr auto kDefaultIOManagerIpv4RestPortNumber = 50002;
+constexpr auto kDefaultIOManagerIpv6RestPortNumber = 0;
 
 // IO Manager user cache capacity
 constexpr std::size_t kMinIOManagerUserCacheCapacity = 2;
@@ -123,9 +127,9 @@ constexpr std::size_t kMinIOManagerBlockCacheCapacity = 50;
 constexpr std::size_t kDefaultIOManagerBlockCacheCapacity = 103;
 
 // IO Manager dead connection cleanup period in seconds
-constexpr unsigned kMinIOManagerOptionDeadConnectionCleanupPeriod = 3;
-constexpr unsigned kMaxIOManagerOptionDeadConnectionCleanupPeriod = 3600;
-constexpr unsigned kDefaultIOManagerOptionDeadConnectionCleanupPeriod = 30;
+constexpr unsigned kMinIOManagerOptionDeadConnectionCleanupInterval = 3;
+constexpr unsigned kMaxIOManagerOptionDeadConnectionCleanupInterval = 3600;
+constexpr unsigned kDefaultIOManagerOptionDeadConnectionCleanupInterval = 30;
 
 /** Default cipher */
 constexpr const char* kDefaultCipherId = "aes128";
@@ -145,10 +149,10 @@ struct GeneralOptions {
     std::string m_executablePath;
 
     /** Instance IPv4 TCP port number */
-    int m_ipv4port = kDefaultIpv4PortNumber;
+    int m_ipv4Port = kDefaultIpv4PortNumber;
 
     /** Instance IPv6 TCP port number */
-    int m_ipv6port = kDefaultIpv6PortNumber;
+    int m_ipv6Port = kDefaultIpv6PortNumber;
 
     /** Path of the data directory */
     std::string m_dataDirectory;
@@ -166,8 +170,7 @@ struct GeneralOptions {
     unsigned m_maxUserConnections = kDefaultMaxUserConnections;
 
     /** Dead connection cleanup period */
-    std::chrono::seconds m_deadConnectionCleanupPeriod =
-            std::chrono::seconds(kDefaultOptionDeadConnectionCleanupPeriod);
+    unsigned m_deadConnectionCleanupInterval = kDefaultOptionDeadConnectionCleanupInterval;
 
     /** Allow group permission of config files */
     bool m_allowGroupPermissionsOnConfigFiles = kDefaultOptionAllowGroupPermissionsOnConfigFiles;
@@ -193,11 +196,17 @@ struct IOManagerOptions {
     /** Writer thread number */
     std::size_t m_writerThreadNumber = kDefaultIOManagerWriterThreadNumber;
 
-    /** IPv4 TCP port number */
-    int m_ipv4port = kDefaultIOManagerIpv4PortNumber;
+    /** IPv4 TCP SQL port number */
+    int m_ipv4SqlPort = kDefaultIOManagerIpv4SqlPortNumber;
 
-    /** IPv6 TCP port number */
-    int m_ipv6port = kDefaultIOManagerIpv6PortNumber;
+    /** IPv6 TCP SQL port number */
+    int m_ipv6SqlPort = kDefaultIOManagerIpv6SqlPortNumber;
+
+    /** IPv4 TCP REST port number */
+    int m_ipv4RestPort = kDefaultIOManagerIpv4SqlPortNumber;
+
+    /** IPv6 TCP REST port number */
+    int m_ipv6RestPort = kDefaultIOManagerIpv6SqlPortNumber;
 
     /** User cache capacity */
     std::size_t m_userCacheCapacity = kDefaultIOManagerUserCacheCapacity;
@@ -212,8 +221,7 @@ struct IOManagerOptions {
     std::size_t m_blockCacheCapacity = kDefaultIOManagerBlockCacheCapacity;
 
     /** Dead connection cleanup period */
-    std::chrono::seconds m_deadConnectionCleanupPeriod =
-            std::chrono::seconds(kDefaultIOManagerOptionDeadConnectionCleanupPeriod);
+    unsigned m_deadConnectionCleanupInterval = kDefaultIOManagerOptionDeadConnectionCleanupInterval;
 };
 
 /** Extenal cipher options */

@@ -114,8 +114,8 @@ void SiodbConnectionManager::connectionListenerThreadMain()
             server.reset(net::createUnixServer(socketPath,
                     m_dbOptions->m_generalOptions.m_adminConnectionListenerBacklog, true));
         } else {
-            port = m_socketDomain == AF_INET ? m_dbOptions->m_generalOptions.m_ipv4port
-                                             : m_dbOptions->m_generalOptions.m_ipv6port;
+            port = m_socketDomain == AF_INET ? m_dbOptions->m_generalOptions.m_ipv4Port
+                                             : m_dbOptions->m_generalOptions.m_ipv6Port;
             server.reset(net::createTcpServer(m_socketDomain, nullptr, port,
                     m_dbOptions->m_generalOptions.m_userConnectionListenerBacklog));
         }
@@ -210,7 +210,8 @@ void SiodbConnectionManager::deadConnectionCleanupThreadMain()
         {
             std::unique_lock lock(m_connectionHandlersMutex);
             const auto waitResult = m_deadConnectionCleanupThreadAwakeCondition.wait_for(
-                    lock, m_dbOptions->m_generalOptions.m_deadConnectionCleanupPeriod);
+                    lock, std::chrono::seconds(
+                                  m_dbOptions->m_generalOptions.m_deadConnectionCleanupInterval));
             if (waitResult != std::cv_status::timeout) continue;
         }
         removeDeadConnections();
@@ -270,16 +271,17 @@ int SiodbConnectionManager::acceptTcpConnection(int serverFd)
             LOG_INFO << m_logContext << "TCP connection listener thread is exiting"
                      << " because database is shutting down.";
         } else {
-            LOG_ERROR << m_logContext
-                      << "Can't accept user client connection: " << std::strerror(errorCode) << '.';
+            LOG_ERROR << m_logContext << "Can't accept TCP connection: " << std::strerror(errorCode)
+                      << '.';
         }
         return -1;
     }
 
-    char addrBuffer[std::max(INET6_ADDRSTRLEN, INET_ADDRSTRLEN) + 1];
-    *addrBuffer = '\0';
-    inet_ntop(m_socketDomain, &addr, addrBuffer, addrLength);
-    LOG_INFO << m_logContext << "Accepted new user connection from " << addrBuffer << '.';
+    char addrStr[std::max(INET6_ADDRSTRLEN, INET_ADDRSTRLEN) + 1];
+    *addrStr = '\0';
+    inet_ntop(m_socketDomain, &addr, addrStr, addrLength);
+    LOG_INFO << m_logContext << "Accepted new TCP connection from " << addrStr << '.';
+
     return client.release();
 }
 
@@ -344,7 +346,7 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
 std::string SiodbConnectionManager::createLogContextName() const
 {
     std::ostringstream oss;
-    oss << net::getSocketDomainName(m_socketDomain) << kLogContextBase << ": ";
+    oss << net::getSocketDomainName(m_socketDomain) << '-' << kLogContextBase << ": ";
     return oss.str();
 }
 

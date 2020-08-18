@@ -46,36 +46,13 @@ public:
     DECLARE_NONCOPYABLE(TlsConnection);
 
     /**
-     * Writes data to secure channel.
-     * @param data Data.
-     * @param size Size of data in bytes.
-     * @return Count of written bytes.
-     * @throw OpenSslError in case of error.
+     * Returns SSL connection object.
+     * @return SSL connection object.
      */
-    std::size_t write(const void* data, std::size_t size) override;
-
-    /**
-     * Reads data from secure channel.
-     * @param data Data.
-     * @param size Size of data in bytes.
-     * @return Count of read bytes.
-     * @throw OpenSslError in case of error.
-     */
-    std::size_t read(void* data, std::size_t size) override;
-
-    /**
-     * Skips data. Not supported for TLS connection
-     * @param size Count of bytes to skip. Must be positive number
-     * @return Count of bytes skipped.
-     * @throw std::runtime_error if size is less than 0.
-     */
-    off_t skip(std::size_t size) override;
-
-    /**
-     * Closes secure connection.
-     * @return 0 in case of success, other value means error.
-     */
-    int close() override;
+    const Ssl& getSsl() const noexcept
+    {
+        return m_ssl;
+    }
 
     /**
      * Returns indication whether connection is valid or not.
@@ -84,13 +61,33 @@ public:
     bool isValid() const override;
 
     /**
-     * Returns SSL connection object.
-     * @return SSL connection object.
+     * Reads data from secure channel.
+     * @param buffer Data buffer.
+     * @param size Data size.
+     * @return Number of read bytes. Negative values indicate error.
      */
-    const Ssl& getSsl() const noexcept
-    {
-        return m_ssl;
-    }
+    std::ptrdiff_t read(void* buffer, std::size_t size) override;
+
+    /**
+     * Writes data to secure channel.
+     * @param buffer Data buffer.
+     * @param size Data size.
+     * @return Number of written bytes. Negative values indicate error.
+     */
+    std::ptrdiff_t write(const void* buffer, std::size_t size) override;
+
+    /**
+     * Skips data.
+     * @param size Number of bytes to skip.
+     * @return Number of bytes skipped.
+     */
+    off_t skip(std::size_t size) override;
+
+    /**
+     * Closes connection.
+     * @return 0 on success, nonzero otherwise.
+     */
+    int close() override;
 
 private:
     /** SSL connection object */

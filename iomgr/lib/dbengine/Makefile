@@ -18,6 +18,8 @@ CXX_SRC:= \
 	handlers/RequestHandler_DDL.cpp  \
 	handlers/RequestHandler_DML.cpp  \
 	handlers/RequestHandler_DQL.cpp  \
+	handlers/RequestHandler_RestGet.cpp  \
+	handlers/RequestHandler_RestPut.cpp  \
 	handlers/RequestHandler_TC.cpp  \
 	handlers/RequestHandler_UM.cpp  \
 	\
@@ -36,8 +38,9 @@ CXX_SRC:= \
 	lob/ColumnLobStream.cpp  \
 	\
 	parser/AntlrHelpers.cpp  \
-	parser/DBEngineRequest.cpp  \
-	parser/DBEngineRequestFactory.cpp  \
+	parser/DBEngineRestRequestFactory.cpp  \
+	parser/DBEngineSqlRequest.cpp  \
+	parser/DBEngineSqlRequestFactory.cpp  \
 	parser/DatabaseContext.cpp  \
 	parser/EmptyContext.cpp  \
 	parser/SqlParser.cpp  \
@@ -198,9 +201,11 @@ CXX_HDR:= \
 	parser/AntlrHelpers.h  \
 	parser/DatabaseContext.h  \
 	parser/DBEngineRequest.h  \
-	parser/DBEngineRequestFactory.h  \
 	parser/DBEngineRequestPtr.h  \
 	parser/DBEngineRequestType.h  \
+	parser/DBEngineRestRequestFactory.h  \
+	parser/DBEngineSqlRequest.h  \
+	parser/DBEngineSqlRequestFactory.h  \
 	parser/EmptyContext.h  \
 	parser/SqlParser.h  \
 	parser/antlr_wrappers/Antlr4RuntimeWrapper.h  \

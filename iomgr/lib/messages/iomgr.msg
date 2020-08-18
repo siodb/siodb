@@ -20,6 +20,7 @@ MSG:6 Error TooFewParameters    Too few parameters for the message #%1%: expecte
 MSG:7 Error TooManyParameters   Too many parameters for the message #%1%: expected %2%, but got %3%
 MSG:8 Error ParametersIndexOutOfRange   Parameter index is out of range for the message #%1%: index is %2%, but range is (%3%, %4%)
 MSG:10 Error Feature is not implemented yet
+MSG:11 Error REST request parse error: %1%
 
 ##########################################
 # Severe malfunctions

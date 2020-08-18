@@ -23,6 +23,8 @@ enum class ProtocolMessageType : unsigned {
     kAuthenticateUserResponse,  // message AuthenticateUserResponse
     kDatabaseEngineRestRequest,  // message DatabaseEngineRestRequest
     kValidateUserTokenRequest,  // message ValidateUserTokenRequest
+    kServerInformationRequest,  // message ServerInformationRequest
+    kServerInformation,  // message ServerInformation
 
     kMax  // message type limit
 };

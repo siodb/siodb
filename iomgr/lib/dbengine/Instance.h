@@ -117,16 +117,31 @@ public:
     }
 
     /**
+     * Returns system database object.
+     * @return System database.
+     */
+    auto& getSystemDatabase() noexcept
+    {
+        return *m_systemDatabase;
+    }
+
+    /**
      * Retuns number of known databases.
      * @return Number of databases.
      */
     std::size_t getDatbaseCount() const;
 
     /**
-     * Returns a vector with databases ordered by name.
-     * @return Vector with databases.
+     * Returns list of database records ordered by name.
+     * @return List of database records.
      */
     std::vector<DatabaseRecord> getDatabaseRecordsOrderedByName() const;
+
+    /**
+     * Returns list of databasesordered by name.
+     * @return List of databasess.
+     */
+    std::vector<std::string> getDatabaseNames() const;
 
     /**
      * Returns existing database object.
@@ -325,10 +340,16 @@ public:
      * Authenticates user.
      * @param userName User name.
      * @param token User token.
-     * @return Pair (user ID, new session UUID).
+     * @return User ID.
      * @throw DatabaseError if some error has occurrred.
      */
-    AuthenticationResult authenticateUser(const std::string& userName, const std::string& token);
+    std::uint32_t authenticateUser(const std::string& userName, const std::string& token);
+
+    /**
+     * Begins new session.
+     * @return New session UUID.
+     */
+    Uuid beginSession();
 
     /**
      * Closes session.
@@ -458,12 +479,6 @@ private:
 
     /** Checks instance initialization success indicator file. */
     void checkInitializationFlagFile() const;
-
-    /**
-     * Begins new session.
-     * @return New session UUID.
-     */
-    Uuid beginSession();
 
     /**
      * Returns existing user object.

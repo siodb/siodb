@@ -12,48 +12,46 @@
 
 namespace siodb::io {
 
-/** Base interface of the IO classes. */
+/** Common interface for the IO device classes. */
 class IODevice {
 public:
-    /**
-     * Deinitializes object of class FdDevice.
-     */
+    /** De-initializes object of class IODevice. */
     virtual ~IODevice() = default;
 
     /**
-     * Reads data from input.
-     * @param data Data.
-     * @param size Size of data in bytes.
-     * @return Count of read bytes.
+     * Returns indication that device is valid.
+     * @return true device if device is valid, false otherwise.
      */
-    virtual std::size_t read(void* buffer, std::size_t size) = 0;
+    virtual bool isValid() const = 0;
 
     /**
-     * Writes data to output.
-     * @param data Data.
+     * Reads data from device.
+     * @param buffer Data buffer.
      * @param size Size of data in bytes.
-     * @return Count of written bytes.
+     * @return Number of read bytes. Negative value indicates error.
      */
-    virtual std::size_t write(const void* buffer, std::size_t size) = 0;
+    virtual std::ptrdiff_t read(void* buffer, std::size_t size) = 0;
+
+    /**
+     * Writes data to device.
+     * @param buffer Data buffer.
+     * @param size Data size in bytes.
+     * @return Number of written bytes. Negative value indicates error.
+     */
+    virtual std::ptrdiff_t write(const void* buffer, std::size_t size) = 0;
 
     /**
      * Skips data.
-     * @param size Count of bytes to skip.
-     * @return Offset from the beggining of input. Negative value indicates error.
+     * @param size Number of bytes to skip.
+     * @return Offset from the beginning of device. Negative value indicates error.
      */
     virtual off_t skip(std::size_t size) = 0;
 
     /**
-     * Closes IO.
-     * @return 0 in case of success.
+     * Closes device.
+     * @return Zero on success, nonzero otherwise.
      */
     virtual int close() = 0;
-
-    /**
-     * Returns indication whether IO is valid.
-     * @return true means valid IO, false otherwise.
-     */
-    virtual bool isValid() const = 0;
 };
 
 }  // namespace siodb::io

@@ -2,11 +2,10 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-// Derived from
-// https://raw.githubusercontent.com/HowardHinnant/hash_append/master/n3876.h
-
 #pragma once
 
+// Parts of the following content are derived from:
+// https://raw.githubusercontent.com/HowardHinnant/hash_append/master/n3876.h
 //-------------------------------- n3876.h -------------------------------------
 //
 // This software is in the public domain.  The only restriction on its use is
@@ -21,23 +20,13 @@
 // This is an implementation of the N3876 proposal found at:
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3876.pdf
 
+// Project headers
+#include "type_traits_ext.h"
+
 // STL headers
 #include <functional>
 
 namespace stdext {
-
-namespace detail {
-
-/** 
- * Workaround for the static_assert(false, ...).
- * @tparam T Object type.
- * @see https://github.com/HowardHinnant/hash_append/issues/7#issuecomment-629460500
- */
-template<class T>
-struct dependent_false : std::false_type {
-};
-
-}  // namespace detail
 
 /**
  * Hash combination for the no parameters case.
@@ -58,14 +47,16 @@ inline void hash_combine([[maybe_unused]] std::size_t& seed) noexcept
 template<class T>
 inline void hash_combine(std::size_t& seed, const T& value)
 {
-    if constexpr (sizeof(std::size_t) == 2) {
+    if constexpr (sizeof(std::size_t) == 1) {
+        seed ^= std::hash<T> {}(value) + 0x9eU + (seed << 1) + (seed >> 1);
+    } else if constexpr (sizeof(std::size_t) == 2) {
         seed ^= std::hash<T> {}(value) + 0x9e37U + (seed << 3) + (seed >> 1);
     } else if constexpr (sizeof(std::size_t) == 4) {
         seed ^= std::hash<T> {}(value) + 0x9e3779b9U + (seed << 6) + (seed >> 2);
     } else if constexpr (sizeof(std::size_t) == 8) {
         seed ^= std::hash<T> {}(value) + 0x9e3779b97f4a7c15LLU + (seed << 12) + (seed >> 4);
     } else {
-        static_assert(detail::dependent_false<T>::value,
+        static_assert(dependent_false<T>::value,
                 "hash_combine is not implemented for the current size of std::size_t");
     }
 }

@@ -8,9 +8,9 @@
 
 // Common project headers
 #include <siodb/common/data/RawDateTime.h>
-#include <siodb/common/protobuf/CustomCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
+#include <siodb/common/protobuf/SiodbCodedInputStream.h>
 #include <siodb/common/stl_ext/bitmask.h>
 #include <siodb/common/utils/BinaryValue.h>
 #include <siodb/iomgr/shared/dbengine/ColumnDataType.h>
@@ -248,7 +248,7 @@ std::string formCreateTableQuery(const std::string& databaseName, const TableInf
 }
 
 std::string readValue(
-        protobuf::CustomCodedInputStream& customCodedInputStream, ColumnDataType columnDataType)
+        protobuf::SiodbCodedInputStream& customCodedInputStream, ColumnDataType columnDataType)
 {
     switch (columnDataType) {
         case ColumnDataType::COLUMN_DATA_TYPE_BOOL: {
@@ -344,7 +344,7 @@ void checkResponse(const client_protocol::ServerResponse& response)
 }
 
 client_protocol::ServerResponse sendCommand(
-        std::string&& command, io::IODevice& connection, protobuf::CustomProtobufInputStream& input)
+        std::string&& command, io::IODevice& connection, protobuf::SiodbProtobufInputStream& input)
 {
     static std::int64_t requestId = 0;
     client_protocol::Command clientCommand;
@@ -362,7 +362,7 @@ client_protocol::ServerResponse sendCommand(
 }
 
 std::vector<DatabaseInfo> dumpDatabasesList(
-        io::IODevice& connection, std::ostream& os, protobuf::CustomProtobufInputStream& input)
+        io::IODevice& connection, std::ostream& os, protobuf::SiodbProtobufInputStream& input)
 {
     auto query = formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
             {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName,
@@ -372,7 +372,7 @@ std::vector<DatabaseInfo> dumpDatabasesList(
     std::vector<DatabaseInfo> databases;
     databases.reserve(16);
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::SiodbCodedInputStream codedInput(&input);
 
     while (true) {
         std::uint64_t rowLength = 0;
@@ -397,7 +397,7 @@ std::vector<DatabaseInfo> dumpDatabasesList(
 }
 
 void dumpSpecificDatabase(io::IODevice& connection, std::ostream& os,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName)
+        protobuf::SiodbProtobufInputStream& input, const std::string& databaseName)
 {
     std::ostringstream ss;
     ss << formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
@@ -408,7 +408,7 @@ void dumpSpecificDatabase(io::IODevice& connection, std::ostream& os,
     std::string query = ss.str();
     const auto response = sendCommand(std::move(query), connection, input);
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::SiodbCodedInputStream codedInput(&input);
 
     std::uint64_t rowLength = 0;
     if (!codedInput.ReadVarint64(&rowLength))
@@ -434,7 +434,7 @@ void dumpSpecificDatabase(io::IODevice& connection, std::ostream& os,
 }
 
 std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IODevice& connection,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
+        protobuf::SiodbProtobufInputStream& input, const std::string& databaseName,
         std::int64_t columnSetId)
 {
     // SELECT CONSTRAINT_ID FROM <database-name>SYS_COLUMN_DEF_CONSTRAINTS
@@ -449,7 +449,7 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IODevice& connect
 
     auto response = sendCommand(std::move(query), connection, input);
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::SiodbCodedInputStream codedInput(&input);
 
     std::vector<std::uint64_t> constaintIds;
     while (true) {
@@ -534,7 +534,7 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IODevice& connect
 }
 
 std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
+        protobuf::SiodbProtobufInputStream& input, const std::string& databaseName,
         std::int64_t currentColumnSetId)
 {
     std::ostringstream ss;
@@ -548,7 +548,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
     auto query = ss.str();
 
     auto response = sendCommand(std::move(query), connection, input);
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::SiodbCodedInputStream codedInput(&input);
 
     std::vector<ColumnSetInfo> columnSetInfos;
     while (true) {
@@ -646,7 +646,7 @@ std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
 }
 
 std::vector<TableInfo> dumpTablesList(io::IODevice& connection, std::ostream& os,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName)
+        protobuf::SiodbProtobufInputStream& input, const std::string& databaseName)
 {
     std::ostringstream ss;
 
@@ -663,7 +663,7 @@ std::vector<TableInfo> dumpTablesList(io::IODevice& connection, std::ostream& os
     std::vector<TableInfo> tableInfos;
     tableInfos.reserve(32);
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::SiodbCodedInputStream codedInput(&input);
 
     while (true) {
         std::uint64_t rowLength = 0;
@@ -691,7 +691,7 @@ std::vector<TableInfo> dumpTablesList(io::IODevice& connection, std::ostream& os
 }
 
 void dumpTableData(io::IODevice& connection, std::ostream& os,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
+        protobuf::SiodbProtobufInputStream& input, const std::string& databaseName,
         const TableInfo& table)
 {
     std::ostringstream ss;
@@ -711,7 +711,7 @@ void dumpTableData(io::IODevice& connection, std::ostream& os,
         nullAllowed |= column.is_null();
     }
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::SiodbCodedInputStream codedInput(&input);
 
     std::uint64_t expectedTrid = 1;
     while (true) {
@@ -763,7 +763,7 @@ void dumpTableData(io::IODevice& connection, std::ostream& os,
 }
 
 void dumpDatabaseData(io::IODevice& connection, std::ostream& os, const std::string& databaseName,
-        protobuf::CustomProtobufInputStream& input)
+        protobuf::SiodbProtobufInputStream& input)
 {
     auto tables = dumpTablesList(connection, os, input, databaseName);
     for (const auto& table : tables)
@@ -775,7 +775,7 @@ void dumpDatabaseData(io::IODevice& connection, std::ostream& os, const std::str
 void dumpAllDatabases(io::IODevice& connection, std::ostream& os)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
+    protobuf::SiodbProtobufInputStream input(connection, errorCodeChecker);
 
     auto databases = dumpDatabasesList(connection, os, input);
     for (const auto& database : databases)
@@ -787,7 +787,7 @@ void dumpAllDatabases(io::IODevice& connection, std::ostream& os)
 void dumpDatabase(io::IODevice& connection, std::ostream& os, const std::string& databaseName)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
+    protobuf::SiodbProtobufInputStream input(connection, errorCodeChecker);
 
     dumpSpecificDatabase(connection, os, input, databaseName);
     dumpDatabaseData(connection, os, databaseName, input);

@@ -93,12 +93,24 @@ std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName() const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_databaseRegistry.byName();
-    std::vector<DatabaseRecord> databaseRecords(index.begin(), index.end());
+    std::vector<DatabaseRecord> databaseRecords(index.cbegin(), index.cend());
     std::sort(databaseRecords.begin(), databaseRecords.end(),
             [](const auto& left, const auto& right) noexcept {
                 return left.m_name < right.m_name;
             });
     return databaseRecords;
+}
+
+std::vector<std::string> Instance::getDatabaseNames() const
+{
+    std::lock_guard lock(m_mutex);
+    std::vector<std::string> result;
+    result.reserve(m_databaseRegistry.size());
+    const auto& index = m_databaseRegistry.byName();
+    std::transform(index.cbegin(), index.cend(), std::back_inserter(result),
+            [](const auto& databaseRecord) { return databaseRecord.m_name; });
+    std::sort(result.begin(), result.end());
+    return result;
 }
 
 DatabasePtr Instance::findDatabaseChecked(const std::string& databaseName)
@@ -544,14 +556,27 @@ AuthenticationResult Instance::authenticateUser(
     return AuthenticationResult(user->getId(), beginSession());
 }
 
-AuthenticationResult Instance::authenticateUser(
-        const std::string& userName, const std::string& token)
+std::uint32_t Instance::authenticateUser(const std::string& userName, const std::string& token)
 {
     const auto user = findUserChecked(userName);
     if (!user->authenticate(token))
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
-    LOG_INFO << "Instance: User '" << userName << "' authenticated.";
-    return AuthenticationResult(user->getId(), beginSession());
+    LOG_INFO << "Instance: User '" << userName << "' authenticated via token.";
+    return user->getId();
+}
+
+Uuid Instance::beginSession()
+{
+    std::lock_guard lock(m_sessionMutex);
+
+    Uuid sessionUuid;
+    do {
+        sessionUuid = m_sessionUuidGenerator();
+    } while (m_activeSessions.find(sessionUuid) != m_activeSessions.end());
+
+    m_activeSessions.emplace(sessionUuid, std::make_shared<ClientSession>(sessionUuid));
+    LOG_INFO << "Session " << sessionUuid << " started";
+    return sessionUuid;
 }
 
 void Instance::endSession(const Uuid& sessionUuid)
@@ -846,20 +871,6 @@ void Instance::checkInitializationFlagFile() const
     std::getline(ifs, instanceName);
     if (instanceName != m_name)
         throwDatabaseError(IOManagerMessageId::kFatalInstanceNameMismatch, instanceName, m_name);
-}
-
-Uuid Instance::beginSession()
-{
-    std::lock_guard lock(m_sessionMutex);
-
-    Uuid sessionUuid;
-    do {
-        sessionUuid = m_sessionUuidGenerator();
-    } while (m_activeSessions.find(sessionUuid) != m_activeSessions.end());
-
-    m_activeSessions.emplace(sessionUuid, std::make_shared<ClientSession>(sessionUuid));
-    LOG_INFO << "Session " << sessionUuid << " started";
-    return sessionUuid;
 }
 
 UserPtr Instance::findUserUnlocked(const std::string& userName)

@@ -60,7 +60,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         const utils::DefaultErrorCodeChecker errorCodeChecker;
 
         client_protocol::ServerResponse response;
-        protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
+        protobuf::SiodbProtobufInputStream input(connection, errorCodeChecker);
         protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
 
 #ifdef _DEBUG
@@ -259,7 +259,7 @@ void authenticate(
 
     client_protocol::BeginSessionResponse beginSessionResponse;
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
+    protobuf::SiodbProtobufInputStream input(connection, errorCodeChecker);
     protobuf::readMessage(protobuf::ProtocolMessageType::kClientBeginSessionResponse,
             beginSessionResponse, input);
 

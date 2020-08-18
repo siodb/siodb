@@ -9,7 +9,8 @@
 #include "../Instance.h"
 #include "../MasterColumnRecord.h"
 #include "../TableDataSet.h"
-#include "../parser/DBEngineRequest.h"
+#include "../parser/DBEngineRestRequest.h"
+#include "../parser/DBEngineSqlRequest.h"
 #include "../parser/DatabaseContext.h"
 #include "../parser/expr/Expression.h"
 #include "../reg/ColumnRecord.h"
@@ -367,6 +368,50 @@ private:
     void executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::ShowDatabasesRequest& request);
 
+    // REST request handlers
+
+    /**
+     * Executes REST GET DATABASES request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRestGetDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetDatabasesRestRequest& request);
+
+    /**
+     * Executes REST GET TABLES request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRestGetTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetTablesRestRequest& request);
+
+    /**
+     * Executes REST GET ALL ROWS request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRestGetAllRowsRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetAllRowsRestRequest& request);
+
+    /**
+     * Executes REST GET SINGLE ROW request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRestGetSingleRowRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetSingleRowRestRequest& request);
+
+    /**
+     * Executes REST POST ROWS request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRestPostRowsRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::PostRowsRestRequest& request);
+
+    // Helpers
+
     /**
      * Adds user visible database error to the response.
      * @param response Response object.
@@ -481,6 +526,21 @@ private:
 
     /** Token prefix in the freetext message */
     static constexpr const char* kTokenResponsePrefix = "token: ";
+
+    /** REST status field name */
+    static constexpr const char* kRestStatusFieldName = "status";
+
+    /** REST status OK */
+    static constexpr int kRestStatusOk = 200;
+
+    /** REST rows field name */
+    static constexpr const char* kRestRowsFieldName = "rows";
+
+    /** Database name field name */
+    static constexpr const char* kDatabaseNameFieldName = "name";
+
+    /** Table name field name */
+    static constexpr const char* kTableNameFieldName = "name";
 };
 
 }  // namespace siodb::iomgr::dbengine

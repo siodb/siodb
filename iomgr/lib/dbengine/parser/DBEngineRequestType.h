@@ -8,7 +8,10 @@ namespace siodb::iomgr::dbengine::requests {
 
 /** Database engine request types */
 enum class DBEngineRequestType {
+    // Stub request type
     kNone,
+
+    // SQL requests
     kSelect,
     kInsert,
     kUpdate,
@@ -49,6 +52,13 @@ enum class DBEngineRequestType {
     kRenameUserToken,
     kCheckUserToken,
     kShowDatabases,
+
+    // REST requests
+    kRestGetDatabases,
+    kRestGetTables,
+    kRestGetAllRows,
+    kRestGetSingleRow,
+    kRestPostRows
 };
 
 }  // namespace siodb::iomgr::dbengine::requests

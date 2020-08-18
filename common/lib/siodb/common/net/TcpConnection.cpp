@@ -89,7 +89,6 @@ int openTcpConnection(const std::string& host, int port, bool closeOnExecute)
             err << "Could not resolve host " << host1 << ": " << gai_strerror(errorCode);
             throw std::invalid_argument(err.str());
         }
-        //std::cout << "Resolved host" << std::endl;
     }
 
     AddrInfosGuard guard(addrInfos, addrInfos != &addrInfo1);

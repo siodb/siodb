@@ -6,7 +6,7 @@
 
 syntax = "proto3";
 
-import "CommonTypes.proto";
+import "CommonMessages.proto";
 
 package siodb.client_protocol;
 

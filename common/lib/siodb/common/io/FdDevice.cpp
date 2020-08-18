@@ -7,8 +7,12 @@
 // Project headers
 #include "FileIO.h"
 
+// Common project headers
+#include "../crt_ext/compiler_defs.h"
+
 // STL headers
 #include <stdexcept>
+#include <utility>
 
 // System headers
 #include <fcntl.h>
@@ -22,17 +26,40 @@ FdDevice::FdDevice(int fd, bool autoClose) noexcept
 {
 }
 
+FdDevice::FdDevice(FdDevice&& src) noexcept
+    : m_fd(src.m_fd)
+    , m_autoClose(src.m_autoClose)
+{
+    src.m_fd = -1;
+    src.m_autoClose = false;
+}
+
 FdDevice::~FdDevice()
 {
     if (m_autoClose && isValid()) close();
 }
 
-std::size_t FdDevice::read(void* buffer, std::size_t size)
+FdDevice& FdDevice::operator=(FdDevice&& src) noexcept
+{
+    if (!isValid()) close();
+    m_fd = src.m_fd;
+    m_autoClose = src.m_autoClose;
+    src.m_fd = -1;
+    src.m_autoClose = false;
+    return *this;
+}
+
+bool FdDevice::isValid() const
+{
+    return m_fd >= 0;
+}
+
+std::ptrdiff_t FdDevice::read(void* buffer, std::size_t size)
 {
     return ::read(m_fd, buffer, size);
 }
 
-std::size_t FdDevice::write(const void* buffer, std::size_t size)
+std::ptrdiff_t FdDevice::write(const void* buffer, std::size_t size)
 {
     return ::write(m_fd, buffer, size);
 }
@@ -44,16 +71,23 @@ off_t FdDevice::skip(std::size_t size)
 
 int FdDevice::close()
 {
-    if (!isValid()) throw std::runtime_error("Invalid file descriptor");
+    if (isValid()) return doClose();
+    throw std::runtime_error("Invalid file descriptor");
+}
 
+void FdDevice::swap(FdDevice& other) noexcept
+{
+    if (SIODB_LIKELY(&other != this)) {
+        std::swap(m_fd, other.m_fd);
+        std::swap(m_autoClose, other.m_autoClose);
+    }
+}
+
+int FdDevice::doClose() noexcept
+{
     const auto result = closeFileIgnoreSignal(m_fd);
     m_fd = -1;
     return result;
-}
-
-bool FdDevice::isValid() const
-{
-    return m_fd > 0;
 }
 
 }  // namespace siodb::io
