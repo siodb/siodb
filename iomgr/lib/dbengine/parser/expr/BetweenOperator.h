@@ -32,8 +32,8 @@ public:
     }
 
     /**
-     * Returns indication that this is NOT BETWEEN operator
-     * @return true in case of NOT BETWEEN operator, false in case of BETWEEN
+     * Returns indication that this is NOT BETWEEN operator.
+     * @return true if this is NOT BETWEEN operator, false otherwise.
      */
     bool isNotBetween() const noexcept
     {

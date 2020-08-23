@@ -49,7 +49,7 @@ TEST(DML_Insert, InsertSingleRecord)
     requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -133,7 +133,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
     requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -217,7 +217,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
     requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -311,7 +311,7 @@ TEST(DML_Insert, InsertMultipleRecords)
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::SiodbProtobufInputStream inputStream(
+        siodb::protobuf::StreamInputStream inputStream(
                 TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -334,7 +334,7 @@ TEST(DML_Insert, InsertMultipleRecords)
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::SiodbProtobufInputStream inputStream(
+        siodb::protobuf::StreamInputStream inputStream(
                 TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -429,7 +429,7 @@ TEST(DML_Insert, InsertDataTypesWithLength)
             "SYS", "TEST_DIGITAL_BOOKS", std::move(columns), std::move(values));
     requestHandler->executeRequest(insertRequest, TestEnvironment::kTestRequestId, 0, 1);
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -576,7 +576,7 @@ TEST(DML_Insert, InsertMinMaxValues)
     requestHandler->executeRequest(insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -768,7 +768,7 @@ TEST(DML_Insert, InsertDateTime)
     requestHandler->executeRequest(insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -840,7 +840,7 @@ TEST(DML_Insert, InsertNullValue)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -934,7 +934,7 @@ TEST(DML_Insert, InsertDefaultNullValue)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {

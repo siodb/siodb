@@ -23,7 +23,7 @@ TEST(DML_Delete, DeleteAllRows)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -115,7 +115,7 @@ TEST(DML_Delete, DeleteByTrid)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -223,7 +223,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -331,7 +331,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -440,7 +440,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table

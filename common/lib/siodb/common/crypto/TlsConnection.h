@@ -7,7 +7,9 @@
 // Project headers
 #include "openssl_wrappers/Ssl.h"
 #include "openssl_wrappers/SslContext.h"
-#include "../io/IODevice.h"
+
+// Common project headers
+#include "../io/InputOutputStream.h"
 
 namespace siodb::crypto {
 
@@ -18,16 +20,16 @@ enum class TlsConnectionType {
 };
 
 /** TLS connection */
-class TlsConnection final : public io::IODevice {
+class TlsConnection final : public io::InputOutputStream {
 public:
     /**
      * Initializes object of class TlsConnection.
      * @param context OpenSsl context.
      * @param fd File descriptor.
      * @param connectionType Connection type.
-     * @param autoCloseFd Indication that connection file descriptor should be closed
-     * if secure connection will be closed.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @param autoCloseFd Indication that connection file descriptor must be closed
+     *                    after closing secure connection.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     TlsConnection(SslContext& context, int fd, TlsConnectionType connectionType, bool autoCloseFd);
 
@@ -38,12 +40,10 @@ public:
     TlsConnection(TlsConnection&& src) noexcept;
 
     /**
-     * Deinitializes object of lcass TlsConnection.
+     * De-initializes object of class TlsConnection.
      * Closes secure connection.
      */
-    ~TlsConnection() override;
-
-    DECLARE_NONCOPYABLE(TlsConnection);
+    ~TlsConnection();
 
     /**
      * Returns SSL connection object.
@@ -93,10 +93,7 @@ private:
     /** SSL connection object */
     Ssl m_ssl;
 
-    /** 
-     * Indication that connection file descriptor should be closed in case of 
-     * closing secure connection
-     */
+    /** Indication that file descriptor must be closed after closing secure connection. */
     bool m_autoCloseFd;
 };
 

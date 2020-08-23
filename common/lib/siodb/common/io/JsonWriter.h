@@ -5,15 +5,15 @@
 #pragma once
 
 // Project headers
+#include "OutputStream.h"
+
+// Common project headers
 #include "../utils/HelperMacros.h"
 
 // STL headers
 #include <string>
 
-// Protobuf headers
-#include <google/protobuf/io/coded_stream.h>
-
-namespace siodb::protobuf {
+namespace siodb::io {
 
 /** Base class for JSON writers */
 class JsonWriter {
@@ -22,16 +22,45 @@ public:
      * Initializes object of class JsonWriter.
      * @param out Output stream.
      */
-    JsonWriter(google::protobuf::io::CodedOutputStream& out) noexcept
+    JsonWriter(OutputStream& out) noexcept
         : m_out(out)
     {
     }
 
     /**
+     * Writes begin of array.
+     * @param name Field name, can be nullptr.
+     * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
+     */
+    void writeArrayBegin(const char* name = nullptr, bool addCommaBefore = false);
+
+    /**
+     * Writes end of array.
+     * @throw std::system_erorr on write error.
+     */
+    void writeArrayEnd();
+
+    /**
+     * Writes begin of array.
+     * @param name Field name, can be nullptr.
+     * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
+     */
+    void writeObjectBegin(const char* name = nullptr, bool addCommaBefore = false);
+
+    /**
+     * Writes end of object.
+     * @throw std::system_erorr on write error.
+     */
+    void writeObjectEnd();
+
+    /**
      * Writes boolean field.
-     * @param name Field name.
+     * @param name Field name, can be nullptr.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, bool value, bool addCommaBefore = false);
 
@@ -40,6 +69,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, int value, bool addCommaBefore = false);
 
@@ -48,6 +78,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, long value, bool addCommaBefore = false);
 
@@ -56,6 +87,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, long long value, bool addCommaBefore = false);
 
@@ -64,6 +96,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, unsigned int value, bool addCommaBefore = false);
 
@@ -72,6 +105,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, unsigned long value, bool addCommaBefore = false);
 
@@ -80,6 +114,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, unsigned long long value, bool addCommaBefore = false);
 
@@ -88,6 +123,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, float value, bool addCommaBefore = false);
 
@@ -96,6 +132,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, double value, bool addCommaBefore = false);
 
@@ -104,6 +141,7 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeField(const char* name, const char* value, bool addCommaBefore = false);
 
@@ -112,8 +150,12 @@ public:
      * @param name Field name.
      * @param value Field value.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, const std::string& value, bool addCommaBefore = false);
+    void writeField(const char* name, const std::string& value, bool addCommaBefore = false)
+    {
+        writeField(name, value.c_str(), value.length(), addCommaBefore);
+    }
 
     /**
      * Writes string field.
@@ -121,20 +163,24 @@ public:
      * @param value Field value.
      * @param length Field length.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, const char* value, std::size_t length, bool addCommaBefore);
+    void writeField(
+            const char* name, const char* value, std::size_t length, bool addCommaBefore = false);
 
     /**
      * Writes raw string.
      * @param s A string.
      * @param length String length.
+     * @throw std::system_erorr on write error.
      */
     void writeRawString(const char* s, std::size_t length);
 
     /**
-     * Writes field name and delimiter
+     * Writes field name and delimiter.
      * @param name Field name.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
      */
     void writeFieldNameAndDelimiter(const char* name, bool addCommaBefore = false);
 
@@ -142,20 +188,18 @@ public:
      * Writes raw data to the underlying stream.
      * @param buffer Data buffer.
      * @param size Data size.
+     * @return Number of bytes written or negative value on error.
      */
-    void writeRaw(const void* buffer, int size)
+    std::ptrdiff_t writeRaw(const void* buffer, std::size_t size)
     {
-        m_out.WriteRaw(buffer, size);
+        return m_out.write(buffer, size);
     }
 
 protected:
     /** Output stream */
-    google::protobuf::io::CodedOutputStream& m_out;
+    OutputStream& m_out;
 
 protected:
-    /** Comma string */
-    static constexpr const char* kComma = ",";
-
     /** Opening double quote string */
     static constexpr const char* kOpeningDoubleQuote = "\"";
 
@@ -165,83 +209,8 @@ protected:
     /** String output chunk size */
     static constexpr int kStringChunkSize = 4096;
 
-    /** BELL string */
-    static constexpr const char* kBell = "\\b";
-
-    /** FORM FEED string */
-    static constexpr const char* kFormFeed = "\\f";
-
-    /** LINE FEED string */
-    static constexpr const char* kLineFeed = "\\n";
-
-    /** CARRIAGE RETURN string */
-    static constexpr const char* kCarriageReturn = "\\r";
-
-    /** HORIZONTAL TAB string */
-    static constexpr const char* kHorizintalTab = "\\t";
-
-    /** VERTICAL TAB string */
-    static constexpr const char* kVerticalTab = "\\v";
-
-    /** SLASH string */
-    static constexpr const char* kSlash = "\\/";
-
-    /** Hex characters */
-    static constexpr const char* kHexCharacters = "0123456789ABCDEF";
+    /** Json write error string */
+    static constexpr const char* kJsonWriteError = "JSON write error";
 };
 
-/** Base class for JSON write guards */
-class JsonWriteGuardBase {
-protected:
-    /**
-     * Writes opening part of the object.
-     * @param jsonWriter JSON writer.
-     * @param fieldName Optional field name.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
-     */
-    JsonWriteGuardBase(JsonWriter& jsonWriter, const char* fieldName, bool addCommaBefore);
-
-public:
-    DECLARE_NONCOPYABLE(JsonWriteGuardBase);
-
-protected:
-    JsonWriter& m_jsonWriter;
-
-protected:
-    /** Comma string */
-    static constexpr const char* kComma = ",";
-};
-
-/** Compound JSON entity write guard */
-template<char Opening, char Closing>
-class JsonCompoundEntityWriteGuard : public JsonWriteGuardBase {
-public:
-    /**
-     * Writes opening part of the object.
-     * @param jsonWriter JSON writer.
-     * @param fieldName Optional field name.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
-     */
-    JsonCompoundEntityWriteGuard(
-            JsonWriter& jsonWriter, const char* fieldName = nullptr, bool addCommaBefore = false)
-        : JsonWriteGuardBase(jsonWriter, fieldName, addCommaBefore)
-    {
-        const char c = Opening;
-        m_jsonWriter.writeRaw(&c, 1);
-    }
-
-    /** Writes closing part of the object */
-    ~JsonCompoundEntityWriteGuard()
-    {
-        const char c = Closing;
-        m_jsonWriter.writeRaw(&c, 1);
-    }
-};
-
-/** JSON object write guard */
-using JsonObjectWriteGuard = JsonCompoundEntityWriteGuard<'{', '}'>;
-
-/** JSON object write guard */
-using JsonArrayWriteGuard = JsonCompoundEntityWriteGuard<'[', ']'>;
-
-}  // namespace siodb::protobuf
+}  // namespace siodb::io

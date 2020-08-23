@@ -59,7 +59,7 @@ TEST(DDL, CreateDatabase)
                     *createDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            siodb::protobuf::SiodbProtobufInputStream inputStream(
+            siodb::protobuf::StreamInputStream inputStream(
                     TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
             siodb::protobuf::readMessage(
@@ -88,7 +88,7 @@ TEST(DDL, CreateDatabase)
             requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            siodb::protobuf::SiodbProtobufInputStream inputStream(
+            siodb::protobuf::StreamInputStream inputStream(
                     TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
             siodb::protobuf::readMessage(
                     siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response,
@@ -135,7 +135,7 @@ TEST(DDL, CreateDatabase)
                     *dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            siodb::protobuf::SiodbProtobufInputStream inputStream(
+            siodb::protobuf::StreamInputStream inputStream(
                     TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
             siodb::protobuf::readMessage(
@@ -164,7 +164,7 @@ TEST(DDL, DropDatabase_NonExistentDB)
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -190,7 +190,7 @@ TEST(DDL, DropDatabaseIfExists_NonExistentDB)
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -207,7 +207,7 @@ TEST(DDL, UseDatabase_ExistentDB)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -321,7 +321,7 @@ TEST(DDL, UseDatabase_NonExistentDB)
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -338,7 +338,7 @@ TEST(DDL, DropUsedDatabase)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -356,7 +356,7 @@ TEST(DDL, DropUsedDatabase)
                 *createDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::SiodbProtobufInputStream inputStream(
+        siodb::protobuf::StreamInputStream inputStream(
                 TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -430,7 +430,7 @@ TEST(DDL, CreateDuplicateColumnTable)
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -486,7 +486,7 @@ TEST(DDL, CreateTable)
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -600,7 +600,7 @@ TEST(DDL, CreateTableWithDefaultValue)
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -629,7 +629,7 @@ TEST(DDL, CreateTableWithNotNullAndDefaultValue)
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -657,7 +657,7 @@ TEST(DDL, SetTableAttributes_NextTrid)
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response1;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(

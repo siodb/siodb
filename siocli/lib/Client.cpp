@@ -44,7 +44,7 @@
 namespace siodb::cli {
 
 void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
-        io::IODevice& connection, std::ostream& os, bool stopOnError)
+        io::InputOutputStream& connection, std::ostream& os, bool stopOnError)
 {
     auto startTime = std::chrono::steady_clock::now();
     // Send command to server as protobuf message
@@ -60,7 +60,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         const utils::DefaultErrorCodeChecker errorCodeChecker;
 
         client_protocol::ServerResponse response;
-        protobuf::SiodbProtobufInputStream input(connection, errorCodeChecker);
+        protobuf::StreamInputStream input(connection, errorCodeChecker);
         protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
 
 #ifdef _DEBUG
@@ -249,8 +249,8 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
     } while (responseId < responseCount);
 }
 
-void authenticate(
-        const std::string& identityKey, const std::string& userName, io::IODevice& connection)
+void authenticate(const std::string& identityKey, const std::string& userName,
+        io::InputOutputStream& connection)
 {
     client_protocol::BeginSessionRequest beginSessionRequest;
     beginSessionRequest.set_user_name(userName);
@@ -259,7 +259,7 @@ void authenticate(
 
     client_protocol::BeginSessionResponse beginSessionResponse;
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::SiodbProtobufInputStream input(connection, errorCodeChecker);
+    protobuf::StreamInputStream input(connection, errorCodeChecker);
     protobuf::readMessage(protobuf::ProtocolMessageType::kClientBeginSessionResponse,
             beginSessionResponse, input);
 

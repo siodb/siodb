@@ -16,7 +16,7 @@
 #include "../reg/ColumnRecord.h"
 
 // Common project headers
-#include <siodb/common/io/IODevice.h>
+#include <siodb/common/io/InputOutputStream.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/IOManagerProtocol.pb.h>
@@ -32,7 +32,8 @@ public:
      * @param connection Connection with server file descriptor.
      * @param userId Current user ID.
      */
-    RequestHandler(Instance& instance, siodb::io::IODevice& connection, std::uint32_t userId);
+    RequestHandler(
+            Instance& instance, siodb::io::InputOutputStream& connection, std::uint32_t userId);
 
     /** De-initializes object of class RequestHandler */
     ~RequestHandler();
@@ -375,7 +376,7 @@ private:
      * @param response Response object.
      * @param request Request object.
      */
-    void executeRestGetDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+    void executeGetDatabasesRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::GetDatabasesRestRequest& request);
 
     /**
@@ -383,7 +384,7 @@ private:
      * @param response Response object.
      * @param request Request object.
      */
-    void executeRestGetTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+    void executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::GetTablesRestRequest& request);
 
     /**
@@ -391,7 +392,7 @@ private:
      * @param response Response object.
      * @param request Request object.
      */
-    void executeRestGetAllRowsRequest(iomgr_protocol::DatabaseEngineResponse& response,
+    void executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::GetAllRowsRestRequest& request);
 
     /**
@@ -399,7 +400,7 @@ private:
      * @param response Response object.
      * @param request Request object.
      */
-    void executeRestGetSingleRowRequest(iomgr_protocol::DatabaseEngineResponse& response,
+    void executeGetSingleRowRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::GetSingleRowRestRequest& request);
 
     /**
@@ -407,7 +408,7 @@ private:
      * @param response Response object.
      * @param request Request object.
      */
-    void executeRestPostRowsRequest(iomgr_protocol::DatabaseEngineResponse& response,
+    void executePostRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::PostRowsRestRequest& request);
 
     // Helpers
@@ -491,7 +492,7 @@ private:
      * Checks where expression.
      * @param whereExpression WHERE clause expression.
      * @param context A context.
-     * @throw DatabaseError in case of invalid where exception.
+     * @throw DatabaseError if where expression is invalid.
      */
     void checkWhereExpression(const requests::ConstExpressionPtr& whereExpression,
             requests::DatabaseContext& context);
@@ -501,7 +502,7 @@ private:
     Instance& m_instance;
 
     /** Connection IO descriptor */
-    siodb::io::IODevice& m_connection;
+    siodb::io::InputOutputStream& m_connection;
 
     /** Current user ID */
     const std::uint32_t m_userId;
@@ -520,6 +521,9 @@ private:
 
     /** LOB chunk size */
     static constexpr std::uint32_t kLobChunkSize = 4096;
+
+    /** JSON chunk size */
+    static constexpr std::uint32_t kJsonChunkSize = 65536;
 
     /** Reserved expressions count */
     static constexpr std::size_t kReservedExpressionCount = 32;

@@ -48,7 +48,7 @@ int openUnixConnection(const std::string& serverSocketPath, bool closeOnExecute)
     std::strcpy(addr.sun_path, serverSocketPath.c_str());
 
     // Attempt to connect
-    if (::connect(socket.getFd(), (struct sockaddr*) &addr, (socklen_t) sizeof(addr)) < 0) {
+    if (::connect(socket.getFD(), (struct sockaddr*) &addr, (socklen_t) sizeof(addr)) < 0) {
         stdext::throw_system_error(
                 "Can't connect via UNIX client socket to the ", serverSocketPath.c_str());
     }

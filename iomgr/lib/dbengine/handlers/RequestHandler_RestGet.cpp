@@ -9,16 +9,17 @@
 #include "../ThrowDatabaseError.h"
 
 // Common project headers
-#include <siodb/common/protobuf/ProtobufJsonIO.h>
+#include <siodb/common/crt_ext/compiler_defs.h>
+#include <siodb/common/io/ChunkedOutputStream.h>
+#include <siodb/common/io/JsonWriter.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 
 namespace siodb::iomgr::dbengine {
 
-void RequestHandler::executeRestGetDatabasesRequest(
+void RequestHandler::executeGetDatabasesRestRequest(
         iomgr_protocol::DatabaseEngineResponse& response,
         [[maybe_unused]] const requests::GetDatabasesRestRequest& request)
 {
-#if 0
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
@@ -26,43 +27,45 @@ void RequestHandler::executeRestGetDatabasesRequest(
     const auto databaseNames = m_instance.getDatabaseNames();
 
     // Write response message
-    utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::SiodbProtobufOutputStream rawOutput(m_connection, errorChecker);
-    protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+    {
+        utils::DefaultErrorCodeChecker errorChecker;
+        protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+    }
 
-    // Create JSON payload
-    google::protobuf::io::CodedOutputStream codedOutput(&rawOutput);
-    protobuf::JsonWriter jsonWriter(codedOutput);
+    // Write JSON payload
+    siodb::io::ChunkedOutputStream chunkedStream(kJsonChunkSize, m_connection);
+    siodb::io::JsonWriter jsonWriter(chunkedStream);
 
     // Start top level object
-    protobuf::JsonObjectWriteGuard topLevelObjectGuard(jsonWriter);
+    jsonWriter.writeObjectBegin();
 
     // Write status
     jsonWriter.writeField(kRestStatusFieldName, kRestStatusOk);
-    protobuf::checkOutputStreamError(rawOutput);
 
     // Start rows array
-    protobuf::JsonArrayWriteGuard rowsArrayGuard(jsonWriter, kRestRowsFieldName, true);
+    jsonWriter.writeArrayBegin(kRestRowsFieldName, true);
 
     // Write rows
     bool needComma = false;
     for (const auto& databaseName : databaseNames) {
-        protobuf::checkOutputStreamError(rawOutput);
-        protobuf::JsonObjectWriteGuard databaseObjectGuard(jsonWriter, nullptr, needComma);
+        jsonWriter.writeObjectBegin(nullptr, needComma);
         needComma = true;
         jsonWriter.writeField(kDatabaseNameFieldName, databaseName);
+        jsonWriter.writeObjectEnd();
     }
-    protobuf::checkOutputStreamError(rawOutput);
-#else
-    sendNotImplementedYet(response);
-#endif
+
+    // End rows array
+    jsonWriter.writeArrayEnd();
+
+    // End top level object
+    jsonWriter.writeObjectEnd();
 }
 
-void RequestHandler::executeRestGetTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
         [[maybe_unused]] const requests::GetTablesRestRequest& request)
 {
-#if 0
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
@@ -72,46 +75,49 @@ void RequestHandler::executeRestGetTablesRequest(iomgr_protocol::DatabaseEngineR
     std::sort(tableNames.begin(), tableNames.end());
 
     // Write response message
-    utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::SiodbProtobufOutputStream rawOutput(m_connection, errorChecker);
-    protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+    {
+        utils::DefaultErrorCodeChecker errorChecker;
+        protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+    }
 
-    // Create JSON payload
-    google::protobuf::io::CodedOutputStream codedOutput(&rawOutput);
-    protobuf::JsonWriter jsonWriter(codedOutput);
+    // Write JSON payload
+    siodb::io::ChunkedOutputStream chunkedStream(kJsonChunkSize, m_connection);
+    siodb::io::JsonWriter jsonWriter(chunkedStream);
 
     // Start top level object
-    protobuf::JsonObjectWriteGuard topLevelObjectGuard(jsonWriter);
+    jsonWriter.writeObjectBegin();
 
     // Write status
     jsonWriter.writeField(kRestStatusFieldName, kRestStatusOk);
-    protobuf::checkOutputStreamError(rawOutput);
 
     // Start rows array
-    protobuf::JsonArrayWriteGuard rowsArrayGuard(jsonWriter, kRestRowsFieldName, true);
+    jsonWriter.writeArrayBegin(kRestRowsFieldName, true);
 
     // Write rows
     bool needComma = false;
     for (const auto& tableName : tableNames) {
-        protobuf::checkOutputStreamError(rawOutput);
-        protobuf::JsonObjectWriteGuard tableObjectGuard(jsonWriter, nullptr, needComma);
+        jsonWriter.writeObjectBegin(nullptr, needComma);
         needComma = true;
         jsonWriter.writeField(kTableNameFieldName, tableName);
+        jsonWriter.writeObjectEnd();
     }
-    protobuf::checkOutputStreamError(rawOutput);
-#else
-    sendNotImplementedYet(response);
-#endif
+
+    // End rows array
+    jsonWriter.writeArrayEnd();
+
+    // End top level object
+    jsonWriter.writeObjectEnd();
 }
 
-void RequestHandler::executeRestGetAllRowsRequest(iomgr_protocol::DatabaseEngineResponse& response,
+void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
         [[maybe_unused]] const requests::GetAllRowsRestRequest& request)
 {
     sendNotImplementedYet(response);
 }
 
-void RequestHandler::executeRestGetSingleRowRequest(
+void RequestHandler::executeGetSingleRowRestRequest(
         iomgr_protocol::DatabaseEngineResponse& response,
         [[maybe_unused]] const requests::GetSingleRowRestRequest& request)
 {

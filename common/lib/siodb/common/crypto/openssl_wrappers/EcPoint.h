@@ -29,7 +29,7 @@ public:
 
     DECLARE_NONCOPYABLE(EcPoint);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~EcPoint()
     {
         ::EC_POINT_clear_free(m_ecPoint);
@@ -39,7 +39,7 @@ public:
      * Returns underlying mutable EC_POINT object.
      * @return EC_POINT pointer.
      */
-    operator ::EC_POINT*() noexcept
+    operator ::EC_POINT *() noexcept
     {
         return m_ecPoint;
     }
@@ -48,7 +48,7 @@ public:
      * Returns underlying read-only EC_POINT object.
      * @return Const EC_POINT pointer.
      */
-    operator const ::EC_POINT*() const noexcept
+    operator const ::EC_POINT *() const noexcept
     {
         return m_ecPoint;
     }

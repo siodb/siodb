@@ -270,7 +270,7 @@ void RequestHandler::executeSelectRequest(
     }
 
     utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::SiodbProtobufOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
@@ -345,18 +345,18 @@ void RequestHandler::executeSelectRequest(
             rowLength += nullMask.size();
 
             codedOutput.WriteVarint64(rowLength);
-            protobuf::checkOutputStreamError(rawOutput);
+            rawOutput.CheckNoError();
 
             //DBG_LOG_DEBUG(">>> OUTPUT: Row# " << rowNumber << ": Length=" << rowLength);
 
             if (hasNullableColumns) {
                 codedOutput.WriteRaw(nullMask.data(), nullMask.size());
-                protobuf::checkOutputStreamError(rawOutput);
+                rawOutput.CheckNoError();
             }
 
             for (std::size_t i = 0; i < columnCountToSend; ++i) {
                 writeVariant(codedOutput, values[i]);
-                protobuf::checkOutputStreamError(rawOutput);
+                rawOutput.CheckNoError();
             }
 
             if (limit) --(*limit);
@@ -369,13 +369,13 @@ void RequestHandler::executeSelectRequest(
         // so data shouldn't be sent to the server at that moment.
         // All other exceptions are caught on the upper level.
         codedOutput.WriteVarint64(kNoMoreRows);
-        protobuf::checkOutputStreamError(rawOutput);
+        rawOutput.CheckNoError();
 
         // NOTE: Do not re-throw here to prevent double response.
     }
 
     codedOutput.WriteVarint64(kNoMoreRows);
-    protobuf::checkOutputStreamError(rawOutput);
+    rawOutput.CheckNoError();
 }
 
 void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -397,7 +397,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     const auto databaseRecords = m_instance.getDatabaseRecordsOrderedByName();
 
     utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::SiodbProtobufOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
@@ -422,19 +422,19 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
 
         if (!nullNotAllowed) {
             codedOutput.WriteRaw(nullMask.data(), nullMask.size());
-            protobuf::checkOutputStreamError(rawOutput);
+            rawOutput.CheckNoError();
         }
 
-        protobuf::checkOutputStreamError(rawOutput);
+        rawOutput.CheckNoError();
 
         for (std::size_t i = 0; i < values.size(); ++i) {
             writeVariant(codedOutput, values[i]);
-            protobuf::checkOutputStreamError(rawOutput);
+            rawOutput.CheckNoError();
         }
     }
 
     codedOutput.WriteVarint64(kNoMoreRows);
-    protobuf::checkOutputStreamError(rawOutput);
+    rawOutput.CheckNoError();
 }
 
 }  // namespace siodb::iomgr::dbengine

@@ -718,7 +718,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
     if (node->children.size() < 3)
         throw std::invalid_argument("CREATE DATABASE: malformed statement");
 
-    // Database node could be 2 or 3 ( in case of CREATE TEMPORARY DATABASE <name>)
+    // Database node could be 2 or 3 (CREATE TEMPORARY DATABASE <name>)
     bool temporary = false;
     size_t databaseNodeIndex = 0;
     if (helpers::getNonTerminalType(node->children[2]) == SiodbParser::RuleDatabase_name) {

@@ -8,22 +8,22 @@
 namespace siodb {
 
 /** Thrown to indicate communication protocol error */
-class SiodbProtocolError : public std::runtime_error {
+class ProtocolError : public std::runtime_error {
 public:
     /**
-     * Initializes object of the class SiodbProtocolError.
+     * Initializes object of the class ProtocolError.
      * @param what Explanatory message.
      */
-    explicit SiodbProtocolError(const char* what)
+    explicit ProtocolError(const char* what)
         : std::runtime_error(what)
     {
     }
 
     /**
-     * Initializes object of the class SiodbProtocolError.
+     * Initializes object of the class ProtocolError.
      * @param what Explanatory message.
      */
-    explicit SiodbProtocolError(const std::string& what)
+    explicit ProtocolError(const std::string& what)
         : std::runtime_error(what)
     {
     }

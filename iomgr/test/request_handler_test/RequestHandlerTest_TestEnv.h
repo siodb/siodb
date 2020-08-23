@@ -7,7 +7,7 @@
 #include "dbengine/handlers/RequestHandler.h"
 
 // Common project headers
-#include <siodb/common/io/IODevice.h>
+#include <siodb/common/io/InputOutputStream.h>
 
 // Google Test
 #include <gtest/gtest.h>
@@ -39,12 +39,12 @@ public:
         return m_env->m_pipes;
     }
 
-    static siodb::io::IODevice& getInputStream() noexcept
+    static siodb::io::InputOutputStream& getInputStream() noexcept
     {
         return *m_env->m_input;
     }
 
-    static siodb::io::IODevice& getOutputStream() noexcept
+    static siodb::io::InputOutputStream& getOutputStream() noexcept
     {
         return *m_env->m_output;
     }
@@ -57,8 +57,8 @@ private:
     dbengine::InstancePtr m_instance;
     Pipes m_pipes;
     const char* m_argv0;
-    std::unique_ptr<siodb::io::IODevice> m_input;
-    std::unique_ptr<siodb::io::IODevice> m_output;
+    std::unique_ptr<siodb::io::InputOutputStream> m_input;
+    std::unique_ptr<siodb::io::InputOutputStream> m_output;
     std::string m_instanceFolder;
     static TestEnvironment* m_env;
 };

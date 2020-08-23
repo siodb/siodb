@@ -5,7 +5,7 @@
 #include "ProtobufMessageIO.h"
 
 // Project headers
-#include "SiodbProtobufOutputStream.h"
+#include "StreamOutputStream.h"
 #include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
 
@@ -19,17 +19,14 @@ namespace siodb::protobuf {
 
 namespace {
 
-void reportInputStreamError(const SiodbProtobufInputStream& stream)
+void reportInputStreamError(const StreamInputStream& stream)
 {
-    const int errorCode = stream.GetErrno();
-    if (errorCode != 0)
-        stdext::throw_system_error(errorCode, "Read error");
-    else
-        throw SiodbProtocolError("Protocol error: Protobuf message decoding error");
+    stream.CheckNoError();
+    throw ProtocolError("Protocol error: Protobuf message decoding error");
 }
 
 ProtocolMessageType readMessageType(const ProtocolMessageType* messageTypes,
-        std::size_t messageTypeCount, SiodbProtobufInputStream& input)
+        std::size_t messageTypeCount, StreamInputStream& input)
 {
     std::uint32_t messageTypeId = 0;
     google::protobuf::io::CodedInputStream codedInput(&input);
@@ -39,7 +36,7 @@ ProtocolMessageType readMessageType(const ProtocolMessageType* messageTypes,
     if (messageTypeId >= static_cast<std::uint32_t>(ProtocolMessageType::kMax)) {
         std::ostringstream err;
         err << "Protocol error: Unsupported message type " << messageTypeId;
-        throw SiodbProtocolError(err.str());
+        throw ProtocolError(err.str());
     }
 
     if (std::find_if(messageTypes, messageTypes + messageTypeCount,
@@ -54,7 +51,7 @@ ProtocolMessageType readMessageType(const ProtocolMessageType* messageTypes,
             if (i > 0) err << ", ";
             err << static_cast<std::uint32_t>(messageTypes[i]);
         }
-        throw SiodbProtocolError(err.str());
+        throw ProtocolError(err.str());
     }
 
     return static_cast<ProtocolMessageType>(messageTypeId);
@@ -63,74 +60,67 @@ ProtocolMessageType readMessageType(const ProtocolMessageType* messageTypes,
 }  // namespace
 
 std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessageType* messageTypes,
-        std::size_t messageTypeCount, io::IODevice& input, ProtocolMessageFactory& messageFactory,
-        const utils::ErrorCodeChecker& errorCodeChecker)
+        std::size_t messageTypeCount, io::InputStream& input,
+        ProtocolMessageFactory& messageFactory, const utils::ErrorCodeChecker& errorCodeChecker)
 {
-    SiodbProtobufInputStream rawInput(input, errorCodeChecker);
+    StreamInputStream rawInput(input, errorCodeChecker);
     return readMessage(messageTypes, messageTypeCount, rawInput, messageFactory);
 }
 
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
-        io::IODevice& input, const utils::ErrorCodeChecker& errorCodeChecker)
+        io::InputStream& input, const utils::ErrorCodeChecker& errorCodeChecker)
 {
-    SiodbProtobufInputStream rawInput(input, errorCodeChecker);
+    StreamInputStream rawInput(input, errorCodeChecker);
     readMessage(messageType, message, rawInput);
 }
 
 std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessageType* messageTypes,
-        std::size_t messageTypeCount, SiodbProtobufInputStream& input,
+        std::size_t messageTypeCount, StreamInputStream& input,
         ProtocolMessageFactory& messageFactory)
 {
     std::unique_ptr<google::protobuf::MessageLite> message(
             messageFactory.createMessage(readMessageType(messageTypes, messageTypeCount, input)));
     google::protobuf::io::CodedInputStream codedInput(&input);
     const auto limit = codedInput.ReadLengthAndPushLimit();
-    if (limit == 0) throw SiodbProtocolError("Protocol error: can't read message size");
+    if (limit == 0) throw ProtocolError("Protocol error: can't read message size");
     if (!message->ParseFromCodedStream(&codedInput)) reportInputStreamError(input);
     return message;
 }
 
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
-        SiodbProtobufInputStream& input)
+        StreamInputStream& input)
 {
     readMessageType(&messageType, 1, input);
     google::protobuf::io::CodedInputStream codedInput(&input);
     const auto limit = codedInput.ReadLengthAndPushLimit();
-    if (limit == 0) throw SiodbProtocolError("Protocol error: can't read message size");
+    if (limit == 0) throw ProtocolError("Protocol error: can't read message size");
     if (!message.ParseFromCodedStream(&codedInput)) reportInputStreamError(input);
 }
 
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
-        io::IODevice& output, const utils::ErrorCodeChecker& errorCodeChecker)
+        io::OutputStream& output, const utils::ErrorCodeChecker& errorCodeChecker)
 {
-    SiodbProtobufOutputStream rawOutput(output, errorCodeChecker);
+    StreamOutputStream rawOutput(output, errorCodeChecker);
     writeMessage(messageType, message, rawOutput);
 }
 
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
-        SiodbProtobufOutputStream& output)
+        StreamOutputStream& output)
 {
     google::protobuf::io::CodedOutputStream codedOutput(&output);
 
     // Write message type
     codedOutput.WriteVarint32(static_cast<std::uint32_t>(messageType));
-    checkOutputStreamError(output);
+    output.CheckNoError();
 
     // Write message size
     const auto messageSize = message.ByteSizeLong();
     codedOutput.WriteVarint32(static_cast<int>(messageSize));
-    checkOutputStreamError(output);
+    output.CheckNoError();
 
     // Write message itself
     message.SerializeToCodedStream(&codedOutput);
-
-    checkOutputStreamError(output);
-}
-
-void checkOutputStreamError(const SiodbProtobufOutputStream& stream)
-{
-    const int errorCode = stream.GetErrno();
-    if (errorCode != 0) stdext::throw_system_error(errorCode, "Write error");
+    output.CheckNoError();
 }
 
 }  // namespace siodb::protobuf

@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include <siodb/common/io/IODevice.h>
+#include <siodb/common/io/InputOutputStream.h>
 
 // STL headers
 #include <ostream>
@@ -18,7 +18,7 @@ namespace siodb::siocli {
  * @param os Output stream.
  * @throw std::runtime_error if I/O error occurs.
  */
-void dumpAllDatabases(siodb::io::IODevice& connection, std::ostream& os);
+void dumpAllDatabases(siodb::io::InputOutputStream& connection, std::ostream& os);
 
 /**
  * Dumps table definitions and data from the specified database.
@@ -27,7 +27,7 @@ void dumpAllDatabases(siodb::io::IODevice& connection, std::ostream& os);
  * @param databaseName Database to dump.
  * @throw std::runtime_error if I/O error occurs.
  */
-void dumpDatabase(
-        siodb::io::IODevice& connection, std::ostream& os, const std::string& databaseName);
+void dumpDatabase(siodb::io::InputOutputStream& connection, std::ostream& os,
+        const std::string& databaseName);
 
 }  // namespace siodb::siocli

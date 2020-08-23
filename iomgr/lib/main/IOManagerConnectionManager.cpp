@@ -95,9 +95,9 @@ void IOManagerConnectionManager::connectionListenerThreadMain()
     }
 
     while (!m_exitRequested) {
-        if (server.getFd() == -2) return;
+        if (server.getFD() == -2) return;
 
-        FdGuard fdGuard(acceptTcpConnection(server.getFd()));
+        FdGuard fdGuard(acceptTcpConnection(server.getFD()));
         if (!fdGuard.isValidFd()) continue;
 
         std::unique_ptr<IOManagerConnectionHandler> handler(

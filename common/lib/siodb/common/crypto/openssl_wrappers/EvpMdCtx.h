@@ -28,7 +28,7 @@ public:
 
     DECLARE_NONCOPYABLE(EvpMdCtx);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~EvpMdCtx()
     {
         ::EVP_MD_CTX_destroy(m_ctx);
@@ -38,7 +38,7 @@ public:
      * Returns underlying mutable EVP_MD_CTX object.
      * @return Context.
      */
-    operator ::EVP_MD_CTX*() noexcept
+    operator ::EVP_MD_CTX *() noexcept
     {
         return m_ctx;
     }
@@ -47,7 +47,7 @@ public:
      * Returns underlying read-only EVP_MD_CTX object.
      * @return Const context.
      */
-    operator const ::EVP_MD_CTX*() const noexcept
+    operator const ::EVP_MD_CTX *() const noexcept
     {
         return m_ctx;
     }

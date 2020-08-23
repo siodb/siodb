@@ -88,7 +88,7 @@ message BeginAuthenticateUserResponse {
     /** Indication that session is started */
     bool session_started = 1;
 
-    /** Message from IO manager. Set in case of error. */
+    /** Message from IO manager. Set if error has occurred. */
     StatusMessage message = 2;
 }
 
@@ -108,7 +108,7 @@ message AuthenticateUserResponse {
     /** Indication that user is authenticated. */
     bool authenticated = 1;
 
-    /** Message from IO manager. Set in case of error. */
+    /** Message from IO manager. Set if error has occurred */
     StatusMessage message = 2;
 
     /** ID of started session. */

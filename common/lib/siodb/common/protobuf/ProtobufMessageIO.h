@@ -5,10 +5,10 @@
 #pragma once
 
 // Project headers
-#include "SiodbProtobufInputStream.h"
-#include "SiodbProtobufOutputStream.h"
-#include "SiodbProtocolError.h"
-#include "SiodbProtocolMessageType.h"
+#include "ProtocolError.h"
+#include "ProtocolMessageType.h"
+#include "StreamInputStream.h"
+#include "StreamOutputStream.h"
 
 // Protobuf headers
 #include <google/protobuf/io/coded_stream.h>
@@ -31,18 +31,19 @@ public:
 };
 
 /**
- * Reads one of protocol messages from a device.
+ * Reads one of protocol messages from a stream.
  * @param messageTypes List of expected message types.
  * @param messageTypeCount Number of message types in the list.
- * @param input Input device.
+ * @param input Input stream.
  * @param messageFactory Message factory.
  * @param errorCodeChecker I/O error code checker object.
- * @return A message.
+ * @return Consumed message.
  * @throw std::system_error when I/O error happens.
- * @throw SiodbProtocolError when protocol error happens.
+ * @throw ProtocolError when protocol error happens.
  */
 std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessageType* messageTypes,
-        std::size_t messageTypeCount, io::IODevice& input, ProtocolMessageFactory& messageFactory,
+        std::size_t messageTypeCount, io::InputStream& input,
+        ProtocolMessageFactory& messageFactory,
         const utils::ErrorCodeChecker& errorCodeChecker = utils::DefaultErrorCodeChecker());
 
 /**
@@ -51,25 +52,25 @@ std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessage
  * @param messageTypeCount Number of message types in the list.
  * @param input Input stream.
  * @param messageFactory Message factory.
- * @return A message.
+ * @return Consumed message.
  * @throw std::system_error when I/O error happens.
- * @throw SiodbProtocolError when protocol error happens.
+ * @throw ProtocolError when protocol error happens.
  */
 std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessageType* messageTypes,
-        std::size_t messageTypeCount, SiodbProtobufInputStream& input,
+        std::size_t messageTypeCount, StreamInputStream& input,
         ProtocolMessageFactory& messageFactory);
 
 /**
- * Reads protocol message from a device.
+ * Reads protocol message from a stream.
  * @param messageType Message type.
  * @param message A message.
- * @param input Input device.
+ * @param input Input stream.
  * @param errorCodeChecker I/O error code checker object.
  * @throw std::system_error when I/O error happens.
- * @throw SiodbProtocolError when protocol error happens.
+ * @throw ProtocolError when protocol error happens.
  */
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
-        io::IODevice& input,
+        io::InputStream& input,
         const utils::ErrorCodeChecker& errorCodeChecker = utils::DefaultErrorCodeChecker());
 
 /**
@@ -78,22 +79,22 @@ void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite&
  * @param message A message.
  * @param input Input stream.
  * @throw std::system_error when I/O error happens.
- * @throw SiodbProtocolError when protocol error happens.
+ * @throw ProtocolError when protocol error happens.
  */
 void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite& message,
-        SiodbProtobufInputStream& input);
+        StreamInputStream& input);
 
 /**
- * Writes protocol message to a device.
+ * Writes protocol message to a stream.
  * @param messageType message type identifier.
  * @param message a message.
- * @param output Output device.
+ * @param output Output stream.
  * @param errorCodeChecker I/O error code checker object.
  * @throw std::system_error when I/O error happens.
- * @throw SiodbProtocolError when protocol error happens.
+ * @throw ProtocolError when protocol error happens.
  */
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
-        io::IODevice& output,
+        io::OutputStream& output,
         const utils::ErrorCodeChecker& errorCodeChecker = utils::DefaultErrorCodeChecker());
 
 /**
@@ -102,15 +103,9 @@ void writeMessage(ProtocolMessageType messageType, const google::protobuf::Messa
  * @param message a message
  * @param output Output stream.
  * @throw std::system_error when I/O error happens.
- * @throw SiodbProtocolError when protocol error happens.
+ * @throw ProtocolError when protocol error happens.
  */
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
-        SiodbProtobufOutputStream& output);
-
-/**
- * Checks output stream state, reports error via exception, if any.
- * @param stream Stream to check.
- */
-void checkOutputStreamError(const SiodbProtobufOutputStream& stream);
+        StreamOutputStream& output);
 
 }  // namespace siodb::protobuf

@@ -29,7 +29,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -196,7 +196,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -404,7 +404,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table

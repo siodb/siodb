@@ -41,7 +41,7 @@ public:
 
     DECLARE_NONCOPYABLE(Ssl);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~Ssl()
     {
         if (m_ssl) {

@@ -224,7 +224,7 @@ public:
     /**
      * Set current data by pointer.
      * @param newCurrentData New current data.
-     * @throw std::out_of_range in case if newCurrentData is not in range of Scanner data.
+     * @throw std::out_of_range if newCurrentData is not in range of Scanner data.
      */
     void setCurrent(const char* newCurrentData);
 

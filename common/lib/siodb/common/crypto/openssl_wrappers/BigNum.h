@@ -50,7 +50,7 @@ public:
         if (!m_bigNum) throw OpenSslError("BN_bin2bn failed");
     }
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~BigNum()
     {
         ::BN_clear_free(m_bigNum);
@@ -74,7 +74,7 @@ public:
      * Returns underlying BIGNUM* object.
      * @return BIGNUM pointer.
      */
-    operator ::BIGNUM*() noexcept
+    operator ::BIGNUM *() noexcept
     {
         return m_bigNum;
     }
@@ -83,7 +83,7 @@ public:
      * Converts class into const BIGNUM*.
      * @return Const BIGNUM pointer.
      */
-    operator const ::BIGNUM*() const noexcept
+    operator const ::BIGNUM *() const noexcept
     {
         return m_bigNum;
     }

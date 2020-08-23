@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "../io/IODevice.h"
+#include "../io/InputStream.h"
 #include "../utils/ErrorCodeChecker.h"
 
 // STL headers
@@ -17,26 +17,26 @@
 namespace siodb::protobuf {
 
 /**
- * Our own version of protobuf file input stream, that allows to handle read errors,
- * including EINTR.
+ * Siodb version of the protobuf output stream which operates over an InputStream and
+ * allows to handling of read errors, including EINTR.
  * A ZeroCopyInputStream which reads from a file descriptor.
  * SignalAwareFileInputStream is preferred over using an ifstream with IstreamInputStream.
  * The latter will introduce an extra layer of buffering, harming performance.
  * Also, it's conceivable that SignalAwareFileInputStream could someday be enhanced
  * to use zero-copy file descriptors on OSs which support them.
  */
-class SiodbProtobufInputStream : public google::protobuf::io::ZeroCopyInputStream {
+class StreamInputStream : public google::protobuf::io::ZeroCopyInputStream {
 public:
     /**
-     * Creates a stream that reads from the given Unix file descriptor.
+     * Creates a stream that reads from the given InputStream.
      * If a block_size is given, it specifies the number of bytes that
-     * should be read and returned with each call to Next().  Otherwise,
+     * should be read and returned with each call to Next(). Otherwise,
      * a reasonable default is used.
-     * @param device I/O device.
+     * @param stream I/O stream.
      * @param errorChecker Error checker.
      * @param blockSize Block size.
      */
-    SiodbProtobufInputStream(io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker,
+    StreamInputStream(io::InputStream& stream, const utils::ErrorCodeChecker& errorCodeChecker,
             int blockSize = -1);
 
     /**
@@ -61,7 +61,7 @@ public:
     }
 
     /**
-     * If an I/O error has occurred on this file descriptor, this is the
+     * If an I/O error has occurred on this InputStream, this is the
      * errno from that error.  Otherwise, this is zero.  Once an error
      * occurs, the stream is broken and all subsequent operations will fail.
      * @return Error code.
@@ -77,10 +77,17 @@ public:
     bool Skip(int count);
     google::protobuf::int64 ByteCount() const;
 
+    /**
+     * Checks that there is no error.
+     * @throw std::system_error if error happened.
+     */
+    void CheckNoError() const;
+
 private:
     class CopyingInputStream : public google::protobuf::io::CopyingInputStream {
     public:
-        CopyingInputStream(io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker);
+        CopyingInputStream(
+                io::InputStream& stream, const utils::ErrorCodeChecker& errorCodeChecker);
         ~CopyingInputStream();
 
         bool Close();
@@ -102,8 +109,8 @@ private:
     private:
         /** Error code checker */
         const utils::ErrorCodeChecker& m_errorCodeChecker;
-        /** I/O device */
-        io::IODevice& m_device;
+        /** Input stream */
+        io::InputStream& m_stream;
         /** Indicaiton that stream should be closed in the destructor */
         bool m_closeOnDelete;
         /** Indication of the closed stream */
@@ -124,7 +131,7 @@ private:
     CopyingInputStream m_copyingInput;
     google::protobuf::io::CopyingInputStreamAdaptor m_impl;
 
-    GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(SiodbProtobufInputStream);
+    GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(StreamInputStream);
 };
 
 }  // namespace siodb::protobuf

@@ -11,7 +11,7 @@ namespace siodb::iomgr::dbengine::requests {
 
 /**
  * Addition operator (left + right).
- * Concatenation is applied in case if both operands are strings.
+ * Concatenation is applied if both operands are strings.
  */
 class AddOperator final : public ArithmeticBinaryOperator {
 public:

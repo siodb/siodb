@@ -24,7 +24,7 @@ public:
      * @return New expression object.
      * @throw invalid_argument if invalid node encountered.
      * @throw runtime_error if unsupported node encountered.
-     * @throw VariantTypeCastError in case of incompatible constant types.
+     * @throw VariantTypeCastError if there is incompatible constant type.
      */
     requests::ExpressionPtr createExpression(antlr4::tree::ParseTree* node) const;
 
@@ -35,7 +35,7 @@ public:
      * @return Value object.
      * @throw invalid_argument if invalid node encountered.
      * @throw runtime_error if unsupported node encountered.
-     * @throw VariantTypeCastError in case of incompatible constant types.
+     * @throw VariantTypeCastError if there is incompatible constant type.
      */
     static Variant createConstantValue(antlr4::tree::ParseTree* node);
 

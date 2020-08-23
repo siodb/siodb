@@ -25,10 +25,7 @@ void IOManagerRequestExecutor::handleRequest(const IOManagerRequestPtr& request)
     LOG_DEBUG << m_logContext << "Executing IO Manager request #" << request->getId();
     IOManagerRequestExecutionResultAssignmentGuard guard(*request);
     const auto connectionHandler = request->getConnectionHanlder();
-    if (connectionHandler) {
-        connectionHandler->executeIOManagerRequest(*request);
-        guard.setResult(true);
-    }
+    if (connectionHandler) guard.setResult(connectionHandler->executeIOManagerRequest(*request));
 }
 
 std::string IOManagerRequestExecutor::createLogContextBaseString(std::size_t id)

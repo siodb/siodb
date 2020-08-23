@@ -540,7 +540,7 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
                 DBG_LOG_DEBUG("Errors in the column " << columnSpec.m_name);
                 errors.push_back(makeDatabaseError(
                         IOManagerMessageId::kErrorCreateTableDuplicateColumnConstraintType,
-                        getConstaintTypeName(static_cast<ConstraintType>(e.first)),
+                        getConstraintTypeName(static_cast<ConstraintType>(e.first)),
                         columnSpec.m_name));
             }
         }
@@ -681,7 +681,7 @@ std::unique_ptr<MemoryMappedFile> Database::createMetadataFile(const char* path)
 
     // Write initial metadata
     const DatabaseMetadata initialMetadata(User::kSuperUserId);
-    if (::writeExact(fd.getFd(), &initialMetadata, sizeof(initialMetadata), kIgnoreSignals)
+    if (::writeExact(fd.getFD(), &initialMetadata, sizeof(initialMetadata), kIgnoreSignals)
             != sizeof(initialMetadata)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteDatabaseMetadataFile, m_name,
@@ -705,7 +705,7 @@ std::unique_ptr<MemoryMappedFile> Database::openMetadataFile(const char* path) c
     }
 
     // Create memory mapping
-    auto file = std::make_unique<MemoryMappedFile>(fd.getFd(), false,
+    auto file = std::make_unique<MemoryMappedFile>(fd.getFD(), false,
             MemoryMappedFile::deduceMemoryProtectionMode(kOpenFlags), MAP_POPULATE, 0, 0);
     fd.release();
     file->setFdOwner();

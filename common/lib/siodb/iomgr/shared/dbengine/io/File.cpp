@@ -28,7 +28,7 @@ File::File(const std::string& path, int extraFlags, int createMode, off_t initia
             path))
     , m_lastError(0)
 {
-    if (initialSize > 0 && ::posixFileAllocateExact(m_fd.getFd(), 0, initialSize)) {
+    if (initialSize > 0 && ::posixFileAllocateExact(m_fd.getFD(), 0, initialSize)) {
         const int errorCode = errno;
         std::ostringstream err;
         err << "Can't allocate " << (initialSize / 1024) << " KiB of disk space for the file "
@@ -63,7 +63,7 @@ off_t File::getRawFileSize() noexcept
 
 bool File::flush() noexcept
 {
-    if (::fdatasync(m_fd.getFd()) == 0) return true;
+    if (::fdatasync(m_fd.getFD()) == 0) return true;
     m_lastError = errno;
     return false;
 }

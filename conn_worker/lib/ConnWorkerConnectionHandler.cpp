@@ -5,13 +5,13 @@
 #include "ConnWorkerConnectionHandler.h"
 
 // Common project headers
-#include <siodb/common/io/FdDevice.h>
+#include <siodb/common/io/FDStream.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/ConnectionError.h>
 #include <siodb/common/net/EpollHelpers.h>
 #include <siodb/common/net/TcpConnection.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/protobuf/SiodbProtocolTag.h>
+#include <siodb/common/protobuf/ProtocolTag.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/utils/ErrorCodeChecker.h>
@@ -55,14 +55,14 @@ ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(
     : m_dbOptions(instanceOptions)
     , m_adminMode(adminMode)
 {
-    m_clientEpollFd.reset(net::createEpollFd(client.getFd(), EPOLLIN));
+    m_clientEpollFd.reset(net::createEpollFd(client.getFD(), EPOLLIN));
     if (!m_adminMode && m_dbOptions->m_clientOptions.m_enableEncryption) {
         LOG_DEBUG << kLogContext << "Established secure connection with client";
         m_tlsServer = createTlsServer(m_dbOptions->m_clientOptions);
         m_clientConnection = std::move(m_tlsServer->acceptConnection(client.release(), true));
     } else {
         LOG_DEBUG << kLogContext << " established non-secure connection with client";
-        m_clientConnection = std::make_unique<siodb::io::FdDevice>(client.release(), true);
+        m_clientConnection = std::make_unique<siodb::io::FDStream>(client.release(), true);
     }
 
     if (!m_clientConnection->isValid())
@@ -73,7 +73,7 @@ ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(
                        : m_dbOptions->m_ioManagerOptions.m_ipv6SqlPort;
 
     FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
-    auto iomgrConnection = std::make_unique<io::FdDevice>(fdGuard.getFd(), false);
+    auto iomgrConnection = std::make_unique<io::FDStream>(fdGuard.getFD(), false);
     fdGuard.release();
     iomgrConnection->setAutoClose();
     m_iomgrConnection = std::move(iomgrConnection);
@@ -84,8 +84,8 @@ void ConnWorkerConnectionHandler::run()
     // Allow EINTR to cause I/O error when exit signal detected.
     const utils::ExitSignalAwareErrorCodeChecker errorCodeChecker;
 
-    auto ioMgrInputStream = std::make_unique<protobuf::SiodbProtobufInputStream>(
-            *m_iomgrConnection, errorCodeChecker);
+    auto ioMgrInputStream =
+            std::make_unique<protobuf::StreamInputStream>(*m_iomgrConnection, errorCodeChecker);
 
     authenticateUser(*ioMgrInputStream);
 
@@ -97,7 +97,7 @@ void ConnWorkerConnectionHandler::run()
             try {
                 // NOTE: In case of the TCP connection close or abort
                 // we can receive an empty message
-                net::epollWaitForData(m_clientEpollFd.getFd(), true);
+                net::epollWaitForData(m_clientEpollFd.getFD(), true);
                 protobuf::readMessage(protobuf::ProtocolMessageType::kCommand, command,
                         *m_clientConnection, errorCodeChecker);
             } catch (net::ConnectionError& err) {
@@ -126,7 +126,7 @@ void ConnWorkerConnectionHandler::run()
                     // Connect to server
                     protobuf::writeMessage(protobuf::ProtocolMessageType::kDatabaseEngineRequest,
                             dbeRequest, *m_iomgrConnection);
-                } catch (const SiodbProtocolError& ex) {
+                } catch (const ProtocolError& ex) {
                     LOG_ERROR << kLogContext << ex.what();
                     m_iomgrConnection->close();
 
@@ -135,12 +135,12 @@ void ConnWorkerConnectionHandler::run()
                                        : m_dbOptions->m_ioManagerOptions.m_ipv6SqlPort;
 
                     FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
-                    auto iomgrConnection = std::make_unique<io::FdDevice>(fdGuard.getFd(), false);
+                    auto iomgrConnection = std::make_unique<io::FDStream>(fdGuard.getFD(), false);
                     fdGuard.release();
                     iomgrConnection->setAutoClose();
                     m_iomgrConnection = std::move(iomgrConnection);
 
-                    ioMgrInputStream = std::make_unique<protobuf::SiodbProtobufInputStream>(
+                    ioMgrInputStream = std::make_unique<protobuf::StreamInputStream>(
                             *m_iomgrConnection, errorCodeChecker);
 
                     responseToClientWithError(
@@ -238,8 +238,7 @@ void ConnWorkerConnectionHandler::responseToClientWithError(
             protobuf::ProtocolMessageType::kServerResponse, response, *m_clientConnection);
 }
 
-void ConnWorkerConnectionHandler::transmitRowData(
-        protobuf::SiodbProtobufInputStream& ioMgrInputStream)
+void ConnWorkerConnectionHandler::transmitRowData(protobuf::StreamInputStream& ioMgrInputStream)
 {
     std::uint64_t totalBytesSent = 0;
 
@@ -247,7 +246,7 @@ void ConnWorkerConnectionHandler::transmitRowData(
 
     // Allow EINTR to cause I/O error when exit signal detected.
     const utils::ExitSignalAwareErrorCodeChecker errorCodeChecker;
-    protobuf::SiodbProtobufOutputStream clientOutputStream(*m_clientConnection, errorCodeChecker);
+    protobuf::StreamOutputStream clientOutputStream(*m_clientConnection, errorCodeChecker);
     google::protobuf::io::CodedOutputStream codedOutput(&clientOutputStream);
     while (true) {
         std::uint64_t rowLength = 0;
@@ -286,7 +285,7 @@ void ConnWorkerConnectionHandler::transmitRowData(
 }
 
 void ConnWorkerConnectionHandler::selectLastUsedDatabase(
-        protobuf::SiodbProtobufInputStream& ioMgrInputStream)
+        protobuf::StreamInputStream& ioMgrInputStream)
 {
     LOG_DEBUG << kLogContext << "Selecting last used database";
 
@@ -333,7 +332,7 @@ void ConnWorkerConnectionHandler::processTag(const iomgr_protocol::Tag& tag)
 }
 
 void ConnWorkerConnectionHandler::authenticateUser(
-        [[maybe_unused]] protobuf::SiodbProtobufInputStream& ioMgrInputStream)
+        [[maybe_unused]] protobuf::StreamInputStream& ioMgrInputStream)
 {
     client_protocol::BeginSessionRequest beginSessionRequest;
     // Allow EINTR to cause I/O error when exit signal detected.

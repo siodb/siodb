@@ -28,14 +28,14 @@ NormalFile::NormalFile(const std::string& path, int extraFlags)
 
 std::size_t NormalFile::read(std::uint8_t* buffer, std::size_t size, off_t offset) noexcept
 {
-    const auto res = ::preadExact(m_fd.getFd(), buffer, size, offset, kIgnoreSignals);
+    const auto res = ::preadExact(m_fd.getFD(), buffer, size, offset, kIgnoreSignals);
     if (res != size) m_lastError = errno;
     return res;
 }
 
 std::size_t NormalFile::write(const std::uint8_t* buffer, std::size_t size, off_t offset) noexcept
 {
-    const auto res = ::pwriteExact(m_fd.getFd(), buffer, size, offset, kIgnoreSignals);
+    const auto res = ::pwriteExact(m_fd.getFD(), buffer, size, offset, kIgnoreSignals);
     if (res != size) m_lastError = errno;
     return res;
 }
@@ -47,7 +47,7 @@ off_t NormalFile::getFileSize() noexcept
 
 bool NormalFile::stat(struct stat& st) noexcept
 {
-    if (::fstat(m_fd.getFd(), &st) == 0) return true;
+    if (::fstat(m_fd.getFD(), &st) == 0) return true;
     m_lastError = errno;
     return false;
 }
@@ -55,8 +55,8 @@ bool NormalFile::stat(struct stat& st) noexcept
 bool NormalFile::extend(off_t length) noexcept
 {
     struct stat st;
-    if (::fstat(m_fd.getFd(), &st) == 0
-            && ::posixFileAllocateExact(m_fd.getFd(), st.st_size, length) == 0)
+    if (::fstat(m_fd.getFD(), &st) == 0
+            && ::posixFileAllocateExact(m_fd.getFD(), st.st_size, length) == 0)
         return true;
     m_lastError = errno;
     return false;

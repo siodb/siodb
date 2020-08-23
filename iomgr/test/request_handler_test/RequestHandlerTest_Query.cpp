@@ -35,7 +35,7 @@ TEST(Query, SelectFromSys_Databases)
     requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -81,7 +81,7 @@ TEST(Query, ShowDatabases)
     requestHandler->executeRequest(*showDatabasesRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -117,7 +117,7 @@ TEST(Query, SelectWithWhere)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -217,7 +217,7 @@ TEST(Query, SelectWithWhereBetweenDatetime)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -308,7 +308,7 @@ TEST(Query, SelectWithWhereCompoundExpression)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -409,7 +409,7 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -541,7 +541,7 @@ TEST(Query, SelectWithWhereUsingTableAlias)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -621,7 +621,7 @@ TEST(Query, SelectWithWhereColumnAlias)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -698,7 +698,7 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -799,7 +799,7 @@ TEST(Query, SelectFrom2Tables)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -932,7 +932,7 @@ TEST(Query, SelectWithExpression)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -1024,7 +1024,7 @@ TEST(Query, SelectWithExpressionFrom2Tables)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     /// ----------- SELECT -----------
@@ -1073,7 +1073,7 @@ TEST(Query, SelectWithExpressionWithNull)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -1169,7 +1169,7 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -1226,7 +1226,7 @@ TEST(Query, SelectWithWhereIsNull)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -1322,7 +1322,7 @@ TEST(Query, SelectWithWhereEqualNull)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -1390,7 +1390,7 @@ TEST(Query, SelectWithLimit)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1471,7 +1471,7 @@ TEST(Query, SelectWithZeroLimit)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1544,7 +1544,7 @@ TEST(Query, SelectWithNegativeLimit)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1606,7 +1606,7 @@ TEST(Query, SelectWithLimitAndOffset)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1689,7 +1689,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1764,7 +1764,7 @@ TEST(Query, SelectWithNegativeOffset)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1828,7 +1828,7 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table

@@ -66,7 +66,7 @@ public:
      * Returns file descriptor.
      * @return file descriptor.
      */
-    int getFd() const noexcept
+    int getFD() const noexcept
     {
         return m_fd;
     }

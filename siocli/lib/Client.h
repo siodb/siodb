@@ -5,7 +5,7 @@
 #pragma once
 
 // Common project headers
-#include <siodb/common/io/IODevice.h>
+#include <siodb/common/io/InputOutputStream.h>
 
 // CRT headers
 #include <cstdint>
@@ -29,7 +29,7 @@ namespace siodb::cli {
  * @throw std::runtime_error if @ref stopOnError is true and SQL error happened.
  */
 void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
-        io::IODevice& connection, std::ostream& os, bool stopOnError);
+        io::InputOutputStream& connection, std::ostream& os, bool stopOnError);
 
 /**
  * Authenticates user.
@@ -37,7 +37,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
  * @param userName Name of a user.
  * @param connection Connection IO.
  */
-void authenticate(
-        const std::string& identityKey, const std::string& userName, io::IODevice& connectionFd);
+void authenticate(const std::string& identityKey, const std::string& userName,
+        io::InputOutputStream& connectionFd);
 
 }  // namespace siodb::cli

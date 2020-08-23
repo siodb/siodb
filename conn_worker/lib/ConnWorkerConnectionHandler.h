@@ -7,10 +7,10 @@
 // Common project headers
 #include <siodb/common/crypto/TlsConnection.h>
 #include <siodb/common/crypto/TlsServer.h>
-#include <siodb/common/io/IODevice.h>
+#include <siodb/common/io/InputOutputStream.h>
 #include <siodb/common/options/SiodbOptions.h>
-#include <siodb/common/protobuf/SiodbProtobufInputStream.h>
-#include <siodb/common/protobuf/SiodbProtobufOutputStream.h>
+#include <siodb/common/protobuf/StreamInputStream.h>
+#include <siodb/common/protobuf/StreamOutputStream.h>
 #include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
@@ -49,7 +49,7 @@ private:
      * @param ioMgrInputStream Input steam
      * @return Database engine response from IO manager
      * @throw std::system_error when I/O error happens.
-     * @throw SiodbProtocolError when protocol error happens.
+     * @throw ProtocolError when protocol error happens.
      */
     void responseToClientWithError(int requestId, const char* text, int errorCode);
 
@@ -58,7 +58,7 @@ private:
      * @param ioMgrInputStream Input stream.
      * @throw std::system_error when I/O error happens.
      * */
-    void transmitRowData(protobuf::SiodbProtobufInputStream& ioMgrInputStream);
+    void transmitRowData(protobuf::StreamInputStream& ioMgrInputStream);
 
     /**
      * Updates used database to @ref m_lastUsedDatabase (Sends USE DATABASE to Iomgr).
@@ -66,7 +66,7 @@ private:
      * @throw std::system_error when I/O error happens.
      * @throw std::runtime_error when Iomgr responses with non expected answer.
      */
-    void selectLastUsedDatabase(protobuf::SiodbProtobufInputStream& ioMgrInputStream);
+    void selectLastUsedDatabase(protobuf::StreamInputStream& ioMgrInputStream);
 
     /**
      * Processes Iomgr response tag.
@@ -87,7 +87,7 @@ private:
      * 8b) [Non-Authenticated] Sends authentication result to the client and closes connection.
      * @param ioMgrInputStream Iomgr input stream.
      */
-    void authenticateUser(protobuf::SiodbProtobufInputStream& ioMgrInputStream);
+    void authenticateUser(protobuf::StreamInputStream& ioMgrInputStream);
 
     /**
      * Creates TLS server.
@@ -105,10 +105,10 @@ private:
     const bool m_adminMode;
 
     /** IO for connection with Siodb client */
-    std::unique_ptr<io::IODevice> m_clientConnection;
+    std::unique_ptr<io::InputOutputStream> m_clientConnection;
 
     /** IO for connection with IO manager */
-    std::unique_ptr<io::IODevice> m_iomgrConnection;
+    std::unique_ptr<io::InputOutputStream> m_iomgrConnection;
 
     /** TLS server for handling secure connnection */
     std::unique_ptr<crypto::TlsServer> m_tlsServer;

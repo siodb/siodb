@@ -32,7 +32,7 @@
 namespace siodb::iomgr::dbengine {
 
 RequestHandler::RequestHandler(
-        Instance& instance, siodb::io::IODevice& connection, std::uint32_t userId)
+        Instance& instance, siodb::io::InputOutputStream& connection, std::uint32_t userId)
     : m_instance(instance)
     , m_connection(connection)
     , m_userId(userId)
@@ -258,24 +258,47 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::CheckUserTokenRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kRestGetDatabases: {
+                executeGetDatabasesRestRequest(
+                        response, dynamic_cast<const requests::GetDatabasesRestRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kRestGetTables: {
+                executeGetTablesRestRequest(
+                        response, dynamic_cast<const requests::GetTablesRestRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kRestGetAllRows: {
+                executeGetAllRowsRestRequest(
+                        response, dynamic_cast<const requests::GetAllRowsRestRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kRestGetSingleRow: {
+                executeGetSingleRowRestRequest(
+                        response, dynamic_cast<const requests::GetSingleRowRestRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kRestPostRows: {
+                executePostRowsRestRequest(
+                        response, dynamic_cast<const requests::PostRowsRestRequest&>(request));
+                break;
+            }
             default: throw std::invalid_argument("Unknown request type");
         }
-    } catch (const UserVisibleDatabaseError& userDbErrorEx) {
-        addUserVisibleDatabaseErrorToResponse(
-                response, userDbErrorEx.getErrorCode(), userDbErrorEx.what());
+    } catch (const UserVisibleDatabaseError& ex) {
+        addUserVisibleDatabaseErrorToResponse(response, ex.getErrorCode(), ex.what());
         protobuf::writeMessage(
                 protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
-    } catch (const InternalError& internalErrorEx) {
-        addInternalDatabaseErrorToResponse(
-                response, internalErrorEx.getErrorCode(), internalErrorEx.what());
+    } catch (const InternalError& ex) {
+        addInternalDatabaseErrorToResponse(response, ex.getErrorCode(), ex.what());
         protobuf::writeMessage(
                 protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
-    } catch (const IOError& ioErrorEx) {
-        addIoErrorToResponse(response, ioErrorEx.getErrorCode(), ioErrorEx.what());
+    } catch (const IOError& ex) {
+        addIoErrorToResponse(response, ex.getErrorCode(), ex.what());
         protobuf::writeMessage(
                 protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
-    } catch (const CompoundDatabaseError& compoundError) {
-        for (const auto& err : compoundError.getErrors()) {
+    } catch (const CompoundDatabaseError& ex) {
+        for (const auto& err : ex.getErrors()) {
             if (DatabaseError::isMessageIdInRange(
                         err.m_errorCode, DatabaseError::kIOErrorCodeRange)) {
                 addIoErrorToResponse(response, err.m_errorCode, err.m_message.c_str());
@@ -297,7 +320,6 @@ void RequestHandler::addUserVisibleDatabaseErrorToResponse(
         iomgr_protocol::DatabaseEngineResponse& response, int errorCode, const char* errorMessage)
 {
     LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage;
-
     auto msg = response.add_message();
     msg->set_status_code(errorCode);
     msg->set_text(errorMessage);
@@ -308,7 +330,6 @@ void RequestHandler::addInternalDatabaseErrorToResponse(
 {
     const auto uuid = boost::uuids::random_generator()();
     LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage << " (" << uuid << ')';
-
     auto msg = response.add_message();
     msg->set_status_code(1);
     msg->set_text(
@@ -320,7 +341,6 @@ void RequestHandler::addIoErrorToResponse(
 {
     const auto uuid = boost::uuids::random_generator()();
     LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage << " (" << uuid << ')';
-
     auto msg = response.add_message();
     msg->set_status_code(1);
     msg->set_text("IO error, see log for details, message UUID " + boost::uuids::to_string(uuid));

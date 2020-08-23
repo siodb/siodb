@@ -5,44 +5,41 @@
 #pragma once
 
 // Project headers
-#include "IODevice.h"
-#include "../utils/HelperMacros.h"
+#include "InputOutputStream.h"
 
 namespace siodb::io {
 
 /** File descriptor input/output */
-class FdDevice final : public IODevice {
+class FDStream final : public InputOutputStream {
 public:
     /**
-     * Initializes object of class FdDevice.
+     * Initializes object of class FDStream.
      * @param fd File descriptor.
      * @param autoClose Auto close file on destructor.
      */
-    explicit FdDevice(int fd, bool autoClose = false) noexcept;
+    explicit FDStream(int fd, bool autoClose = false) noexcept;
 
     /**
-     * Initializes object of class FdDevice from another object.
+     * Initializes object of class FDStream from another object.
      * @param src Source object.
      */
-    FdDevice(FdDevice&& src) noexcept;
+    FDStream(FDStream&& src) noexcept;
 
-    /** De-initializes object of class FdDevice. */
-    ~FdDevice();
-
-    DECLARE_NONCOPYABLE(FdDevice);
+    /** De-initializes object of class FDStream. */
+    ~FDStream();
 
     /**
      * Move assignment operator.
      * @param src Source object.
      * @return This object.
      */
-    FdDevice& operator=(FdDevice&& src) noexcept;
+    FDStream& operator=(FDStream&& src) noexcept;
 
     /**
      * Returns file descriptor.
      * @return File descriptor.
      */
-    int getFd() const noexcept
+    int getFD() const noexcept
     {
         return m_fd;
     }
@@ -67,7 +64,7 @@ public:
 
     /**
      * Returns indication that file descriptor is valid.
-     * @return true device if file descriptor is valid, false otherwise.
+     * @return true stream if file descriptor is valid, false otherwise.
      */
     bool isValid() const override;
 
@@ -104,7 +101,7 @@ public:
      * Swaps content with other object.
      * @param other Other object.
      */
-    void swap(FdDevice& other) noexcept;
+    void swap(FDStream& other) noexcept;
 
 private:
     /**
@@ -122,11 +119,11 @@ private:
 };
 
 /**
- * Swaps content of two device objects.
+ * Swaps content of two stream objects.
  * @param a First object.
  * @param b Second object.
  */
-inline void swap(FdDevice& a, FdDevice& b) noexcept
+inline void swap(FDStream& a, FDStream& b) noexcept
 {
     a.swap(b);
 }

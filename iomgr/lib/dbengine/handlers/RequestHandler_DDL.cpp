@@ -16,7 +16,7 @@
 
 // Common project headers
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/protobuf/SiodbProtocolTag.h>
+#include <siodb/common/protobuf/ProtocolTag.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 #include <siodb/iomgr/shared/dbengine/crypto/KeyGenerator.h>
 
@@ -54,7 +54,7 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
             throwDatabaseError(IOManagerMessageId::kErrorCipherKeySeedIsNotString);
     }
 
-    // nullptr is possible in case of 'none' cipher
+    // nullptr is possible in the case of 'none' cipher
     const auto cipher = crypto::getCipher(cipherId);
     const auto keyLength = cipher ? crypto::getCipher(cipherId)->getKeySize() : 0;
     auto cipherKey = cipher ? crypto::generateCipherKey(keyLength, cipherKeySeed) : BinaryValue();

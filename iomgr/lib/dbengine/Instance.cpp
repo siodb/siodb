@@ -697,7 +697,7 @@ BinaryValue Instance::loadSystemDatabaseCipherKey() const
                 errorCode, std::strerror(errorCode));
     }
     struct stat st;
-    if (::fstat(fd.getFd(), &st) < 0) {
+    if (::fstat(fd.getFD(), &st) < 0) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kFatalCannotStatSystemDatabaseEncryptionKey, keyPath,
                 errorCode, std::strerror(errorCode));
@@ -706,7 +706,7 @@ BinaryValue Instance::loadSystemDatabaseCipherKey() const
         throwDatabaseError(IOManagerMessageId::kFatalInvalidSystemDatabaseEncryptionKey, keyPath,
                 key.size(), st.st_size);
     }
-    if (::readExact(fd.getFd(), key.data(), key.size(), kIgnoreSignals) != key.size()) {
+    if (::readExact(fd.getFD(), key.data(), key.size(), kIgnoreSignals) != key.size()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kFatalCannotReadSystemDatabaseEncryptionKey, keyPath,
                 errorCode, std::strerror(errorCode));
@@ -791,7 +791,7 @@ void Instance::loadMetadata()
 {
     // Read metadata file
     std::uint8_t buffer[kSerializedMetadataSize];
-    if (::preadExact(m_metadataFile.getFd(), buffer, sizeof(buffer), 0, kIgnoreSignals)
+    if (::preadExact(m_metadataFile.getFD(), buffer, sizeof(buffer), 0, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kFatalCannotLoadInstanceMetadata, errorCode,
@@ -812,7 +812,7 @@ void Instance::saveMetadata() const
     serializeMetadata(buffer);
 
     // Write metadata to the file
-    if (::pwriteExact(m_metadataFile.getFd(), buffer, sizeof(buffer), 0, kIgnoreSignals)
+    if (::pwriteExact(m_metadataFile.getFD(), buffer, sizeof(buffer), 0, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotSaveInstanceMetadata, errorCode,

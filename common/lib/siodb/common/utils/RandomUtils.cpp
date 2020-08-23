@@ -19,19 +19,19 @@ namespace siodb::utils {
 
 namespace {
 
-void getRandomBytesImpl(const char* device, std::uint8_t* buffer, std::size_t length)
+void getRandomBytesImpl(const char* devicePath, std::uint8_t* buffer, std::size_t length)
 {
-    FdGuard fd(::open(device, O_RDONLY));
+    FdGuard fd(::open(devicePath, O_RDONLY));
     if (!fd.isValidFd()) {
         int errorCode = errno;
         std::ostringstream err;
-        err << "Can't open " << device << " for reading: " << std::strerror(errorCode);
+        err << "Can't open " << devicePath << " for reading: " << std::strerror(errorCode);
         throw std::runtime_error(err.str());
     }
-    if (::readExact(fd.getFd(), buffer, length, kIgnoreSignals) != length) {
+    if (::readExact(fd.getFD(), buffer, length, kIgnoreSignals) != length) {
         int errorCode = errno;
         std::ostringstream err;
-        err << "Can't read from the " << device << ": " << std::strerror(errorCode);
+        err << "Can't read from the " << devicePath << ": " << std::strerror(errorCode);
         throw std::runtime_error(err.str());
     }
 }

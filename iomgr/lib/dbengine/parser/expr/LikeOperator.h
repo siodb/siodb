@@ -27,7 +27,7 @@ public:
 
     /**
      * Returns indication that this is NOT LIKE operator
-     * @return true in case of NOT LIKE operator, false in case of LIKE
+     * @return true if this is NOT LIKE operator, false otherwise
      */
     bool isNotLike() const noexcept
     {

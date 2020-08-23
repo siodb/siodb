@@ -129,7 +129,7 @@ int openTcpConnection(const std::string& host, int port, bool closeOnExecute)
         }
 
         // Connect to server
-        if (::connect(socket.getFd(), currentAddrInfo->ai_addr, currentAddrInfo->ai_addrlen) < 0) {
+        if (::connect(socket.getFD(), currentAddrInfo->ai_addr, currentAddrInfo->ai_addrlen) < 0) {
             lastError = errno;
             errors << "Could not connect to " << serverName << ":" << port << ": "
                    << std::strerror(lastError) << '.' << std::endl;

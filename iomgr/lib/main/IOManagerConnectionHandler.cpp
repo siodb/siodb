@@ -9,7 +9,7 @@
 #include "../dbengine/handlers/RequestHandler.h"
 
 // Common project headers
-#include <siodb/common/io/FdDevice.h>
+#include <siodb/common/io/FDStream.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/EpollHelpers.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
@@ -27,12 +27,12 @@ std::atomic<std::uint64_t> IOManagerConnectionHandler::s_idCounter(0);
 IOManagerConnectionHandler::IOManagerConnectionHandler(
         IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd)
     : m_id(++s_idCounter)
-    , m_logContext(createLogContextName(clientFd.getFd()))
+    , m_logContext(createLogContextName(clientFd.getFD()))
     , m_requestDispatcher(requestDispatcher)
-    , m_clientEpollFd(net::createEpollFd(clientFd.getFd(), EPOLLIN))
-    , m_clientConnection(std::make_unique<siodb::io::FdDevice>(clientFd.getFd(), false))
+    , m_clientEpollFd(net::createEpollFd(clientFd.getFD(), EPOLLIN))
+    , m_clientConnection(std::make_unique<siodb::io::FDStream>(clientFd.getFD(), false))
 {
-    dynamic_cast<siodb::io::FdDevice*>(m_clientConnection.get())->setAutoClose();
+    dynamic_cast<siodb::io::FDStream*>(m_clientConnection.get())->setAutoClose();
     clientFd.release();
 
     // Start thread only after connection object is initialized
@@ -55,7 +55,6 @@ bool IOManagerConnectionHandler::executeIOManagerRequest(const IOManagerRequest&
         request.execute();
     } catch (std::exception& ex) {
         LOG_ERROR << m_logContext << "Request execution exception: " << ex.what() << '.';
-        sendErrorReponse(request.getRequestId(), ex.what(), kInternalError);
         return false;
     }
     return true;
@@ -82,6 +81,7 @@ void IOManagerConnectionHandler::closeConnection() noexcept
 void IOManagerConnectionHandler::threadMain()
 {
     threadLogicImpl();
+    closeConnection();
 }
 
 std::string IOManagerConnectionHandler::createLogContextName(int fd) const

@@ -13,7 +13,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-void RequestHandler::executeRestPostRowsRequest(iomgr_protocol::DatabaseEngineResponse& response,
+void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
         [[maybe_unused]] const requests::PostRowsRestRequest& request)
 {
     sendNotImplementedYet(response);

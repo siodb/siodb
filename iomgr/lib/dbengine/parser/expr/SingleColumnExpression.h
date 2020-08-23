@@ -83,8 +83,8 @@ public:
      * Evaluates expression.
      * @param context Evaluation context.
      * @return Resulting value.
-     * @throw DatabaseError in case of impossible evaluation.
-     * @throw std::runtime_error in case of unitialized dataset and column indexes.
+     * @throw DatabaseError if evaluation is impossible.
+     * @throw std::runtime_error if there is unitialized dataset and column indexes.
      */
     Variant evaluate(Context& context) const override;
 
@@ -119,7 +119,7 @@ protected:
 private:
     /**
      * Checks that @ref m_datasetTableIndex and @ref m_datasetColumnIndex values are set.
-     * @throw std::runtime_error in case of unitialized dataset and column indices.
+     * @throw std::runtime_error if there is unitialized dataset and column indices.
      */
     void checkHasTableAndColumnIndices() const;
 

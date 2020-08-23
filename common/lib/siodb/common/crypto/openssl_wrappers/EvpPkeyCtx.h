@@ -30,7 +30,7 @@ public:
 
     DECLARE_NONCOPYABLE(EvpPKeyCtx);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~EvpPKeyCtx()
     {
         ::EVP_PKEY_CTX_free(m_ctx);
@@ -40,7 +40,7 @@ public:
      * Returns underlying mutable EVP_PKEY_CTX object.
      * @return Context.
      */
-    operator ::EVP_PKEY_CTX*() noexcept
+    operator ::EVP_PKEY_CTX *() noexcept
     {
         return m_ctx;
     }
@@ -49,7 +49,7 @@ public:
      * Returns underlying read-only EVP_PKEY_CTX object.
      * @return Const context.
      */
-    operator const ::EVP_PKEY_CTX*() const noexcept
+    operator const ::EVP_PKEY_CTX *() const noexcept
     {
         return m_ctx;
     }

@@ -2,11 +2,12 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "SiodbProtobufInputStream.h"
+#include "StreamInputStream.h"
 
-// Project headers
+// Common project headers
 #include "../io/FileIO.h"
 #include "../net/ConnectionError.h"
+#include "../stl_ext/system_error_ext.h"
 
 // CRT headers
 #include <cstring>
@@ -25,42 +26,47 @@
 
 namespace siodb::protobuf {
 
-SiodbProtobufInputStream::SiodbProtobufInputStream(
-        io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
-    : m_copyingInput(device, errorCodeChecker)
+StreamInputStream::StreamInputStream(
+        io::InputStream& stream, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
+    : m_copyingInput(stream, errorCodeChecker)
     , m_impl(&m_copyingInput, blockSize)
 {
 }
 
-bool SiodbProtobufInputStream::Close()
+bool StreamInputStream::Close()
 {
     return m_copyingInput.Close();
 }
 
-bool SiodbProtobufInputStream::Next(const void** data, int* size)
+bool StreamInputStream::Next(const void** data, int* size)
 {
     return m_impl.Next(data, size);
 }
 
-void SiodbProtobufInputStream::BackUp(int count)
+void StreamInputStream::BackUp(int count)
 {
     m_impl.BackUp(count);
 }
 
-bool SiodbProtobufInputStream::Skip(int count)
+bool StreamInputStream::Skip(int count)
 {
     return m_impl.Skip(count);
 }
 
-google::protobuf::int64 SiodbProtobufInputStream::ByteCount() const
+google::protobuf::int64 StreamInputStream::ByteCount() const
 {
     return m_impl.ByteCount();
 }
 
-SiodbProtobufInputStream::CopyingInputStream::CopyingInputStream(
-        io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker)
+void StreamInputStream::CheckNoError() const
+{
+    if (GetErrno() != 0) stdext::throw_system_error(GetErrno(), "Read error");
+}
+
+StreamInputStream::CopyingInputStream::CopyingInputStream(
+        io::InputStream& stream, const utils::ErrorCodeChecker& errorCodeChecker)
     : m_errorCodeChecker(errorCodeChecker)
-    , m_device(device)
+    , m_stream(stream)
     , m_closeOnDelete(false)
     , m_closed(false)
     , m_errno(0)
@@ -68,7 +74,7 @@ SiodbProtobufInputStream::CopyingInputStream::CopyingInputStream(
 {
 }
 
-SiodbProtobufInputStream::CopyingInputStream::~CopyingInputStream()
+StreamInputStream::CopyingInputStream::~CopyingInputStream()
 {
     if (m_closeOnDelete) {
         if (!Close()) {
@@ -77,12 +83,12 @@ SiodbProtobufInputStream::CopyingInputStream::~CopyingInputStream()
     }
 }
 
-bool SiodbProtobufInputStream::CopyingInputStream::Close()
+bool StreamInputStream::CopyingInputStream::Close()
 {
     GOOGLE_CHECK(!m_closed);
 
     m_closed = true;
-    if (!m_device.close()) {
+    if (!m_stream.close()) {
         // The docs on close() do not specify whether a file descriptor is still
         // open after close() fails with EIO. However, the glibc source code
         // seems to indicate that it is not.
@@ -93,13 +99,13 @@ bool SiodbProtobufInputStream::CopyingInputStream::Close()
     return true;
 }
 
-int SiodbProtobufInputStream::CopyingInputStream::Read(void* buffer, int size)
+int StreamInputStream::CopyingInputStream::Read(void* buffer, int size)
 {
     GOOGLE_CHECK(!m_closed);
 
     int result;
     do {
-        result = m_device.read(buffer, size);
+        result = m_stream.read(buffer, size);
     } while (
             result < 0
             // Here is our custom logic comes into the game.
@@ -118,11 +124,11 @@ int SiodbProtobufInputStream::CopyingInputStream::Read(void* buffer, int size)
     return result;
 }
 
-int SiodbProtobufInputStream::CopyingInputStream::Skip(int count)
+int StreamInputStream::CopyingInputStream::Skip(int count)
 {
     GOOGLE_CHECK(!m_closed);
 
-    if (!m_prevSeekFailed && m_device.skip(count) != (off_t) -1) {
+    if (!m_prevSeekFailed && m_stream.skip(count) != (off_t) -1) {
         // Seek succeeded.
         return count;
     } else {

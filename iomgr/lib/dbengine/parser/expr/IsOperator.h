@@ -27,7 +27,7 @@ public:
 
     /**
      * Returns indication that this is IS NOT operator
-     * @return true in case of IS NOT operator, false in case of IS
+     * @return true if this is IS NOT operator, false otherwise
      */
     bool isNot() const noexcept
     {

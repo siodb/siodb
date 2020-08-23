@@ -54,7 +54,7 @@ int createUnixServer(const std::string& serverSocketPath, int backlog, bool remo
 
     // Based on idea from here https://stackoverflow.com/q/38095467/1540501
     // Remove group permissions
-    if (fchmod(socket.getFd(), 0700) < 0) {
+    if (fchmod(socket.getFD(), 0700) < 0) {
         stdext::throw_system_error("Can't remove group premissions from UNIX server socket");
     }
 
@@ -64,7 +64,7 @@ int createUnixServer(const std::string& serverSocketPath, int backlog, bool remo
     std::strcpy(addr.sun_path, serverSocketPath.c_str());
 
     // Bind the server
-    if (::bind(socket.getFd(), (struct sockaddr*) &addr, (socklen_t) sizeof(addr)) < 0) {
+    if (::bind(socket.getFD(), (struct sockaddr*) &addr, (socklen_t) sizeof(addr)) < 0) {
         stdext::throw_system_error("Can't bind UNIX server socket to ", serverSocketPath.c_str());
     }
 
@@ -82,7 +82,7 @@ int createUnixServer(const std::string& serverSocketPath, int backlog, bool remo
     }
 
     // Start listening on the server socket
-    if (::listen(socket.getFd(), backlog) < 0) {
+    if (::listen(socket.getFD(), backlog) < 0) {
         stdext::throw_system_error(
                 "Can't listen with UNIX server socket at ", serverSocketPath.c_str());
     }

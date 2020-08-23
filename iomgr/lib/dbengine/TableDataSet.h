@@ -82,7 +82,7 @@ public:
     /**
      * Returns current row. Reads current row data if it was not read before.
      * @return Current row.
-     * @throw std::runtime_error in case if row data is not avaliable.
+     * @throw std::runtime_error if row data is not avaliable.
      */
     const std::vector<Variant>& getCurrentRow() override;
 
@@ -113,7 +113,7 @@ public:
     /**
      * Deletes current row.
      * @param currentUserId Current user ID.
-     * @throw DatabaseError in case of database error.
+     * @throw DatabaseError if some error occurs.
      */
     void deleteCurrentRow(std::uint32_t currentUserId);
 
@@ -123,7 +123,7 @@ public:
      * @param columnPositions Positions of columns from the table, count must be equal to
      *                        values count.
      * @param currentUserId Current user ID.
-     * @throw DatabaseError in case of database error.
+     * @throw DatabaseError if some error occurs.
      */
     void updateCurrentRow(std::vector<Variant>&& values,
             const std::vector<std::size_t>& columnPositions, std::uint32_t currentUserId);

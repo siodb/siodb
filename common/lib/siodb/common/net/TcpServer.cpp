@@ -130,12 +130,12 @@ int createTcpServer(int domain, const char* serverAddress, int port, int backlog
 
     // Enable address reuse
     int flag = 1;
-    if (::setsockopt(socket.getFd(), SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0) {
+    if (::setsockopt(socket.getFD(), SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)) < 0) {
         stdext::throw_system_error("Can't enable address resuse on the TCP socket");
     }
 
     // Bind the server
-    if (::bind(socket.getFd(), addrInfos->ai_addr, addrInfos->ai_addrlen) < 0) {
+    if (::bind(socket.getFD(), addrInfos->ai_addr, addrInfos->ai_addrlen) < 0) {
         const int errorCode = errno;
         std::ostringstream err;
         err << "Can't bind TCP server socket to " << (serverAddress ? serverAddress : "*") << ':'
@@ -144,7 +144,7 @@ int createTcpServer(int domain, const char* serverAddress, int port, int backlog
     }
 
     // Start listening on the server socket
-    if (::listen(socket.getFd(), backlog) < 0) {
+    if (::listen(socket.getFD(), backlog) < 0) {
         const int errorCode = errno;
         std::ostringstream err;
         err << "Can't listen with TCP server socket on the "

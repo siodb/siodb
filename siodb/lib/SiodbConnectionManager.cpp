@@ -153,12 +153,12 @@ void SiodbConnectionManager::connectionListenerThreadMain()
 
     while (!m_exitRequested) {
         // Accept connection
-        FdGuard client(m_socketDomain == AF_UNIX ? acceptUnixConnection(server.getFd())
-                                                 : acceptTcpConnection(server.getFd()));
+        FdGuard client(m_socketDomain == AF_UNIX ? acceptUnixConnection(server.getFD())
+                                                 : acceptTcpConnection(server.getFD()));
 
         // Validate connection file descriptor
         if (!client.isValidFd()) {
-            if (client.getFd() == -2) return;
+            if (client.getFD() == -2) return;
             continue;
         }
 
@@ -169,7 +169,7 @@ void SiodbConnectionManager::connectionListenerThreadMain()
         args.push_back("--instance");
         args.push_back(m_dbOptions->m_generalOptions.m_name);
         args.push_back("--client-fd");
-        args.push_back(std::to_string(client.getFd()));
+        args.push_back(std::to_string(client.getFD()));
         if (m_checkUser && m_socketDomain == AF_UNIX) {
             args.push_back("--admin");
         }
@@ -313,7 +313,7 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
     // Get other socket end uid and gid
     struct ucred peerCredentials;
     socklen_t len = sizeof(peerCredentials);
-    if (::getsockopt(client.getFd(), SOL_SOCKET, SO_PEERCRED, &peerCredentials, &len) != 0) {
+    if (::getsockopt(client.getFD(), SOL_SOCKET, SO_PEERCRED, &peerCredentials, &len) != 0) {
         const int errorCode = errno;
         LOG_ERROR << m_logContext << "Can't get peer credentials for incoming UNIX connection: "
                   << std::strerror(errorCode) << '.';

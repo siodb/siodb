@@ -29,7 +29,7 @@ public:
 
     DECLARE_NONCOPYABLE(EcKey);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~EcKey()
     {
         ::EC_KEY_free(m_ecKey);
@@ -39,7 +39,7 @@ public:
      * Returns underlying read-only EC_KEY object.
      * @return EC_KEY pointer.
      */
-    operator ::EC_KEY*() noexcept
+    operator ::EC_KEY *() noexcept
     {
         return m_ecKey;
     }
@@ -48,7 +48,7 @@ public:
      * Returns underlying read-only EC_KEY object.
      * @return Const EC_KEY pointer.
      */
-    operator const ::EC_KEY*() const noexcept
+    operator const ::EC_KEY *() const noexcept
     {
         return m_ecKey;
     }

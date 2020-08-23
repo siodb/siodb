@@ -26,7 +26,7 @@ public:
 
     /**
      * Returns indication that this is NOT IN operator.
-     * @return true in case of NOT IN operator, false otherwise.
+     * @return true if this is NOT IN operator, false otherwise.
      */
     bool isNotIn() const noexcept
     {
@@ -125,7 +125,7 @@ private:
     /** Allowed variants of value */
     const std::vector<ExpressionPtr> m_variants;
 
-    /** true in case of NOT IN operator, false otherwise */
+    /** NOT IN operator flag */
     const bool m_notIn;
 };
 

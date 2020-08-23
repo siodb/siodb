@@ -37,7 +37,7 @@ public:
 
     DECLARE_NONCOPYABLE(EvpKey);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~EvpKey()
     {
         ::EVP_PKEY_free(m_evpKey);
@@ -47,7 +47,7 @@ public:
      * Returns underlying mutable EVP_PKEY object.
      * @return EVP_PKEY ponter.
      */
-    operator ::EVP_PKEY*() noexcept
+    operator ::EVP_PKEY *() noexcept
     {
         return m_evpKey;
     }
@@ -56,7 +56,7 @@ public:
      * Returns underlying read-only EVP_PKEY object.
      * @return Const EVP_PKEY pointer.
      */
-    operator const ::EVP_PKEY*() const noexcept
+    operator const ::EVP_PKEY *() const noexcept
     {
         return m_evpKey;
     }

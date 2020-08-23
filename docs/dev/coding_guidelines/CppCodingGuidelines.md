@@ -206,7 +206,7 @@ class MyContainer {
 ```
 
 **Rule 2.8** Abbreviations and acronyms must have only leading uppercase letter when used as name
-or its part.
+or its part. Exception: two-letter abbrevations are represented in the uppercase.
 
 ```C++
 // Correct
@@ -218,6 +218,15 @@ class Html {
 
 };
 
+// Correct
+class IODevice {
+
+};
+
+// Correct
+class DBEngine {
+
+};
 
 // INCORRECT
 exportHTMLSource();
@@ -227,6 +236,16 @@ openDVDPlayer();
 class HTML {
 
 };
+
+// INCORRECT
+class IoDevice {
+
+};
+
+class DbEngine {
+
+};
+
 ```
 
 **Rule 2.9** Global variables must be named with prefix `g_`.

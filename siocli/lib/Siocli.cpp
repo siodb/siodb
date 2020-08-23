@@ -13,7 +13,7 @@
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/config/SiodbVersion.h>
 #include <siodb/common/crypto/TlsClient.h>
-#include <siodb/common/io/FdDevice.h>
+#include <siodb/common/io/FDStream.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/net/NetConstants.h>
 #include <siodb/common/net/TcpConnection.h>
@@ -179,7 +179,7 @@ int commandPrompt(const ClientParameters& params)
 {
     std::uint64_t requestId = 1;
     bool hasMoreInput = true;
-    std::unique_ptr<siodb::io::IODevice> connection;
+    std::unique_ptr<siodb::io::InputOutputStream> connection;
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
     const bool needPrompt = params.m_stdinIsTerminal;
 
@@ -288,7 +288,7 @@ int commandPrompt(const ClientParameters& params)
 
                         connection = std::move(tlsConnection);
                     } else
-                        connection = std::make_unique<siodb::io::FdDevice>(connectionFd, true);
+                        connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
                 } else {
                     // Admin connection is always non-secure
                     const auto instanceSocketPath =
@@ -296,7 +296,7 @@ int commandPrompt(const ClientParameters& params)
                     auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
                     std::cout << "Connected to SIODB instance " << params.m_instance << " at "
                               << instanceSocketPath << " in the admin mode." << std::endl;
-                    connection = std::make_unique<siodb::io::FdDevice>(connectionFd, true);
+                    connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
                 }
                 authenticate(params.m_identityKey, params.m_user, *connection);
                 requestId = 1;
@@ -328,7 +328,7 @@ int commandPrompt(const ClientParameters& params)
 
 int exportSqlDump(const ClientParameters& params)
 {
-    std::unique_ptr<siodb::io::IODevice> connection;
+    std::unique_ptr<siodb::io::InputOutputStream> connection;
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
     if (params.m_instance.empty()) {
         auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
@@ -346,12 +346,12 @@ int exportSqlDump(const ClientParameters& params)
 
             connection = std::move(tlsConnection);
         } else
-            connection = std::make_unique<siodb::io::FdDevice>(connectionFd, true);
+            connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
     } else {
         // Admin connection is always non-secure
         const auto instanceSocketPath = siodb::composeInstanceSocketPath(params.m_instance);
         auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
-        connection = std::make_unique<siodb::io::FdDevice>(connectionFd, true);
+        connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
     }
 
     siodb::cli::authenticate(params.m_identityKey, params.m_user, *connection);
@@ -391,7 +391,7 @@ std::string loadUserIdentityKey(const char* path)
     if (!fd.isValidFd()) stdext::throw_system_error("Can't open user identity key");
 
     struct stat st;
-    if (::fstat(fd.getFd(), &st) < 0) stdext::throw_system_error("Can't stat user identity key");
+    if (::fstat(fd.getFD(), &st) < 0) stdext::throw_system_error("Can't stat user identity key");
 
     if (static_cast<std::size_t>(st.st_size) > siodb::kMaxUserAccessKeySize) {
         throw std::runtime_error(stdext::string_builder()
@@ -402,7 +402,7 @@ std::string loadUserIdentityKey(const char* path)
 
     std::string key;
     key.resize(st.st_size);
-    if (::readExact(fd.getFd(), key.data(), key.size(), kIgnoreSignals) != key.size())
+    if (::readExact(fd.getFD(), key.data(), key.size(), kIgnoreSignals) != key.size())
         stdext::throw_system_error("Can't read user identity key");
 
     return key;

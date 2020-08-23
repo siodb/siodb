@@ -34,7 +34,7 @@ const std::array<ConstraintTypeTraits, static_cast<std::size_t>(ConstraintType::
 
 }  // namespace
 
-const char* getConstaintTypeName(ConstraintType type)
+const char* getConstraintTypeName(ConstraintType type)
 {
     return g_ConstraintTypeTraits.at(static_cast<std::size_t>(type)).m_typeName;
 }

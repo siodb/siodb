@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "../io/IODevice.h"
+#include "../io/OutputStream.h"
 #include "../utils/ErrorCodeChecker.h"
 
 // STL headers
@@ -16,25 +16,23 @@
 
 namespace siodb::protobuf {
 
-/**
- * Our own version of protobuf output stream to be used with IODevice
- */
-class SiodbProtobufOutputStream : public google::protobuf::io::ZeroCopyOutputStream {
+/** Siodb version of the protobuf output stream which operates over an OutputStream. */
+class StreamOutputStream : public google::protobuf::io::ZeroCopyOutputStream {
 public:
     /**
-     * Creates a stream that reads from the given IO.
+     * Creates a stream that reads from the given OutputStream.
      * If a block_size is given, it specifies the number of bytes that
      * should be read and returned with each call to Next().  Otherwise,
      * a reasonable default is used.
-     * @param device Output device.
+     * @param stream Output stream.
      * @param errorChecker Error checker.
      * @param blockSize Block size.
      */
-    explicit SiodbProtobufOutputStream(io::IODevice& device,
+    explicit StreamOutputStream(io::OutputStream& stream,
             const utils::ErrorCodeChecker& errorCodeChecker, int blockSize = -1);
 
     /**
-     * If an I/O error has occurred on this IO, this is the
+     * If an I/O error has occurred on this OutputStream, this is the
      * errno from that error. Otherwise, this is zero. Once an error
      * occurs, the stream is broken and all subsequent operations will fail.
      * @return Error code.
@@ -58,10 +56,17 @@ public:
     void BackUp(int count);
     google::protobuf::int64 ByteCount() const;
 
+    /** 
+     * Checks for error.
+     * @throw std::system_error if error found.
+     */
+    void CheckNoError() const;
+
 private:
     class CopyingOutputStream : public google::protobuf::io::CopyingOutputStream {
     public:
-        CopyingOutputStream(io::IODevice& device, const utils::ErrorCodeChecker& errorCodeChecker);
+        CopyingOutputStream(
+                io::OutputStream& stream, const utils::ErrorCodeChecker& errorCodeChecker);
 
         int GetErrno() const noexcept
         {
@@ -75,8 +80,8 @@ private:
         /** Error checker */
         const utils::ErrorCodeChecker& m_errorCodeChecker;
 
-        /** IO device*/
-        io::IODevice& m_device;
+        /** Output stream*/
+        io::OutputStream& m_stream;
 
         /** The errno of the I/O error, if one has occurred. Otherwise, zero */
         int m_errno;
@@ -87,7 +92,7 @@ private:
     CopyingOutputStream m_copyingOutput;
     google::protobuf::io::CopyingOutputStreamAdaptor m_impl;
 
-    GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(SiodbProtobufOutputStream);
+    GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(StreamOutputStream);
 };
 
 }  // namespace siodb::protobuf

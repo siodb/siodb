@@ -12,7 +12,7 @@
 #include "dbengine/parser/expr/ConstantExpression.h"
 
 // Common project headers
-#include <siodb/common/io/FdDevice.h>
+#include <siodb/common/io/FDStream.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/stl_ext/string_builder.h>
@@ -123,8 +123,8 @@ void TestEnvironment::SetUp()
     LOG_INFO << "Expanding pipe buffer to the " << kPipeSize << " bytes";
     ASSERT_EQ(::fcntl(m_pipes[1], F_SETPIPE_SZ, kPipeSize), kPipeSize);
 
-    m_input = std::make_unique<siodb::io::FdDevice>(m_pipes[0], true);
-    m_output = std::make_unique<siodb::io::FdDevice>(m_pipes[1], true);
+    m_input = std::make_unique<siodb::io::FDStream>(m_pipes[0], true);
+    m_output = std::make_unique<siodb::io::FDStream>(m_pipes[1], true);
 }
 
 void TestEnvironment::TearDown()

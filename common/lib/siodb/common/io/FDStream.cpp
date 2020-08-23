@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "FdDevice.h"
+#include "FDStream.h"
 
 // Project headers
 #include "FileIO.h"
@@ -20,13 +20,13 @@
 
 namespace siodb::io {
 
-FdDevice::FdDevice(int fd, bool autoClose) noexcept
+FDStream::FDStream(int fd, bool autoClose) noexcept
     : m_fd(fd)
     , m_autoClose(autoClose)
 {
 }
 
-FdDevice::FdDevice(FdDevice&& src) noexcept
+FDStream::FDStream(FDStream&& src) noexcept
     : m_fd(src.m_fd)
     , m_autoClose(src.m_autoClose)
 {
@@ -34,12 +34,12 @@ FdDevice::FdDevice(FdDevice&& src) noexcept
     src.m_autoClose = false;
 }
 
-FdDevice::~FdDevice()
+FDStream::~FDStream()
 {
     if (m_autoClose && isValid()) close();
 }
 
-FdDevice& FdDevice::operator=(FdDevice&& src) noexcept
+FDStream& FDStream::operator=(FDStream&& src) noexcept
 {
     if (!isValid()) close();
     m_fd = src.m_fd;
@@ -49,33 +49,33 @@ FdDevice& FdDevice::operator=(FdDevice&& src) noexcept
     return *this;
 }
 
-bool FdDevice::isValid() const
+bool FDStream::isValid() const
 {
     return m_fd >= 0;
 }
 
-std::ptrdiff_t FdDevice::read(void* buffer, std::size_t size)
+std::ptrdiff_t FDStream::read(void* buffer, std::size_t size)
 {
     return ::read(m_fd, buffer, size);
 }
 
-std::ptrdiff_t FdDevice::write(const void* buffer, std::size_t size)
+std::ptrdiff_t FDStream::write(const void* buffer, std::size_t size)
 {
     return ::write(m_fd, buffer, size);
 }
 
-off_t FdDevice::skip(std::size_t size)
+off_t FDStream::skip(std::size_t size)
 {
     return ::lseek(m_fd, size, SEEK_CUR);
 }
 
-int FdDevice::close()
+int FDStream::close()
 {
     if (isValid()) return doClose();
     throw std::runtime_error("Invalid file descriptor");
 }
 
-void FdDevice::swap(FdDevice& other) noexcept
+void FDStream::swap(FDStream& other) noexcept
 {
     if (SIODB_LIKELY(&other != this)) {
         std::swap(m_fd, other.m_fd);
@@ -83,7 +83,7 @@ void FdDevice::swap(FdDevice& other) noexcept
     }
 }
 
-int FdDevice::doClose() noexcept
+int FDStream::doClose() noexcept
 {
     const auto result = closeFileIgnoreSignal(m_fd);
     m_fd = -1;

@@ -50,7 +50,7 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
             LOG_DEBUG << m_logContext << "Waiting for request...";
             try {
                 // NOTE: We can receive an empty message if TCP connection is closed or aborted
-                net::epollWaitForData(m_clientEpollFd.getFd(), true);
+                net::epollWaitForData(m_clientEpollFd.getFD(), true);
                 protobuf::readMessage(protobuf::ProtocolMessageType::kDatabaseEngineRequest,
                         requestMsg, *m_clientConnection, errorCodeChecker);
             } catch (net::ConnectionError& err) {

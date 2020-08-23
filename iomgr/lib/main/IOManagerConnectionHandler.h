@@ -8,7 +8,7 @@
 #include "IOManagerRequestDispatcher.h"
 
 // Common project headers
-#include <siodb/common/io/IODevice.h>
+#include <siodb/common/io/InputOutputStream.h>
 #include <siodb/common/utils/FdGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
@@ -40,7 +40,7 @@ protected:
     IOManagerConnectionHandler(IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd);
 
 public:
-    /** Deinitializes object */
+    /** De-initializes object */
     virtual ~IOManagerConnectionHandler();
 
     DECLARE_NONCOPYABLE(IOManagerConnectionHandler);
@@ -71,7 +71,7 @@ protected:
      * @param text Text of error.
      * @param errorCode Error code.
      * @throw std::system_error when I/O error happens.
-     * @throw SiodbProtocolError when protocol error happens.
+     * @throw ProtocolError when protocol error happens.
      */
     void sendErrorReponse(int requestId, const char* text, int errorCode);
 
@@ -103,7 +103,7 @@ protected:
     FdGuard m_clientEpollFd;
 
     /** Client connection IO */
-    std::unique_ptr<siodb::io::IODevice> m_clientConnection;
+    std::unique_ptr<siodb::io::InputOutputStream> m_clientConnection;
 
     /** Client communication handler thread */
     std::unique_ptr<std::thread> m_thread;

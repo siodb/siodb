@@ -22,7 +22,7 @@ TEST(DML_Update, UpdateAllValues)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -129,7 +129,7 @@ TEST(DML_Update, UpdateWhereByTRID)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -251,7 +251,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -386,7 +386,7 @@ TEST(DML_Update, UpdateSeveralColumns)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -510,7 +510,7 @@ TEST(DML_Update, UpdateConcatString)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::SiodbProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table

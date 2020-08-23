@@ -857,7 +857,7 @@ int Column::createTridCountersFile(std::uint64_t firstUserTrid)
                 m_id, errorCode, std::strerror(errorCode));
     }
     TridCounters data(firstUserTrid);
-    writeFullTridCounters(fd.getFd(), data);
+    writeFullTridCounters(fd.getFD(), data);
     return fd.release();
 }
 
@@ -872,7 +872,7 @@ int Column::openTridCountersFile()
                 std::strerror(errorCode));
     }
     TridCounters data(0);
-    if (readExact(fd.getFd(), &data, sizeof(data), kIgnoreSignals) != sizeof(data)) {
+    if (readExact(fd.getFD(), &data, sizeof(data), kIgnoreSignals) != sizeof(data)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadTridCounterFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
@@ -894,7 +894,7 @@ int Column::openTridCountersFile()
         }
         utils::reverseByteOrder(data.m_lastUserTrid);
         utils::reverseByteOrder(data.m_lastSystemTrid);
-        writeFullTridCounters(fd.getFd(), data);
+        writeFullTridCounters(fd.getFD(), data);
         if (::rename(tridCounterMigrationFilePath.c_str(), tridCounterFilePath.c_str())) {
             const auto errorCode = errno;
             throwDatabaseError(IOManagerMessageId::kErrorCannotReadTridCounterFile,
@@ -926,7 +926,7 @@ void Column::loadMasterColumnMainIndex()
 
     // Read data
     std::uint64_t indexId0 = 0;
-    if (readExact(fd.getFd(), &indexId0, sizeof(indexId0), kIgnoreSignals) != sizeof(indexId0)) {
+    if (readExact(fd.getFD(), &indexId0, sizeof(indexId0), kIgnoreSignals) != sizeof(indexId0)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadMainIndexIdFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
@@ -1479,7 +1479,7 @@ void Column::createMasterColumnMainIndex()
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
                 std::strerror(errorCode));
     }
-    if (writeExact(fd.getFd(), &indexId, sizeof(indexId), kIgnoreSignals) != sizeof(indexId)) {
+    if (writeExact(fd.getFD(), &indexId, sizeof(indexId), kIgnoreSignals) != sizeof(indexId)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteMainIndexIdFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
