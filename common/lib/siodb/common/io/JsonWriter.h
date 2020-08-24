@@ -10,6 +10,9 @@
 // Common project headers
 #include "../utils/HelperMacros.h"
 
+// CRT headers
+#include <cstring>
+
 // STL headers
 #include <string>
 
@@ -28,12 +31,41 @@ public:
     }
 
     /**
+     * Writes field name and delimiter.
+     * @param name Field name.
+     * @throw std::system_erorr on write error.
+     */
+    void writeFieldName(const char* name)
+    {
+        writeFieldName(name, std::strlen(name));
+    }
+
+    /**
+     * Writes field name and delimiter.
+     * @param name Field name.
+     * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * @throw std::system_erorr on write error.
+     */
+    void writeFieldName(const std::string& name)
+    {
+        writeFieldName(name.c_str(), name.length());
+    }
+
+    /**
+     * Writes field name and delimiter.
+     * @param name Field name.
+     * @param length Field name length.
+     * @throw std::system_erorr on write error.
+     */
+    void writeFieldName(const char* name, std::size_t length);
+
+    /**
      * Writes begin of array.
      * @param name Field name, can be nullptr.
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeArrayBegin(const char* name = nullptr, bool addCommaBefore = false);
+    void writeArrayBegin();
 
     /**
      * Writes end of array.
@@ -47,7 +79,7 @@ public:
      * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeObjectBegin(const char* name = nullptr, bool addCommaBefore = false);
+    void writeObjectBegin();
 
     /**
      * Writes end of object.
@@ -56,117 +88,110 @@ public:
     void writeObjectEnd();
 
     /**
-     * Writes boolean field.
-     * @param name Field name, can be nullptr.
-     * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
+     * Writes double quote.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, bool value, bool addCommaBefore = false);
+    void writeDoubleQuote();
+
+    /**
+     * Writes comma.
+     * @throw std::system_erorr on write error.
+     */
+    void writeComma();
+
+    /**
+     * Writes field with null value.
+     * @throw std::system_erorr on write error.
+     */
+    void writeNullValue();
+
+    /**
+     * Writes boolean field.
+     * @param value Field value.
+     * @throw std::system_erorr on write error.
+     */
+    void writeValue(bool value);
 
     /**
      * Writes signed integer field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, int value, bool addCommaBefore = false);
+    void writeValue(int value);
 
     /**
      * Writes signed long integer field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, long value, bool addCommaBefore = false);
+    void writeValue(long value);
 
     /**
      * Writes signed long long integer field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, long long value, bool addCommaBefore = false);
+    void writeValue(long long value);
 
     /**
      * Writes unsigned integer field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, unsigned int value, bool addCommaBefore = false);
+    void writeValue(unsigned int value);
 
     /**
      * Writes unsigned long integer field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, unsigned long value, bool addCommaBefore = false);
+    void writeValue(unsigned long value);
 
     /**
      * Writes unsigned long long integer field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, unsigned long long value, bool addCommaBefore = false);
+    void writeValue(unsigned long long value);
 
     /**
      * Writes single precision floating point field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, float value, bool addCommaBefore = false);
+    void writeValue(float value);
 
     /**
      * Writes double precision floating point field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, double value, bool addCommaBefore = false);
+    void writeValue(double value);
 
     /**
      * Writes string field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, const char* value, bool addCommaBefore = false);
+    void writeValue(const char* value);
 
     /**
      * Writes string field.
-     * @param name Field name.
      * @param value Field value.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(const char* name, const std::string& value, bool addCommaBefore = false)
+    void writeValue(const std::string& value)
     {
-        writeField(name, value.c_str(), value.length(), addCommaBefore);
+        writeValue(value.c_str(), value.length());
     }
 
     /**
      * Writes string field.
-     * @param name Field name.
      * @param value Field value.
      * @param length Field length.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
      * @throw std::system_erorr on write error.
      */
-    void writeField(
-            const char* name, const char* value, std::size_t length, bool addCommaBefore = false);
+    void writeValue(const char* value, std::size_t length);
 
     /**
      * Writes raw string.
@@ -177,34 +202,23 @@ public:
     void writeRawString(const char* s, std::size_t length);
 
     /**
-     * Writes field name and delimiter.
-     * @param name Field name.
-     * @param addCommaBefore Indicates that comma needs to be added before the field name.
-     * @throw std::system_erorr on write error.
-     */
-    void writeFieldNameAndDelimiter(const char* name, bool addCommaBefore = false);
-
-    /**
-     * Writes raw data to the underlying stream.
+     * Writes raw bytes to the underlying stream.
      * @param buffer Data buffer.
      * @param size Data size.
-     * @return Number of bytes written or negative value on error.
+     * @throw std::system_erorr on write error.
      */
-    std::ptrdiff_t writeRaw(const void* buffer, std::size_t size)
-    {
-        return m_out.write(buffer, size);
-    }
+    void writeBytes(const void* buffer, std::size_t size);
 
-protected:
+private:
+    /** Reports JSON write error. */
+    [[noreturn]] static void reportJsonWriteError();
+
+private:
     /** Output stream */
     OutputStream& m_out;
 
-protected:
     /** Opening double quote string */
-    static constexpr const char* kOpeningDoubleQuote = "\"";
-
-    /** Closing double quote and delimiter string */
-    static constexpr const char* kClosingDoubleQuoteAndDelimiter = "\":";
+    static constexpr const char* kDoubleQuote = "\"";
 
     /** String output chunk size */
     static constexpr int kStringChunkSize = 4096;

@@ -315,15 +315,15 @@ bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType co
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_TEXT: {
-            std::string str;
-            if (SIODB_UNLIKELY(!codedInput.ReadString(&str))) return false;
+            std::string s;
+            if (SIODB_UNLIKELY(!codedInput.ReadString(&s))) return false;
             std::ostringstream ss;
             ss << '\'';
-            for (const auto symbol : str) {
-                if (symbol == '\'')
+            for (const auto ch : s) {
+                if (ch == '\'')
                     ss << "''";
                 else
-                    ss << symbol;
+                    ss << ch;
             }
             ss << '\'';
             result = ss.str();
@@ -345,9 +345,9 @@ bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType co
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_TIMESTAMP: {
-            std::ostringstream ss;
             siodb::RawDateTime dateTime;
             if (!siodb::protobuf::readRawDateTime(codedInput, dateTime)) return false;
+            std::ostringstream ss;
             ss << '\'' << dateTime.formatDefault() << '\'';
             result = ss.str();
             return true;
@@ -545,7 +545,7 @@ std::vector<ColumnConstraint> getColumnConstraintsList(io::InputOutputStream& co
                 std::runtime_error(
                         "getColumnConstraintsList: Read SYS_CONSTRAINT_DEFS row length failed");
 
-            if (rowLength == 0) break;
+            if (SIODB_UNLIKELY(rowLength == 0)) break;
 
             stdext::bitmask nullBitmask;
 

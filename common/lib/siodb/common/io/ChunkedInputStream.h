@@ -7,6 +7,9 @@
 // Project headers
 #include "InputStream.h"
 
+// CRT headers
+#include <cstdint>
+
 namespace siodb::io {
 
 /** Chunked input wrapper over another input stream. */
@@ -21,10 +24,19 @@ public:
     DECLARE_NONCOPYABLE(ChunkedInputStream);
 
     /**
+     * Return end of chunk stream flag.
+     * @return true if end of chunk stream reached, false otherwise.
+     */
+    bool isEof() const noexcept
+    {
+        return m_eof;
+    }
+
+    /**
      * Returns indication that stream is valid.
      * @return true stream if stream is valid, false otherwise.
      */
-    bool isValid() const override;
+    bool isValid() const noexcept override;
 
     /**
      * Closes stream.
@@ -43,9 +55,9 @@ public:
     /**
      * Skips data.
      * @param size Number of bytes to skip.
-     * @return Offset from the beginning of stream. Negative value indicates error.
+     * @return Number of bytes skipped. Negative value indicates error.
      */
-    off_t skip(std::size_t size) override;
+    std::ptrdiff_t skip(std::size_t size) override;
 
 private:
     /**
@@ -59,10 +71,16 @@ private:
     InputStream* m_stream;
 
     /** Position in chunk */
-    std::size_t m_pos;
+    std::uint64_t m_pos;
 
     /** Current chunk size */
-    std::size_t m_chunkSize;
+    std::uint64_t m_chunkSize;
+
+    /** Chunk size presence flag */
+    bool m_hasChunkSize;
+
+    /** End of chuunk stream flag */
+    bool m_eof;
 };
 
 }  // namespace siodb::io

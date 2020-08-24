@@ -43,7 +43,7 @@ TlsConnection::~TlsConnection()
     }
 }
 
-bool TlsConnection::isValid() const
+bool TlsConnection::isValid() const noexcept
 {
     return m_ssl.isConnected();
 }
@@ -58,7 +58,7 @@ std::ptrdiff_t TlsConnection::write(const void* data, std::size_t size)
     return ::SSL_write(m_ssl, data, size);
 }
 
-off_t TlsConnection::skip(std::size_t size)
+std::ptrdiff_t TlsConnection::skip(std::size_t size)
 {
     char buffer[4096];
     std::size_t remainingBytes = size;

@@ -16,10 +16,14 @@
 #include "../reg/ColumnRecord.h"
 
 // Common project headers
-#include <siodb/common/io/InputOutputStream.h>
+#include <siodb/common/io/OutputStream.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/IOManagerProtocol.pb.h>
+
+namespace siodb::io {
+class JsonWriter;
+}  // namespace siodb::io
 
 namespace siodb::iomgr::dbengine {
 
@@ -29,11 +33,10 @@ public:
     /**
      * Initializes object of class RequestHandler.
      * @param instance DBMS instance.
-     * @param connection Connection with server file descriptor.
+     * @param connection Connection stream.
      * @param userId Current user ID.
      */
-    RequestHandler(
-            Instance& instance, siodb::io::InputOutputStream& connection, std::uint32_t userId);
+    RequestHandler(Instance& instance, siodb::io::OutputStream& connection, std::uint32_t userId);
 
     /** De-initializes object of class RequestHandler */
     ~RequestHandler();
@@ -463,12 +466,20 @@ private:
     static std::size_t getVariantSize(const Variant& value);
 
     /**
-     * Writes variant value into coded output stream.
-     * @param codedOutput Output stream.
+     * Writes variant value into coded output stream in the binary format.
      * @param value A value.
+     * @param codedOutput Output stream.
      */
     static void writeVariant(
-            google::protobuf::io::CodedOutputStream& codedOutput, const Variant& value);
+            const Variant& value, google::protobuf::io::CodedOutputStream& codedOutput);
+
+    /**
+     * Writes variant value as JSON.
+     * @param fieldName Field name.
+     * @param value A value.
+     * @param jsonWriter JSON writer object.
+     */
+    static void writeVariantAsJson(const Variant& value, siodb::io::JsonWriter& jsonWriter);
 
     /**
      * Converts request column definition to database engine column info.
@@ -497,12 +508,26 @@ private:
     void checkWhereExpression(const requests::ConstExpressionPtr& whereExpression,
             requests::DatabaseContext& context);
 
+    /**
+     * Writes JSON prolog.
+     * @param jsonWriter JSON writer object.
+     * @throw std::system_error on write error.
+     */
+    void writeJsonProlog(siodb::io::JsonWriter& jsonWriter);
+
+    /**
+     * Writes JSON epilog.
+     * @param jsonWriter JSON writer object.
+     * @throw std::system_error on write error.
+     */
+    void writeJsonEpilog(siodb::io::JsonWriter& jsonWriter);
+
 private:
     /** DBMS instance */
     Instance& m_instance;
 
-    /** Connection IO descriptor */
-    siodb::io::InputOutputStream& m_connection;
+    /** Connection stream */
+    siodb::io::OutputStream& m_connection;
 
     /** Current user ID */
     const std::uint32_t m_userId;

@@ -74,7 +74,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetAllRowsRequest
 {
     std::vector<std::string> components;
     boost::split(components, msg.object_name(), boost::is_any_of("."));
-    if (components.size() != 2) throw std::invalid_argument("GET DATABASES: Invalid object name");
+    if (components.size() != 2) throw std::invalid_argument("GET ALL ROWS: Invalid object name");
 
     boost::trim(components[0]);
     if (!isValidDatabaseObjectName(components[0]))
@@ -93,7 +93,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetSingleRowReque
 {
     std::vector<std::string> components;
     boost::split(components, msg.object_name(), boost::is_any_of("."));
-    if (components.size() != 2) throw std::invalid_argument("GET DATABASES: Invalid object name");
+    if (components.size() != 2) throw std::invalid_argument("GET SINGLE ROW: Invalid object name");
 
     boost::trim(components[0]);
     if (!isValidDatabaseObjectName(components[0]))
@@ -114,7 +114,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
 {
     std::vector<std::string> components;
     boost::split(components, msg.object_name(), boost::is_any_of("."));
-    if (components.size() != 2) throw std::invalid_argument("GET DATABASES: Invalid object name");
+    if (components.size() != 2) throw std::invalid_argument("POST ROWS: Invalid object name");
 
     boost::trim(components[0]);
     if (!isValidDatabaseObjectName(components[0]))

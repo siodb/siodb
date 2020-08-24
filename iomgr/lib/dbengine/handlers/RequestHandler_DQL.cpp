@@ -10,7 +10,6 @@
 #include "../ColumnSet.h"
 #include "../Index.h"
 #include "../SystemDatabase.h"
-#include "../Table.h"
 #include "../TableDataSet.h"
 #include "../ThrowDatabaseError.h"
 #include "../parser/DatabaseContext.h"
@@ -326,7 +325,9 @@ void RequestHandler::executeSelectRequest(
                             dynamic_cast<const requests::AllColumnsExpression*>(
                                     expr.m_expression.get());
                     const auto tableIndex = *allColumnsExpression->getDatasetTableIndex();
-                    for (const auto& rowValue : dataSets[tableIndex]->getCurrentRow()) {
+                    auto& dataSet = *dataSets[tableIndex];
+                    dataSet.readCurrentRow();
+                    for (const auto& rowValue : dataSet.getValues()) {
                         auto& value = values[valueIndex];
                         value = rowValue;
                         rowLength += getVariantSize(value);
@@ -355,7 +356,7 @@ void RequestHandler::executeSelectRequest(
             }
 
             for (std::size_t i = 0; i < columnCountToSend; ++i) {
-                writeVariant(codedOutput, values[i]);
+                writeVariant(values[i], codedOutput);
                 rawOutput.CheckNoError();
             }
 
@@ -428,7 +429,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
         rawOutput.CheckNoError();
 
         for (std::size_t i = 0; i < values.size(); ++i) {
-            writeVariant(codedOutput, values[i]);
+            writeVariant(values[i], codedOutput);
             rawOutput.CheckNoError();
         }
     }

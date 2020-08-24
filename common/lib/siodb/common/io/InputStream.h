@@ -23,9 +23,9 @@ public:
     /**
      * Skips data.
      * @param size Number of bytes to skip.
-     * @return Offset from the beginning of stream. Negative value indicates error.
+     * @return Number of bytes skipped. Negative value indicates error.
      */
-    virtual off_t skip(std::size_t size) = 0;
+    virtual std::ptrdiff_t skip(std::size_t size) = 0;
 };
 
 }  // namespace siodb::io

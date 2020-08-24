@@ -23,8 +23,9 @@ int ChunkedOutputStream::close()
 {
     int res = -1;
     if (m_stream) {
-        res = flush();
-        if (res == 0) res = writeChunkSize(0);
+        const auto dataSize = m_dataSize;
+        const auto written = flush();
+        if (static_cast<std::size_t>(written) == dataSize) res = writeChunkSize(0);
         m_stream = nullptr;
     }
     return res;
@@ -42,7 +43,7 @@ int ChunkedOutputStream::writeChunkSize(std::size_t chunkSize)
     if (!isValid()) return -1;
     std::uint8_t buffer[9];
     const int n = ::encodeVarUInt64(chunkSize, buffer) - buffer;
-    if (writeRawData(buffer, n) != n) {
+    if (m_stream->write(buffer, n) != n) {
         m_stream = nullptr;
         return -1;
     }

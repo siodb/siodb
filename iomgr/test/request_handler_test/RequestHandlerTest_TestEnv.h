@@ -39,12 +39,12 @@ public:
         return m_env->m_pipes;
     }
 
-    static siodb::io::InputOutputStream& getInputStream() noexcept
+    static siodb::io::InputStream& getInputStream() noexcept
     {
         return *m_env->m_input;
     }
 
-    static siodb::io::InputOutputStream& getOutputStream() noexcept
+    static siodb::io::OutputStream& getOutputStream() noexcept
     {
         return *m_env->m_output;
     }
@@ -57,8 +57,8 @@ private:
     dbengine::InstancePtr m_instance;
     Pipes m_pipes;
     const char* m_argv0;
-    std::unique_ptr<siodb::io::InputOutputStream> m_input;
-    std::unique_ptr<siodb::io::InputOutputStream> m_output;
+    std::unique_ptr<siodb::io::InputStream> m_input;
+    std::unique_ptr<siodb::io::OutputStream> m_output;
     std::string m_instanceFolder;
     static TestEnvironment* m_env;
 };

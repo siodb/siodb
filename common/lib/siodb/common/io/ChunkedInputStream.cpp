@@ -13,18 +13,16 @@
 
 namespace siodb::io {
 
-namespace {
-constexpr std::size_t kUndefinedChunkSize = std::numeric_limits<std::size_t>::max();
-}  // namespace
-
 ChunkedInputStream::ChunkedInputStream(InputStream& stream)
     : m_stream(&stream)
     , m_pos(0)
-    , m_chunkSize(kUndefinedChunkSize)
+    , m_chunkSize(0)
+    , m_hasChunkSize(false)
+    , m_eof(false)
 {
 }
 
-bool ChunkedInputStream::isValid() const
+bool ChunkedInputStream::isValid() const noexcept
 {
     return m_stream && m_stream->isValid();
 }
@@ -42,13 +40,15 @@ std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size)
 {
     if (!isValid()) return -1;
 
-    if (SIODB_UNLIKELY(m_chunkSize == kUndefinedChunkSize)) {
+    if (SIODB_UNLIKELY(!m_hasChunkSize)) {
         const int res = readChunkSize();
         if (SIODB_UNLIKELY(res < 1)) {
             if (res < 0) m_stream = nullptr;
             return res;
         }
     }
+
+    if (SIODB_UNLIKELY(m_eof)) return -1;
 
     std::size_t remaining = size;
     while (remaining > 0) {
@@ -76,17 +76,19 @@ std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size)
     return size - remaining;
 }
 
-off_t ChunkedInputStream::skip(std::size_t size)
+std::ptrdiff_t ChunkedInputStream::skip(std::size_t size)
 {
     if (!isValid()) return -1;
 
-    if (SIODB_UNLIKELY(m_chunkSize == kUndefinedChunkSize)) {
+    if (SIODB_UNLIKELY(!m_hasChunkSize)) {
         const int res = readChunkSize();
         if (SIODB_UNLIKELY(res < 1)) {
             if (res < 0) m_stream = nullptr;
             return res;
         }
     }
+
+    if (SIODB_UNLIKELY(m_eof)) return -1;
 
     std::size_t remaining = size;
     while (remaining > 0) {
@@ -132,9 +134,14 @@ int ChunkedInputStream::readChunkSize()
             }
             m_chunkSize = 0;
             m_pos = 0;
+            m_hasChunkSize = true;
+            m_eof = true;
             return 0;
         }
-        if ((buffer[i] & 0x80) == 0) break;
+        if ((buffer[i] & 0x80) == 0) {
+            ++i;
+            break;
+        }
     }
 
     if (SIODB_UNLIKELY(i == 5)) {
@@ -142,14 +149,16 @@ int ChunkedInputStream::readChunkSize()
         return -1;
     }
 
-    std::uint32_t chunkSize = 0;
-    if (SIODB_UNLIKELY(::decodeVarUInt32(buffer, i, &chunkSize) < 1)) {
+    std::uint64_t chunkSize = 0;
+    if (SIODB_UNLIKELY(::decodeVarUInt64(buffer, i, &chunkSize) < 1)) {
         m_stream = nullptr;
         return -1;
     }
 
     m_chunkSize = chunkSize;
     m_pos = 0;
+    m_hasChunkSize = true;
+    m_eof = (chunkSize == 0);
     return 1;
 }
 

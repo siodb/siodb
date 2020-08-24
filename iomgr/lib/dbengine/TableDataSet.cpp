@@ -16,10 +16,20 @@
 
 namespace siodb::iomgr::dbengine {
 
+TableDataSet::TableDataSet(const TablePtr& table)
+    : m_table(table)
+    , m_columns(m_table->getColumnsOrderedByPosition())
+    , m_masterColumn(m_table->getMasterColumn())
+    , m_masterColumnIndex(m_masterColumn->getMasterColumnMainIndex())
+    , m_currentKey(nullptr)
+    , m_nextKey(nullptr)
+{
+}
+
 TableDataSet::TableDataSet(const TablePtr& table, const std::string& tableAlias)
     : DataSet(tableAlias)
     , m_table(table)
-    , m_tableColumns(m_table->getColumnsOrderedByPosition())
+    , m_columns(m_table->getColumnsOrderedByPosition())
     , m_masterColumn(m_table->getMasterColumn())
     , m_masterColumnIndex(m_masterColumn->getMasterColumnMainIndex())
     , m_currentKey(nullptr)
@@ -45,10 +55,19 @@ const Variant& TableDataSet::getColumnValue(std::size_t index)
 
 ColumnDataType TableDataSet::getColumnDataType(std::size_t columnIndex) const
 {
-    return m_tableColumns.at(m_columnInfos.at(columnIndex).m_posInTable)->getDataType();
+    return m_columns.at(m_columnInfos.at(columnIndex).m_posInTable)->getDataType();
 }
 
-const std::vector<Variant>& TableDataSet::getCurrentRow()
+void TableDataSet::fillColumnInfosFromTable()
+{
+    decltype(m_columnInfos) columnInfos;
+    const std::string noAlias;
+    for (const auto& column : m_columns)
+        columnInfos.emplace_back(column->getCurrentPosition(), column->getName(), noAlias);
+    m_columnInfos.swap(columnInfos);
+}
+
+void TableDataSet::readCurrentRow()
 {
     // Normally should never happen
     if (!m_hasCurrentRow) throw std::runtime_error("No more rows 2");
@@ -57,8 +76,6 @@ const std::vector<Variant>& TableDataSet::getCurrentRow()
     for (std::size_t i = 0, n = m_columnInfos.size(); i != n; ++i) {
         if (!m_valueReadMask.get(i)) readColumnValue(i);
     }
-
-    return m_values;
 }
 
 std::optional<std::uint32_t> TableDataSet::getDataSourceColumnPosition(
@@ -131,17 +148,17 @@ void TableDataSet::updateCurrentRow(std::vector<Variant>&& values,
 
 void TableDataSet::readMasterColumnRecord()
 {
-    std::uint8_t value[12];
+    IndexValue indexValue;
 
     // Obtain master column record address
-    if (m_masterColumnIndex->findValue(m_currentKey, value, 1) != 1) {
+    if (m_masterColumnIndex->findValue(m_currentKey, indexValue.m_data, 1) != 1) {
         throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                 m_table->getDatabaseName(), m_table->getName(), m_table->getDatabaseUuid(),
                 m_table->getId(), 2);
     }
 
     ColumnDataAddress mcrAddr;
-    mcrAddr.pbeDeserialize(value, sizeof(value));
+    mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
     // Read and validate master column record
     m_masterColumn->readMasterColumnRecord(mcrAddr, m_currentMcr);
@@ -161,7 +178,7 @@ void TableDataSet::readColumnValue(std::size_t index)
 {
     auto& value = m_values.at(index);
     const auto pos = m_columnInfos.at(index).m_posInTable;
-    auto& column = m_tableColumns.at(pos);
+    auto& column = m_columns.at(pos);
 
     if (column->isMasterColumn())
         value = m_currentMcr.getTableRowId();
@@ -174,7 +191,7 @@ void TableDataSet::readColumnValue(std::size_t index)
         }
     }
 
-    m_valueReadMask.set(index, true);
+    m_valueReadMask.set(index);
 }
 
 }  // namespace siodb::iomgr::dbengine

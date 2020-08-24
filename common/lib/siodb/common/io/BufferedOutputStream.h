@@ -32,7 +32,7 @@ public:
      * Returns indication that stream is valid.
      * @return true stream if stream is valid, false otherwise.
      */
-    bool isValid() const override;
+    bool isValid() const noexcept override;
 
     /**
      * Closes stream.
@@ -62,14 +62,6 @@ protected:
      * @return 0 on success, -1 on failure.
      */
     virtual int onFlush(std::size_t dataSize);
-
-    /**
-     * Writes raw data from buffer to stream.
-     * @param buffer Data buffer.
-     * @param size Data size in bytes.
-     * @return Number of written bytes. Negative value indicates error.
-     */
-    std::ptrdiff_t writeRawData(const void* buffer, std::size_t size);
 
 protected:
     /** Chunk buffer */

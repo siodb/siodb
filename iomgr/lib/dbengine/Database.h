@@ -1171,4 +1171,31 @@ protected:
     static constexpr std::size_t kConstraintCacheCapacity = 1024;
 };
 
+/** Database use guard */
+class UseDatabaseGuard {
+public:
+    /**
+     * Initializes object of class UseDatabaseGuard.
+     * Acquires database usage.
+     * @param database A database to use.
+     */
+    UseDatabaseGuard(Database& database)
+        : m_database(database)
+    {
+        m_database.use();
+    }
+
+    /**
+     * De-initializes object of class UseDatabaseGuard.
+     * Releases database usage.
+     */
+    ~UseDatabaseGuard()
+    {
+        m_database.release();
+    }
+
+private:
+    Database& m_database;
+};
+
 }  // namespace siodb::iomgr::dbengine

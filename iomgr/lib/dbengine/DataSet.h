@@ -42,12 +42,16 @@ struct DataSetColumnInfo {
     std::unique_ptr<std::string> m_alias;
 };
 
-/**
- * A base class for all data sets.
- */
+/** Base class for all data sets. */
 class DataSet {
 protected:
-    /** 
+    /** Initializes object of class DataSet. */
+    DataSet() noexcept
+        : m_hasCurrentRow(false)
+    {
+    }
+
+    /**
      * Initializes object of class DataSet.
      * @param alias Data set alias.
      */
@@ -85,6 +89,15 @@ public:
         return m_hasCurrentRow;
     }
 
+    /**
+     * Returns collection of values of the current row.
+     * @return Collection of values of the current row.
+     */
+    const auto& getValues() const noexcept
+    {
+        return m_values;
+    }
+
     /** Reset cursor position to the first row. */
     virtual void resetCursor() = 0;
 
@@ -95,11 +108,10 @@ public:
     virtual bool moveToNextRow() = 0;
 
     /**
-     * Returns current row. Reads current row data if it was not read before.
-     * @return Current row.
+     * Reads current row data if it was not read before.
      * @throw std::runtime_error if row data is not avaliable.
      */
-    virtual const std::vector<Variant>& getCurrentRow() = 0;
+    virtual void readCurrentRow() = 0;
 
     /**
      * Returns column value from the current row. Data can be read from an underlying source,

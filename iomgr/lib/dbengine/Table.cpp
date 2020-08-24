@@ -86,7 +86,7 @@ std::vector<ColumnPtr> Table::getColumnsOrderedByPosition() const
     const auto& index = m_currentColumns.byPosition();
     std::vector<ColumnPtr> columns;
     columns.reserve(index.size());
-    // Columns are already sorted in index
+    // Columns are already sorted in the index
     for (const auto& column : index)
         columns.push_back(column.m_column);
     return columns;
@@ -292,13 +292,15 @@ bool Table::deleteRow(std::uint64_t trid, const TransactionParameters& transacti
     }
 
     // Find row
-    std::uint8_t key[8], value[12];
+    std::uint8_t key[8];
+    IndexValue indexValue;
     ::pbeEncodeUInt64(trid, key);
-    if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, value, 1)) return false;
+    if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, indexValue.m_data, 1))
+        return false;
 
     // Read master column record
     ColumnDataAddress oldMcrAddr;
-    oldMcrAddr.pbeDeserialize(value, sizeof(value));
+    oldMcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
     MasterColumnRecord oldMcr;
     m_masterColumn->readMasterColumnRecord(oldMcrAddr, oldMcr);
 
@@ -323,13 +325,15 @@ bool Table::updateRow(std::uint64_t trid, std::vector<Variant>&& columnValues,
     std::lock_guard lock(m_mutex);
 
     // Find row
-    std::uint8_t key[8], value[12];
+    std::uint8_t key[8];
+    IndexValue indexValue;
     ::pbeEncodeUInt64(trid, key);
-    if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, value, 1)) return false;
+    if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, indexValue.m_data, 1))
+        return false;
 
     // Read master column record
     ColumnDataAddress mcrAddr;
-    mcrAddr.pbeDeserialize(value, sizeof(value));
+    mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
     MasterColumnRecord mcr;
     m_masterColumn->readMasterColumnRecord(mcrAddr, mcr);
 

@@ -18,6 +18,8 @@
 #include "../parser/expr/UnaryOperator.h"
 
 // Common project headers
+#include <siodb/common/crt_ext/ct_string.h>
+#include <siodb/common/io/JsonWriter.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
@@ -27,12 +29,13 @@
 #include <functional>
 
 // Boost headers
+#include <boost/algorithm/hex.hpp>
 #include <boost/endian/conversion.hpp>
 
 namespace siodb::iomgr::dbengine {
 
 RequestHandler::RequestHandler(
-        Instance& instance, siodb::io::InputOutputStream& connection, std::uint32_t userId)
+        Instance& instance, siodb::io::OutputStream& connection, std::uint32_t userId)
     : m_instance(instance)
     , m_connection(connection)
     , m_userId(userId)
@@ -289,11 +292,11 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
         addUserVisibleDatabaseErrorToResponse(response, ex.getErrorCode(), ex.what());
         protobuf::writeMessage(
                 protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
-    } catch (const InternalError& ex) {
+    } catch (const InternalDatabaseError& ex) {
         addInternalDatabaseErrorToResponse(response, ex.getErrorCode(), ex.what());
         protobuf::writeMessage(
                 protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
-    } catch (const IOError& ex) {
+    } catch (const DatabaseIOError& ex) {
         addIoErrorToResponse(response, ex.getErrorCode(), ex.what());
         protobuf::writeMessage(
                 protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
@@ -373,18 +376,14 @@ std::size_t RequestHandler::getVariantSize(const Variant& value)
         case VariantType::kUInt8: return 1;
         case VariantType::kInt16:
         case VariantType::kUInt16: return 2;
-        case VariantType::kInt32: {
+        case VariantType::kInt32:
             return google::protobuf::io::CodedOutputStream::VarintSize32(value.getInt32());
-        }
-        case VariantType::kUInt32: {
+        case VariantType::kUInt32:
             return google::protobuf::io::CodedOutputStream::VarintSize32(value.getUInt32());
-        }
-        case VariantType::kInt64: {
+        case VariantType::kInt64:
             return google::protobuf::io::CodedOutputStream::VarintSize64(value.getInt64());
-        }
-        case VariantType::kUInt64: {
+        case VariantType::kUInt64:
             return google::protobuf::io::CodedOutputStream::VarintSize64(value.getUInt64());
-        }
         case VariantType::kFloat: return 4;
         case VariantType::kDouble: return 8;
         case VariantType::kDateTime: return value.getDateTime().getSerializedSize();
@@ -412,7 +411,7 @@ std::size_t RequestHandler::getVariantSize(const Variant& value)
 }
 
 void RequestHandler::writeVariant(
-        google::protobuf::io::CodedOutputStream& codedOutput, const Variant& value)
+        const Variant& value, google::protobuf::io::CodedOutputStream& codedOutput)
 {
     switch (value.getValueType()) {
         case VariantType::kNull: break;
@@ -493,34 +492,138 @@ void RequestHandler::writeVariant(
         }
         case VariantType::kClob: {
             auto clob = value.getClob().clone();
-            if (clob == nullptr) {
-                throw std::runtime_error("Could not clone CLOB stream");
-            }
+            if (clob == nullptr) throw std::runtime_error("Could not clone CLOB stream");
             auto size = clob->getRemainingSize();
             stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             codedOutput.WriteVarint32(size);
             while (size > 0) {
-                auto curChunkSize = std::min(size, kLobChunkSize);
-                curChunkSize = clob->read(buffer.data(), curChunkSize);
-                size -= curChunkSize;
-                codedOutput.WriteRaw(buffer.data(), curChunkSize);
+                auto chunkSize = std::min(size, kLobChunkSize);
+                chunkSize = clob->read(buffer.data(), chunkSize);
+                size -= chunkSize;
+                codedOutput.WriteRaw(buffer.data(), chunkSize);
             }
             break;
         }
         case VariantType::kBlob: {
             auto blob = value.getBlob().clone();
-            if (blob == nullptr) {
-                throw std::runtime_error("Could not clone BLOB stream");
-            }
+            if (blob == nullptr) throw std::runtime_error("Could not clone BLOB stream");
             auto size = blob->getRemainingSize();
             stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             codedOutput.WriteVarint32(size);
             while (size > 0) {
-                auto curChunkSize = std::min(size, kLobChunkSize);
-                curChunkSize = blob->read(buffer.data(), curChunkSize);
-                size -= curChunkSize;
-                codedOutput.WriteRaw(buffer.data(), curChunkSize);
+                auto chunkSize = std::min(size, kLobChunkSize);
+                chunkSize = blob->read(buffer.data(), chunkSize);
+                size -= chunkSize;
+                codedOutput.WriteRaw(buffer.data(), chunkSize);
             }
+            break;
+        }
+        default: {
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidValueType,
+                    static_cast<int>(value.getValueType()));
+        }
+    }
+}
+
+void RequestHandler::writeVariantAsJson(const Variant& value, siodb::io::JsonWriter& jsonWriter)
+{
+    switch (value.getValueType()) {
+        case VariantType::kNull: {
+            jsonWriter.writeNullValue();
+            break;
+        }
+        case VariantType::kBool: {
+            jsonWriter.writeValue(value.getBool());
+            break;
+        }
+        case VariantType::kInt8: {
+            jsonWriter.writeValue(value.getInt8());
+            break;
+        }
+        case VariantType::kUInt8: {
+            jsonWriter.writeValue(value.getUInt8());
+            break;
+        }
+        case VariantType::kInt16: {
+            jsonWriter.writeValue(value.getInt16());
+            break;
+        }
+        case VariantType::kUInt16: {
+            jsonWriter.writeValue(value.getUInt16());
+            break;
+        }
+        case VariantType::kInt32: {
+            jsonWriter.writeValue(value.getInt32());
+            break;
+        }
+        case VariantType::kUInt32: {
+            jsonWriter.writeValue(value.getUInt32());
+            break;
+        }
+        case VariantType::kInt64: {
+            jsonWriter.writeValue(value.getInt64());
+            break;
+        }
+        case VariantType::kUInt64: {
+            jsonWriter.writeValue(value.getUInt64());
+            break;
+        }
+        case VariantType::kFloat: {
+            jsonWriter.writeValue(value.getFloat());
+            break;
+        }
+        case VariantType::kDouble: {
+            jsonWriter.writeValue(value.getDouble());
+            break;
+        }
+        case VariantType::kDateTime: {
+            // TODO HERE and forward
+            jsonWriter.writeValue(value.getDateTime().formatDefault());
+            break;
+        }
+        case VariantType::kString: {
+            jsonWriter.writeValue(value.getString());
+            break;
+        }
+        case VariantType::kBinary: {
+            jsonWriter.writeValue(*value.asString());
+            break;
+        }
+        case VariantType::kClob: {
+            auto clob = value.getClob().clone();
+            if (clob == nullptr) throw std::runtime_error("Could not clone CLOB stream");
+            auto size = clob->getRemainingSize();
+            stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
+            jsonWriter.writeDoubleQuote();
+            while (size > 0) {
+                auto chunkSize = std::min(size, kLobChunkSize);
+                chunkSize = clob->read(buffer.data(), chunkSize);
+                size -= chunkSize;
+                if (SIODB_LIKELY(chunkSize > 0)) {
+                    jsonWriter.writeRawString(
+                            reinterpret_cast<const char*>(buffer.data()), chunkSize);
+                }
+            }
+            jsonWriter.writeDoubleQuote();
+            break;
+        }
+        case VariantType::kBlob: {
+            auto blob = value.getBlob().clone();
+            if (blob == nullptr) throw std::runtime_error("Could not clone BLOB stream");
+            auto size = blob->getRemainingSize();
+            stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
+            stdext::buffer<char> hexBuffer(buffer.size() * 2);
+            jsonWriter.writeDoubleQuote();
+            while (size > 0) {
+                auto chunkSize = std::min(size, kLobChunkSize);
+                chunkSize = blob->read(buffer.data(), chunkSize);
+                size -= chunkSize;
+                if (SIODB_LIKELY(chunkSize > 0)) {
+                    boost::algorithm::hex_lower(buffer.begin(), buffer.end(), hexBuffer.begin());
+                    jsonWriter.writeBytes(hexBuffer.data(), chunkSize * 2);
+                }
+            }
+            jsonWriter.writeDoubleQuote();
             break;
         }
         default: {
@@ -691,6 +794,27 @@ void RequestHandler::checkWhereExpression(
         throwDatabaseError(
                 IOManagerMessageId::kErrorInvalidWhereCondition, "Result is not boolean value");
     }
+}
+
+void RequestHandler::writeJsonProlog(siodb::io::JsonWriter& jsonWriter)
+{
+    // Start top level object
+    jsonWriter.writeObjectBegin();
+    // Write status
+    jsonWriter.writeFieldName(kRestStatusFieldName, ::ct_strlen(kRestStatusFieldName));
+    jsonWriter.writeValue(kRestStatusOk);
+    // Start rows array
+    jsonWriter.writeComma();
+    jsonWriter.writeFieldName(kRestRowsFieldName, ::ct_strlen(kRestRowsFieldName));
+    jsonWriter.writeArrayBegin();
+}
+
+void RequestHandler::writeJsonEpilog(siodb::io::JsonWriter& jsonWriter)
+{
+    // End rows array
+    jsonWriter.writeArrayEnd();
+    // End top level object
+    jsonWriter.writeObjectEnd();
 }
 
 }  // namespace siodb::iomgr::dbengine

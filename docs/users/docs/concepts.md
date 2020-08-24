@@ -20,7 +20,7 @@ First of all, Siodb stores its data per columns as opposed to row storage
 set of data files. Furthermore, Siodb indexes each column by design according
 to their type.
 
-##  Data auto-sizing
+## Data auto-sizing
 
 Siodb has an automatic data type size for text and blob. Thanks to this feature,
  Siodb takes care of the data size without having to declare column size nor
@@ -102,9 +102,9 @@ writes that metadata and it is not possible to modify them by design.
 
 ## Data TTL and data privacy
 
-One of elements of the metadata that Siodb maintains is an expiration timestamp that can be
-used to define a TTL (Time to Live) on rows. When the TTL has expired, Siodb
-destroys the data physically for that row on the disk. The destruction is
+One of elements of the metadata that Siodb maintains is an expiration timestamp
+that can be used to define a TTL (Time to Live) on rows. When the TTL has expired,
+Siodb destroys the data physically for that row on the disk. The destruction is
 then effortlessly propagated into backups at the next backup synchronization time.
 
 This is a convenient and unique way to comply with the data destruction requested

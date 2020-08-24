@@ -4,7 +4,8 @@
 
 Siodb identifies an instance by its name.
 With the name of an instance, you can locate its configuration file.
-Siodb expects to find the configuration file of an instance in the folder `/etc/siodb/instances/<INSTANCE_NAME>/`.
+Siodb expects to find the configuration file of an instance in the folder
+`/etc/siodb/instances/<INSTANCE_NAME>/`.
 All files below must be present at each startup time:
 
 - `/etc/siodb/instances/<INSTANCE_NAME>/config`: The Siodb parameter files.
@@ -65,7 +66,8 @@ iomgr.block_cache_capacity = 103
 # Encryption default cipher id (aes128 is used if not set)
 encryption.default_cipher_id = aes128
 
-# Encryption algorithm used to encrypt system database (encryption.default_cipher_id is used if not set)
+# Encryption algorithm used to encrypt system database
+# (encryption.default_cipher_id is used if not set)
 encryption.system_db_cipher_id = aes128
 
 # Should encrypted connection be used for client (yes(default)/no)
@@ -104,8 +106,8 @@ You can find the Siodb binaries in `${SIODB_HOME}/bin`.
 
 ## Authentication
 
-To authenticate yourself to the server, you must have [an active user created in Siodb
-with an active access key](users.md).
+To authenticate yourself to the server, you must have [an active user created
+in Siodb with an active access key](users.md).
 
 ## Start an instance of Siodb
 
@@ -113,7 +115,8 @@ To start and stop an instance of Siodb you must respect the following rules:
 
 - Use the `siodb` binary.
 - Be connected with the `siodb` user.
-- Use the `--instance <instance_name>` parameter to tell Siodb which parameter file it must use.
+- Use the `--instance <instance_name>` parameter to tell Siodb which parameter
+  file it must use.
 
 ```bash
 $ /opt/siodb-<VERSION>/bin/siodb --help
@@ -151,8 +154,8 @@ is local and uses a Unix socket to communicate with Siodb.
 
 ## Connect to an instance over TCP/IP
 
-To connect to a remote instance of Siodb, you must provide the network identifier of
-the remote instance. This can be the hostname (`--host`) or an IP with the
+To connect to a remote instance of Siodb, you must provide the network identifier
+of the remote instance. This can be the hostname (`--host`) or an IP with the
 port number (`--port`).
 
 Example of a remote connection:
@@ -189,11 +192,3 @@ NAME
 1 rows.
 Command execution time: 44 ms.
 ```
-
-
-
-
-
-
-
-

@@ -17,11 +17,15 @@
 
 namespace siodb::iomgr::dbengine {
 
-/**
- * Class for reading rows from table
- */
+/** Class for reading rows from table. */
 class TableDataSet final : public DataSet {
 public:
+    /**
+     * Initializes object of class TableDataSet.
+     * @param table Table object.
+     */
+    TableDataSet(const TablePtr& table);
+
     /**
      * Initializes object of class TableDataSet.
      * @param table Table object.
@@ -44,7 +48,7 @@ public:
      */
     const auto& getColumns() const noexcept
     {
-        return m_tableColumns;
+        return m_columns;
     }
 
     /**
@@ -79,12 +83,14 @@ public:
      */
     ColumnDataType getColumnDataType(std::size_t columnIndex) const override;
 
+    /** Fills column informations collection with all columns of the underlying table. */
+    void fillColumnInfosFromTable();
+
     /**
-     * Returns current row. Reads current row data if it was not read before.
-     * @return Current row.
+     * Reads current row data if it was not read before.
      * @throw std::runtime_error if row data is not avaliable.
      */
-    const std::vector<Variant>& getCurrentRow() override;
+    void readCurrentRow() override;
 
     /**
      * Returns column position in the data source. Queries data source directly.
@@ -143,7 +149,7 @@ private:
     const TablePtr m_table;
 
     /** Table columns ordered by position */
-    std::vector<ColumnPtr> m_tableColumns;
+    std::vector<ColumnPtr> m_columns;
 
     /* Master column from m_table */
     ColumnPtr m_masterColumn;

@@ -63,6 +63,61 @@ void StreamInputStream::CheckNoError() const
     if (GetErrno() != 0) stdext::throw_system_error(GetErrno(), "Read error");
 }
 
+bool StreamInputStream::isValid() const noexcept
+{
+    return !m_copyingInput.IsClosed() && m_copyingInput.GetErrno() == 0;
+}
+
+int StreamInputStream::close()
+{
+    if (Close()) return 0;
+    errno = GetErrno();
+    return -1;
+}
+
+std::ptrdiff_t StreamInputStream::read(void* buffer, std::size_t size)
+{
+    auto remaining = size;
+    while (remaining > 0) {
+        const void* p = nullptr;
+        int n = 0;
+        if (Next(&p, &n)) {
+            if (n == 0) continue;
+            if (remaining <= static_cast<std::size_t>(n)) {
+                std::memcpy(buffer, p, remaining);
+                if (remaining < static_cast<std::size_t>(n)) BackUp(n - remaining);
+                return size;
+            }
+            std::memcpy(buffer, p, n);
+            buffer = reinterpret_cast<std::uint8_t*>(buffer) + n;
+            remaining -= n;
+        } else {
+            if (GetErrno()) errno = GetErrno();
+            break;
+        }
+    }
+    return size - remaining;
+}
+
+std::ptrdiff_t StreamInputStream::skip(std::size_t size)
+{
+    constexpr std::size_t maxInt = std::numeric_limits<int>::max();
+    const auto initialByteCount = ByteCount();
+    auto remaining = size;
+    while (remaining > 0) {
+        const auto bytesToSkip = std::min(remaining, maxInt);
+        if (Skip(bytesToSkip))
+            remaining -= bytesToSkip;
+        else {
+            remaining -= ByteCount() - initialByteCount;
+            break;
+        }
+    }
+    return size - remaining;
+}
+
+// ----- internals -----
+
 StreamInputStream::CopyingInputStream::CopyingInputStream(
         io::InputStream& stream, const utils::ErrorCodeChecker& errorCodeChecker)
     : m_errorCodeChecker(errorCodeChecker)

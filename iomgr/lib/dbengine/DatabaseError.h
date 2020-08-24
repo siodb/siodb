@@ -99,52 +99,52 @@ public:
 };
 
 /** Exception class for indicating I/O errors */
-class IOError : public DatabaseError {
+class DatabaseIOError : public DatabaseError {
 public:
     /**
-     * Initializes object of class IOError.
+     * Initializes object of class DatabaseIOError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
     template<typename MessageId>
-    IOError(MessageId errorCode, const char* errorMessage)
+    DatabaseIOError(MessageId errorCode, const char* errorMessage)
         : DatabaseError(errorCode, errorMessage)
     {
     }
 
     /**
-     * Initializes object of class IOError.
+     * Initializes object of class DatabaseIOError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
     template<typename MessageId>
-    IOError(MessageId errorCode, const std::string& errorMessage)
+    DatabaseIOError(MessageId errorCode, const std::string& errorMessage)
         : DatabaseError(errorCode, errorMessage)
     {
     }
 };
 
 /** Exception class for indicating internal logic errors */
-class InternalError : public DatabaseError {
+class InternalDatabaseError : public DatabaseError {
 public:
     /**
-     * Initializes object of class InternalError.
+     * Initializes object of class InternalDatabaseError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
     template<typename MessageId>
-    InternalError(MessageId errorCode, const char* errorMessage)
+    InternalDatabaseError(MessageId errorCode, const char* errorMessage)
         : DatabaseError(errorCode, errorMessage)
     {
     }
 
     /**
-     * Initializes object of class InternalError.
+     * Initializes object of class InternalDatabaseError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
     template<typename MessageId>
-    InternalError(MessageId errorCode, const std::string& errorMessage)
+    InternalDatabaseError(MessageId errorCode, const std::string& errorMessage)
         : DatabaseError(errorCode, errorMessage)
     {
     }

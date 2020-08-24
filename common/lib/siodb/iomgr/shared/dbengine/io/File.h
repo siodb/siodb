@@ -36,7 +36,7 @@ public:
     }
 
     /**
-     * Initializes object of class IOError.
+     * Initializes object of class FileIOError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
@@ -62,7 +62,7 @@ private:
 class FileReadError : public FileIOError {
 public:
     /**
-     * Initializes object of class IOError.
+     * Initializes object of class FileReadError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
@@ -72,7 +72,7 @@ public:
     }
 
     /**
-     * Initializes object of class IOError.
+     * Initializes object of class FileReadError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
@@ -85,7 +85,7 @@ public:
 class FileWriteError : public FileIOError {
 public:
     /**
-     * Initializes object of class IOError.
+     * Initializes object of class FileWriteError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
@@ -95,7 +95,7 @@ public:
     }
 
     /**
-     * Initializes object of class IOError.
+     * Initializes object of class FileWriteError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */

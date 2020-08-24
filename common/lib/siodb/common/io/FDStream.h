@@ -66,7 +66,7 @@ public:
      * Returns indication that file descriptor is valid.
      * @return true stream if file descriptor is valid, false otherwise.
      */
-    bool isValid() const override;
+    bool isValid() const noexcept override;
 
     /**
      * Reads data from file.
@@ -87,9 +87,9 @@ public:
     /**
      * Skips data.
      * @param size Number of bytes to skip.
-     * @return Offset from the beginning of file. Negative value indicates error.
+     * @return Number of bytes skipped. Negative value indicates error.
      */
-    off_t skip(std::size_t size) override;
+    std::ptrdiff_t skip(std::size_t size) override;
 
     /**
      * Closes file descriptor.

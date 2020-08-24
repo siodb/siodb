@@ -13,6 +13,9 @@
 // Common project headers
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
+// Boost headers
+#include <boost/algorithm/hex.hpp>
+
 namespace siodb::iomgr::dbengine {
 
 namespace {
@@ -827,13 +830,8 @@ std::string* Variant::binaryToString(const BinaryValue& binaryValue, VariantType
         throw VariantTypeCastError(m_valueType, destValueType, kBinaryValueIsTooLong);
 
     std::vector<char> buffer(binaryValue.size() * 2 + 1);
-    auto pb = buffer.data();
-    for (auto p = binaryValue.data(), e = p + binaryValue.size(); p != e; ++p) {
-        const unsigned char v = *p;
-        *pb++ = m_hexConversionTable[v >> 4];
-        *pb++ = m_hexConversionTable[v & 15];
-    }
-    *pb = '\0';
+    boost::algorithm::hex_lower(binaryValue.begin(), binaryValue.end(), buffer.begin());
+    *(--buffer.end()) = '\0';
     return new std::string(buffer.data());
 }
 

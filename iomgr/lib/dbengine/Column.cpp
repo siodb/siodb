@@ -658,21 +658,21 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
     // Update main index
     std::uint8_t indexKey[8];
     ::pbeEncodeUInt64(record.getTableRowId(), indexKey);
-    std::uint8_t indexValue[12];
-    ::pbeEncodeUInt64(block->getId(), indexValue);
-    ::pbeEncodeUInt32(pos, indexValue + 8);
+    IndexValue indexValue;
+    ::pbeEncodeUInt64(block->getId(), indexValue.m_data);
+    ::pbeEncodeUInt32(pos, indexValue.m_data + 8);
 
     switch (record.getAtomicOperationType()) {
         case DmlOperationType::kInsert: {
-            m_masterColumnData->m_mainIndex->insert(indexKey, indexValue, true);
+            m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data, true);
             break;
         }
         case DmlOperationType::kDelete: {
-            m_masterColumnData->m_mainIndex->markAsDeleted(indexKey, indexValue);
+            m_masterColumnData->m_mainIndex->markAsDeleted(indexKey, indexValue.m_data);
             break;
         }
         case DmlOperationType::kUpdate: {
-            m_masterColumnData->m_mainIndex->update(indexKey, indexValue);
+            m_masterColumnData->m_mainIndex->update(indexKey, indexValue.m_data);
             break;
         }
     }

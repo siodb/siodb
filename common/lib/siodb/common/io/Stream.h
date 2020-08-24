@@ -31,7 +31,7 @@ public:
      * Returns indication that stream is valid.
      * @return true stream if stream is valid, false otherwise.
      */
-    virtual bool isValid() const = 0;
+    virtual bool isValid() const noexcept = 0;
 
     /**
      * Closes stream.

@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <stddef.h>
-
 /**
  * Helper macro to suppress compiler warning on unused parameters
  * where they cannot be avoided in the C code.

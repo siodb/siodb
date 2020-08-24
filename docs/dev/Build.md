@@ -39,7 +39,7 @@ sudo update-alternatives --set git-clang-format \
     /usr/lib/llvm-10/bin/git-clang-format
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### Ubuntu 20.04 LTS
 
@@ -67,7 +67,7 @@ sudo update-alternatives --set git-clang-format /usr/lib/llvm-10/bin/git-clang-f
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### Debian 10
 
@@ -107,7 +107,7 @@ sudo update-alternatives --set git-clang-format \
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### CentOS 7
 
@@ -175,7 +175,7 @@ sudo ln -s /usr/lib/libatomic.so.1.0.0 /usr/lib/libatomic.so
 sudo ln -s /usr/lib64/libatomic.so.1.0.0 /usr/lib64/libatomic.so
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### CentOS 8
 
@@ -200,7 +200,7 @@ sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### RHEL 7
 
@@ -267,7 +267,7 @@ sudo ln -s /usr/lib/libatomic.so.1.0.0 /usr/lib/libatomic.so
 sudo ln -s /usr/lib64/libatomic.so.1.0.0 /usr/lib64/libatomic.so
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### RHEL 8
 
@@ -291,6 +291,32 @@ sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
+
+Now, proceed to the section [All Systems](#all-systems).
+
+## All Systems
+
+For better debugging experience, it is recommended to install
+[Boost Pretty Printers](https://github.com/ruediger/Boost-Pretty-Printer):
+
+1. Run following commands
+
+    ```shell
+    mkdir -p ~/.local/share
+    cd ~/.local/share
+    git clone git://github.com/ruediger/Boost-Pretty-Printer.git
+    ```
+
+2. Add following lines to the file `~/.gdbinit` (create it if it doesn't exist yet):
+
+    ```text
+    python
+    import sys
+    sys.path.insert(1, '~/.local/share/Boost-Pretty-Printer')
+    import boost
+    boost.register_printers(boost_version=(x,y,z))
+    end
+    ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
@@ -377,6 +403,20 @@ cd googletest-release-${SIODB_GTEST_VERSION}/googlemock/scripts
 sudo mkdir -p "${SIODB_GTEST_PREFIX}"
 sudo cp -Rf include "${SIODB_GTEST_PREFIX}"
 cd ../../../..
+
+# Build and install JSON library
+cd date
+tar --no-same-owner -xaf date-${SIODB_JSON_VERSION}.tar.xz
+cd date-${SIODB_JSON_VERSION}
+mkdir build
+cd build
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_JSON_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+    -DJSON_BuildTests=OFF ..
+make -j4
+sudo make install
+sudo ldconfig
+cd ../../..
 
 # Build and install Oat++ library
 cd oatpp

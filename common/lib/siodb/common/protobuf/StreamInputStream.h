@@ -25,7 +25,7 @@ namespace siodb::protobuf {
  * Also, it's conceivable that SignalAwareFileInputStream could someday be enhanced
  * to use zero-copy file descriptors on OSs which support them.
  */
-class StreamInputStream : public google::protobuf::io::ZeroCopyInputStream {
+class StreamInputStream : public google::protobuf::io::ZeroCopyInputStream, public io::InputStream {
 public:
     /**
      * Creates a stream that reads from the given InputStream.
@@ -83,6 +83,35 @@ public:
      */
     void CheckNoError() const;
 
+    ////////////// siodb::io::InputStream implementation //////////////////////
+
+    /**
+     * Returns indication that stream is valid.
+     * @return true stream if stream is valid, false otherwise.
+     */
+    bool isValid() const noexcept override;
+
+    /**
+     * Closes stream.
+     * @return Zero on success, nonzero otherwise.
+     */
+    int close() override;
+
+    /**
+     * Reads data from stream.
+     * @param buffer Data buffer.
+     * @param size Size of data in bytes.
+     * @return Number of read bytes. Negative value indicates error.
+     */
+    std::ptrdiff_t read(void* buffer, std::size_t size) override;
+
+    /**
+     * Skips data.
+     * @param size Number of bytes to skip.
+     * @return Number of bytes skipped. Negative value indicates error.
+     */
+    std::ptrdiff_t skip(std::size_t size) override;
+
 private:
     class CopyingInputStream : public google::protobuf::io::CopyingInputStream {
     public:
@@ -100,6 +129,11 @@ private:
         int GetErrno() const noexcept
         {
             return m_errno;
+        }
+
+        bool IsClosed() const noexcept
+        {
+            return m_closed;
         }
 
         // implements CopyingInputStream

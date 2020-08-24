@@ -5,6 +5,6 @@ catch throw std::invalid_argument
 catch throw std::out_of_range
 catch throw std::runtime_error
 catch throw siodb::iomgr::dbengine::DatabaseError
-catch throw siodb::iomgr::dbengine::IOError
-catch throw siodb::iomgr::dbengine::InternalError
+catch throw siodb::iomgr::dbengine::DatabaseIOError
+catch throw siodb::iomgr::dbengine::InternalDatabaseError
 catch throw siodb::iomgr::dbengine::UserVisibleDatabaseError

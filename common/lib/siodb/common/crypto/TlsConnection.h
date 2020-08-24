@@ -58,7 +58,7 @@ public:
      * Returns indication whether connection is valid or not.
      * @return true if connection is valid false otherwise.
      */
-    bool isValid() const override;
+    bool isValid() const noexcept override;
 
     /**
      * Reads data from secure channel.
@@ -79,9 +79,9 @@ public:
     /**
      * Skips data.
      * @param size Number of bytes to skip.
-     * @return Number of bytes skipped.
+     * @return Number of bytes skipped. Negative value indicates error.
      */
-    off_t skip(std::size_t size) override;
+    std::ptrdiff_t skip(std::size_t size) override;
 
     /**
      * Closes connection.

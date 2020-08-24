@@ -29,10 +29,10 @@ TEST(Query, SelectFromSys_Databases)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto selectRequest =
+    const auto request =
             parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-    requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -75,15 +75,14 @@ TEST(Query, ShowDatabases)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto showDatabasesRequest =
+    const auto request =
             parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-    requestHandler->executeRequest(*showDatabasesRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -120,12 +119,11 @@ TEST(Query, SelectWithWhere)
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
-    // create table
+    // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
             {"B", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
-
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_1",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
@@ -145,10 +143,10 @@ TEST(Query, SelectWithWhere)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -166,11 +164,12 @@ TEST(Query, SelectWithWhere)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -243,10 +242,10 @@ TEST(Query, SelectWithWhereBetweenDatetime)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -266,11 +265,12 @@ TEST(Query, SelectWithWhereBetweenDatetime)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -337,10 +337,10 @@ TEST(Query, SelectWithWhereCompoundExpression)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -360,11 +360,12 @@ TEST(Query, SelectWithWhereCompoundExpression)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -434,10 +435,10 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -462,11 +463,12 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
             parser_ns::SqlParser parser(statement);
             parser.parse();
 
-            const auto selectRequest =
+            const auto request =
                     parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+            requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
             siodb::protobuf::readMessage(
                     siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response,
                     inputStream);
@@ -501,11 +503,12 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
             parser_ns::SqlParser parser(statement);
             parser.parse();
 
-            const auto selectRequest =
+            const auto request =
                     parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+            requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
             siodb::protobuf::readMessage(
                     siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response,
                     inputStream);
@@ -560,10 +563,10 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -583,11 +586,12 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -640,10 +644,10 @@ TEST(Query, SelectWithWhereColumnAlias)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -661,11 +665,12 @@ TEST(Query, SelectWithWhereColumnAlias)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -725,10 +730,10 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -748,11 +753,12 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -828,10 +834,10 @@ TEST(Query, SelectFrom2Tables)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -854,10 +860,10 @@ TEST(Query, SelectFrom2Tables)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -878,11 +884,12 @@ TEST(Query, SelectFrom2Tables)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -954,10 +961,10 @@ TEST(Query, SelectWithExpression)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -976,11 +983,12 @@ TEST(Query, SelectWithExpression)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1035,11 +1043,12 @@ TEST(Query, SelectWithExpressionFrom2Tables)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1094,10 +1103,10 @@ TEST(Query, SelectWithExpressionWithNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1116,11 +1125,12 @@ TEST(Query, SelectWithExpressionWithNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1186,11 +1196,12 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1235,10 +1246,10 @@ TEST(Query, SelectWithWhereIsNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1255,10 +1266,11 @@ TEST(Query, SelectWithWhereIsNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -1331,10 +1343,10 @@ TEST(Query, SelectWithWhereEqualNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1351,10 +1363,11 @@ TEST(Query, SelectWithWhereEqualNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -1412,10 +1425,10 @@ TEST(Query, SelectWithLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1433,11 +1446,12 @@ TEST(Query, SelectWithLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1493,10 +1507,10 @@ TEST(Query, SelectWithZeroLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1514,11 +1528,12 @@ TEST(Query, SelectWithZeroLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1566,10 +1581,10 @@ TEST(Query, SelectWithNegativeLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1587,11 +1602,12 @@ TEST(Query, SelectWithNegativeLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1629,10 +1645,10 @@ TEST(Query, SelectWithLimitAndOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1651,11 +1667,12 @@ TEST(Query, SelectWithLimitAndOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1712,10 +1729,10 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1734,11 +1751,12 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1787,10 +1805,10 @@ TEST(Query, SelectWithNegativeOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1809,11 +1827,12 @@ TEST(Query, SelectWithNegativeOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1852,10 +1871,10 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1875,11 +1894,12 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
+        const auto request =
                 parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
 
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 

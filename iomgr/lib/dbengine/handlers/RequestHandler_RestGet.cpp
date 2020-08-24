@@ -6,13 +6,17 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
+#include "../Index.h"
+#include "../TableDataSet.h"
 #include "../ThrowDatabaseError.h"
 
 // Common project headers
-#include <siodb/common/crt_ext/compiler_defs.h>
+#include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/io/ChunkedOutputStream.h>
 #include <siodb/common/io/JsonWriter.h>
+#include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
+#include <siodb/common/utils/PlainBinaryEncoding.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -35,36 +39,24 @@ void RequestHandler::executeGetDatabasesRestRequest(
     }
 
     // Write JSON payload
-    siodb::io::ChunkedOutputStream chunkedStream(kJsonChunkSize, m_connection);
-    siodb::io::JsonWriter jsonWriter(chunkedStream);
-
-    // Start top level object
-    jsonWriter.writeObjectBegin();
-
-    // Write status
-    jsonWriter.writeField(kRestStatusFieldName, kRestStatusOk);
-
-    // Start rows array
-    jsonWriter.writeArrayBegin(kRestRowsFieldName, true);
-
-    // Write rows
+    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::JsonWriter jsonWriter(chunkedOutput);
+    writeJsonProlog(jsonWriter);
     bool needComma = false;
     for (const auto& databaseName : databaseNames) {
-        jsonWriter.writeObjectBegin(nullptr, needComma);
+        if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
+        jsonWriter.writeObjectBegin();
         needComma = true;
-        jsonWriter.writeField(kDatabaseNameFieldName, databaseName);
+        jsonWriter.writeFieldName(kDatabaseNameFieldName, ::ct_strlen(kDatabaseNameFieldName));
+        jsonWriter.writeValue(databaseName);
         jsonWriter.writeObjectEnd();
     }
-
-    // End rows array
-    jsonWriter.writeArrayEnd();
-
-    // End top level object
-    jsonWriter.writeObjectEnd();
+    writeJsonEpilog(jsonWriter);
+    chunkedOutput.flush();
 }
 
 void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::GetTablesRestRequest& request)
+        const requests::GetTablesRestRequest& request)
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
@@ -83,45 +75,142 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     }
 
     // Write JSON payload
-    siodb::io::ChunkedOutputStream chunkedStream(kJsonChunkSize, m_connection);
-    siodb::io::JsonWriter jsonWriter(chunkedStream);
-
-    // Start top level object
-    jsonWriter.writeObjectBegin();
-
-    // Write status
-    jsonWriter.writeField(kRestStatusFieldName, kRestStatusOk);
-
-    // Start rows array
-    jsonWriter.writeArrayBegin(kRestRowsFieldName, true);
-
-    // Write rows
+    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::JsonWriter jsonWriter(chunkedOutput);
+    writeJsonProlog(jsonWriter);
     bool needComma = false;
     for (const auto& tableName : tableNames) {
-        jsonWriter.writeObjectBegin(nullptr, needComma);
+        if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
+        jsonWriter.writeObjectBegin();
         needComma = true;
-        jsonWriter.writeField(kTableNameFieldName, tableName);
+        jsonWriter.writeFieldName(kTableNameFieldName, ::ct_strlen(kTableNameFieldName));
+        jsonWriter.writeValue(tableName);
         jsonWriter.writeObjectEnd();
     }
-
-    // End rows array
-    jsonWriter.writeArrayEnd();
-
-    // End top level object
-    jsonWriter.writeObjectEnd();
+    writeJsonEpilog(jsonWriter);
+    chunkedOutput.flush();
 }
 
 void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::GetAllRowsRestRequest& request)
+        const requests::GetAllRowsRestRequest& request)
 {
-    sendNotImplementedYet(response);
+    response.set_has_affected_row_count(false);
+    response.set_affected_row_count(0);
+
+    // Find table and create data set
+    const auto database = m_instance.findDatabaseChecked(request.m_database);
+    UseDatabaseGuard databaseGuard(*database);
+    TableDataSet dataSet(database->findTableChecked(request.m_table));
+    dataSet.fillColumnInfosFromTable();
+
+    // Write response message
+    {
+        utils::DefaultErrorCodeChecker errorChecker;
+        protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+    }
+
+    // Write JSON payload
+    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::JsonWriter jsonWriter(chunkedOutput);
+    writeJsonProlog(jsonWriter);
+    const auto& columns = dataSet.getColumns();
+    const auto columnCount = columns.size();
+    bool needCommaBeforeRow = false;
+    for (dataSet.resetCursor(); dataSet.hasCurrentRow(); dataSet.moveToNextRow()) {
+        dataSet.readCurrentRow();
+        const auto& values = dataSet.getValues();
+        if (SIODB_LIKELY(needCommaBeforeRow)) jsonWriter.writeComma();
+        jsonWriter.writeObjectBegin();
+        needCommaBeforeRow = true;
+        bool needCommaBeforeColumn = false;
+        for (std::size_t i = 0; i < columnCount; ++i) {
+            const auto& column = columns[i];
+            if (SIODB_LIKELY(needCommaBeforeColumn)) jsonWriter.writeComma();
+            jsonWriter.writeFieldName(column->getName());
+            writeVariantAsJson(values.at(i), jsonWriter);
+            needCommaBeforeColumn = true;
+        }
+        jsonWriter.writeObjectEnd();
+    }
+    writeJsonEpilog(jsonWriter);
+    chunkedOutput.flush();
 }
 
 void RequestHandler::executeGetSingleRowRestRequest(
         iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::GetSingleRowRestRequest& request)
+        const requests::GetSingleRowRestRequest& request)
 {
-    sendNotImplementedYet(response);
+    response.set_has_affected_row_count(false);
+    response.set_affected_row_count(0);
+
+    // Get column information
+    const auto database = m_instance.findDatabaseChecked(request.m_database);
+    UseDatabaseGuard databaseGuard(*database);
+    const auto table = database->findTableChecked(request.m_table);
+    const auto masterColumn = table->getMasterColumn();
+    const auto index = masterColumn->getMasterColumnMainIndex();
+
+    std::uint8_t key[8];
+    ::pbeEncodeUInt64(request.m_trid, key);
+    IndexValue indexValue;
+    const auto valueCount = index->findValue(key, indexValue.m_data, 1);
+    if (valueCount > 1) {
+        throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
+                database->getName(), table->getName(), database->getUuid(), table->getId(), 2);
+    }
+    const bool haveRow = (valueCount == 1);
+
+    struct RowRelatedData {
+        MasterColumnRecord m_mcr;
+        std::vector<ColumnPtr> m_columns;
+    };
+    std::unique_ptr<RowRelatedData> rowRelatedData;
+    if (haveRow) {
+        ColumnDataAddress mcrAddr;
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
+        rowRelatedData = std::make_unique<RowRelatedData>();
+        masterColumn->readMasterColumnRecord(mcrAddr, rowRelatedData->m_mcr);
+        const auto expectedColumnCount = table->getColumnCount() - 1;
+        if (rowRelatedData->m_mcr.getColumnCount() != expectedColumnCount) {
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidMasterColumnRecordColumnCount,
+                    database->getName(), table->getName(), database->getUuid(), table->getId(),
+                    mcrAddr.getBlockId(), mcrAddr.getOffset(), expectedColumnCount,
+                    rowRelatedData->m_mcr.getColumnCount());
+        }
+        rowRelatedData->m_columns = table->getColumnsOrderedByPosition();
+    }
+
+    // Write response message
+    {
+        utils::DefaultErrorCodeChecker errorChecker;
+        protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+    }
+
+    // Write JSON payload
+    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::JsonWriter jsonWriter(chunkedOutput);
+    writeJsonProlog(jsonWriter);
+    if (haveRow) {
+        jsonWriter.writeObjectBegin();
+        jsonWriter.writeFieldName(rowRelatedData->m_columns[0]->getName());
+        jsonWriter.writeValue(request.m_trid);
+        const auto& columnRecords = rowRelatedData->m_mcr.getColumnRecords();
+        for (std::size_t i = 0, n = columnRecords.size(); i < n; ++i) {
+            const auto& column = rowRelatedData->m_columns.at(i + 1);
+            jsonWriter.writeComma();
+            jsonWriter.writeFieldName(column->getName());
+            Variant v;
+            column->readRecord(columnRecords[i].getAddress(), v);
+            writeVariantAsJson(v, jsonWriter);
+        }
+        jsonWriter.writeObjectEnd();
+    }
+    writeJsonEpilog(jsonWriter);
+    chunkedOutput.flush();
 }
 
 }  // namespace siodb::iomgr::dbengine

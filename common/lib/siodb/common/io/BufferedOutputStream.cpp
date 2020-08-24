@@ -18,7 +18,7 @@ BufferedOutputStream::~BufferedOutputStream()
     close();
 }
 
-bool BufferedOutputStream::isValid() const
+bool BufferedOutputStream::isValid() const noexcept
 {
     return m_stream && m_stream->isValid();
 }
@@ -52,7 +52,7 @@ std::ptrdiff_t BufferedOutputStream::write(const void* buffer, std::size_t size)
 
     while (remaining > bufferSize) {
         if (onFlush(bufferSize) < 0) return size - remaining;
-        const auto n = writeRawData(buffer, bufferSize);
+        const auto n = m_stream->write(buffer, bufferSize);
         if (n < 0) return size - remaining;
         remaining -= n;
         buffer = static_cast<const std::uint8_t*>(buffer) + n;
@@ -72,7 +72,7 @@ std::ptrdiff_t BufferedOutputStream::flush()
     if (!isValid()) return -1;
     if (m_dataSize == 0) return 0;
     if (onFlush(m_dataSize) < 0) return -1;
-    auto n = writeRawData(m_buffer.data(), m_dataSize);
+    const auto n = m_stream->write(m_buffer.data(), m_dataSize);
     if (n >= 0) {
         if (static_cast<std::size_t>(n) == m_dataSize)
             m_dataSize = 0;
@@ -90,24 +90,6 @@ std::ptrdiff_t BufferedOutputStream::flush()
 int BufferedOutputStream::onFlush([[maybe_unused]] std::size_t dataSize)
 {
     return 0;
-}
-
-std::ptrdiff_t BufferedOutputStream::writeRawData(const void* buffer, std::size_t size)
-{
-    unsigned zeroWriteCount = 0;
-    auto remaining = size;
-    while (remaining > 0) {
-        const auto n = m_stream->write(buffer, remaining);
-        if (n < 0) {
-            m_stream = nullptr;
-            break;
-        }
-        if (n == 0 && ++zeroWriteCount == kZeroWriteAttemptLimit) break;
-        zeroWriteCount = 0;
-        remaining -= n;
-        buffer = static_cast<const std::uint8_t*>(buffer) + n;
-    }
-    return size - remaining;
 }
 
 }  // namespace siodb::io

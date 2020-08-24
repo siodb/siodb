@@ -62,7 +62,7 @@ void Database::readAllTables()
 
     bool hasInvalidTables = false;
     TableRegistry reg;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -70,12 +70,12 @@ void Database::readAllTables()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysTablesTable->getName(), m_uuid, m_sysTablesTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -174,7 +174,7 @@ void Database::readAllColumnSets()
     const auto& tablesById = m_tableRegistry.byId();
     bool hasInvalidColumnSets = false;
     ColumnSetRegistry reg;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -182,12 +182,12 @@ void Database::readAllColumnSets()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnSetsTable->getName(), m_uuid, m_sysColumnSetsTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -276,7 +276,7 @@ void Database::readAllColumns()
 
     const auto expectedColumnCount = m_sysColumnsTable->getColumnCount() - 1;
 
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -285,11 +285,11 @@ void Database::readAllColumns()
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(key, &trid);
         //DBG_LOG_DEBUG("Database " << m_name << ": readAllColumns: Looking up TRID " << trid);
-        if (index->findValue(currentKey, value, 1) != 1)
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1)
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnsTable->getName(), m_uuid, m_sysColumnsTable->getId(), 2);
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -482,7 +482,7 @@ void Database::readAllColumnDefs()
     const auto& columnsById = m_columnRegistry.byId();
     bool hasInvalidColumnDefs = false;
     ColumnDefinitionRegistry reg;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -490,12 +490,12 @@ void Database::readAllColumnDefs()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnDefsTable->getName(), m_uuid, m_sysColumnDefsTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -580,7 +580,7 @@ void Database::readAllColumnSetColumns()
     auto reg = m_columnSetRegistry;
     const auto& newColumnSetsById = reg.byId();
     bool hasInvalidColumnSetColumns = false;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -588,13 +588,13 @@ void Database::readAllColumnSetColumns()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnSetColumnsTable->getName(), m_uuid,
                     m_sysColumnSetColumnsTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -719,7 +719,7 @@ void Database::readAllConstraintDefs()
 
     bool hasInvalidConstraintDefs = false;
     ConstraintDefinitionRegistry reg;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -727,13 +727,13 @@ void Database::readAllConstraintDefs()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysConstraintDefsTable->getName(), m_uuid, m_sysConstraintDefsTable->getId(),
                     2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -830,7 +830,7 @@ void Database::readAllConstraints()
     const auto& constraintDefsById = m_constraintDefinitionRegistry.byId();
     bool hasInvalidConstraints = false;
     ConstraintRegistry reg;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -838,12 +838,12 @@ void Database::readAllConstraints()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysConstraintsTable->getName(), m_uuid, m_sysConstraintsTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -956,7 +956,7 @@ void Database::readAllColumnDefConstraints()
     ColumnDefinitionRegistry reg = m_columnDefinitionRegistry;
     const auto& newColumnDefsById = reg.byId();
     bool hasInvalidColumnDefinitionConstraintList = false;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -964,13 +964,13 @@ void Database::readAllColumnDefConstraints()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnDefConstraintsTable->getName(), m_uuid,
                     m_sysColumnDefConstraintsTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -1112,7 +1112,7 @@ void Database::readAllIndices()
 
     if (maxTrid > 0) {
         const auto expectedColumnCount = m_sysIndexColumnsTable->getColumnCount() - 1;
-        std::uint8_t value[12];
+        IndexValue indexValue;
         std::uint8_t* currentKey = key + 8;
         std::uint8_t* nextKey = key;
         do {
@@ -1123,13 +1123,13 @@ void Database::readAllIndices()
             //DBG_LOG_DEBUG("Database " << m_name
             //                          << ": readAllIndices: Looking up SYS_INDEX_COLUMNS.TRID "
             //                          << trid);
-            if (sysIndexColumnsIndex->findValue(currentKey, value, 1) != 1) {
+            if (sysIndexColumnsIndex->findValue(currentKey, indexValue.m_data, 1) != 1) {
                 throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                         m_name, m_sysIndexColumnsTable->getName(), m_uuid,
                         m_sysIndexColumnsTable->getId(), 2);
             }
             ColumnDataAddress mcrAddr;
-            mcrAddr.pbeDeserialize(value, sizeof(value));
+            mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
             // Read and validate master column record
             MasterColumnRecord mcr;
@@ -1191,7 +1191,7 @@ void Database::readAllIndices()
         const auto& columnDefinitionsById = m_columnDefinitionRegistry.byId();
         const auto expectedColumnCount = m_sysIndicesTable->getColumnCount() - 1;
         std::uint32_t indexWithColumnsCount = 0;
-        std::uint8_t value[12];
+        IndexValue indexValue;
         std::uint8_t* currentKey = key + 8;
         std::uint8_t* nextKey = key;
         do {
@@ -1201,13 +1201,13 @@ void Database::readAllIndices()
             ::pbeDecodeUInt64(currentKey, &trid);
             //DBG_LOG_DEBUG("Database " << m_name << ": readAllIndices: Looking up SYS_INDICES.TRID "
             //                          << trid);
-            if (sysIndicesIndex->findValue(currentKey, value, 1) != 1) {
+            if (sysIndicesIndex->findValue(currentKey, indexValue.m_data, 1) != 1) {
                 throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                         m_name, m_sysIndicesTable->getName(), m_uuid, m_sysIndicesTable->getId(),
                         2);
             }
             ColumnDataAddress mcrAddr;
-            mcrAddr.pbeDeserialize(value, sizeof(value));
+            mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
             // Read and validate master column record
             MasterColumnRecord mcr;

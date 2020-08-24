@@ -41,7 +41,7 @@ FDStream::~FDStream()
 
 FDStream& FDStream::operator=(FDStream&& src) noexcept
 {
-    if (!isValid()) close();
+    if (isValid()) close();
     m_fd = src.m_fd;
     m_autoClose = src.m_autoClose;
     src.m_fd = -1;
@@ -49,30 +49,41 @@ FDStream& FDStream::operator=(FDStream&& src) noexcept
     return *this;
 }
 
-bool FDStream::isValid() const
+bool FDStream::isValid() const noexcept
 {
     return m_fd >= 0;
 }
 
 std::ptrdiff_t FDStream::read(void* buffer, std::size_t size)
 {
+    // IMPORTANT: Use exactly read() system call
     return ::read(m_fd, buffer, size);
 }
 
 std::ptrdiff_t FDStream::write(const void* buffer, std::size_t size)
 {
-    return ::write(m_fd, buffer, size);
+    // IMPORTANT: Use exactly writeExact()
+    return ::writeExact(m_fd, buffer, size, kIgnoreSignals);
 }
 
-off_t FDStream::skip(std::size_t size)
+std::ptrdiff_t FDStream::skip(std::size_t size)
 {
-    return ::lseek(m_fd, size, SEEK_CUR);
+    if (::lseek(m_fd, size, SEEK_CUR) >= 0) return size;
+    std::uint8_t buffer[4096];
+    auto remaining = size;
+    while (remaining > 0) {
+        const auto bytesToSkip = std::min(remaining, sizeof(buffer));
+        const auto n = read(buffer, bytesToSkip);
+        if (SIODB_UNLIKELY(n < 1)) break;
+        remaining -= n;
+    }
+    return size - remaining;
 }
 
 int FDStream::close()
 {
     if (isValid()) return doClose();
-    throw std::runtime_error("Invalid file descriptor");
+    return -1;
 }
 
 void FDStream::swap(FDStream& other) noexcept
@@ -82,6 +93,8 @@ void FDStream::swap(FDStream& other) noexcept
         std::swap(m_autoClose, other.m_autoClose);
     }
 }
+
+// ----- internals -----
 
 int FDStream::doClose() noexcept
 {

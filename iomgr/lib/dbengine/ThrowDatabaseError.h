@@ -88,30 +88,30 @@ template<class MessageId, class... Args>
         std::ostringstream os;
         os << "Bad message format in the message #" << static_cast<int>(messageId) << ": "
            << message->getText();
-        throw InternalError(5, os.str());
+        throw InternalDatabaseError(5, os.str());
     } catch (boost::io::too_few_args& ex) {
         std::ostringstream os;
         os << "Too few parameters for the message #" << static_cast<int>(messageId) << ": expected "
            << ex.get_expected() << ", but got " << ex.get_cur();
-        throw InternalError(6, os.str());
+        throw InternalDatabaseError(6, os.str());
     } catch (boost::io::too_many_args& ex) {
         std::ostringstream os;
         os << "Too many parameters for the message #" << static_cast<int>(messageId)
            << ": expected " << ex.get_expected() << ", but got " << ex.get_cur();
-        throw InternalError(7, os.str());
+        throw InternalDatabaseError(7, os.str());
     } catch (boost::io::out_of_range& ex) {
         std::ostringstream os;
         os << "Parameter index is out of range for the message #" << static_cast<int>(messageId)
            << ": index is " << ex.get_index() << ", but range is (" << ex.get_beg() << ", "
            << ex.get_end() << ")";
-        throw InternalError(8, os.str());
+        throw InternalDatabaseError(8, os.str());
     }
 
     // See more on this here https://stackoverflow.com/a/25859856/1540501
     if (DatabaseError::isMessageIdInRange(messageId, DatabaseError::kIOErrorCodeRange))
-        throw IOError(messageId, s);
+        throw DatabaseIOError(messageId, s);
     else if (DatabaseError::isMessageIdInRange(messageId, DatabaseError::kInternalErrorCodeRange))
-        throw InternalError(messageId, s);
+        throw InternalDatabaseError(messageId, s);
     else
         throw UserVisibleDatabaseError(messageId, s);
 }

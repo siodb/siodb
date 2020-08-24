@@ -12,8 +12,10 @@ Source code in this repository is licensed under the AGPL v3 License.
  - ANTLR4: thirdparty/antlr4/LICENSE-4.8.txt
  - Antlr4-cpp-runtime: thirdparty/antlr4-cpp-runtime/LICENSE-4.8.txt
  - Date Library: thirdparty/date/LICENSE-20190911.txt
- - Google test: thirdparty/googletest/LICENSE-1.8.1
- - Protobuf Library: thirdparty/protobuf/LICENSE-3.11.4
- - Utf8cpp Library: thirdparty/utf8cpp/LICENSE-3.1
- - XxHash Library: thirdparty/xxHash/LICENSE-0.7.2
-
+ - Google test: thirdparty/googletest/LICENSE-1.8.1.txt
+ - Json: thirdparty/json/LICENSE-3.9.1.txt
+ - Oat++: thirdparty/oatpp/LICENSE-1.1.0.txt
+ - OpenSSL: thirdparty/openssl/LICENSE-1.1.1g.txt
+ - Protobuf Library: thirdparty/protobuf/LICENSE-3.11.4.txt
+ - Utf8cpp Library: thirdparty/utf8cpp/LICENSE-3.1.txt
+ - XxHash Library: thirdparty/xxHash/LICENSE-0.7.2.txt
