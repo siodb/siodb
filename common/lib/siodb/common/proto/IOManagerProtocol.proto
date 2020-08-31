@@ -52,7 +52,7 @@ message DatabaseEngineResponse {
     /** Description of columns in this data set. */
     repeated ColumnDescription column_description = 4;
 
-    /** Number of this response in series of responses. Starts with 0. */
+    /** Response identifier in this series of responses. Starts with 0. */
     uint32 response_id = 5;
 
     /**

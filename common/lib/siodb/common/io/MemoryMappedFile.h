@@ -8,7 +8,7 @@
 #include <cstddef>
 
 // Project headers
-#include "../utils/FdGuard.h"
+#include "../utils/FDGuard.h"
 
 // System headers
 #include <sys/mman.h>  // intentionally included to provide mmap constants
@@ -101,7 +101,7 @@ private:
 
 private:
     /** File descriptor guard */
-    FdGuard m_fdGuard;
+    FDGuard m_fdGuard;
 
     /** File descriptor */
     const int m_fd;

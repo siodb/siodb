@@ -13,7 +13,7 @@
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 namespace siodb::iomgr::dbengine {

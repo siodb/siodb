@@ -19,7 +19,7 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/SignalHandlers.h>
@@ -188,7 +188,7 @@ extern "C" int iomgrMain(int argc, char** argv)
                     instanceOptions->m_generalOptions.m_name);
             if (!fs::exists(initFlagFilePath)) {
                 // Signal to siodb process that database is initialized and checked.
-                siodb::FdGuard lockFile(
+                siodb::FDGuard lockFile(
                         ::open(initFlagFilePath.c_str(), O_CREAT, siodb::kLockFileCreationMode));
                 if (!lockFile.isValidFd())
                     stdext::throw_system_error("Can't create iomgr initialization file");

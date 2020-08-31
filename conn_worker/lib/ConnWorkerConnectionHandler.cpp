@@ -51,7 +51,7 @@ std::string createChallenge()
 }  // namespace
 
 ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(
-        FdGuard&& client, const config::ConstInstaceOptionsPtr& instanceOptions, bool adminMode)
+        FDGuard&& client, const config::ConstInstaceOptionsPtr& instanceOptions, bool adminMode)
     : m_dbOptions(instanceOptions)
     , m_adminMode(adminMode)
 {
@@ -72,7 +72,7 @@ ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(
                        ? m_dbOptions->m_ioManagerOptions.m_ipv4SqlPort
                        : m_dbOptions->m_ioManagerOptions.m_ipv6SqlPort;
 
-    FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
+    FDGuard fdGuard(net::openTcpConnection("localhost", port, true));
     auto iomgrConnection = std::make_unique<io::FDStream>(fdGuard.getFD(), false);
     fdGuard.release();
     iomgrConnection->setAutoClose();
@@ -134,7 +134,7 @@ void ConnWorkerConnectionHandler::run()
                                        ? m_dbOptions->m_ioManagerOptions.m_ipv4SqlPort
                                        : m_dbOptions->m_ioManagerOptions.m_ipv6SqlPort;
 
-                    FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
+                    FDGuard fdGuard(net::openTcpConnection("localhost", port, true));
                     auto iomgrConnection = std::make_unique<io::FDStream>(fdGuard.getFD(), false);
                     fdGuard.release();
                     iomgrConnection->setAutoClose();

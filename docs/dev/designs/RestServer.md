@@ -1,12 +1,12 @@
-# REST server
+# REST Server
 
 ## Overview
 
-Siodb must to provide an integrated REST server that can work in parallel with theSQL front-end.
+Siodb must to provide an integrated REST Server that can work in parallel with theSQL front-end.
 It would only work per table and allow users to push/retrieve data through REST. The server will
 operate as a distinct process called `siodb_rest_server`. The server will convert REST queries
 into the IOMgr engine requests, send them to IOMgr, receive response, convert it to JSON and send
-back to HTTP client. REST server will support both HTTP and HTTPS protocols.
+back to HTTP client. REST Server will support both HTTP and HTTPS protocols.
 
 ## Authentication
 
@@ -102,7 +102,16 @@ URL:
 
 Content:
 
-- Body: column name-value pairs: `{ "col1": "Val1", "col2": "Val2", ...}`.
+- Body: array of objects with column name-value pairs. Each element in the array
+  designates separate row.
+
+```json
+[
+    { "col1": "Val1", "col2": "Val2", ...},
+    { "col1": "Val1", "col2": "Val2", ...},
+    ...
+]
+```
 
 Action:
 
@@ -180,42 +189,62 @@ Result:
 
 ## Workflows
 
-### GET
+### GET, DELETE Requests
 
 1. A client sends a query to the server, for example:
 `curl -H "Authorization: Basic xxxx" https://siodb-srv:50443/request-path`
-2. REST server receives the request headers and queries the IOMgr with `ValidateUserTokenRequest`
-   to see if the token is valid.
-    - If valid: continues to the step 3
-    - If invalid: returns HTTP status `401 Unauthorized`
-3. REST server receives the request body.
-4. REST server converts the request into a `DatabaseEngineRestRequest`.
-5. REST server sends the command to the IOMgr.
-6. IOMgr receives the `DatabaseEngineRestRequest`, re-evaluates token,
-   processes the JSON and sends the `DatabaseEngineResponse` and, if applicable, json data after it.
-7. REST server converts `DatabaseEngineResponse` to JSON and sends the HTTP 1.1 header
-   `Transfer-Encoding: chunked` and part of the JSON response.
-8. REST server receives JSON and forwards it to the client in the HTTP 1.1 chunks,
-   chunked per N bytes.
-9. Finally REST server sends zero-length chunk to indicate end of data.
+2. REST Server converts the request into message `DatabaseEngineRestRequest`.
+3. REST Server sends message `DatabaseEngineRestRequest` to the IOMgr.
+4. IOMgr receives the message `DatabaseEngineRestRequest`, evaluates user name and token,
+   processes request and sends message `DatabaseEngineResponse` and, if applicable,
+   json data after it in IOMgr chunked format.
+5. REST server receives message `DatabaseEngineResponse` from IOMgr.
+6. If `DatabaseEngineResponse` contains error messages, REST Server generates
+   JSON with error status and sends only it.
+7. Otherwise:
+   - REST Server sends HTTP 1.1 header `Transfer-Encoding: chunked`.
+   - REST Server receives JSON from IOMgr in the chunked format and forwards it
+     to the client in the HTTP 1.1 chunks, chunked per N bytes.
+   - Finally REST Server sends zero-length chunk to indicate end of data.
 
 NOTE: All values from IOMgr would be converted into UTF-8 JSON.
 
-### POST, PATCH, DELETE
+### POST, PATCH Requests
 
 1. A client sends a query to the server:
 `curl -H "Authorization: Basic xxxx" https://siodb-srv:50443/<path>`
-2. REST server receives the request headers and queries the IOMgr with `ValidateUserTokenRequest`
-   to see if the token is valid.
-    - If valid: it goes to step 3
-    - If not valid, it return the message `Status::CODE_401, "Unauthorized"`
-3. REST server receives the request.
-4. REST server converts the request into a `DatabaseEngineRestRequest`.
-5. REST server sends the command to the IOMgr.
-6. IOMgr receives the request, re-evaluates token, processes the JSON and send the
-   `DatabaseEngineResponse` and, if applicable, JSON data after it.
-7. REST server writes into a JSON the response converted from `DatabaseEngineResponse`.
-8. REST server sends the JSON response to the client along with JSON data from iomgr.
+2. REST Server receives the request headers, creates and sends message `DatabaseEngineRestRequest`
+   to IOMgr.
+3. IOMgr receives the `DatabaseEngineRestRequest`, evaluates user name and token,
+   and sends the `DatabaseEngineResponse`.
+4. REST server receives `DatabaseEngineResponse`.
+5. If `DatabaseEngineResponse` contains error messages, REST Server:
+   - Receives and skips request body
+   - Generates JSON with error status (i.e. `Status::CODE_401, "Unauthorized"`) and sends only it.
+6. REST Server receives request body if applicable and forwards it to the IOMgr
+   in the IOMgr chunked format.
+7. IOMgr receives JSON data and parses it.
+8. If JSON contains errors, IOMgr creates message `DatabaseEngineResponse` with errors
+   and sends it back.
+9. IOMgr processes JSON, performs operations and forms reponse payload.
+10. IOMgr creates message `DatabaseEngineResponse` and sends it back.
+11. REST Server receives message `DatabaseEngineResponse`.
+12. If `DatabaseEngineResponse` contains error messages, REST Server forms JSON
+    with appropriate status and sends only it.
+13. Otherwise:
+    - REST Server sends HTTP 1.1 header `Transfer-Encoding: chunked`.
+    - REST Server receives JSON from IOMgr in the chunked format and forwards it
+      to the client in the HTTP 1.1 chunks, chunked per N bytes.
+    - Finally REST Server sends zero-length chunk to indicate end of data.
+
+## IOMgr Chunked Format
+
+IOMgr chunked format consists of following elements:
+
+1. Chunk length: `varuint64` number.
+2. Chunk content.
+3. (1) and (2) are repeated as needed.
+4. Zero byte as chunk length - indicates end of chunked data.
 
 ## Configuration Parameters
 
@@ -223,12 +252,16 @@ NOTE: All values from IOMgr would be converted into UTF-8 JSON.
   `0` means do not listen.
 - `rest_server.ipv4_https_port` - IPv4 HTTPS port number. Default value `50443`.
   `0` means do not listen.
-- `rest_server.ipv6_http_port` - IPv6 HTTP port number. Default value `50080`.
+- `rest_server.ipv6_http_port` - IPv6 HTTP port number. Default value `0`.
   `0` means do not listen.
-- `rest_server.ipv6_https_port` - IPv6 HTTPS port number. Default value `50443`.
+- `rest_server.ipv6_https_port` - IPv6 HTTPS port number. Default value `0`.
   `0` means do not listen.
 - `rest_server.tls_certificate` - path to the TLS certificate file.
 - `rest_server.tls_certificate_chain` - path to the TLS certificate chain file.
 - `rest_server.tls_private_key` - path to the TLS private key file.
 - `rest_server.chunk_size` - HTTP chunk size in bytes. Suffixes `k`, `K`, `m`, `M` change units
   to kilobytes and megabytes respectively.
+- `iomgr.rest.ipv4_port` - IPv4 REST protocol poort. Defaulr value `50002`.
+  `0` means do not listen.
+- `iomgr.rest.ipv6_port` - IPv6 REST protocol poort. Defaulr value `0`.
+  `0` means do not listen.

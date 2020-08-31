@@ -10,7 +10,7 @@
 #include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
 #include "../utils/Debug.h"
-#include "../utils/FdGuard.h"
+#include "../utils/FDGuard.h"
 
 // STL headers
 #include <iostream>
@@ -97,7 +97,7 @@ int openTcpConnection(const std::string& host, int port, bool closeOnExecute)
     struct addrinfo* currentAddrInfo = addrInfos;
     while (currentAddrInfo != nullptr) {
         // Create socket
-        FdGuard socket(::socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype,
+        FDGuard socket(::socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype,
                 currentAddrInfo->ai_protocol));
         if (!socket.isValidFd()) {
             stdext::throw_system_error("Can't create TCP socket");

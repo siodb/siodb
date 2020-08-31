@@ -2,8 +2,8 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "Client.h"
-#include "internal/ClientInternal.h"
+#include "SqlClient.h"
+#include "internal/SqlClientInternal.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
@@ -41,10 +41,11 @@
 // utf8cpp headers
 #include <utf8cpp/utf8.h>
 
-namespace siodb::cli {
+namespace siodb::sql_client {
 
 void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
-        io::InputOutputStream& connection, std::ostream& os, bool stopOnError)
+        io::InputOutputStream& connection, std::ostream& os, bool stopOnError,
+        bool printDebugMessages)
 {
     auto startTime = std::chrono::steady_clock::now();
     // Send command to server as protobuf message
@@ -63,17 +64,19 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         protobuf::StreamInputStream input(connection, errorCodeChecker);
         protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
 
-#ifdef _DEBUG
-        std::cerr << "\ndebug: ==================================================================="
-                     "====\n"
-                  << "debug: Expecting response: requestId=" << requestId
-                  << " responseId=" << responseId
-                  << "\ndebug: Received response: requestId=" << response.request_id()
-                  << " responseId=" << response.response_id()
-                  << "\ndebug: ==================================================================="
-                     "====\n"
-                  << std::flush;
-#endif
+        if (printDebugMessages) {
+            std::cerr << "\ndebug: "
+                         "==================================================================="
+                         "====\n"
+                      << "debug: Expecting response: requestId=" << requestId
+                      << " responseId=" << responseId
+                      << "\ndebug: Received response: requestId=" << response.request_id()
+                      << " responseId=" << response.response_id()
+                      << "\ndebug: "
+                         "==================================================================="
+                         "====\n"
+                      << std::flush;
+        }
 
         // Check request ID
         if (response.request_id() != requestId) {
@@ -95,7 +98,9 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         if (responseId == 0) {
             responseCount = response.response_count();
             if (responseCount == 0) responseCount = 1;
-            // os << "Number of responses:" << responseCount << std::endl;
+            if (printDebugMessages) {
+                os << "debug: Number of responses:" << responseCount << std::endl;
+            }
         } else {
             // Print extra separator lines between responses.
             os << "\n\n";
@@ -160,15 +165,15 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                 nullAllowed |= column.is_null();
             }
 
-#ifdef _DEBUG
-            std::cerr << "\ndebug: Columns: " << columnCount << '\n';
-            for (int i = 0; i < columnCount; ++i) {
-                const auto& column = response.column_description(i);
-                std::cerr << "debug: [" << i << "] name: '" << column.name()
-                          << "' type: " << static_cast<int>(column.type()) << '\n';
+            if (printDebugMessages) {
+                std::cerr << "\ndebug: Columns: " << columnCount << '\n';
+                for (int i = 0; i < columnCount; ++i) {
+                    const auto& column = response.column_description(i);
+                    std::cerr << "debug: [" << i << "] name: '" << column.name()
+                              << "' type: " << static_cast<int>(column.type()) << '\n';
+                }
+                std::cerr << std::endl;
             }
-            std::cerr << std::endl;
-#endif
 
             // Print column names
             for (int i = 0; i < columnCount; ++i) {
@@ -295,9 +300,9 @@ void authenticate(const std::string& identityKey, const std::string& userName,
     if (!authResponse.authenticated()) throw std::runtime_error("User authentication error");
 }
 
-}  // namespace siodb::cli
+}  // namespace siodb::sql_client
 
-namespace siodb::cli::detail {
+namespace siodb::sql_client::detail {
 
 using DataTypeWidthArray = std::array<std::size_t, static_cast<size_t>(COLUMN_DATA_TYPE_MAX)>;
 
@@ -770,4 +775,4 @@ void printNull(std::size_t width, std::ostream& os)
     }
 }
 
-}  // namespace siodb::cli::detail
+}  // namespace siodb::sql_client::detail

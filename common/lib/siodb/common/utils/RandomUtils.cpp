@@ -5,7 +5,7 @@
 #include "RandomUtils.h"
 
 // Project headers
-#include "FdGuard.h"
+#include "FDGuard.h"
 #include "../io/FileIO.h"
 
 // CRT headers
@@ -21,7 +21,7 @@ namespace {
 
 void getRandomBytesImpl(const char* devicePath, std::uint8_t* buffer, std::size_t length)
 {
-    FdGuard fd(::open(devicePath, O_RDONLY));
+    FDGuard fd(::open(devicePath, O_RDONLY));
     if (!fd.isValidFd()) {
         int errorCode = errno;
         std::ostringstream err;

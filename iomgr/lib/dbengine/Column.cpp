@@ -22,7 +22,7 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/Base128VariantEncoding.h>
 #include <siodb/common/utils/ByteOrder.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
@@ -848,7 +848,7 @@ void Column::setLastUserTrid(std::uint64_t lastUserTrid)
 int Column::createTridCountersFile(std::uint64_t firstUserTrid)
 {
     const auto tridCounterFilePath = utils::constructPath(m_dataDir, kTridCounterFile);
-    FdGuard fd(::open(tridCounterFilePath.c_str(), O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC,
+    FDGuard fd(::open(tridCounterFilePath.c_str(), O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC,
             kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
@@ -864,7 +864,7 @@ int Column::createTridCountersFile(std::uint64_t firstUserTrid)
 int Column::openTridCountersFile()
 {
     const auto tridCounterFilePath = utils::constructPath(m_dataDir, kTridCounterFile);
-    FdGuard fd(::open(tridCounterFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC));
+    FDGuard fd(::open(tridCounterFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotOpenTridCounterFile, getDatabaseName(),
@@ -915,7 +915,7 @@ void Column::loadMasterColumnMainIndex()
 
     // Open file
     const auto mainIndexIdFilePath = utils::constructPath(m_dataDir, kMainIndexIdFile);
-    FdGuard fd(::open(mainIndexIdFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME,
+    FDGuard fd(::open(mainIndexIdFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME,
             kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
@@ -1471,7 +1471,7 @@ void Column::createMasterColumnMainIndex()
 
     // Write index ID file
     const auto mainIndexIdFilePath = utils::constructPath(m_dataDir, kMainIndexIdFile);
-    FdGuard fd(::open(mainIndexIdFilePath.c_str(),
+    FDGuard fd(::open(mainIndexIdFilePath.c_str(),
             O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;

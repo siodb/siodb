@@ -25,7 +25,7 @@ public:
      * @return New connection handler object.
      */
     virtual IOManagerConnectionHandler* createConnectionHandler(
-            IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd) = 0;
+            IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd) = 0;
 };
 
 }  // namespace siodb::iomgr

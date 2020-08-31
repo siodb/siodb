@@ -29,6 +29,24 @@ public:
     DECLARE_NONCOPYABLE(BufferedOutputStream);
 
     /**
+     * Returns current buffer size.
+     * @return Current buffer size.
+     */
+    std::size_t getBufferSize() const noexcept
+    {
+        return m_buffer.size();
+    }
+
+    /**
+     * Returns current data size in the buffer.
+     * @return Current data size in the buffer.
+     */
+    std::size_t getDataSize() const noexcept
+    {
+        return m_dataSize;
+    }
+
+    /**
      * Returns indication that stream is valid.
      * @return true stream if stream is valid, false otherwise.
      */

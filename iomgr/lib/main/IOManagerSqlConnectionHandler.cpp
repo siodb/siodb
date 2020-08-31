@@ -71,9 +71,9 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
             try {
                 parser.parse();
             } catch (std::exception& ex) {
-                LOG_DEBUG << m_logContext << "Sending common parse error: " << ex.what();
+                LOG_DEBUG << m_logContext << "Sending common parsing error: " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), ex.what(), kSqlParseError);
-                LOG_DEBUG << m_logContext << "Sent common parse error.";
+                LOG_DEBUG << m_logContext << "Sent common parsing error.";
                 continue;
             }
 
@@ -94,9 +94,9 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                     dbEngineRequest = dbengine::parser::DBEngineSqlRequestFactory::createRequest(
                             parser.findStatement(i));
                 } catch (std::exception& ex) {
-                    LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
+                    LOG_DEBUG << m_logContext << "Sending request parsing error " << ex.what();
                     sendErrorReponse(requestMsg.request_id(), ex.what(), kSqlParseError);
-                    LOG_DEBUG << m_logContext << "Sent request parse error";
+                    LOG_DEBUG << m_logContext << "Sent request parsing error";
                     // Stop loop  after error response
                     break;
                 }
@@ -157,7 +157,7 @@ dbengine::AuthenticationResult IOManagerSqlConnectionHandler::authenticateUser()
     LOG_DEBUG << m_logContext << "Sent BeginAuthenticateUserResponse to client";
 
     if (!beginAuthenticateUserResponse.session_started())
-        throw std::runtime_error("Session isn't started");
+        throw std::runtime_error("Session not started");
 
     iomgr_protocol::AuthenticateUserRequest authRequest;
     LOG_DEBUG << m_logContext << "Waiting for authentication request...";

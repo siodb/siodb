@@ -10,7 +10,7 @@
 namespace siodb::iomgr {
 
 IOManagerConnectionHandler* IOManagerRestConnectionHandlerFactory::createConnectionHandler(
-        IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd)
+        IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd)
 {
     return new IOManagerRestConnectionHandler(requestDispatcher, std::move(clientFd));
 }

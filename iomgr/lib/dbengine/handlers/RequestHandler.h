@@ -27,7 +27,10 @@ class JsonWriter;
 
 namespace siodb::iomgr::dbengine {
 
-/** Handles SQL based requests */
+/** 
+ * Handles SQL based requests.
+ * Request handler automaticall marks current database as used.
+ */
 class RequestHandler final {
 public:
     /**
@@ -51,7 +54,24 @@ public:
     void executeRequest(const requests::DBEngineRequest& request, std::uint64_t requestId,
             std::uint32_t responseId, std::uint32_t responseCount);
 
+    /**
+     * Suppresses super-user effect on some operations.
+     */
+    void suppressSuperUserRights() noexcept
+    {
+        m_suppressSuperUserRights = true;
+    }
+
 private:
+    /**
+     * Returns indication that this RequestHandler acts under the super user rights.
+     * @return true if this RequestHandler acts under the super user rights, false otherwise.
+     */
+    bool isSuperUser() const noexcept
+    {
+        return m_userId == User::kSuperUserId && !m_suppressSuperUserRights;
+    }
+
     // DDL requests
 
     /**
@@ -534,6 +554,9 @@ private:
 
     /** Current database */
     std::string m_currentDatabaseName;
+
+    /** Inidication that super-user access rights should be suppressed */
+    bool m_suppressSuperUserRights;
 
     /** Log context name */
     static constexpr const char* kLogContext = "RequestHandler: ";

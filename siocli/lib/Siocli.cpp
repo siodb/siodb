@@ -5,7 +5,7 @@
 #include "Siocli.h"
 
 // Project headers
-#include "Client.h"
+#include "SqlClient.h"
 #include "SqlDump.h"
 #include "SqlQueryException.h"
 
@@ -26,7 +26,7 @@
 #include <siodb/common/sys/Syscalls.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/StartupActions.h>
 
 // Protobuf message headers
@@ -57,12 +57,10 @@
 #include <boost/program_options/variables_map.hpp>
 
 namespace {
-const std::string kDefaultHost(siodb::kLocalhost);
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
 const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
 const char* kSubsequentLinePrompt = "\033[1m      > \033[0m";
 const char* kCommentStart = "--";
-
 }  // namespace
 
 extern "C" int siocliMain(int argc, char** argv)
@@ -84,7 +82,7 @@ extern "C" int siocliMain(int argc, char** argv)
                 boost::program_options::value<std::string>()->default_value(std::string()),
                 "Connect to given instance in the admin mode");
         desc.add_options()("host,H",
-                boost::program_options::value<std::string>()->default_value(kDefaultHost),
+                boost::program_options::value<std::string>()->default_value(siodb::net::kLocalhost),
                 "Server host name or IP address");
         desc.add_options()("port,p",
                 boost::program_options::value<int>()->default_value(
@@ -101,10 +99,14 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()("verify-certificates,V", "Verify certificates");
         desc.add_options()("plaintext,P", "Use plaintext connection");
         desc.add_options()("no-echo,N", "Do not commands if not on the terminal");
+        desc.add_options()(
+                "command,c", boost::program_options::value<std::string>(), "Command to execute");
         desc.add_options()("export,e", boost::program_options::value<std::string>(),
                 "Export selected database SQL dump");
         desc.add_options()("export-all,E", "Export all databases SQL dump");
         desc.add_options()("help,h", "Produce help message");
+        desc.add_options()("nologo", "Do not print logo");
+        desc.add_options()("debug,d", "Prin debug messages");
 
         // Parse options
         boost::program_options::variables_map vm;
@@ -114,7 +116,8 @@ extern "C" int siocliMain(int argc, char** argv)
 
         // Handle help options
         if (vm.count("help") > 0) {
-            std::cout << desc << std::endl;
+            siodb::sql_client::printLogo();
+            std::cout << '\n' << desc << std::endl;
             return 0;
         }
 
@@ -127,16 +130,23 @@ extern "C" int siocliMain(int argc, char** argv)
         const auto exportSomething = exportDatabase || exportAllDatabases;
 
         // Handle options
-        siodb::cli::ClientParameters params;
+        siodb::sql_client::ClientParameters params;
         params.m_instance = vm["admin"].as<std::string>();
         params.m_host = vm["host"].as<std::string>();
         params.m_port = vm["port"].as<int>();
         params.m_exitOnError = !stdinIsTerminal && vm.count("keep-going") == 0;
         params.m_user = vm["user"].as<std::string>();
         const auto identityFile = vm["identity-file"].as<std::string>();
+        if (vm.count("command") > 0) {
+            auto command = vm["command"].as<std::string>();
+            boost::trim(command);
+            params.m_command = std::make_unique<std::string>(std::move(command));
+        }
         params.m_stdinIsTerminal = stdinIsTerminal;
         params.m_echoCommandsWhenNotOnATerminal = vm.count("no-echo") == 0;
         params.m_verifyCertificates = vm.count("verify-certificates") > 0;
+        params.m_noLogo = vm.count("nologo") > 0;
+        params.m_printDebugMessages = vm.count("debug") > 0;
 
         if (exportDatabase)
             params.m_exportDatabaseName = boost::to_upper_copy(vm["export"].as<std::string>());
@@ -149,31 +159,38 @@ extern "C" int siocliMain(int argc, char** argv)
             params.m_encryption = params.m_instance.empty();
         }
 
-        params.m_identityKey = siodb::cli::loadUserIdentityKey(identityFile.c_str());
+        params.m_identityKey = siodb::sql_client::loadUserIdentityKey(identityFile.c_str());
 
-        if (exportSomething) return exportSqlDump(params);
-
-        // Print logo
-        std::cout << "Siodb client v." << SIODB_VERSION_MAJOR << '.' << SIODB_VERSION_MINOR << '.'
-                  << SIODB_VERSION_PATCH
-#ifdef _DEBUG
-                  << " (debug build)"
-#endif
-                  << "\nCompiled on " << __DATE__ << ' ' << __TIME__ << "\nCopyright (C) "
-                  << SIODB_COPYRIGHT_YEARS << " Siodb GmbH. All rights reserved." << std::endl;
+        if (exportSomething) params.m_noLogo = true;
 
         // Ignore SIGPIPE
         signal(SIGPIPE, SIG_IGN);
 
+        // Print logo
+        if (!params.m_noLogo) siodb::sql_client::printLogo();
+
+        if (exportSomething) return exportSqlDump(params);
+
         // Execute command prompt
-        return siodb::cli::commandPrompt(params);
+        return siodb::sql_client::commandPrompt(params);
     } catch (std::exception& ex) {
         std::cerr << "Error: " << ex.what() << '.' << std::endl;
         return 2;
     }
 }
 
-namespace siodb::cli {
+namespace siodb::sql_client {
+
+void printLogo()
+{
+    std::cout << "Siodb SQL Client v." << SIODB_VERSION_MAJOR << '.' << SIODB_VERSION_MINOR << '.'
+              << SIODB_VERSION_PATCH
+#ifdef _DEBUG
+              << " (debug build)"
+#endif
+              << "\nCompiled on " << __DATE__ << ' ' << __TIME__ << "\nCopyright (C) "
+              << SIODB_COPYRIGHT_YEARS << " Siodb GmbH. All rights reserved." << std::endl;
+}
 
 int commandPrompt(const ClientParameters& params)
 {
@@ -182,12 +199,16 @@ int commandPrompt(const ClientParameters& params)
     std::unique_ptr<siodb::io::InputOutputStream> connection;
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
     const bool needPrompt = params.m_stdinIsTerminal;
+    const bool singleCommand = static_cast<bool>(params.m_command);
 
     do {
         try {
             auto singleWordCommand = SingleWordCommandType::kUnknownCommand;
-            std::string command;
-            {
+            std::string commandHolder;
+            std::string* command = &commandHolder;
+            if (singleCommand) {
+                command = params.m_command.get();
+            } else {
                 std::ostringstream text;
                 std::size_t textLength = 0;
                 char textLastChar = '\0';
@@ -244,12 +265,12 @@ int commandPrompt(const ClientParameters& params)
                     }
                 } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
                          && (textLength == 0 || textLastChar != ';'));
-                command = text.str();
-            }
+                commandHolder = text.str();
+            }  // read command
 
             // Maybe echo command
             if (!params.m_stdinIsTerminal && params.m_echoCommandsWhenNotOnATerminal)
-                std::cout << '\n' << command << '\n' << std::endl;
+                std::cout << '\n' << *command << '\n' << std::endl;
 
             // Handle single-word commands
             switch (singleWordCommand) {
@@ -303,9 +324,9 @@ int commandPrompt(const ClientParameters& params)
             }
 
             // Execute command
-            if (!command.empty()) {
-                executeCommandOnServer(requestId++, std::move(command), *connection, std::cout,
-                        params.m_exitOnError);
+            if (!command->empty()) {
+                executeCommandOnServer(requestId++, std::move(*command), *connection, std::cout,
+                        params.m_exitOnError, params.m_printDebugMessages);
             }
         } catch (std::exception& ex) {
             std::cerr << "Error: " << ex.what() << '.' << std::endl;
@@ -322,7 +343,7 @@ int commandPrompt(const ClientParameters& params)
             }
             if (params.m_exitOnError) return 3;
         }
-    } while (hasMoreInput);
+    } while (!singleCommand && hasMoreInput);
     return 0;
 }
 
@@ -354,7 +375,7 @@ int exportSqlDump(const ClientParameters& params)
         connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
     }
 
-    siodb::cli::authenticate(params.m_identityKey, params.m_user, *connection);
+    siodb::sql_client::authenticate(params.m_identityKey, params.m_user, *connection);
 
     try {
         const auto currentTime =
@@ -387,7 +408,7 @@ int exportSqlDump(const ClientParameters& params)
 
 std::string loadUserIdentityKey(const char* path)
 {
-    siodb::FdGuard fd(::open(path, O_RDONLY));
+    siodb::FDGuard fd(::open(path, O_RDONLY));
     if (!fd.isValidFd()) stdext::throw_system_error("Can't open user identity key");
 
     struct stat st;
@@ -417,4 +438,4 @@ SingleWordCommandType decodeSingleWordCommand(const std::string& command) noexce
     return SingleWordCommandType::kUnknownCommand;
 }
 
-}  // namespace siodb::cli
+}  // namespace siodb::sql_client

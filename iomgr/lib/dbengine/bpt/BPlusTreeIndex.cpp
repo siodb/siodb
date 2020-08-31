@@ -12,7 +12,7 @@
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
 // CRT headers

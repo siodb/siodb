@@ -40,6 +40,7 @@ RequestHandler::RequestHandler(
     , m_connection(connection)
     , m_userId(userId)
     , m_currentDatabaseName(kSystemDatabaseName)
+    , m_suppressSuperUserRights(false)
 {
     m_instance.findDatabaseChecked(m_currentDatabaseName)->use();
 }
@@ -332,7 +333,8 @@ void RequestHandler::addInternalDatabaseErrorToResponse(
         iomgr_protocol::DatabaseEngineResponse& response, int errorCode, const char* errorMessage)
 {
     const auto uuid = boost::uuids::random_generator()();
-    LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage << " (" << uuid << ')';
+    LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage << " (MSG_UUID " << uuid
+              << ')';
     auto msg = response.add_message();
     msg->set_status_code(1);
     msg->set_text(
@@ -343,7 +345,8 @@ void RequestHandler::addIoErrorToResponse(
         iomgr_protocol::DatabaseEngineResponse& response, int errorCode, const char* errorMessage)
 {
     const auto uuid = boost::uuids::random_generator()();
-    LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage << " (" << uuid << ')';
+    LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage << " (MSG_UUID " << uuid
+              << ')';
     auto msg = response.add_message();
     msg->set_status_code(1);
     msg->set_text("IO error, see log for details, message UUID " + boost::uuids::to_string(uuid));

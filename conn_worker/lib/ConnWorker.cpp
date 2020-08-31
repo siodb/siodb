@@ -13,7 +13,7 @@
 #include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/SignalHandlers.h>
 #include <siodb/common/utils/StartupActions.h>
@@ -55,7 +55,7 @@ int run(int argc, char** argv)
 {
     auto instanceOptions = std::make_shared<siodb::config::SiodbOptions>();
     std::string instanceName;
-    siodb::FdGuard client;
+    siodb::FDGuard client;
     bool adminMode = false;
 
     // Parse and validate command-line options

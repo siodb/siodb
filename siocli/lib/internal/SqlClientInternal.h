@@ -13,7 +13,7 @@
 // Protobuf headers
 #include <google/protobuf/io/coded_stream.h>
 
-namespace siodb::cli::detail {
+namespace siodb::sql_client::detail {
 
 // Default data widths
 constexpr std::size_t kBoolDefaultDataWidth = 5;  // false/true
@@ -74,4 +74,4 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is, Colum
  */
 void printNull(std::size_t width, std::ostream& os);
 
-}  // namespace siodb::cli::detail
+}  // namespace siodb::sql_client::detail

@@ -17,7 +17,7 @@
 #include "../main/ClientSession.h"
 
 // Common project headers
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // STL headers
@@ -139,9 +139,10 @@ public:
 
     /**
      * Returns list of databasesordered by name.
-     * @return List of databasess.
+     * @param includeSystemDatabase Indication that system database should be included.
+     * @return List of databases.
      */
-    std::vector<std::string> getDatabaseNames() const;
+    std::vector<std::string> getDatabaseNames(bool includeSystemDatabase = true) const;
 
     /**
      * Returns existing database object.
@@ -381,11 +382,11 @@ private:
     /** Loads system database */
     void loadSystemDatabase();
 
+    /** Loads users */
+    void loadUsers();
+
     /** Creates superuser */
     void createSuperUser();
-
-    /** Loads superuser */
-    void loadSuperUser();
 
     /** Records superuser into the system database. */
     void recordSuperUser();
@@ -557,7 +558,7 @@ private:
     const std::size_t m_blockCacheCapacity;
 
     /* Metadata file descriptor */
-    FdGuard m_metadataFile;
+    FDGuard m_metadataFile;
 
     /** Flag which allows creating user tables in the system database */
     const bool m_allowCreatingUserTablesInSystemDatabase;

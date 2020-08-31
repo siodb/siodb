@@ -23,9 +23,13 @@ IOManagerRequestExecutor::IOManagerRequestExecutor(std::size_t id, dbengine::Ins
 void IOManagerRequestExecutor::handleRequest(const IOManagerRequestPtr& request)
 {
     LOG_DEBUG << m_logContext << "Executing IO Manager request #" << request->getId();
-    IOManagerRequestExecutionResultAssignmentGuard guard(*request);
-    const auto connectionHandler = request->getConnectionHanlder();
-    if (connectionHandler) guard.setResult(connectionHandler->executeIOManagerRequest(*request));
+    {
+        IOManagerRequestExecutionResultAssignmentGuard guard(*request);
+        const auto connectionHandler = request->getConnectionHanlder();
+        if (connectionHandler)
+            guard.setResult(connectionHandler->executeIOManagerRequest(*request));
+    }
+    LOG_DEBUG << m_logContext << "Executed IO Manager request #" << request->getId();
 }
 
 std::string IOManagerRequestExecutor::createLogContextBaseString(std::size_t id)

@@ -5,7 +5,7 @@
 #pragma once
 
 // Common project headers
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // CRT headers
@@ -247,7 +247,7 @@ protected:
 
 protected:
     /** File descriptor */
-    FdGuard m_fd;
+    FDGuard m_fd;
 
     /** Last I/O error code */
     int m_lastError;

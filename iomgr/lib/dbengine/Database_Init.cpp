@@ -15,7 +15,7 @@
 
 // Common project headers
 #include <siodb/common/stl_ext/utility_ext.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 
 // STL headers
 #include <numeric>

@@ -20,7 +20,8 @@ MSG:6 Error TooFewParameters    Too few parameters for the message #%1%: expecte
 MSG:7 Error TooManyParameters   Too many parameters for the message #%1%: expected %2%, but got %3%
 MSG:8 Error ParametersIndexOutOfRange   Parameter index is out of range for the message #%1%: index is %2%, but range is (%3%, %4%)
 MSG:10 Error Feature is not implemented yet
-MSG:11 Error REST request parse error: %1%
+MSG:11 Error Authentication error: %1%
+MSG:12 Error REST request parse error: %1%
 
 ##########################################
 # Severe malfunctions
@@ -180,7 +181,7 @@ MSG Error UserAccessDenied        User '%1%' access denied
 MSG Error SessionDoesNotExist     Session '%1%' doesn't exist
 MSG Error UserTokenCheckFailed    User token '%1%'.'%2%' check failed
 MSG Error UserTokenMismatch       User '%1%' token mismatch
-MSG Error InvalidUserTokenValue1  Invalid user token
+MSG Error InvalidUserTokenValue   Invalid user token
 
 # UNSUPPORTED FEATURES
 MSG Error ConstraintNotSupported   Constraint type #%4% is not supported (constraint definition '%1%'.%2% (%3%.%2%)
@@ -188,6 +189,14 @@ MSG Error ConstraintNotSupported2  Constraint type #%4% is not supported
 
 # INVALID ATTRIBUTES
 MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2%'
+
+
+##########################################
+# REST ERRORS
+##########################################
+ID 3000
+MSG Error CannotOperateOnSystemTableViaRest Can't operate on the system table '%1%'.'%2%' via REST protocol
+
 
 ##########################################
 # INTERNAL MESSAGES

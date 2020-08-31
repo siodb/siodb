@@ -11,6 +11,7 @@
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 // Boost headers
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -66,7 +67,8 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetTablesRequest(
 {
     if (!isValidDatabaseObjectName(msg.object_name()))
         throw std::invalid_argument("GET TABLES: Invalid database name");
-    return std::make_shared<requests::GetTablesRestRequest>(std::string(msg.object_name()));
+    return std::make_shared<requests::GetTablesRestRequest>(
+            boost::to_upper_copy(msg.object_name()));
 }
 
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetAllRowsRequest(
@@ -85,7 +87,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetAllRowsRequest
         throw std::invalid_argument("GET ALL ROWS: Invalid table name");
 
     return std::make_shared<requests::GetAllRowsRestRequest>(
-            std::move(components[0]), std::move(components[1]));
+            boost::to_upper_copy(components[0]), boost::to_upper_copy(components[1]));
 }
 
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetSingleRowRequest(
@@ -105,8 +107,8 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetSingleRowReque
 
     if (msg.object_id() == 0) throw std::invalid_argument("GET SINGLE ROW: Invalid object ID");
 
-    return std::make_shared<requests::GetSingleRowRestRequest>(
-            std::move(components[0]), std::move(components[1]), msg.object_id());
+    return std::make_shared<requests::GetSingleRowRestRequest>(boost::to_upper_copy(components[0]),
+            boost::to_upper_copy(components[1]), msg.object_id());
 }
 
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
@@ -128,8 +130,8 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
 
     // TODO parse values
 
-    return std::make_shared<requests::PostRowsRestRequest>(
-            std::move(components[0]), std::move(components[1]), std::move(values));
+    return std::make_shared<requests::PostRowsRestRequest>(boost::to_upper_copy(components[0]),
+            boost::to_upper_copy(components[1]), std::move(values));
 }
 
 }  // namespace siodb::iomgr::dbengine::parser

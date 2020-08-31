@@ -13,7 +13,7 @@ CXX_SRC:= \
 	CheckOSUser.cpp  \
 	EmptyString.cpp  \
 	ErrorCodeChecker.cpp  \
-	FsUtils.cpp \
+	FSUtils.cpp \
 	MessageCatalog.cpp  \
 	RandomUtils.cpp  \
 	SignalHandlers.cpp  \
@@ -38,9 +38,9 @@ CXX_HDR:= \
 	DeserializationError.h  \
 	EmptyString.h  \
 	ErrorCodeChecker.h  \
-	FdGuard.h  \
+	FDGuard.h  \
 	Format.h  \
-	FsUtils.h  \
+	FSUtils.h  \
 	HelperMacros.h  \
 	MessageCatalog.h  \
 	MutableOrConstantString.h  \

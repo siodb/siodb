@@ -77,8 +77,8 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
         tmpOptions.m_generalOptions.m_ipv4Port = config.get<int>(
                 constructOptionPath(kGeneralOptionIpv4Port), kDefaultIpv4PortNumber);
         if (tmpOptions.m_generalOptions.m_ipv4Port != 0
-                && (tmpOptions.m_generalOptions.m_ipv4Port < kMinPortNumber
-                        || tmpOptions.m_generalOptions.m_ipv4Port > kMaxPortNumber))
+                && (tmpOptions.m_generalOptions.m_ipv4Port < net::kMinPortNumber
+                        || tmpOptions.m_generalOptions.m_ipv4Port > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IPv4 server port number");
     }
 
@@ -87,8 +87,8 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
         tmpOptions.m_generalOptions.m_ipv6Port = config.get<int>(
                 constructOptionPath(kGeneralOptionIpv6Port), kDefaultIpv6PortNumber);
         if (tmpOptions.m_generalOptions.m_ipv6Port != 0
-                && (tmpOptions.m_generalOptions.m_ipv6Port < kMinPortNumber
-                        || tmpOptions.m_generalOptions.m_ipv6Port > kMaxPortNumber))
+                && (tmpOptions.m_generalOptions.m_ipv6Port < net::kMinPortNumber
+                        || tmpOptions.m_generalOptions.m_ipv6Port > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IPv6 server port number");
     }
 
@@ -384,8 +384,8 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                 config.get<int>(constructOptionPath(kIOManagerOptionIpv4SqlPort),
                         kDefaultIOManagerIpv4SqlPortNumber);
         if (tmpOptions.m_ioManagerOptions.m_ipv4SqlPort != 0
-                && (tmpOptions.m_ioManagerOptions.m_ipv4SqlPort < kMinPortNumber
-                        || tmpOptions.m_ioManagerOptions.m_ipv4SqlPort > kMaxPortNumber))
+                && (tmpOptions.m_ioManagerOptions.m_ipv4SqlPort < net::kMinPortNumber
+                        || tmpOptions.m_ioManagerOptions.m_ipv4SqlPort > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IO Manager IPv4 SQL port number");
     }
 
@@ -395,8 +395,8 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                 config.get<int>(constructOptionPath(kIOManagerOptionIpv6SqlPort),
                         kDefaultIOManagerIpv6SqlPortNumber);
         if (tmpOptions.m_ioManagerOptions.m_ipv6SqlPort != 0
-                && (tmpOptions.m_ioManagerOptions.m_ipv6SqlPort < kMinPortNumber
-                        || tmpOptions.m_ioManagerOptions.m_ipv6SqlPort > kMaxPortNumber))
+                && (tmpOptions.m_ioManagerOptions.m_ipv6SqlPort < net::kMinPortNumber
+                        || tmpOptions.m_ioManagerOptions.m_ipv6SqlPort > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IO Manager IPv6 port number");
     }
 
@@ -406,8 +406,8 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                 config.get<int>(constructOptionPath(kIOManagerOptionIpv4RestPort),
                         kDefaultIOManagerIpv4RestPortNumber);
         if (tmpOptions.m_ioManagerOptions.m_ipv4RestPort != 0
-                && (tmpOptions.m_ioManagerOptions.m_ipv4RestPort < kMinPortNumber
-                        || tmpOptions.m_ioManagerOptions.m_ipv4RestPort > kMaxPortNumber))
+                && (tmpOptions.m_ioManagerOptions.m_ipv4RestPort < net::kMinPortNumber
+                        || tmpOptions.m_ioManagerOptions.m_ipv4RestPort > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IO Manager IPv4 REST port number");
     }
 
@@ -417,8 +417,8 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                 config.get<int>(constructOptionPath(kIOManagerOptionIpv6RestPort),
                         kDefaultIOManagerIpv6RestPortNumber);
         if (tmpOptions.m_ioManagerOptions.m_ipv6RestPort != 0
-                && (tmpOptions.m_ioManagerOptions.m_ipv6RestPort < kMinPortNumber
-                        || tmpOptions.m_ioManagerOptions.m_ipv6RestPort > kMaxPortNumber))
+                && (tmpOptions.m_ioManagerOptions.m_ipv6RestPort < net::kMinPortNumber
+                        || tmpOptions.m_ioManagerOptions.m_ipv6RestPort > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IO Manager IPv6 REST port number");
     }
 

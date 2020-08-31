@@ -16,7 +16,7 @@
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
@@ -345,7 +345,7 @@ void BlockRegistry::createDataFiles()
     const auto nextBlockListFilePath = utils::constructPath(
             m_dataDir, kNextBlockListFileName, m_column.getId(), kDataFileExtension);
 
-    FdGuard blockListFile(::open(blockListFilePath.c_str(), O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR,
+    FDGuard blockListFile(::open(blockListFilePath.c_str(), O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR,
             kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -355,7 +355,7 @@ void BlockRegistry::createDataFiles()
                 m_column.getId(), errorCode, std::strerror(errorCode));
     }
 
-    FdGuard nextBlockListFile(::open(nextBlockListFilePath.c_str(),
+    FDGuard nextBlockListFile(::open(nextBlockListFilePath.c_str(),
             O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -381,7 +381,7 @@ void BlockRegistry::openDataFiles()
     const auto nextBlockListFilePath = utils::constructPath(
             m_dataDir, kNextBlockListFileName, m_column.getId(), kDataFileExtension);
 
-    FdGuard blockListFile(
+    FDGuard blockListFile(
             ::open(blockListFilePath.c_str(), O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -406,7 +406,7 @@ void BlockRegistry::openDataFiles()
                 blockListFileSize);
     }
 
-    FdGuard nextBlockListFile(::open(
+    FDGuard nextBlockListFile(::open(
             nextBlockListFilePath.c_str(), O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -540,7 +540,7 @@ std::string&& BlockRegistry::ensureDataDir(std::string&& dataDir, bool create) c
 void BlockRegistry::createInitializationFlagFile() const
 {
     const auto initFlagFile = utils::constructPath(m_dataDir, kInitializationFlagFile);
-    FdGuard fd(::open(initFlagFile.c_str(), O_CREAT | O_WRONLY | O_CLOEXEC | O_NOATIME,
+    FDGuard fd(::open(initFlagFile.c_str(), O_CREAT | O_WRONLY | O_CLOEXEC | O_NOATIME,
             kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const int errorCode = errno;

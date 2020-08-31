@@ -9,7 +9,7 @@
 
 // Common project headers
 #include <siodb/common/io/InputOutputStream.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // STL headers
@@ -37,7 +37,7 @@ protected:
      * @param clientFd Client connection file descriptor guard.
      * @param requestDispatcher Request dispatcher.
      */
-    IOManagerConnectionHandler(IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd);
+    IOManagerConnectionHandler(IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd);
 
 public:
     /** De-initializes object */
@@ -100,7 +100,7 @@ protected:
     IOManagerRequestDispatcher& m_requestDispatcher;
 
     /** A file descriptor for polling connection with Client */
-    FdGuard m_clientEpollFd;
+    FDGuard m_clientEpollFd;
 
     /** Client connection IO */
     std::unique_ptr<siodb::io::InputOutputStream> m_clientConnection;

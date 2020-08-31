@@ -31,7 +31,7 @@ SCRIPT_DIR=$(dirname $SCRIPT)
 
 
 function _Prepare {
-  _log "INFO" "Cleanup traces of previous default instance..."
+  _log "INFO" "Cleanup traces of previous default instance"
 
   if [ ! -f "/etc/siodb/instances/siodb/config" ]; then
     _log "ERROR" "Configuration file not found."
@@ -40,14 +40,14 @@ function _Prepare {
   _killSiodb
 
   if [ -d "${DATAFILE_DIR}" ]; then
-    _log "INFO"  "Purging directory '${DATAFILE_DIR}'..."
+    _log "INFO"  "Purging directory '${DATAFILE_DIR}'"
     rm -rf ${DATAFILE_DIR}/*
   else
     _log "INFO" "Directory '${DATAFILE_DIR}' must exist."
   fi
 
   if [ -d "${LOGFILE_DIR}" ]; then
-    _log "INFO" "Purging directory '${LOGFILE_DIR}'..."
+    _log "INFO" "Purging directory '${LOGFILE_DIR}'"
     rm -rf ${LOGFILE_DIR}/*
   else
     _log "INFO" "Directory '${LOGFILE_DIR}' must exist."
@@ -55,20 +55,21 @@ function _Prepare {
 
   sleep 5
 
-  _log "INFO" "Preparing the Siodb default instance..."
+  _log "INFO" "Preparing default Siodb instance"
   dd if=/dev/urandom of=/etc/siodb/instances/siodb/system_db_key bs=16 count=1
-  cp -f ${SCRIPT_DIR}/public_key /etc/siodb/instances/siodb/initial_access_key
+  cp -f ${SCRIPT_DIR}/../share/public_key /etc/siodb/instances/siodb/initial_access_key
 }
 
 function _StartSiodb {
-  _log "INFO" "Starting default Siodb instance..."
+  _log "INFO" "Starting default Siodb instance"
   ${SIODB_BIN}/siodb --instance siodb --daemon
   sleep 20
 }
 
 function _StopSiodb {
-  _log "INFO" "Stopping Siodb process on default instance..."
-  SIODB_PROCESS_ID=$(ps -ef | grep 'siodb --instance siodb --daemon' | grep -v grep | awk '{print $2}')
+  _log "INFO" "Stopping Siodb process on default instance"
+  SIODB_PROCESS_ID=$(ps -ef | grep 'siodb --instance siodb --daemon' | grep -v grep \
+    | awk '{print $2}')
   if [[ -z "${SIODB_PROCESS_ID}" ]]; then
     echo "Siodb is already not running."
   else
@@ -78,7 +79,7 @@ function _StopSiodb {
 }
 
 function _CheckLogFileError {
-  _log "INFO" "Checking error in the log files..."
+  _log "INFO" "Checking error in the log files"
   ERROR_COUNT=$(cat ${LOGFILE_DIR}/* | grep error | wc -l)
   if [ "${ERROR_COUNT}" == "0" ]; then
     _log "INFO" "No error detected the log file(s)"
@@ -91,20 +92,27 @@ function _CheckLogFileError {
 }
 
 function _log {
-  echo "## `date "+%Y-%m-%dT%H:%M:%S"` | ${1} | ${2}"
-  if [[ "${1}" == 'ERROR' ]]; then
+  echo "## `date "+%Y-%m-%dT%H:%M:%S"` | $1 | $2"
+  if [[ "$1" == 'ERROR' ]]; then
     _testfails
     exit 1
   fi
 }
 
 function _RunSqlScript {
-  _log "INFO" "Executing script ${1} in siocli..."
-  ${SIODB_BIN}/siocli --admin siodb -u root -i ${SCRIPT_DIR}/private_key < ${1}
+  _log "INFO" "Executing SQL script $1"
+  ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin siodb -u root \
+    -i ${SCRIPT_DIR}/../share/private_key < $1
+}
+
+function _RunSql {
+  _log "INFO" "Executing SQL: $1"
+  ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin siodb -u root \
+    -i ${SCRIPT_DIR}/../share/private_key -c ''"$1"''
 }
 
 function _TestExternalAbort {
-  _log "INFO" "Testing an external abort ${1}..."
+  _log "INFO" "Testing an external abort $1"
   pkill -9 siodb
 }
 
@@ -114,7 +122,7 @@ if [[ -z "${SIODB_BIN}" ]]; then
   if [ $# -ne 1 ]; then
     _log "ERROR" "Please, indicate the path to Siodb bin directory as a parameter 1."
   else
-    SIODB_BIN="${1}"
+    SIODB_BIN="$1"
   fi
 fi
 
@@ -141,10 +149,15 @@ _Prepare
 _StartSiodb
 _CheckLogFileError
 
+##export SIOCLI_DEBUG=--debug
+
 if [[ "${SHORT_TEST}" == "1" ]]; then
-  _RunSqlScript "${SCRIPT_DIR}/query_sys_tables_short.sql"
+
+  _RunSql "SELECT * FROM SYS.SYS_TABLES"
   _CheckLogFileError
+
 else
+
   _RunSqlScript "${SCRIPT_DIR}/query_sys_tables.sql"
   _CheckLogFileError
 
@@ -162,8 +175,9 @@ else
 
   _RunSqlScript "${SCRIPT_DIR}/dml_datetime.sql"
   _CheckLogFileError
+
 fi
 
 _StopSiodb
 _CheckLogFileError
-_log "INFO" "All SQL tests passed successfully!"
+_log "INFO" "All tests passed"

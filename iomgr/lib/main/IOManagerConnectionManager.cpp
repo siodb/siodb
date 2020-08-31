@@ -10,7 +10,7 @@
 #include <siodb/common/net/SocketDomain.h>
 #include <siodb/common/net/TcpServer.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 
 // System headers
 #include <arpa/inet.h>
@@ -61,7 +61,7 @@ IOManagerConnectionManager::~IOManagerConnectionManager()
 void IOManagerConnectionManager::connectionListenerThreadMain()
 {
     // Set up server socket
-    FdGuard server;
+    FDGuard server;
     std::string socketPath;
     try {
         server.reset(net::createTcpServer(
@@ -97,7 +97,7 @@ void IOManagerConnectionManager::connectionListenerThreadMain()
     while (!m_exitRequested) {
         if (server.getFD() == -2) return;
 
-        FdGuard fdGuard(acceptTcpConnection(server.getFD()));
+        FDGuard fdGuard(acceptTcpConnection(server.getFD()));
         if (!fdGuard.isValidFd()) continue;
 
         std::unique_ptr<IOManagerConnectionHandler> handler(
@@ -150,7 +150,7 @@ int IOManagerConnectionManager::acceptTcpConnection(int serverFd)
 
     socklen_t addrLength = m_socketDomain == AF_INET ? sizeof(addr.v4) : sizeof(addr.v6);
 
-    FdGuard client(
+    FDGuard client(
             ::accept4(serverFd, reinterpret_cast<sockaddr*>(&addr), &addrLength, SOCK_CLOEXEC));
     if (!client.isValidFd()) {
         const int errorCode = errno;

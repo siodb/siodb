@@ -5,7 +5,7 @@
 #include "TlsConnection.h"
 
 // Project headers
-#include "../utils/FdGuard.h"
+#include "../utils/FDGuard.h"
 
 // System headers
 #include <unistd.h>
@@ -17,7 +17,7 @@ TlsConnection::TlsConnection(
     : m_ssl(context)
     , m_autoCloseFd(autoCloseFd)
 {
-    FdGuard guard(m_autoCloseFd ? fd : -1);
+    FDGuard guard(m_autoCloseFd ? fd : -1);
     if (::SSL_set_fd(m_ssl, fd) != 1) throw OpenSslError("SSL_set_fd failed");
     guard.release();
 

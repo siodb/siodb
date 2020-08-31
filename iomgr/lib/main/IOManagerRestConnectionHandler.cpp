@@ -17,6 +17,9 @@
 #include <siodb/common/utils/ErrorCodeChecker.h>
 #include <siodb/common/utils/SignalHandlers.h>
 
+// Boost headers
+#include <boost/algorithm/string/case_conv.hpp>
+
 namespace siodb::iomgr {
 
 // ----- internals -----
@@ -55,8 +58,38 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                           << ", user: " << requestMsg.user_name());
 
             // Authenticate user with token
-            const auto userId = m_requestDispatcher.getInstance().authenticateUser(
-                    requestMsg.user_name(), requestMsg.token());
+            std::uint32_t userId;
+            try {
+                const auto userName = boost::to_upper_copy(requestMsg.user_name());
+                userId = m_requestDispatcher.getInstance().authenticateUser(
+                        userName, requestMsg.token());
+            } catch (dbengine::UserVisibleDatabaseError& ex) {
+                LOG_ERROR << "Authentication error: " << '[' << ex.getErrorCode() << "] "
+                          << ex.what();
+                LOG_DEBUG << m_logContext << "Sending authentication error";
+                sendErrorReponse(requestMsg.request_id(), ex.what(), ex.getErrorCode());
+                LOG_DEBUG << m_logContext << "Sent request parse error";
+                continue;
+            } catch (dbengine::DatabaseError& ex) {
+                LOG_DEBUG << m_logContext << "Sending authentication error";
+                const auto uuid = boost::uuids::random_generator()();
+                LOG_ERROR << m_logContext << '[' << ex.getErrorCode() << "] " << ex.what()
+                          << " (MSG_UUID " << uuid << ')';
+                auto msg = "Internal error, see log for details, message UUID "
+                           + boost::uuids::to_string(uuid);
+                sendErrorReponse(requestMsg.request_id(), ex.what(), kRestAuthenticationError);
+                LOG_DEBUG << m_logContext << "Sent authentication error";
+                continue;
+            } catch (std::exception& ex) {
+                LOG_DEBUG << m_logContext << "Sending authentication error";
+                const auto uuid = boost::uuids::random_generator()();
+                LOG_ERROR << m_logContext << ex.what() << " (MSG_UUID " << uuid << ')';
+                auto msg = "Internal error, see log for details, message UUID "
+                           + boost::uuids::to_string(uuid);
+                sendErrorReponse(requestMsg.request_id(), ex.what(), kRestAuthenticationError);
+                LOG_DEBUG << m_logContext << "Sent authentication error";
+                continue;
+            }
 
             // Create request handler
             const auto requestHandler = std::make_shared<dbengine::RequestHandler>(
@@ -68,7 +101,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 dbEngineRequest =
                         dbengine::parser::DBEngineRestRequestFactory::createRequest(requestMsg);
             } catch (std::exception& ex) {
-                LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
+                LOG_DEBUG << m_logContext << "Sending request parsing error " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), ex.what(), kRestParseError);
                 LOG_DEBUG << m_logContext << "Sent request parse error";
                 continue;

@@ -11,7 +11,7 @@
 
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 namespace siodb::iomgr::dbengine {

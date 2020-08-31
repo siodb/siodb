@@ -16,7 +16,9 @@
 #include <siodb/common/io/JsonWriter.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
+#include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/iomgr/shared/dbengine/SystemObjectNames.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -28,7 +30,7 @@ void RequestHandler::executeGetDatabasesRestRequest(
     response.set_affected_row_count(0);
 
     // Get databases
-    const auto databaseNames = m_instance.getDatabaseNames();
+    const auto databaseNames = m_instance.getDatabaseNames(isSuperUser());
 
     // Write response message
     {
@@ -52,7 +54,7 @@ void RequestHandler::executeGetDatabasesRestRequest(
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
-    chunkedOutput.flush();
+    if (chunkedOutput.close()) stdext::throw_system_error("Failed to send JSON payload");
 }
 
 void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -63,7 +65,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
 
     // Get table list
     const auto database = m_instance.findDatabaseChecked(request.m_database);
-    auto tableNames = database->getTableNames(false);
+    auto tableNames = database->getTableNames(isSuperUser());
     std::sort(tableNames.begin(), tableNames.end());
 
     // Write response message
@@ -88,7 +90,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
-    chunkedOutput.flush();
+    if (chunkedOutput.close()) stdext::throw_system_error("Failed to send JSON payload");
 }
 
 void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -97,10 +99,17 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    // Find table and create data set
+    // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
-    TableDataSet dataSet(database->findTableChecked(request.m_table));
+    const auto table = database->findTableChecked(request.m_table);
+    if (table->isSystemTable() && !isSuperUser()) {
+        throwDatabaseError(IOManagerMessageId::kErrorCannotOperateOnSystemTableViaRest,
+                table->getDatabaseName(), table->getName());
+    }
+
+    // Create data set
+    TableDataSet dataSet(table);
     dataSet.fillColumnInfosFromTable();
 
     // Write response message
@@ -135,7 +144,7 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
-    chunkedOutput.flush();
+    if (chunkedOutput.close()) stdext::throw_system_error("Failed to send JSON payload");
 }
 
 void RequestHandler::executeGetSingleRowRestRequest(
@@ -145,13 +154,18 @@ void RequestHandler::executeGetSingleRowRestRequest(
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    // Get column information
+    // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
     const auto table = database->findTableChecked(request.m_table);
+    if (table->isSystemTable() && !isSuperUser()) {
+        throwDatabaseError(IOManagerMessageId::kErrorCannotOperateOnSystemTableViaRest,
+                table->getDatabaseName(), table->getName());
+    }
+
+    // Find row
     const auto masterColumn = table->getMasterColumn();
     const auto index = masterColumn->getMasterColumnMainIndex();
-
     std::uint8_t key[8];
     ::pbeEncodeUInt64(request.m_trid, key);
     IndexValue indexValue;
@@ -210,7 +224,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
-    chunkedOutput.flush();
+    if (chunkedOutput.close()) stdext::throw_system_error("Failed to send JSON payload");
 }
 
 }  // namespace siodb::iomgr::dbengine

@@ -20,6 +20,7 @@ SUBDIRS:= \
 	registry_test  \
 	request_handler_test  \
 	sql_parser_test  \
+	token_auth_test  \
 	variant_test
 
 include $(MK)/ParallelRecurse.mk

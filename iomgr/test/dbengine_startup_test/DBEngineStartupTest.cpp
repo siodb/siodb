@@ -13,7 +13,7 @@
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/StartupActions.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>

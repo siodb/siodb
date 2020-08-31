@@ -389,7 +389,7 @@ SystemDatabase::UserTokenRegistries SystemDatabase::readAllUserTokens()
                                 expirationDateValue.asDateTime().toEpochTimestamp()),
                 descriptionValue.asOptionalString());
         LOG_DEBUG << "Database " << m_name << ": readAllUserTokens: User token #" << trid << " '"
-                  << tokenRecord.m_name << '\'';
+                  << tokenRecord.m_name << '\'' << " userId=" << tokenRecord.m_userId;
         registries[tokenRecord.m_userId].insert(std::move(tokenRecord));
     } while (index->findNextKey(currentKey, nextKey));
 

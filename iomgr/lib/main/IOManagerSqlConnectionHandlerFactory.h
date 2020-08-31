@@ -19,7 +19,7 @@ public:
      * @return New connection handler object.
      */
     IOManagerConnectionHandler* createConnectionHandler(
-            IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd) override;
+            IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd) override;
 };
 
 }  // namespace siodb::iomgr

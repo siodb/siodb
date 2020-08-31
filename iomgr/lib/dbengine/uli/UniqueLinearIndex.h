@@ -11,7 +11,7 @@
 #include "../IndexFileHeaderBase.h"
 
 // Common project headers
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 
 // STL headers
 #include <atomic>

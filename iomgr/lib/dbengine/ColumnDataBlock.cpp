@@ -14,8 +14,8 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FdGuard.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FDGuard.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 

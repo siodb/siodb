@@ -4,9 +4,9 @@
 
 # Global Makefile for Siodb
 
-.PHONY: all clean full-clean siodb conn_worker iomgr siocli \
-	clean-common clean-siodb clean-conn_worker clean-iomgr \
-	clean-siocli help debug debug-no-ut release release-no-ut
+.PHONY: all clean full-clean common siodb conn_worker iomgr siocli restcli \
+	clean-common clean-siodb clean-conn_worker clean-iomgr clean-siocli \
+	clean-restcli help debug debug-no-ut release release-no-ut
 
 all:
 	@date
@@ -15,6 +15,7 @@ all:
 	$(MAKE) $@ -C conn_worker
 	$(MAKE) $@ -C iomgr
 	$(MAKE) $@ -C siocli
+	$(MAKE) $@ -C restcli
 	$(MAKE) $@ -C extra_files
 	@date
 
@@ -35,6 +36,7 @@ debug-no-ut:
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C conn_worker
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C iomgr
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C siocli
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C restcli
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C extra_files
 	@date
 
@@ -45,6 +47,7 @@ release:
 	$(MAKE) DEBUG=0 all -C conn_worker
 	$(MAKE) DEBUG=0 all -C iomgr
 	$(MAKE) DEBUG=0 all -C siocli
+	$(MAKE) DEBUG=0 all -C restcli
 	$(MAKE) DEBUG=0 all -C extra_files
 	@date
 
@@ -55,6 +58,7 @@ release-no-ut:
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C conn_worker
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C iomgr
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C siocli
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C restcli
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C extra_files
 	@date
 
@@ -65,6 +69,7 @@ clean:
 	$(MAKE) $@ -C conn_worker
 	$(MAKE) $@ -C iomgr
 	$(MAKE) $@ -C siocli
+	$(MAKE) $@ -C restcli
 	$(MAKE) $@ -C extra_files
 	@date
 
@@ -76,28 +81,36 @@ full-clean:
 check-headers:
 	@date
 	$(MAKE) $@ -C common
-	$(MAKE) $@ -C siocli
 	$(MAKE) $@ -C siodb
 	$(MAKE) $@ -C conn_worker
 	$(MAKE) $@ -C iomgr
+	$(MAKE) $@ -C siocli
+	$(MAKE) $@ -C restcli
 	@date
 
 check-headers-debug:
 	@date
 	$(MAKE) check-headers DEBUG=1 -C common
-	$(MAKE) check-headers DEBUG=1 -C siocli
 	$(MAKE) check-headers DEBUG=1 -C siodb
 	$(MAKE) check-headers DEBUG=1 -C conn_worker
 	$(MAKE) check-headers DEBUG=1 -C iomgr
+	$(MAKE) check-headers DEBUG=1 -C siocli
+	$(MAKE) check-headers DEBUG=1 -C restcli
 	@date
 
 check-headers-release:
 	@date
 	$(MAKE) check-headers DEBUG=0 -C common
-	$(MAKE) check-headers DEBUG=0 -C siocli
 	$(MAKE) check-headers DEBUG=0 -C siodb
 	$(MAKE) check-headers DEBUG=0 -C conn_worker
 	$(MAKE) check-headers DEBUG=0 -C iomgr
+	$(MAKE) check-headers DEBUG=0 -C siocli
+	$(MAKE) check-headers DEBUG=0 -C restcli
+	@date
+
+common:
+	@date
+	$(MAKE) -C $@
 	@date
 
 siodb:
@@ -116,6 +129,11 @@ iomgr:
 	@date
 
 siocli:
+	@date
+	$(MAKE) -C $@
+	@date
+
+restcli:
 	@date
 	$(MAKE) -C $@
 	@date
@@ -146,6 +164,10 @@ clean-iomgr:
 	@date
 
 clean-siocli:
+	$(MAKE) clean -C $(subst clean-,,$@)
+	@date
+
+clean-restcli:
 	$(MAKE) clean -C $(subst clean-,,$@)
 	@date
 

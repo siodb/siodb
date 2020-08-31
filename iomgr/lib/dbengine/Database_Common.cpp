@@ -23,7 +23,7 @@
 #include <siodb/common/stl_ext/algorithm_ext.h>
 #include <siodb/common/stl_ext/string_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 #include <siodb/iomgr/shared/dbengine/io/EncryptedFile.h>
@@ -672,7 +672,7 @@ std::unique_ptr<MemoryMappedFile> Database::createMetadataFile(const char* path)
 {
     // Create metadata file
     constexpr auto kOpenFlags = O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME;
-    FdGuard fd(::open(path, kOpenFlags, kDataFileCreationMode));
+    FDGuard fd(::open(path, kOpenFlags, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateDatabaseMetadataFile, path, m_name,
@@ -697,7 +697,7 @@ std::unique_ptr<MemoryMappedFile> Database::openMetadataFile(const char* path) c
 {
     // Open metadata file
     constexpr auto kOpenFlags = O_RDWR | O_CLOEXEC | O_NOATIME;
-    FdGuard fd(::open(path, kOpenFlags, kDataFileCreationMode));
+    FDGuard fd(::open(path, kOpenFlags, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotOpenDatabaseMetadataFile, path, m_name,

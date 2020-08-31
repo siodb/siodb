@@ -17,7 +17,7 @@ public:
      * @param clientFd Client connection file descriptor guard.
      * @param requestDispatcher Request dispatcher.
      */
-    IOManagerSqlConnectionHandler(IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd)
+    IOManagerSqlConnectionHandler(IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd)
         : IOManagerConnectionHandler(requestDispatcher, std::move(clientFd))
     {
     }

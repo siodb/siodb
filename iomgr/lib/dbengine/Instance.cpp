@@ -19,10 +19,11 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/options/SiodbOptions.h>
+#include <siodb/common/stl_ext/algorithm_ext.h>
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/common/utils/RandomUtils.h>
@@ -101,14 +102,18 @@ std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName() const
     return databaseRecords;
 }
 
-std::vector<std::string> Instance::getDatabaseNames() const
+std::vector<std::string> Instance::getDatabaseNames(bool includeSystemDatabase) const
 {
     std::lock_guard lock(m_mutex);
     std::vector<std::string> result;
     result.reserve(m_databaseRegistry.size());
     const auto& index = m_databaseRegistry.byName();
-    std::transform(index.cbegin(), index.cend(), std::back_inserter(result),
-            [](const auto& databaseRecord) { return databaseRecord.m_name; });
+    stdext::transform_if(
+            index.cbegin(), index.cend(), std::back_inserter(result),
+            [](const auto& databaseRecord) { return databaseRecord.m_name; },
+            [includeSystemDatabase](const auto& databaseRecord) {
+                return databaseRecord.m_name != kSystemDatabaseName || includeSystemDatabase;
+            });
     std::sort(result.begin(), result.end());
     return result;
 }
@@ -609,7 +614,7 @@ void Instance::loadInstanceData()
     m_metadataFile.reset(openMetadataFile());
     loadMetadata();
     loadSystemDatabase();
-    loadSuperUser();
+    loadUsers();
     checkDataConsistency();
 }
 
@@ -651,6 +656,13 @@ void Instance::loadSystemDatabase()
     m_databaseCache.emplace(m_systemDatabase->getId(), m_systemDatabase);
 }
 
+void Instance::loadUsers()
+{
+    LOG_DEBUG << "Instance: Loading users.";
+    m_systemDatabase->readAllUsers(m_userRegistry);
+    m_superUser = findUserChecked(User::kSuperUserId);
+}
+
 void Instance::createSuperUser()
 {
     LOG_DEBUG << "Instance: Creating super user.";
@@ -665,13 +677,6 @@ void Instance::createSuperUser()
     }
     m_userRegistry.emplace(*m_superUser);
     m_userCache.emplace(m_superUser->getId(), m_superUser);
-}
-
-void Instance::loadSuperUser()
-{
-    LOG_DEBUG << "Instance: Loading super user.";
-    m_systemDatabase->readAllUsers(m_userRegistry);
-    m_superUser = findUserChecked(User::kSuperUserId);
 }
 
 void Instance::recordSuperUser()
@@ -690,7 +695,7 @@ BinaryValue Instance::loadSystemDatabaseCipherKey() const
     if (!cipher) return BinaryValue();
     BinaryValue key(cipher->getKeySize() / 8);
     const auto keyPath = composeInstanceSysDbEncryptionKeyFilePath(m_name);
-    FdGuard fd(::open(keyPath.c_str(), O_RDONLY));
+    FDGuard fd(::open(keyPath.c_str(), O_RDONLY));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kFatalCannotOpenSystemDatabaseEncryptionKey, keyPath,

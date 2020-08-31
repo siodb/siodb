@@ -7,7 +7,7 @@
 // Common project headers
 #include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/io/FileIO.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/common/utils/RandomUtils.h>
 

@@ -14,7 +14,7 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 
 // STL headers
 #include <chrono>
@@ -105,7 +105,7 @@ SiodbConnectionManager::~SiodbConnectionManager()
 void SiodbConnectionManager::connectionListenerThreadMain()
 {
     // Set up server socket
-    FdGuard server;
+    FDGuard server;
     std::string socketPath;
     int port = -1;
     try {
@@ -153,7 +153,7 @@ void SiodbConnectionManager::connectionListenerThreadMain()
 
     while (!m_exitRequested) {
         // Accept connection
-        FdGuard client(m_socketDomain == AF_UNIX ? acceptUnixConnection(server.getFD())
+        FDGuard client(m_socketDomain == AF_UNIX ? acceptUnixConnection(server.getFD())
                                                  : acceptTcpConnection(server.getFD()));
 
         // Validate connection file descriptor
@@ -263,7 +263,7 @@ int SiodbConnectionManager::acceptTcpConnection(int serverFd)
 
     // Note that last parameter of the accept4() is zero, so we intentionally want
     // resulting file descriptor to be inherited by child process.
-    FdGuard client(::accept4(serverFd, reinterpret_cast<sockaddr*>(&addr), &addrLength, 0));
+    FDGuard client(::accept4(serverFd, reinterpret_cast<sockaddr*>(&addr), &addrLength, 0));
 
     if (!client.isValidFd()) {
         const int errorCode = errno;
@@ -289,7 +289,7 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
 {
     // Note that last parameter of the accept4() is zero, so we intentionally want
     // resulting file descriptor to be inherited by child process.
-    FdGuard client(::accept4(serverFd, nullptr, nullptr, 0));
+    FDGuard client(::accept4(serverFd, nullptr, nullptr, 0));
 
     if (!client.isValidFd()) {
         const int errorCode = errno;

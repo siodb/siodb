@@ -5,11 +5,12 @@
 #pragma once
 
 // STL headers
+#include <memory>
 #include <string>
 
-namespace siodb::cli {
+namespace siodb::sql_client {
 
-/** Client parameters. */
+/** SQL client parameters. */
 struct ClientParameters {
     /** Instance name */
     std::string m_instance;
@@ -29,6 +30,9 @@ struct ClientParameters {
     /** Path to identity key */
     std::string m_identityKey;
 
+    /** Command to execute */
+    std::unique_ptr<std::string> m_command;
+
     /** Indication whether client should use encryption or not */
     bool m_encryption = false;
 
@@ -38,12 +42,21 @@ struct ClientParameters {
     /** Echo commands if not on a terminal */
     bool m_echoCommandsWhenNotOnATerminal = true;
 
-    /** Indicates that siocli should verify siodb certificates */
+    /** Indicates that siocli should verify Siodb certificates */
     bool m_verifyCertificates = false;
+
+    /** Indicates that siocli should not print logo */
+    bool m_noLogo = false;
+
+    /** Inducates the debug messages should be printed */
+    bool m_printDebugMessages = false;
 
     /** Database name to export. Empty string means export all databases */
     std::string m_exportDatabaseName;
 };
+
+/** Prints logo. */
+void printLogo();
 
 /**
  * Runs command line prompt.
@@ -81,4 +94,4 @@ enum class SingleWordCommandType {
  */
 SingleWordCommandType decodeSingleWordCommand(const std::string& command) noexcept;
 
-}  // namespace siodb::cli
+}  // namespace siodb::sql_client

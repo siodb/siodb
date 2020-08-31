@@ -17,7 +17,7 @@ public:
      * @param requestDispatcher Request dispatcher.
      */
     IOManagerRestConnectionHandler(
-            IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd)
+            IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd)
         : IOManagerConnectionHandler(requestDispatcher, std::move(clientFd))
     {
     }
@@ -27,8 +27,10 @@ private:
     void threadLogicImpl() override;
 
 private:
-    /** REST parse error */
-    static constexpr int kRestParseError = 11;
+    /** REST authentication error code */
+    static constexpr int kRestAuthenticationError = 11;
+    /** REST parse error code */
+    static constexpr int kRestParseError = 12;
 };
 
 }  // namespace siodb::iomgr

@@ -25,7 +25,7 @@ namespace siodb::iomgr {
 std::atomic<std::uint64_t> IOManagerConnectionHandler::s_idCounter(0);
 
 IOManagerConnectionHandler::IOManagerConnectionHandler(
-        IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd)
+        IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd)
     : m_id(++s_idCounter)
     , m_logContext(createLogContextName(clientFd.getFD()))
     , m_requestDispatcher(requestDispatcher)
@@ -53,6 +53,7 @@ bool IOManagerConnectionHandler::executeIOManagerRequest(const IOManagerRequest&
     try {
         LOG_DEBUG << m_logContext << "Executing statement #" << request.getResponseId();
         request.execute();
+        LOG_DEBUG << m_logContext << "Executed statement #" << request.getResponseId();
     } catch (std::exception& ex) {
         LOG_ERROR << m_logContext << "Request execution exception: " << ex.what() << '.';
         return false;

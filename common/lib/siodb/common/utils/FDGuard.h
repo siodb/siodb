@@ -24,34 +24,34 @@ namespace siodb {
  * File descriptor lifetime guard.
  * Holds file descriptor until end of current scope, then closes it.
  */
-class FdGuard {
+class FDGuard {
 public:
     /**
-     * Initialize object of the class FdGuard.
+     * Initialize object of the class FDGuard.
      * @param fd File descriptor to be guarded.
      */
-    explicit FdGuard(int fd = -1) noexcept
+    explicit FDGuard(int fd = -1) noexcept
         : m_fd(fd)
     {
     }
 
     /**
-     * Initialize object of the class FdGuard.
+     * Initialize object of the class FDGuard.
      * @param src Source file descriptor guard.
      */
-    FdGuard(FdGuard&& src) noexcept
+    FDGuard(FDGuard&& src) noexcept
         : m_fd(src.m_fd)
     {
         src.m_fd = -1;
     }
 
-    /** Cleans up object of the class FdGuard */
-    ~FdGuard() noexcept
+    /** Cleans up object of the class FDGuard */
+    ~FDGuard() noexcept
     {
         reset();
     }
 
-    DECLARE_NONCOPYABLE(FdGuard);
+    DECLARE_NONCOPYABLE(FDGuard);
 
     /**
      * Returns file descriptor validity flag.
@@ -104,7 +104,7 @@ public:
      * Swaps guard contents.
      * @param other Other guard object.
      */
-    void swap(FdGuard& other) noexcept
+    void swap(FDGuard& other) noexcept
     {
         if (SIODB_LIKELY(&other != this)) std::swap(m_fd, other.m_fd);
     }
@@ -142,7 +142,7 @@ public:
      * @param src Source object.
      * @return this object.
      */
-    FdGuard& operator=(FdGuard&& src) noexcept
+    FDGuard& operator=(FDGuard&& src) noexcept
     {
         if (&src != this) {
             swap(src);
@@ -157,11 +157,11 @@ private:
 };
 
 /**
- * Swaps two FdGuard objects.
+ * Swaps two FDGuard objects.
  * @param a first object.
  * @param b second object.
  */
-inline void swap(FdGuard& a, FdGuard& b)
+inline void swap(FDGuard& a, FDGuard& b)
 {
     a.swap(b);
 }
