@@ -92,13 +92,16 @@ struct PostRowsRestRequest : public DBEngineRequest {
      * Initializes object of class PostRowsRestRequest.
      * @param database A database.
      * @param table A table.
+     * @param columnNames Mapping of column names.
      * @param values Column values.
      */
     explicit PostRowsRestRequest(std::string&& database, std::string&& table,
-            std::vector<std::vector<ConstExpressionPtr>>&& values) noexcept
+            std::unordered_map<unsigned, std::string>&& columnNames,
+            std::vector<std::vector<std::pair<unsigned, ConstExpressionPtr>>>&& values) noexcept
         : DBEngineRequest(DBEngineRequestType::kRestPostRows)
         , m_database(std::move(database))
         , m_table(std::move(table))
+        , m_columnNames(std::move(columnNames))
         , m_values(std::move(values))
     {
     }
@@ -109,8 +112,11 @@ struct PostRowsRestRequest : public DBEngineRequest {
     /** Table name */
     const std::string m_table;
 
+    /** Column name map */
+    const std::unordered_map<unsigned, std::string> m_columnNames;
+
     /** Column values */
-    const std::vector<std::vector<ConstExpressionPtr>> m_values;
+    const std::vector<std::vector<std::pair<unsigned, ConstExpressionPtr>>> m_values;
 };
 
 }  // namespace siodb::iomgr::dbengine::requests

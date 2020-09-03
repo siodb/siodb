@@ -678,16 +678,16 @@ void RequestHandler::updateColumnsFromExpression(const std::vector<DataSetPtr>& 
 
     std::vector<const requests::Expression*> expressions;
     // Reserve some space for expressions to avoid memory allocations/reallocations
+    constexpr std::size_t kReservedExpressionCount = 32;
     expressions.reserve(kReservedExpressionCount);
 
     std::vector<std::unordered_map<std::reference_wrapper<const std::string>, int,
             std::hash<std::string>, std::equal_to<std::string>>>
-            addedColumns(dataSets.size());
+            columns(dataSets.size());
 
     for (std::size_t i = 0; i < dataSets.size(); ++i) {
-        for (std::size_t j = 0; j < dataSets[i]->getColumnCount(); ++j) {
-            addedColumns[i].insert(std::make_pair(std::cref(dataSets[i]->getColumnName(j)), j));
-        }
+        for (std::size_t j = 0; j < dataSets[i]->getColumnCount(); ++j)
+            columns[i].insert(std::make_pair(std::cref(dataSets[i]->getColumnName(j)), j));
     }
 
     expressions.push_back(expression.get());
@@ -723,11 +723,10 @@ void RequestHandler::updateColumnsFromExpression(const std::vector<DataSetPtr>& 
             }
 
             // -1 indicates column was not added before
-            auto insertIter =
-                    addedColumns[tableIndex].insert(std::make_pair(std::cref(columnName), -1));
+            auto insertIter = columns[tableIndex].insert(std::make_pair(std::cref(columnName), -1));
 
-            // If column was not added into the dataset
             if (insertIter.second) {
+                // Column inserted
                 const auto columnPos =
                         dataSets[tableIndex]->getDataSourceColumnPosition(columnName);
                 if (columnPos) {
@@ -743,6 +742,7 @@ void RequestHandler::updateColumnsFromExpression(const std::vector<DataSetPtr>& 
                             IOManagerMessageId::kErrorColumnIsUnknown, tableName, columnName));
                 }
             } else if (insertIter.first->second != -1) {
+                // Column already exists
                 const auto nonConstColumnExpression = stdext::as_mutable_ptr(columnExpression);
                 nonConstColumnExpression->setDatasetTableIndex(tableIndex);
                 nonConstColumnExpression->setDatasetColumnIndex(insertIter.first->second);

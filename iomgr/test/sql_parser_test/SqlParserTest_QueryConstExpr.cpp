@@ -21,7 +21,7 @@ TEST(Query, SelectWithNegativeInt8)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -55,7 +55,7 @@ TEST(Query, SelectWithUInt8)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -86,7 +86,7 @@ TEST(Query, SelectWithNegativeInt16)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -120,7 +120,7 @@ TEST(Query, SelectWithUInt16)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -151,7 +151,7 @@ TEST(Query, SelectWithNegativeInt32)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -185,7 +185,7 @@ TEST(Query, SelectWithUInt32)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -216,7 +216,7 @@ TEST(Query, SelectWithNegativeInt64)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -250,7 +250,7 @@ TEST(Query, SelectWithUInt64)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -281,7 +281,7 @@ TEST(Query, SelectWithNegativeDouble)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -315,7 +315,7 @@ TEST(Query, SelectWithDouble)
     parser_ns::SqlParser parser(statement);
     parser.parse();
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);

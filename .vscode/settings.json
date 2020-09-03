@@ -115,8 +115,14 @@
         "${workspaceFolder}/iomgr/lib",
         "${workspaceFolder}/build/debug/generated-src",
         "${workspaceFolder}/build/debug/generated-src/siodb-generated/common/lib",
-        "/usr/local/include/antlr4-runtime",
-        "/usr/local/include/gtest-gmock-1.8.1"
+        "/opt/siodb/lib/antlr4-cpp-runtime-4.8/include",
+        "/opt/siodb/lib/date-20190911/include",
+        "/opt/siodb/lib/gtest-gmock-1.8.1/",
+        "/opt/siodb/lib/json-3.9.1/include",
+        "/opt/siodb/lib/oatpp-1.1.0/include",
+        "/opt/siodb/lib/protobuf-3.12.3/include",
+        "/opt/siodb/lib/utf8cpp-3.1.1/include",
+        "/opt/siodb/lib/xxhash-0.7.2/include"
     ],
     "editor.renderWhitespace": "all",
     "editor.rulers": [

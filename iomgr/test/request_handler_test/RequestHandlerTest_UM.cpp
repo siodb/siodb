@@ -85,7 +85,7 @@ void TestUser::create(bool newUser) const
     parser.parse();
 
     const auto createUserRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createUserRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -116,7 +116,7 @@ void TestUser::drop(bool userExists) const
     parser.parse();
 
     const auto dropUserRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -150,7 +150,7 @@ void TestUser::alter(bool userExists) const
     parser.parse();
 
     const auto alterUserRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -188,7 +188,7 @@ void TestUser::checkExists(bool mustExist) const
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
 
@@ -234,7 +234,7 @@ void TestUserAccessKey::create(bool newKey) const
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -263,7 +263,7 @@ void TestUserAccessKey::drop(bool keyExists) const
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -294,7 +294,7 @@ void TestUserAccessKey::alter(bool keyExists) const
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -324,7 +324,7 @@ void TestUserAccessKey::checkExists(bool mustExist) const
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
 
@@ -384,7 +384,7 @@ void TestUserToken::create(bool newToken)
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -432,7 +432,7 @@ void TestUserToken::drop(bool tokenExists) const
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -471,7 +471,7 @@ void TestUserToken::alter(bool tokenExists) const
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -502,15 +502,14 @@ void TestUserToken::checkExists(bool mustExist) const
         char buffer[64];
         std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
         ss << " = '" << buffer << "'";
-    } else {
+    } else
         ss << " IS NULL";
-    }
 
     parser_ns::SqlParser parser(ss.str());
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
 
@@ -560,7 +559,7 @@ void TestUserToken::check(bool mustBeValid) const
     parser.parse();
 
     const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(

@@ -12,18 +12,33 @@ namespace siodb::iomgr::dbengine::requests {
 /** Constant value expression. */
 class ConstantExpression final : public Expression {
 public:
+    /** Initializes object of class ConstantExpression. */
+    ConstantExpression() noexcept
+        : Expression(ExpressionType::kConstant)
+    {
+    }
+
     /**
      * Initializes object of class ConstantExpression.
      * @param value Constant value.
      */
-    explicit ConstantExpression(Variant&& value = Variant()) noexcept
+    explicit ConstantExpression(Variant&& value) noexcept
         : Expression(ExpressionType::kConstant)
         , m_value(std::move(value))
     {
     }
 
     /**
-     * Creates new constant expression object.
+     * Creates new constant expression object with null value.
+     * @return New constant expression object.
+     */
+    static std::unique_ptr<Expression> create()
+    {
+        return std::make_unique<ConstantExpression>();
+    }
+
+    /**
+     * Creates new constant expression object with given value.
      * @tparam Value Value type.
      * @param value A value.
      * @return New constant expression object.

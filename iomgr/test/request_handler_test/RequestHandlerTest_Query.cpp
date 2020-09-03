@@ -30,7 +30,7 @@ TEST(Query, SelectFromSys_Databases)
     parser.parse();
 
     const auto request =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -76,7 +76,7 @@ TEST(Query, ShowDatabases)
     parser.parse();
 
     const auto request =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -144,7 +144,7 @@ TEST(Query, SelectWithWhere)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -165,7 +165,7 @@ TEST(Query, SelectWithWhere)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -243,7 +243,7 @@ TEST(Query, SelectWithWhereBetweenDatetime)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -266,7 +266,7 @@ TEST(Query, SelectWithWhereBetweenDatetime)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -338,7 +338,7 @@ TEST(Query, SelectWithWhereCompoundExpression)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -361,7 +361,7 @@ TEST(Query, SelectWithWhereCompoundExpression)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -436,7 +436,7 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -464,7 +464,7 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
             parser.parse();
 
             const auto request =
-                    parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                    parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
             requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -504,7 +504,7 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
             parser.parse();
 
             const auto request =
-                    parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                    parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
             requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -564,7 +564,7 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -587,7 +587,7 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -645,7 +645,7 @@ TEST(Query, SelectWithWhereColumnAlias)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -666,7 +666,7 @@ TEST(Query, SelectWithWhereColumnAlias)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -731,7 +731,7 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -754,7 +754,7 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -835,7 +835,7 @@ TEST(Query, SelectFrom2Tables)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -861,7 +861,7 @@ TEST(Query, SelectFrom2Tables)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -885,7 +885,7 @@ TEST(Query, SelectFrom2Tables)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -962,7 +962,7 @@ TEST(Query, SelectWithExpression)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -984,7 +984,7 @@ TEST(Query, SelectWithExpression)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1044,7 +1044,7 @@ TEST(Query, SelectWithExpressionFrom2Tables)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1104,7 +1104,7 @@ TEST(Query, SelectWithExpressionWithNull)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1126,7 +1126,7 @@ TEST(Query, SelectWithExpressionWithNull)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1197,7 +1197,7 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1247,7 +1247,7 @@ TEST(Query, SelectWithWhereIsNull)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1267,7 +1267,7 @@ TEST(Query, SelectWithWhereIsNull)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1344,7 +1344,7 @@ TEST(Query, SelectWithWhereEqualNull)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1364,7 +1364,7 @@ TEST(Query, SelectWithWhereEqualNull)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1426,7 +1426,7 @@ TEST(Query, SelectWithLimit)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1447,7 +1447,7 @@ TEST(Query, SelectWithLimit)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1508,7 +1508,7 @@ TEST(Query, SelectWithZeroLimit)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1529,7 +1529,7 @@ TEST(Query, SelectWithZeroLimit)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1582,7 +1582,7 @@ TEST(Query, SelectWithNegativeLimit)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1603,7 +1603,7 @@ TEST(Query, SelectWithNegativeLimit)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1646,7 +1646,7 @@ TEST(Query, SelectWithLimitAndOffset)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1668,7 +1668,7 @@ TEST(Query, SelectWithLimitAndOffset)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1730,7 +1730,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1752,7 +1752,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1806,7 +1806,7 @@ TEST(Query, SelectWithNegativeOffset)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1828,7 +1828,7 @@ TEST(Query, SelectWithNegativeOffset)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1872,7 +1872,7 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -1895,7 +1895,7 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
         parser.parse();
 
         const auto request =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 

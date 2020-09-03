@@ -8,6 +8,7 @@
 #include "IOManagerRequest.h"
 #include "../dbengine/SessionGuard.h"
 #include "../dbengine/handlers/RequestHandler.h"
+#include "../dbengine/parser/DBEngineRequestFactoryError.h"
 #include "../dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "../dbengine/parser/SqlParser.h"
 
@@ -91,9 +92,9 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                     }();
 #endif
                     LOG_DEBUG << m_logContext << "Parsing statement #" << i;
-                    dbEngineRequest = dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+                    dbEngineRequest = dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                             parser.findStatement(i));
-                } catch (std::exception& ex) {
+                } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                     LOG_DEBUG << m_logContext << "Sending request parsing error " << ex.what();
                     sendErrorReponse(requestMsg.request_id(), ex.what(), kSqlParseError);
                     LOG_DEBUG << m_logContext << "Sent request parsing error";

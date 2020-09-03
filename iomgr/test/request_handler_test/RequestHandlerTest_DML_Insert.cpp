@@ -44,7 +44,7 @@ TEST(DML_Insert, InsertSingleRecord)
     parser.parse();
 
     const auto insertRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -67,7 +67,7 @@ TEST(DML_Insert, InsertSingleRecord)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -128,7 +128,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
     parser.parse();
 
     const auto insertRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -151,7 +151,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -212,7 +212,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
     parser.parse();
 
     const auto insertRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -235,7 +235,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -306,7 +306,7 @@ TEST(DML_Insert, InsertMultipleRecords)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -329,7 +329,7 @@ TEST(DML_Insert, InsertMultipleRecords)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -445,7 +445,7 @@ TEST(DML_Insert, InsertDataTypesWithLength)
     parser.parse();
 
     const auto selectRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
     siodb::protobuf::readMessage(
@@ -592,7 +592,7 @@ TEST(DML_Insert, InsertMinMaxValues)
     parser.parse();
 
     const auto selectRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -784,7 +784,7 @@ TEST(DML_Insert, InsertDateTime)
     parser.parse();
 
     const auto selectRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -850,7 +850,7 @@ TEST(DML_Insert, InsertNullValue)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -870,7 +870,7 @@ TEST(DML_Insert, InsertNullValue)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -947,7 +947,7 @@ TEST(DML_Insert, InsertDefaultNullValue)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -967,7 +967,7 @@ TEST(DML_Insert, InsertDefaultNullValue)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 

@@ -288,13 +288,16 @@ requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
     }
 
     std::string tableName;
-    if (tableNode)
-        tableName = boost::to_upper_copy(helpers::getAnyNameText(tableNode->children.at(0)));
+    if (tableNode) {
+        tableName = helpers::getAnyNameText(tableNode->children.at(0));
+        boost::to_upper(tableName);
+    }
 
     std::string columnName;
-    if (columnNode)
-        columnName = boost::to_upper_copy(helpers::getAnyNameText(columnNode->children.at(0)));
-    else
+    if (columnNode) {
+        columnName = helpers::getAnyNameText(columnNode->children.at(0));
+        boost::to_upper(columnName);
+    } else
         throw std::invalid_argument("Column node is nullptr");
 
     if (columnName.empty()) throw std::invalid_argument("Column node is invalid");

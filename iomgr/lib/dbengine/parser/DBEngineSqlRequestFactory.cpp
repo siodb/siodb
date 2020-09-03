@@ -6,6 +6,7 @@
 
 // Project headers
 #include "AntlrHelpers.h"
+#include "DBEngineRequestFactoryError.h"
 #include "antlr_wrappers/SiodbParserWrapper.h"
 #include "expr/AllColumnsExpression.h"
 #include "expr/ConstantExpression.h"
@@ -31,14 +32,14 @@ namespace {
  * @param node A node to parse from.
  * @param errorMessage Error message to use if parsing error occurs.
  * @return true for the ACTIVE state, false for the INACTIVE state.
- * @throw std::invalid_argument if state could not be parsed.
+ * @throw DBEngineRequestFactoryError if state could not be parsed.
  */
 bool parseState(antlr4::tree::ParseTree* node, const char* errorMessage)
 {
     switch (helpers::getTerminalType(node)) {
         case SiodbParser::K_ACTIVE: return true;
         case SiodbParser::K_INACTIVE: return false;
-        default: throw std::invalid_argument(errorMessage);
+        default: throw DBEngineRequestFactoryError(errorMessage);
     }
 }
 
@@ -46,7 +47,7 @@ bool parseState(antlr4::tree::ParseTree* node, const char* errorMessage)
  * Parses string as expiration timestamp.
  * @param s A string to parse.
  * @return Expiration timestamp as epoch seconds.
- * @throw std::runtime_error if parsing failed.
+ * @throw DBEngineRequestFactoryError if parsing failed.
  */
 time_t parseExpirationTimestamp(const std::string& s)
 {
@@ -91,9 +92,10 @@ const std::unordered_map<std::string, siodb::ColumnDataType>
                 {"JSON", siodb::COLUMN_DATA_TYPE_JSON},
         };
 
-requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRequest(antlr4::tree::ParseTree* node)
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
+        antlr4::tree::ParseTree* node)
 {
-    if (!node) throw std::out_of_range("Statement doesn't exist");
+    if (!node) throw DBEngineRequestFactoryError("Statement doesn't exist");
 
     const auto statementType = helpers::getNonTerminalType(node);
     switch (statementType) {
@@ -124,7 +126,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRequest(antlr4::tr
             keyword = helpers::findTerminal(node, SiodbParser::K_SET);
             if (keyword) return createSetDatabaseAttributesRequest(node);
 
-            throw std::runtime_error("ALTER DATABASE: unsupported operation");
+            throw DBEngineRequestFactoryError("ALTER DATABASE: unsupported operation");
         }
         case SiodbParser::RuleUse_database_stmt: return createUseDatabaseRequest(node);
         case SiodbParser::RuleCreate_table_stmt: return createCreateTableRequest(node);
@@ -143,7 +145,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRequest(antlr4::tr
                 return createSetTableAttributesRequest(node);
             if (helpers::hasTerminalChild(node, SiodbParser::K_ALTER, 1))
                 return createRedefineColumnRequest(node);
-            throw std::runtime_error("ALTER TABLE: unsupported operation");
+            throw DBEngineRequestFactoryError("ALTER TABLE: unsupported operation");
         }
         case SiodbParser::RuleCreate_index_stmt: return createCreateIndexRequest(node);
         case SiodbParser::RuleDrop_index_stmt: return createDropIndexRequest(node);
@@ -158,7 +160,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRequest(antlr4::tr
                         case SiodbParser::K_ACCESS: return createAddUserAccessKeyRequest(node);
                         case SiodbParser::K_TOKEN: return createAddUserTokenRequest(node);
                         default:
-                            throw std::runtime_error("ALTER USER ADD: unsupported object type");
+                            throw DBEngineRequestFactoryError(
+                                    "ALTER USER ADD: unsupported object type");
                     }
                 }
                 case SiodbParser::K_DROP: {
@@ -167,7 +170,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRequest(antlr4::tr
                         case SiodbParser::K_ACCESS: return createDropUserAccessKeyRequest(node);
                         case SiodbParser::K_TOKEN: return createDropUserTokenRequest(node);
                         default:
-                            throw std::runtime_error("ALTER USER DROP: unsupported object type");
+                            throw DBEngineRequestFactoryError(
+                                    "ALTER USER DROP: unsupported object type");
                     }
                 }
                 case SiodbParser::K_ALTER: {
@@ -183,8 +187,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRequest(antlr4::tr
                                     return createRenameUserAccessKeyRequest(node);
                                 }
                                 default: {
-                                    throw std::runtime_error(
-                                            "ALTER USER ALTER ACCESS KEY: unsupported action");
+                                    throw DBEngineRequestFactoryError(
+                                            "ALTER USER ALTER ACCESS KEY: unsupported operation");
                                 }
                             }
                         }
@@ -197,23 +201,24 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRequest(antlr4::tr
                                     return createRenameUserTokenRequest(node);
                                 }
                                 default: {
-                                    throw std::runtime_error(
-                                            "ALTER USER ALTER TOKEN: unsupported action");
+                                    throw DBEngineRequestFactoryError(
+                                            "ALTER USER ALTER TOKEN: unsupported operation");
                                 }
                             }
                         }
                         default:
-                            throw std::runtime_error("ALTER USER ALTER: unsupported object type");
+                            throw DBEngineRequestFactoryError(
+                                    "ALTER USER ALTER: unsupported object type");
                     }
                 }
                 case SiodbParser::K_SET: return createSetUserAttributesRequest(node);
-                default: throw std::runtime_error("ALTER USER: unsupported operation");
+                default: throw DBEngineRequestFactoryError("ALTER USER: unsupported operation");
             }
         }
         case SiodbParser::RuleCheck_user_token_stmt: return createCheckUserTokenRequest(node);
         default: {
-            throw std::invalid_argument(
-                    "Statement type " + std::to_string(statementType) + " is not supported");
+            throw DBEngineRequestFactoryError(
+                    "Unsupported statement type " + std::to_string(statementType));
         }
     }
 }
@@ -224,7 +229,7 @@ requests::DBEngineRequestPtr
 DBEngineSqlRequestFactory::createSelectRequestForGeneralSelectStatement(
         [[maybe_unused]] antlr4::tree::ParseTree* node)
 {
-    throw std::runtime_error("SELECT: unsupported syntax");
+    throw DBEngineRequestFactoryError("SELECT: unsupported syntax");
 
     // TODO: Implement DBEngineSqlRequestFactory::createSelectRequestForGeneralSelectStatement()
 
@@ -255,7 +260,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSelectRequestForSi
                 case SiodbParser::K_LIMIT: {
                     ++i;
                     if (i >= node->children.size())
-                        throw std::runtime_error("SELECT: LIMIT does not contain expression");
+                        throw DBEngineRequestFactoryError(
+                                "SELECT: LIMIT does not contain expression");
 
                     if (node->children.size() > i + 2
                             && helpers::getTerminalType(node->children[i + 1])
@@ -274,7 +280,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSelectRequestForSi
                 case SiodbParser::K_OFFSET: {
                     ++i;
                     if (i >= node->children.size())
-                        throw std::runtime_error("SELECT: OFFSET does not contain expression");
+                        throw DBEngineRequestFactoryError(
+                                "SELECT: OFFSET does not contain expression");
                     offset = exprFactory.createExpression(node->children[i]);
                     break;
                 }
@@ -307,7 +314,7 @@ DBEngineSqlRequestFactory::createSelectRequestForFactoredSelectStatement(
                 return helpers::getNonTerminalType(e) == SiodbParser::RuleSelect_core;
             });
 
-    if (selectCoreCount != 1) throw std::runtime_error("SELECT contains too much parts");
+    if (selectCoreCount != 1) throw DBEngineRequestFactoryError("SELECT contains too much parts");
 
     // Now fallback to simple one
     return createSelectRequestForSimpleSelectStatement(node);
@@ -325,16 +332,20 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
     std::string database;
     const auto databaseIdNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture table ID
     std::string table;
     const auto tableIdNode =
             helpers::findTerminal(node, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("INSERT: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("INSERT: missing table ID");
 
     // Capture column IDs
     std::vector<std::string> columns;
@@ -351,12 +362,14 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
         }
 
         const auto columnIdNode = helpers::findTerminal(e, SiodbParser::IDENTIFIER);
-        if (!columnIdNode) throw std::runtime_error("INSERT missing column ID");
+        if (!columnIdNode) throw DBEngineRequestFactoryError("INSERT missing column ID");
 
-        columns.push_back(boost::to_upper_copy(columnIdNode->getText()));
+        auto columnId = columnIdNode->getText();
+        boost::to_upper(columnId);
+        columns.push_back(std::move(columnId));
     }
 
-    if (!valuesFound) throw std::runtime_error("INSERT missing VALUES keyword");
+    if (!valuesFound) throw DBEngineRequestFactoryError("INSERT missing VALUES keyword");
 
     ExpressionFactory exprFactory;
     std::vector<std::vector<requests::ConstExpressionPtr>> values;
@@ -368,17 +381,17 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
         const auto terminalType = helpers::getTerminalType(e);
         if (terminalType == SiodbParser::OPEN_PAR) {
             if (inValueGroup)
-                throw std::runtime_error("INSERT encoutered unexpected opening parenthesis");
+                throw DBEngineRequestFactoryError("INSERT: unexpected opening parenthesis");
             inValueGroup = true;
             values.emplace_back();
             continue;
         } else if (terminalType == SiodbParser::CLOSE_PAR) {
             if (!inValueGroup)
-                throw std::runtime_error("INSERT encoutered unexpected closing parenthesis");
+                throw DBEngineRequestFactoryError("INSERT: unexpected closing parenthesis");
             inValueGroup = false;
             if (!columns.empty() && values.back().size() != columns.size()) {
-                throw std::runtime_error(
-                        "INSERT number of values doesn't match to number of columns");
+                throw DBEngineRequestFactoryError(
+                        "INSERT: number of values doesn't match to number of columns");
             }
             continue;
         }
@@ -386,9 +399,9 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
         values.back().push_back(exprFactory.createExpression(e));
     }
 
-    if (inValueGroup) throw std::runtime_error("INSERT values list is not closed");
+    if (inValueGroup) throw DBEngineRequestFactoryError("INSERT: values list is not closed");
 
-    if (values.empty()) throw std::runtime_error("INSERT missing values");
+    if (values.empty()) throw DBEngineRequestFactoryError("INSERT: missing values");
 
     return std::make_unique<requests::InsertRequest>(
             std::move(database), std::move(table), std::move(columns), std::move(values));
@@ -398,7 +411,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
         antlr4::tree::ParseTree* node)
 {
     const ExpressionFactory exprFactory(true);
-    std::string database, tableName, tableAlias;
+    std::string database, table, tableAlias;
     requests::ConstExpressionPtr where;
     std::vector<requests::ColumnReference> columns;
     std::vector<requests::ConstExpressionPtr> values;
@@ -411,20 +424,27 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                 // Capture Database name
                 const auto databaseNameNode = helpers::findTerminal(
                         e, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-                if (databaseNameNode) database = boost::to_upper_copy(databaseNameNode->getText());
+                if (databaseNameNode) {
+                    database = databaseNameNode->getText();
+                    boost::to_upper(database);
+                }
 
                 // Capture table name
                 const auto tableNameNode = helpers::findTerminal(
                         e, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-                if (tableNameNode)
-                    tableName = boost::to_upper_copy(tableNameNode->getText());
-                else
-                    throw std::invalid_argument("UPDATE: missing table ID");
+                if (tableNameNode) {
+                    table = tableNameNode->getText();
+                    boost::to_upper(table);
+                } else
+                    throw DBEngineRequestFactoryError("UPDATE: missing table ID");
 
                 // Capture table alias
                 const auto tableAliasNode = helpers::findTerminal(
                         e, SiodbParser::RuleTable_alias, SiodbParser::IDENTIFIER);
-                if (tableAliasNode) tableAlias = boost::to_upper_copy(tableAliasNode->getText());
+                if (tableAliasNode) {
+                    tableAlias = tableAliasNode->getText();
+                    boost::to_upper(tableAlias);
+                }
 
                 break;
             }
@@ -444,19 +464,19 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                             if (terminalType == SiodbParser::K_WHERE) {
                                 ++i;
                                 if (i >= node->children.size()) {
-                                    throw std::runtime_error(
-                                            "UPDATE, WHERE does not contain expression");
+                                    throw DBEngineRequestFactoryError(
+                                            "UPDATE: WHERE clause does not contain expression");
                                 }
                                 where = exprFactory.createExpression(node->children[i]);
                             } else
-                                throw std::runtime_error("UPDATE SET statement is broken");
+                                throw DBEngineRequestFactoryError("UPDATE: Invalid SET statement");
 
                             break;
                         }
 
                         // SET statement should have at least one column = expr
                         if (i + 2 >= node->children.size())
-                            throw std::runtime_error("UPDATE: missing expression in SET");
+                            throw DBEngineRequestFactoryError("UPDATE: missing expression in SET");
 
                         /// --------- Parse column/where ---------
                         const auto columnNode = node->children[i];
@@ -469,17 +489,19 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                                 column = helpers::extractObjectName(columnNode, 0);
                             } else {
                                 // Normally should never happen
-                                throw std::runtime_error("UPDATE SET statement is broken");
+                                throw DBEngineRequestFactoryError("UPDATE: Invalid SET statement");
                             }
                             columns.emplace_back(std::string(), std::move(column));
-                        } else
-                            throw std::runtime_error("UPDATE: SET Expression column not found");
+                        } else {
+                            throw DBEngineRequestFactoryError(
+                                    "UPDATE: SET Expression column not found");
+                        }
 
                         /// --------- Parse '=' ---------
                         const auto assignNode = node->children[i + 1];
                         terminalType = helpers::getTerminalType(assignNode);
                         if (terminalType != SiodbParser::ASSIGN)
-                            throw std::runtime_error("UPDATE missing = in SET");
+                            throw DBEngineRequestFactoryError("UPDATE: missing = in SET");
 
                         /// --------- Parse value ---------
                         const auto valueExpr = node->children[i + 2];
@@ -487,14 +509,16 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                         if (nonTerminalType == SiodbParser::RuleExpr) {
                             values.push_back(exprFactory.createExpression(valueExpr));
                         } else
-                            throw std::runtime_error("UPDATE missing SET value");
+                            throw DBEngineRequestFactoryError("UPDATE: missing SET value");
 
                         // +4, for Column, '=', expr', ',' + 3 for new set expr
                         if (i + 7 <= node->children.size()) {
                             const auto commaNode = node->children[i + 3];
                             terminalType = helpers::getTerminalType(commaNode);
-                            if (terminalType != SiodbParser::COMMA)
-                                throw std::runtime_error("UPDATE missing comma separator");
+                            if (terminalType != SiodbParser::COMMA) {
+                                throw DBEngineRequestFactoryError(
+                                        "UPDATE: missing comma separator");
+                            }
                             i += 4;
                         } else
                             i += 3;
@@ -503,8 +527,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                     }
                 } else if (terminalType == SiodbParser::K_UPDATE)
                     continue;
-                else
-                    throw std::runtime_error("UPDATE: Expression is invalid or unsupported");
+                else {
+                    throw DBEngineRequestFactoryError(
+                            "UPDATE: Expression is invalid or unsupported");
+                }
 
                 break;
             }
@@ -512,22 +538,20 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
         }
     }
 
-    if (columns.empty()) throw std::runtime_error("UPDATE: Missing columns");
+    if (columns.empty()) throw DBEngineRequestFactoryError("UPDATE: Missing columns");
 
     if (columns.size() != values.size())
-        throw std::runtime_error("UPDATE: Column count is not equal to the value count");
+        throw DBEngineRequestFactoryError("UPDATE: Column count is not equal to the value count");
 
     return std::make_unique<requests::UpdateRequest>(std::move(database),
-            requests::SourceTable(std::move(tableName), std::move(tableAlias)), std::move(columns),
+            requests::SourceTable(std::move(table), std::move(tableAlias)), std::move(columns),
             std::move(values), std::move(where));
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDeleteRequest(
         antlr4::tree::ParseTree* node)
 {
-    std::string database;
-    std::string tableName;
-    std::string tableAlias;
+    std::string database, table, tableAlias;
     requests::ConstExpressionPtr where;
 
     for (std::size_t i = 0; i < node->children.size(); ++i) {
@@ -538,28 +562,37 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDeleteRequest(
                 // Capture Database name
                 const auto databaseNameNode = helpers::findTerminal(
                         e, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-                if (databaseNameNode) database = boost::to_upper_copy(databaseNameNode->getText());
+                if (databaseNameNode) {
+                    database = databaseNameNode->getText();
+                    boost::to_upper(database);
+                }
 
                 // Capture table name
                 const auto tableNameNode = helpers::findTerminal(
                         e, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-                if (tableNameNode)
-                    tableName = boost::to_upper_copy(tableNameNode->getText());
-                else
-                    throw std::invalid_argument("DELETE: missing table ID");
+                if (tableNameNode) {
+                    table = tableNameNode->getText();
+                    boost::to_upper(table);
+                } else
+                    throw DBEngineRequestFactoryError("DELETE: missing table ID");
 
                 // Capture table alias
                 const auto tableAliasNode = helpers::findTerminal(
                         e, SiodbParser::RuleTable_alias, SiodbParser::IDENTIFIER);
-                if (tableAliasNode) tableAlias = boost::to_upper_copy(tableAliasNode->getText());
+                if (tableAliasNode) {
+                    tableAlias = tableAliasNode->getText();
+                    boost::to_upper(tableAlias);
+                }
                 break;
             }
             case kInvalidNodeType: {
                 const auto terminalType = helpers::getTerminalType(e);
                 if (terminalType == SiodbParser::K_WHERE) {
                     ++i;
-                    if (i >= node->children.size())
-                        throw std::runtime_error("DELETE: WHERE does not contain expression");
+                    if (i >= node->children.size()) {
+                        throw DBEngineRequestFactoryError(
+                                "DELETE: WHERE clause does not contain expression");
+                    }
 
                     ExpressionFactory exprFactory(true);
                     where = exprFactory.createExpression(node->children[i]);
@@ -571,7 +604,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDeleteRequest(
     }
 
     return std::make_unique<requests::DeleteRequest>(std::move(database),
-            requests::SourceTable(std::move(tableName), std::move(tableAlias)), std::move(where));
+            requests::SourceTable(std::move(table), std::move(tableAlias)), std::move(where));
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createBeginTransactionRequest(
@@ -600,7 +633,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createBeginTransactionRe
     std::string transaction;
     const auto transactionIdNode =
             helpers::findTerminal(node, SiodbParser::RuleTransaction_name, SiodbParser::IDENTIFIER);
-    if (transactionIdNode) transaction = boost::to_upper_copy(transactionIdNode->getText());
+    if (transactionIdNode) {
+        transaction = transactionIdNode->getText();
+        boost::to_upper(transaction);
+    }
 
     return std::make_unique<requests::BeginTransactionRequest>(
             transactionType, std::move(transaction));
@@ -613,7 +649,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCommitTransactionR
     std::string transaction;
     const auto transactionIdNode =
             helpers::findTerminal(node, SiodbParser::RuleTransaction_name, SiodbParser::IDENTIFIER);
-    if (transactionIdNode) transaction = boost::to_upper_copy(transactionIdNode->getText());
+    if (transactionIdNode) {
+        transaction = transactionIdNode->getText();
+        boost::to_upper(transaction);
+    }
 
     return std::make_unique<requests::CommitTransactionRequest>(std::move(transaction));
 }
@@ -625,13 +664,19 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRollbackTransactio
     std::string transaction;
     const auto transactionIdNode =
             helpers::findTerminal(node, SiodbParser::RuleTransaction_name, SiodbParser::IDENTIFIER);
-    if (transactionIdNode) transaction = boost::to_upper_copy(transactionIdNode->getText());
+    if (transactionIdNode) {
+        transaction = transactionIdNode->getText();
+        boost::to_upper(transaction);
+    }
 
     // Capture savepoint ID
     std::string savepoint;
     const auto savepointIdNode =
             helpers::findTerminal(node, SiodbParser::RuleTransaction_name, SiodbParser::IDENTIFIER);
-    if (savepointIdNode) savepoint = boost::to_upper_copy(savepointIdNode->getText());
+    if (savepointIdNode) {
+        savepoint = savepointIdNode->getText();
+        boost::to_upper(savepoint);
+    }
 
     return std::make_unique<requests::RollbackTransactionRequest>(
             std::move(transaction), std::move(savepoint));
@@ -644,10 +689,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSavepointRequest(
     std::string savepoint;
     const auto savepointIdNode =
             helpers::findTerminal(node, SiodbParser::RuleTransaction_name, SiodbParser::IDENTIFIER);
-    if (savepointIdNode)
-        savepoint = boost::to_upper_copy(savepointIdNode->getText());
-    else
-        throw std::runtime_error("SAVEPOINT missing savepoint ID");
+    if (savepointIdNode) {
+        savepoint = savepointIdNode->getText();
+        boost::to_upper(savepoint);
+    } else
+        throw DBEngineRequestFactoryError("SAVEPOINT: missing savepoint ID");
 
     return std::make_unique<requests::SavepointRequest>(std::move(savepoint));
 }
@@ -659,10 +705,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createReleaseRequest(
     std::string savepoint;
     const auto savepointIdNode =
             helpers::findTerminal(node, SiodbParser::RuleTransaction_name, SiodbParser::IDENTIFIER);
-    if (savepointIdNode)
-        savepoint = boost::to_upper_copy(savepointIdNode->getText());
-    else
-        throw std::runtime_error("RELEASE missing savepoint ID");
+    if (savepointIdNode) {
+        savepoint = savepointIdNode->getText();
+        boost::to_upper(savepoint);
+    } else
+        throw DBEngineRequestFactoryError("RELEASE: missing savepoint ID");
 
     return std::make_unique<requests::SavepointRequest>(std::move(savepoint));
 }
@@ -678,16 +725,17 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAttachDatabaseRequ
         databaseUuid =
                 boost::uuids::string_generator()(helpers::unquoteString(uuidNode->getText()));
     } else
-        throw std::invalid_argument("ATTACH DATABASE: missing database UUID");
+        throw DBEngineRequestFactoryError("ATTACH DATABASE: missing database UUID");
 
     // Capture database ID
     std::string database;
     const auto databaseIdNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode)
-        database = boost::to_upper_copy(databaseIdNode->getText());
-    else
-        throw std::invalid_argument("ATTACH DATABASE: missing database ID");
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    } else
+        throw DBEngineRequestFactoryError("ATTACH DATABASE: missing database ID");
 
     return std::make_unique<requests::AttachDatabaseRequest>(
             std::move(databaseUuid), std::move(database));
@@ -700,10 +748,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDetachDatabaseRequ
     std::string database;
     const auto databaseIdNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode)
-        database = boost::to_upper_copy(databaseIdNode->getText());
-    else
-        throw std::invalid_argument("DETACH DATABASE: missing database ID");
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    } else
+        throw DBEngineRequestFactoryError("DETACH DATABASE: missing database ID");
 
     // Check for "IF EXISTS" clause
     const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
@@ -716,7 +765,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
 {
     // Normally should never happen
     if (node->children.size() < 3)
-        throw std::invalid_argument("CREATE DATABASE: malformed statement");
+        throw DBEngineRequestFactoryError("CREATE DATABASE: malformed statement");
 
     // Database node could be 2 or 3 (CREATE TEMPORARY DATABASE <name>)
     bool temporary = false;
@@ -729,7 +778,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
         databaseNodeIndex = 3;
         temporary = true;
     } else
-        throw std::invalid_argument("CREATE DATABASE: missing database name");
+        throw DBEngineRequestFactoryError("CREATE DATABASE: missing database name");
 
     auto database = helpers::extractObjectName(node, databaseNodeIndex);
 
@@ -738,7 +787,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
     if (node->children.size() == databaseNodeIndex + 3) {
         if (helpers::getNonTerminalType(node->children[databaseNodeIndex + 2])
                 != SiodbParser::RuleCreate_database_attr_list)
-            throw std::invalid_argument("CREATE DATABASE: missing option list");
+            throw DBEngineRequestFactoryError("CREATE DATABASE: missing option list");
 
         const auto attrListNode = node->children[databaseNodeIndex + 2];
         ExpressionFactory exprFactory;
@@ -753,11 +802,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
                     cipherKeySeed = exprFactory.createExpression(attrNode->children.at(2));
                     break;
                 }
-                default: throw std::invalid_argument("CREATE DATABASE: invalid attribute");
+                default: throw DBEngineRequestFactoryError("CREATE DATABASE: invalid attribute");
             }
         }
     } else if (node->children.size() != databaseNodeIndex + 1)
-        throw std::invalid_argument("CREATE DATABASE: malformed statement");
+        throw DBEngineRequestFactoryError("CREATE DATABASE: malformed statement");
 
     return std::make_unique<requests::CreateDatabaseRequest>(
             std::move(database), temporary, std::move(cipherId), std::move(cipherKeySeed));
@@ -798,8 +847,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetDatabaseAttribu
                                               helpers::unquoteString(valueNode->getText()));
                 break;
             }
-            default:
-                throw std::invalid_argument("ALTER DATABASE SET ATTRIBUTES: invalid attribute");
+            default: {
+                throw DBEngineRequestFactoryError(
+                        "ALTER DATABASE SET ATTRIBUTES: invalid attribute");
+            }
         }
     }
     return std::make_unique<requests::SetDatabaseAttributesRequest>(
@@ -813,10 +864,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUseDatabaseRequest
     std::string database;
     const auto databaseIdNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode)
-        database = boost::to_upper_copy(databaseIdNode->getText());
-    else
-        throw std::invalid_argument("USE DATABASE: missing database ID");
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    } else
+        throw DBEngineRequestFactoryError("USE DATABASE: missing database ID");
 
     return std::make_unique<requests::UseDatabaseRequest>(std::move(database));
 }
@@ -830,16 +882,20 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
     std::string database;
     const auto databaseIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture table ID
     std::string table;
     const auto tableIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("CREATE TABLE: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("CREATE TABLE: missing table ID");
 
     // Capture column definitions
     std::vector<requests::ColumnDefinition> columns;
@@ -849,14 +905,15 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
         // Find column ID
         const auto columnIdNode = helpers::findTerminal(
                 columnDefNode, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
-        if (!columnIdNode) throw std::invalid_argument("CREATE TABLE: missing column ID");
-        auto columnName = boost::to_upper_copy(columnIdNode->getText());
+        if (!columnIdNode) throw DBEngineRequestFactoryError("CREATE TABLE: missing column ID");
+        auto column = columnIdNode->getText();
+        boost::to_upper(column);
 
         // Find column data type
         const auto typeNameNode =
                 helpers::findNonTerminal(columnDefNode, SiodbParser::RuleType_name);
         if (typeNameNode == nullptr)
-            throw std::invalid_argument("CREATE TABLE: missing column data type");
+            throw DBEngineRequestFactoryError("CREATE TABLE: missing column data type");
 
         // Capture data type
         std::ostringstream typeName;
@@ -865,7 +922,9 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
             const auto idNode = helpers::findTerminal(childNode, SiodbParser::IDENTIFIER);
             if (idNode) {
                 if (idNodeCount > 0) typeName << ' ';
-                typeName << boost::to_upper_copy(idNode->getText());
+                auto id = idNode->getText();
+                boost::to_upper(id);
+                typeName << id;
                 ++idNodeCount;
             }
         }
@@ -885,13 +944,15 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
                 auto idNode =
                         helpers::findTerminal(constraintNameNode, SiodbParser::STRING_LITERAL);
                 if (idNode) {
-                    const auto s = boost::to_upper_copy(idNode->getText());
-                    constraintName = s.substr(1, s.length() - 2);
+                    constraintName = idNode->getText();
+                    boost::to_upper(constraintName);
+                    constraintName = constraintName.substr(1, constraintName.length() - 2);
                     break;
                 }
                 idNode = helpers::findTerminal(constraintNameNode, SiodbParser::IDENTIFIER);
                 if (idNode) {
-                    constraintName = boost::to_upper_copy(idNode->getText());
+                    constraintName = idNode->getText();
+                    boost::to_upper(constraintName);
                     break;
                 }
             }
@@ -910,7 +971,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
             terminal = helpers::findTerminal(constraintNode, SiodbParser::K_UNIQUE);
             if (terminal) {
                 std::vector<std::string> columns;
-                columns.push_back(columnName);
+                columns.push_back(column);
                 constraints.emplace_back(std::make_unique<requests::UniqueConstraint>(
                         std::move(constraintName), std::move(columns)));
                 continue;
@@ -935,7 +996,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
             // Check for PRIMARY KEY constraint
             terminal = helpers::findTerminal(constraintNode, SiodbParser::K_PRIMARY);
             if (terminal) {
-                throw std::invalid_argument(
+                throw DBEngineRequestFactoryError(
                         "CREATE TABLE: PRIMARY KEY constraint is not supported in the Siodb");
             }
 
@@ -972,11 +1033,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
             }
 
             // Should never reach here
-            throw std::invalid_argument("CREATE TABLE: Unsupported constraint type");
+            throw DBEngineRequestFactoryError("CREATE TABLE: Unsupported constraint type");
         }
 
         // Add column record
-        columns.emplace_back(std::move(columnName), columnDataType, kDefaultDataFileDataAreaSize,
+        columns.emplace_back(std::move(column), columnDataType, kDefaultDataFileDataAreaSize,
                 std::move(constraints));
     }
 
@@ -993,16 +1054,20 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropTableRequest(
     std::string database;
     const auto databaseIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture table ID
     std::string table;
     const auto tableIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("DROP TABLE: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("DROP TABLE: missing table ID");
 
     // Check for "IF EXISTS" clause
     const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
@@ -1020,25 +1085,30 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameTableRequest
     std::string database;
     const auto databaseIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture old table ID
     std::string oldTable;
     const auto oldTableIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (oldTableIdNode)
-        oldTable = boost::to_upper_copy(oldTableIdNode->getText());
-    else
-        throw std::invalid_argument("ALTER TABLE RENAME TO: missing table ID");
+    if (oldTableIdNode) {
+        oldTable = oldTableIdNode->getText();
+        boost::to_upper(oldTable);
+    } else
+        throw DBEngineRequestFactoryError("ALTER TABLE RENAME TO: missing table ID");
 
     // Capture new table ID
     std::string newTable;
     const auto newTableIdNode =
             helpers::findTerminal(node, SiodbParser::RuleNew_table_name, SiodbParser::IDENTIFIER);
-    if (newTableIdNode)
-        newTable = boost::to_upper_copy(newTableIdNode->getText());
-    else
-        throw std::invalid_argument("ALTER TABLE RENAME TO: missing new table ID");
+    if (newTableIdNode) {
+        newTable = newTableIdNode->getText();
+        boost::to_upper(newTable);
+    } else
+        throw DBEngineRequestFactoryError("ALTER TABLE RENAME TO: missing new table ID");
 
     // Check for "IF EXISTS" clause
     const bool ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
@@ -1056,22 +1126,26 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetTableAttributes
     std::string database;
     const auto databaseIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture table ID
     std::string table;
     const auto tableIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("ALTER TABLE SET ATTRIBUTES: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("ALTER TABLE SET ATTRIBUTES: missing table ID");
 
     std::optional<std::uint64_t> nextTrid;
 
     const auto attrListNode = helpers::findNonTerminal(node, SiodbParser::RuleTable_attr_list);
     if (attrListNode == nullptr)
-        throw std::invalid_argument("ALTER TABLE SET ATTRIBUTES: missing attribute list");
+        throw DBEngineRequestFactoryError("ALTER TABLE SET ATTRIBUTES: missing attribute list");
     for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
         const auto attrNode = attrListNode->children[i];
         switch (helpers::getTerminalType(attrNode->children.at(0))) {
@@ -1080,15 +1154,16 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetTableAttributes
                 try {
                     size_t index = 0;
                     nextTrid = std::stoull(value, &index, 10);
-                    if (index != value.length()) throw std::invalid_argument("");
+                    if (index != value.length()) throw std::invalid_argument("parse error");
                 } catch (std::exception& ex) {
-                    throw std::invalid_argument(
+                    throw DBEngineRequestFactoryError(
                             "ALTER TABLE SET ATTRIBUTES: invalid integer value of the attribute "
                             "NEXT_TRID");
                 }
                 break;
             }
-            default: throw std::invalid_argument("ALTER TABLE SET ATTRIBUTES: invalid attribute");
+            default:
+                throw DBEngineRequestFactoryError("ALTER TABLE SET ATTRIBUTES: invalid attribute");
         }
     }
 
@@ -1105,36 +1180,44 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddColumnRequest(
     std::string database;
     const auto databaseIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture table ID
     std::string table;
     const auto tableIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("ALTER TABLE ADD COLUMN: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("ALTER TABLE ADD COLUMN: missing table ID");
 
     // Find column ID
     const auto columnIdNode =
             helpers::findTerminal(node, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
-    if (!columnIdNode) throw std::invalid_argument("ALTER TABLE ADD COLUMN: missing column ID");
-    auto columnName = boost::to_upper_copy(columnIdNode->getText());
+    if (!columnIdNode)
+        throw DBEngineRequestFactoryError("ALTER TABLE ADD COLUMN: missing column ID");
+    auto column = columnIdNode->getText();
+    boost::to_upper(column);
 
     // Find column data type
     const auto typeNameNode =
             helpers::findTerminal(node, SiodbParser::RuleType_name, SiodbParser::IDENTIFIER);
     if (typeNameNode == nullptr)
-        throw std::invalid_argument("ALTER TABLE ADD COLUMN: missing column data type");
-    const auto columnDataType = getColumnDataType(boost::to_upper_copy(typeNameNode->getText()));
+        throw DBEngineRequestFactoryError("ALTER TABLE ADD COLUMN: missing column data type");
+    auto typeName = typeNameNode->getText();
+    boost::to_upper(typeName);
+    const auto columnDataType = getColumnDataType(typeName);
 
     // Fill new column info
-    requests::ColumnDefinition column(
-            std::move(columnName), columnDataType, kDefaultDataFileDataAreaSize, {});
+    requests::ColumnDefinition columnDefinition(
+            std::move(column), columnDataType, kDefaultDataFileDataAreaSize, {});
 
     return std::make_unique<requests::AddColumnRequest>(
-            std::move(database), std::move(table), std::move(column));
+            std::move(database), std::move(table), std::move(columnDefinition));
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropColumnRequest(
@@ -1146,25 +1229,30 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropColumnRequest(
     std::string database;
     const auto databaseIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture table ID
     std::string table;
     const auto tableIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("ALTER TABLE DROP COLUMN: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("ALTER TABLE DROP COLUMN: missing table ID");
 
     // Capture column ID
     std::string column;
     const auto columnIdNode =
             helpers::findTerminal(node, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
-    if (columnIdNode)
-        column = boost::to_upper_copy(columnIdNode->getText());
-    else
-        throw std::invalid_argument("ALTER TABLE DROP COLUMN: missing table ID");
+    if (columnIdNode) {
+        column = columnIdNode->getText();
+        boost::to_upper(column);
+    } else
+        throw DBEngineRequestFactoryError("ALTER TABLE DROP COLUMN: missing table ID");
 
     // Check for "IF EXISTS" clause
     const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
@@ -1181,17 +1269,22 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameColumnReques
     std::string database;
     const auto databaseIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     std::string table;
     const auto tableIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("ALTER TABLE ALTER COLUMN RENAME TO: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("ALTER TABLE ALTER COLUMN RENAME TO: missing table ID");
 
-    auto column = boost::to_upper_copy(node->children.at(5)->getText());
+    auto column = node->children.at(5)->getText();
+    boost::to_upper(column);
     const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
     auto newColumn = helpers::extractObjectName(node, ifExists ? 10 : 8);
 
@@ -1208,29 +1301,37 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRedefineColumnRequ
     std::string database;
     const auto databaseIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture table ID
     std::string table;
     const auto tableIdNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("ALTER TABLE ALTER COLUMN: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("ALTER TABLE ALTER COLUMN: missing table ID");
 
     // Find column ID
     const auto columnIdNode =
             helpers::findTerminal(node, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
-    if (!columnIdNode) throw std::invalid_argument("ALTER TABLE ALTER COLUMN: missing column ID");
-    auto columnName = boost::to_upper_copy(columnIdNode->getText());
+    if (!columnIdNode)
+        throw DBEngineRequestFactoryError("ALTER TABLE ALTER COLUMN: missing column ID");
+    auto columnName = columnIdNode->getText();
+    boost::to_upper(columnName);
 
     // Find column data type
     const auto typeNameNode =
             helpers::findTerminal(node, SiodbParser::RuleType_name, SiodbParser::IDENTIFIER);
     if (typeNameNode == nullptr)
-        throw std::invalid_argument("ALTER TABLE ALTER COLUMN: missing column data type");
-    const auto columnDataType = getColumnDataType(boost::to_upper_copy(typeNameNode->getText()));
+        throw DBEngineRequestFactoryError("ALTER TABLE ALTER COLUMN: missing column data type");
+    auto typeName = typeNameNode->getText();
+    boost::to_upper(typeName);
+    const auto columnDataType = getColumnDataType(typeName);
 
     // Fill new column info
     requests::ColumnDefinition column(
@@ -1247,25 +1348,30 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateIndexRequest
     std::string database;
     const auto databaseIdNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture index name
     std::string index;
     const auto indexNameNode =
             helpers::findTerminal(node, SiodbParser::RuleIndex_name, SiodbParser::IDENTIFIER);
-    if (indexNameNode)
-        index = boost::to_upper_copy(indexNameNode->getText());
-    else
-        throw std::invalid_argument("CREATE INDEX: missing index name");
+    if (indexNameNode) {
+        index = indexNameNode->getText();
+        boost::to_upper(index);
+    } else
+        throw DBEngineRequestFactoryError("CREATE INDEX: missing index name");
 
     // Capture table ID
     std::string table;
     const auto tableIdNode =
             helpers::findTerminal(node, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (tableIdNode)
-        table = boost::to_upper_copy(tableIdNode->getText());
-    else
-        throw std::invalid_argument("CREATE INDEX: missing table ID");
+    if (tableIdNode) {
+        table = tableIdNode->getText();
+        boost::to_upper(table);
+    } else
+        throw DBEngineRequestFactoryError("CREATE INDEX: missing table ID");
 
     // Capture column definitions
     std::vector<requests::IndexColumnDefinition> columns;
@@ -1275,13 +1381,15 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateIndexRequest
         // Find column ID
         const auto columnIdNode =
                 helpers::findTerminal(e, SiodbParser::RuleColumn_name, SiodbParser::IDENTIFIER);
-        if (!columnIdNode) throw std::invalid_argument("CREATE INDEX: missing column ID");
+        if (!columnIdNode) throw DBEngineRequestFactoryError("CREATE INDEX: missing column ID");
 
         // Find sort order
         const bool sortDescending = helpers::findTerminal(e, SiodbParser::K_DESC) != nullptr;
 
         // Add column record
-        columns.emplace_back(boost::to_upper_copy(columnIdNode->getText()), sortDescending);
+        auto columnId = columnIdNode->getText();
+        boost::to_upper(columnId);
+        columns.emplace_back(std::move(columnId), sortDescending);
     }
 
     // Check "UNIQUE" presence
@@ -1303,16 +1411,20 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropIndexRequest(
     std::string database;
     const auto databaseIdNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+    if (databaseIdNode) {
+        database = databaseIdNode->getText();
+        boost::to_upper(database);
+    }
 
     // Capture index name
     std::string index;
     const auto indexNameNode =
             helpers::findTerminal(node, SiodbParser::RuleIndex_name, SiodbParser::IDENTIFIER);
-    if (indexNameNode)
-        index = boost::to_upper_copy(indexNameNode->getText());
-    else
-        throw std::invalid_argument("DROP INDEX: missing index name");
+    if (indexNameNode) {
+        index = indexNameNode->getText();
+        boost::to_upper(index);
+    } else
+        throw DBEngineRequestFactoryError("DROP INDEX: missing index name");
 
     // Check for "IF EXISTS" clause
     const auto ifNode = helpers::findTerminal(node, SiodbParser::K_IF);
@@ -1326,7 +1438,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateUserRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
-    if (node->children.size() < 3) throw std::invalid_argument("CREATE USER: malformed statement");
+    if (node->children.size() < 3) DBEngineRequestFactoryError("CREATE USER: malformed statement");
 
     // Get node text as is without 'GetAnyText' call.
     auto name = helpers::extractObjectName(node, 2);
@@ -1336,7 +1448,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateUserRequest(
     //  <name> + WITH + <List of options>
     if (node->children.size() > 4) {
         if (helpers::getNonTerminalType(node->children[4]) != SiodbParser::RuleUser_attr_list)
-            throw std::invalid_argument("CREATE USER: missing options list");
+            throw DBEngineRequestFactoryError("CREATE USER: missing options list");
 
         const auto attrListNode = node->children[4];
         for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
@@ -1363,7 +1475,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateUserRequest(
                             parseState(attrNode->children.at(2), "CREATE USER: invalid user state");
                     break;
                 }
-                default: throw std::invalid_argument("CREATE USER: invalid attribute");
+                default: throw DBEngineRequestFactoryError("CREATE USER: invalid attribute");
             }
         }
     }
@@ -1376,7 +1488,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropUserRequest(
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
-    if (node->children.size() < 3) throw std::invalid_argument("DROP USER: request is malformed");
+    if (node->children.size() < 3)
+        throw DBEngineRequestFactoryError("DROP USER: request is malformed");
 
     // Get node text as is without 'GetAnyText' call.
     auto name = helpers::extractObjectName(node, 2);
@@ -1387,7 +1500,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAttributesR
         antlr4::tree::ParseTree* node)
 {
     // Normally should never happen
-    if (node->children.size() < 5) throw std::invalid_argument("ALTER USER: malformed statement");
+    if (node->children.size() < 5)
+        throw DBEngineRequestFactoryError("ALTER USER: malformed statement");
 
     auto name = helpers::extractObjectName(node, 2);
 
@@ -1419,7 +1533,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAttributesR
                 active = parseState(attrNode->children.at(2), "ALTER USER: invalid user state");
                 break;
             }
-            default: throw std::invalid_argument("ALTER USER: invalid attribute");
+            default: throw DBEngineRequestFactoryError("ALTER USER: invalid attribute");
         }
     }
 
@@ -1455,7 +1569,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserAccessKeyRe
                     break;
                 }
                 default:
-                    throw std::invalid_argument("ALTER USER ADD ACCESS KEY: invalid attribute");
+                    throw DBEngineRequestFactoryError(
+                            "ALTER USER ADD ACCESS KEY: invalid attribute");
             }
         }
     }
@@ -1499,7 +1614,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAccessKeyAt
                         attrNode->children.at(2), "ALTER USER ALTER ACCESS KEY: invalid key state");
                 break;
             }
-            default: throw std::invalid_argument("ALTER USER ALTER ACCESS KEY: invalid attribute");
+            default:
+                throw DBEngineRequestFactoryError("ALTER USER ALTER ACCESS KEY: invalid attribute");
         }
     }
 
@@ -1561,7 +1677,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserTokenReques
                     }
                     break;
                 }
-                default: throw std::invalid_argument("ALTER USER ADD TOKEN: invalid attribute");
+                default:
+                    throw DBEngineRequestFactoryError("ALTER USER ADD TOKEN: invalid attribute");
             }
         }
     }
@@ -1610,7 +1727,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserTokenAttrib
                     break;
                 }
                 default: {
-                    throw std::invalid_argument(
+                    throw DBEngineRequestFactoryError(
                             "ALTER USER ALTER TOKEN SET ATTRIBUTES: invalid attribute");
                 }
             }
@@ -1646,7 +1763,7 @@ siodb::ColumnDataType DBEngineSqlRequestFactory::getColumnDataType(const std::st
 {
     const auto it = m_siodbDataTypeMap.find(typeName);
     if (it != m_siodbDataTypeMap.end()) return it->second;
-    throw std::invalid_argument("Data type '" + typeName + "' is not supported");
+    throw DBEngineRequestFactoryError("Unsupported data type '" + typeName + "'");
 }
 
 requests::ResultExpression DBEngineSqlRequestFactory::createResultExpression(
@@ -1676,7 +1793,7 @@ requests::ResultExpression DBEngineSqlRequestFactory::createResultExpression(
             alias = helpers::extractObjectName(node, node->children.size() - 1);
         }
     } else
-        throw std::invalid_argument("Result column node is invalid");
+        throw DBEngineRequestFactoryError("Result column node is invalid");
     return requests::ResultExpression(std::move(expression), std::move(alias));
 }
 
@@ -1696,34 +1813,43 @@ void DBEngineSqlRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node,
             case SiodbParser::RuleTable_or_subquery: {
                 const auto databaseIdNode =
                         helpers::findNonTerminal(e, SiodbParser::RuleDatabase_name);
-                if (databaseIdNode) database = boost::to_upper_copy(databaseIdNode->getText());
+                if (databaseIdNode) {
+                    database = databaseIdNode->getText();
+                    boost::to_upper(database);
+                }
 
                 const auto tableIdNode = helpers::findNonTerminal(e, SiodbParser::RuleTable_name);
                 if (tableIdNode) {
-                    auto tableName = boost::to_upper_copy(tableIdNode->getText());
+                    auto tableName = tableIdNode->getText();
+                    boost::to_upper(tableName);
                     std::string tableAlias;
                     const auto tableAliasIdNode =
                             helpers::findNonTerminal(e, SiodbParser::RuleTable_alias);
-                    if (tableAliasIdNode)
-                        tableAlias = boost::to_upper_copy(tableAliasIdNode->getText());
+                    if (tableAliasIdNode) {
+                        tableAlias = tableAliasIdNode->getText();
+                        boost::to_upper(tableAlias);
+                    }
                     tables.emplace_back(std::move(tableName), std::move(tableAlias));
                 } else
-                    throw std::invalid_argument("SELECT: missing table ID");
+                    throw DBEngineRequestFactoryError("SELECT: missing table ID");
                 break;
             }
             case kInvalidNodeType: {
                 const auto terminalType = helpers::getTerminalType(e);
                 if (terminalType == SiodbParser::K_WHERE) {
                     ++i;
-                    if (i >= node->children.size())
-                        throw std::runtime_error("SELECT: WHERE does not contain expression");
+                    if (i >= node->children.size()) {
+                        throw DBEngineRequestFactoryError(
+                                "SELECT: WHERE clause does not contain expression");
+                    }
                     where = exprFactory.createExpression(node->children[i]);
                 }
                 break;
             };
             default: {
-                throw std::runtime_error("SELECT: query contains unsupported non-terminal of type "
-                                         + std::to_string(nonTerminalType));
+                throw DBEngineRequestFactoryError(
+                        "SELECT: query contains unsupported non-terminal of type "
+                        + std::to_string(nonTerminalType));
             }
         }
     }

@@ -19,7 +19,7 @@ TEST(UM, CreateUser)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -41,7 +41,7 @@ TEST(UM, CreateActiveUser)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -63,7 +63,7 @@ TEST(UM, CreateInactiveUser)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -86,7 +86,7 @@ TEST(UM, CreateUserWithRealNameAndDescription)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -110,7 +110,7 @@ TEST(UM, CreateUserWithNullRealNameAndDescription)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -132,7 +132,7 @@ TEST(UM, DropUser)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -151,7 +151,7 @@ TEST(UM, AlterUserSetRealName)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -175,7 +175,7 @@ TEST(UM, AlterUserSetState)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -199,7 +199,7 @@ TEST(UM, AlterUserSetStateAndRealName)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -225,7 +225,7 @@ TEST(UM, AlterUserAddAccessKey)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -248,7 +248,7 @@ TEST(UM, AlterUserDropAccessKey)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -270,7 +270,7 @@ TEST(UM, AlterUserDropAccessKeyIfExists)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -293,7 +293,7 @@ TEST(UM, AlterUserSetUserAccessKeyAttributes)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -317,7 +317,7 @@ TEST(UM, AlterUserRenameAccessKey)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -341,7 +341,7 @@ TEST(UM, AlterUserRenameAccessKeyIfExists)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -364,7 +364,7 @@ TEST(UM, AlterUserAddToken1)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -388,7 +388,7 @@ TEST(UM, AlterUserAddToken2)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -414,7 +414,7 @@ TEST(UM, AlterUserAddToken3)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -442,7 +442,7 @@ TEST(UM, AlterUserDropToken)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -464,7 +464,7 @@ TEST(UM, AlterUserDropTokenIfExists)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -488,7 +488,7 @@ TEST(UM, AlterUserSetUserTokenAttributes)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -514,7 +514,7 @@ TEST(UM, AlterUserRenameToken)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -538,7 +538,7 @@ TEST(UM, AlterUserRenameTokenIfExists)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,
@@ -562,7 +562,7 @@ TEST(UM, CheckUserToken)
     parser.parse();
 
     const auto dbeRequest =
-            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createRequest(
+            siodb::iomgr::dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                     parser.findStatement(0));
 
     ASSERT_EQ(dbeRequest->m_requestType,

@@ -15,6 +15,7 @@ CXX_SRC:= \
 	ChunkedOutputStream.cpp  \
 	FDStream.cpp  \
 	JsonWriter.cpp  \
+	MemoryInputStream.cpp  \
 	MemoryMappedFile.cpp
 
 C_SRC:= \
@@ -27,7 +28,9 @@ CXX_HDR:= \
 	FDStream.h  \
 	InputOutputStream.h  \
 	InputStream.h  \
+	InputStreamStdStreamBuffer.h  \
 	JsonWriter.h  \
+	MemoryInputStream.h  \
 	MemoryMappedFile.h \
 	OutputStream.h  \
 	Stream.h  \

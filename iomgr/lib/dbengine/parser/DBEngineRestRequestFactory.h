@@ -8,6 +8,7 @@
 #include "DBEngineRequestPtr.h"
 
 // Protobuf message headers
+#include <siodb/common/io/InputStream.h>
 #include <siodb/common/proto/IOManagerProtocol.pb.h>
 
 namespace siodb::iomgr::dbengine::parser {
@@ -17,11 +18,14 @@ class DBEngineRestRequestFactory {
 public:
     /**
      * Creates database engine request from a statement.
+     * May read additional data from input, if provided.
      * @param msg Request message.
+     * @param input Input stream.
      * @return Database engine request object filled with parsed data.
      */
-    static requests::DBEngineRequestPtr createRequest(
-            const iomgr_protocol::DatabaseEngineRestRequest& msg);
+    static requests::DBEngineRequestPtr createRestRequest(
+            const iomgr_protocol::DatabaseEngineRestRequest& msg,
+            siodb::io::InputStream* input = nullptr);
 
 private:
     /**
@@ -59,10 +63,18 @@ private:
     /**
      * Creates POST rows request.
      * @param msg Request message.
+     * @param input Input stream.
      * @return POST rows request.
      */
     static requests::DBEngineRequestPtr createPostRowsRequest(
-            const iomgr_protocol::DatabaseEngineRestRequest& msg);
+            const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input);
+
+private:
+    /** JSON chunk size */
+    static constexpr std::size_t kJsonChunkSize = 65536;
+
+    /** Maximum row count for single POST */
+    static constexpr std::size_t kMaxPostRowCount = 10000;
 };
 
 }  // namespace siodb::iomgr::dbengine::parser

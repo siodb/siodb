@@ -571,10 +571,7 @@ private:
     static constexpr std::uint32_t kLobChunkSize = 4096;
 
     /** JSON chunk size */
-    static constexpr std::uint32_t kJsonChunkSize = 65536;
-
-    /** Reserved expressions count */
-    static constexpr std::size_t kReservedExpressionCount = 32;
+    static constexpr std::size_t kJsonChunkSize = 65536;
 
     /** Token prefix in the freetext message */
     static constexpr const char* kTokenResponsePrefix = "token: ";

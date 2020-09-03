@@ -43,7 +43,7 @@ TEST(DML_Delete, DeleteAllRows)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -65,7 +65,7 @@ TEST(DML_Delete, DeleteAllRows)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -86,7 +86,7 @@ TEST(DML_Delete, DeleteAllRows)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -135,7 +135,7 @@ TEST(DML_Delete, DeleteByTrid)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -157,7 +157,7 @@ TEST(DML_Delete, DeleteByTrid)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -178,7 +178,7 @@ TEST(DML_Delete, DeleteByTrid)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -243,7 +243,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -265,7 +265,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -286,7 +286,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -351,7 +351,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -374,7 +374,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -395,7 +395,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -467,7 +467,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -490,7 +490,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -511,7 +511,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);

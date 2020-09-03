@@ -174,7 +174,7 @@ _Prepare
 _StartSiodb
 _CheckLogFileError
 
-##export RESTCLI_DEBUG=--debug
+export RESTCLI_DEBUG=--debug
 ##export SIOCLI_DEBUG=--debug
 
 if [[ "${SHORT_TEST}" == "1" ]]; then
@@ -248,6 +248,11 @@ else
 
   _RunRestRequest3 get row db2.t2_1 1 user1 ${user1_token}
   _CheckLogFileError
+
+  #set +e
+  # Should fail
+  #_RunRestRequest3 get row db2.t2_1 1 user1 xyz
+  #set -e
 
 fi
 

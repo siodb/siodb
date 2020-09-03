@@ -42,7 +42,8 @@ TEST(DDL, CreateDatabase)
     std::size_t index = 0;
     for (const auto& [cipherId, keySeed] : parameters) {
         ++index;
-        const auto databaseName = boost::to_upper_copy("TEST_DB_" + cipherId + "_" + keySeed);
+        auto databaseName = "TEST_DB_" + cipherId + "_" + keySeed;
+        boost::to_upper(databaseName);
         {
             /// ----------- CREATE DATABASE -----------
             std::ostringstream ss;
@@ -53,7 +54,7 @@ TEST(DDL, CreateDatabase)
             parser.parse();
 
             const auto createDatabaseRequest =
-                    parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                    parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
             requestHandler->executeRequest(
                     *createDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -83,7 +84,7 @@ TEST(DDL, CreateDatabase)
             parser.parse();
 
             const auto selectRequest =
-                    parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                    parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
             requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -129,7 +130,7 @@ TEST(DDL, CreateDatabase)
             parser.parse();
 
             const auto dropDatabaseRequest =
-                    parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                    parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
             requestHandler->executeRequest(
                     *dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -159,7 +160,7 @@ TEST(DDL, DropDatabase_NonExistentDB)
     parser.parse();
 
     const auto dropDatabaseRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -185,7 +186,7 @@ TEST(DDL, DropDatabaseIfExists_NonExistentDB)
     parser.parse();
 
     const auto dropDatabaseRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -219,7 +220,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         parser.parse();
 
         const auto createDatabaseRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(
                 *createDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -246,7 +247,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         parser.parse();
 
         const auto createTableRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -266,7 +267,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         parser.parse();
 
         const auto useDatabaseRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*useDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -288,7 +289,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -316,7 +317,7 @@ TEST(DDL, UseDatabase_NonExistentDB)
     parser.parse();
 
     const auto dropDatabaseRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*dropDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -350,7 +351,7 @@ TEST(DDL, DropUsedDatabase)
         parser.parse();
 
         const auto createDatabaseRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(
                 *createDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -375,7 +376,7 @@ TEST(DDL, DropUsedDatabase)
         parser.parse();
 
         const auto useDatabaseRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*useDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -397,7 +398,7 @@ TEST(DDL, DropUsedDatabase)
         parser.parse();
 
         const auto useDatabaseRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*useDatabaseRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -425,7 +426,7 @@ TEST(DDL, CreateDuplicateColumnTable)
     parser.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -449,7 +450,7 @@ TEST(DDL, CreateDuplicateColumnTable)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -481,7 +482,7 @@ TEST(DDL, CreateTable)
     parser.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -505,7 +506,7 @@ TEST(DDL, CreateTable)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -595,7 +596,7 @@ TEST(DDL, CreateTableWithDefaultValue)
     parser.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -624,7 +625,7 @@ TEST(DDL, CreateTableWithNotNullAndDefaultValue)
     parser.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -652,7 +653,7 @@ TEST(DDL, SetTableAttributes_NextTrid)
     parser1.parse();
 
     const auto createTableRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser1.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser1.findStatement(0));
 
     requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -675,7 +676,7 @@ TEST(DDL, SetTableAttributes_NextTrid)
     parser2.parse();
 
     const auto alterTableRequest =
-            parser_ns::DBEngineSqlRequestFactory::createRequest(parser2.findStatement(0));
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser2.findStatement(0));
 
     requestHandler->executeRequest(*alterTableRequest, TestEnvironment::kTestRequestId, 0, 1);
 

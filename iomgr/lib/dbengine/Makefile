@@ -45,6 +45,7 @@ CXX_SRC:= \
 	parser/DBEngineSqlRequestFactory.cpp  \
 	parser/DatabaseContext.cpp  \
 	parser/EmptyContext.cpp  \
+	parser/RowDataJsonSaxParser.cpp  \
 	parser/SqlParser.cpp  \
 	parser/antlr_wrappers/SiodbBaseListenerWrapper.cpp  \
 	parser/antlr_wrappers/SiodbLexerWrapper.cpp  \
@@ -203,12 +204,15 @@ CXX_HDR:= \
 	parser/AntlrHelpers.h  \
 	parser/DatabaseContext.h  \
 	parser/DBEngineRequest.h  \
+	parser/DBEngineRequestFactoryError.h  \
 	parser/DBEngineRequestPtr.h  \
 	parser/DBEngineRequestType.h  \
 	parser/DBEngineRestRequestFactory.h  \
 	parser/DBEngineSqlRequest.h  \
 	parser/DBEngineSqlRequestFactory.h  \
 	parser/EmptyContext.h  \
+	parser/JsonParserError.h  \
+	parser/RowDataJsonSaxParser.h  \
 	parser/SqlParser.h  \
 	parser/antlr_wrappers/Antlr4RuntimeWrapper.h  \
 	parser/antlr_wrappers/SiodbBaseListenerWrapper.h  \

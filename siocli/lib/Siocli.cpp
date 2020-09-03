@@ -51,7 +51,10 @@
 #include <unistd.h>
 
 // Boost headers
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -148,8 +151,10 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_noLogo = vm.count("nologo") > 0;
         params.m_printDebugMessages = vm.count("debug") > 0;
 
-        if (exportDatabase)
-            params.m_exportDatabaseName = boost::to_upper_copy(vm["export"].as<std::string>());
+        if (exportDatabase) {
+            params.m_exportDatabaseName = vm["export"].as<std::string>();
+            boost::to_upper(params.m_exportDatabaseName);
+        }
 
         if (vm.count("plaintext") > 0)
             params.m_encryption = false;

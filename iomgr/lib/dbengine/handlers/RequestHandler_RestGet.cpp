@@ -54,7 +54,7 @@ void RequestHandler::executeGetDatabasesRestRequest(
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
-    if (chunkedOutput.close()) stdext::throw_system_error("Failed to send JSON payload");
+    if (chunkedOutput.close() != 0) stdext::throw_system_error("Failed to send JSON payload");
 }
 
 void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -90,7 +90,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
-    if (chunkedOutput.close()) stdext::throw_system_error("Failed to send JSON payload");
+    if (chunkedOutput.close() != 0) stdext::throw_system_error("Failed to send JSON payload");
 }
 
 void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -144,7 +144,7 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
-    if (chunkedOutput.close()) stdext::throw_system_error("Failed to send JSON payload");
+    if (chunkedOutput.close() != 0) stdext::throw_system_error("Failed to send JSON payload");
 }
 
 void RequestHandler::executeGetSingleRowRestRequest(
@@ -224,7 +224,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
-    if (chunkedOutput.close()) stdext::throw_system_error("Failed to send JSON payload");
+    if (chunkedOutput.close() != 0) stdext::throw_system_error("Failed to send JSON payload");
 }
 
 }  // namespace siodb::iomgr::dbengine

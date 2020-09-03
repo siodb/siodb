@@ -101,9 +101,11 @@ extern "C" int restcliMain(int argc, char** argv)
         siodb::rest_client::RestClientParameters params;
         params.m_host = vm["host"].as<std::string>();
         params.m_port = vm["port"].as<int>();
-        params.m_method = boost::to_upper_copy(vm["method"].as<std::string>());
+        params.m_method = vm["method"].as<std::string>();
+        boost::to_upper(params.m_method);
         params.m_requestId = vm["request-id"].as<std::uint64_t>();
-        params.m_objectType = boost::to_upper_copy(vm["object-type"].as<std::string>());
+        params.m_objectType = vm["object-type"].as<std::string>();
+        boost::to_upper(params.m_objectType);
         params.m_objectName = vm["object-name"].as<std::string>();
         params.m_objectId = vm["object-id"].as<std::uint64_t>();
         params.m_user = vm["user"].as<std::string>();
@@ -251,7 +253,8 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
             std::cerr << "debug: Flushing pending payload from the buffer: "
                       << chunkedOutput.getDataSize() << "bytes..." << std::endl;
         }
-        if (chunkedOutput.close()) stdext::throw_system_error("Failed to send payload final part");
+        if (chunkedOutput.close() != 0)
+            stdext::throw_system_error("Failed to send payload final part");
     }
 
     // Read server response

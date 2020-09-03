@@ -18,7 +18,7 @@ public:
      * @param node A statement node.
      * @return Database engine request object filled with parsed data.
      */
-    static requests::DBEngineRequestPtr createRequest(antlr4::tree::ParseTree* node);
+    static requests::DBEngineRequestPtr createSqlRequest(antlr4::tree::ParseTree* node);
 
 private:
     /**

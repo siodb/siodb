@@ -7,6 +7,7 @@
 // Project headers
 #include "IOManagerRequest.h"
 #include "../dbengine/handlers/RequestHandler.h"
+#include "../dbengine/parser/DBEngineRequestFactoryError.h"
 #include "../dbengine/parser/DBEngineRestRequestFactory.h"
 
 // Common project headers
@@ -98,9 +99,9 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
             // Parse incoming request
             dbengine::requests::DBEngineRequestPtr dbEngineRequest;
             try {
-                dbEngineRequest =
-                        dbengine::parser::DBEngineRestRequestFactory::createRequest(requestMsg);
-            } catch (std::exception& ex) {
+                dbEngineRequest = dbengine::parser::DBEngineRestRequestFactory::createRestRequest(
+                        requestMsg, m_clientConnection.get());
+            } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                 LOG_DEBUG << m_logContext << "Sending request parsing error " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), ex.what(), kRestParseError);
                 LOG_DEBUG << m_logContext << "Sent request parse error";

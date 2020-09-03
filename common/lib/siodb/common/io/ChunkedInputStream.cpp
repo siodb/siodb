@@ -40,7 +40,7 @@ std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size)
 {
     if (!isValid()) return -1;
 
-    if (SIODB_UNLIKELY(!m_hasChunkSize)) {
+    if (!m_hasChunkSize) {
         const int res = readChunkSize();
         if (SIODB_UNLIKELY(res < 1)) {
             if (res < 0) m_stream = nullptr;
@@ -66,11 +66,8 @@ std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size)
         m_pos += n;
 
         if (m_pos == m_chunkSize) {
-            const int res = readChunkSize();
-            if (SIODB_UNLIKELY(res < 1)) {
-                if (res < 0) m_stream = nullptr;
-                return res;
-            }
+            m_hasChunkSize = false;
+            break;
         }
     }
     return size - remaining;
@@ -80,7 +77,7 @@ std::ptrdiff_t ChunkedInputStream::skip(std::size_t size)
 {
     if (!isValid()) return -1;
 
-    if (SIODB_UNLIKELY(!m_hasChunkSize)) {
+    if (!m_hasChunkSize) {
         const int res = readChunkSize();
         if (SIODB_UNLIKELY(res < 1)) {
             if (res < 0) m_stream = nullptr;
