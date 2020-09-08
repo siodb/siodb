@@ -13,9 +13,11 @@
 namespace dbengine = siodb::iomgr::dbengine;
 namespace requests = dbengine::requests;
 
-// Class for simulating database context for the expression test
-// Test context is exist of values below in TestTbl table
-class TestContext : public requests::Expression::Context {
+/**
+ * Class for simulating database context for the expression test.
+ * Test context is exist of values below in TestTbl table.
+ */
+class TestContext : public requests::ExpressionEvaluationContext {
 public:
     TestContext();
 

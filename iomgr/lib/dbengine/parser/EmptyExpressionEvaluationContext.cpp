@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "EmptyContext.h"
+#include "EmptyExpressionEvaluationContext.h"
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
@@ -10,13 +10,13 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-const siodb::iomgr::dbengine::Variant& EmptyContext::getColumnValue(
+const siodb::iomgr::dbengine::Variant& EmptyExpressionEvaluationContext::getColumnValue(
         [[maybe_unused]] std::size_t tableIndex, [[maybe_unused]] std::size_t columnIndex)
 {
     throwDatabaseError(IOManagerMessageId::kErrorOnlyConstantExpressionsAreAllowed);
 }
 
-siodb::ColumnDataType EmptyContext::getColumnDataType(
+siodb::ColumnDataType EmptyExpressionEvaluationContext::getColumnDataType(
         [[maybe_unused]] std::size_t tableIndex, [[maybe_unused]] std::size_t columnIndex) const
 {
     throwDatabaseError(IOManagerMessageId::kErrorOnlyConstantExpressionsAreAllowed);

@@ -18,7 +18,7 @@ public:
      * @param size Data size in bytes.
      * @return Number of written bytes. Negative value indicates error.
      */
-    virtual std::ptrdiff_t write(const void* buffer, std::size_t size) = 0;
+    virtual std::ptrdiff_t write(const void* buffer, std::size_t size) noexcept = 0;
 };
 
 }  // namespace siodb::io

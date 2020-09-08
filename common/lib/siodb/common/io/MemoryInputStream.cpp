@@ -8,6 +8,8 @@
 #include "../crt_ext/compiler_defs.h"
 
 // CRT headers
+#include <cerrno>
+#include <cstdint>
 #include <cstring>
 
 // STL headers
@@ -15,45 +17,41 @@
 
 namespace siodb::io {
 
-MemoryInputStream::MemoryInputStream(const void* buffer, std::size_t size)
-    : m_buffer(static_cast<const std::uint8_t*>(buffer))
-    , m_remaining(size)
-{
-}
-
 bool MemoryInputStream::isValid() const noexcept
 {
-    return m_buffer;
+    return m_current != nullptr;
 }
 
-int MemoryInputStream::close()
+int MemoryInputStream::close() noexcept
 {
-    m_buffer = nullptr;
+    m_current = nullptr;
     m_remaining = 0;
     return 0;
 }
 
-std::ptrdiff_t MemoryInputStream::read(void* buffer, std::size_t size)
+std::ptrdiff_t MemoryInputStream::read(void* buffer, std::size_t size) noexcept
 {
     if (SIODB_LIKELY(isValid())) {
         const auto n = std::min(size, m_remaining);
         if (SIODB_LIKELY(n > 0)) {
-            std::memcpy(buffer, m_buffer, n);
-            m_buffer += n;
+            std::memcpy(buffer, m_current, n);
+            m_current = static_cast<const std::uint8_t*>(m_current) + n;
             m_remaining -= n;
         }
         return n;
     }
+    errno = EIO;
     return -1;
 }
 
-std::ptrdiff_t MemoryInputStream::skip(std::size_t size)
+std::ptrdiff_t MemoryInputStream::skip(std::size_t size) noexcept
 {
     if (SIODB_LIKELY(isValid())) {
         const auto n = std::min(size, m_remaining);
         m_remaining -= n;
         return n;
     }
+    errno = EIO;
     return -1;
 }
 

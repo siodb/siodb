@@ -11,7 +11,7 @@
 #include "Index.h"
 #include "TableColumns.h"
 #include "ThrowDatabaseError.h"
-#include "parser/EmptyContext.h"
+#include "parser/EmptyExpressionEvaluationContext.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>

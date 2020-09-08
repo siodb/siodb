@@ -36,7 +36,7 @@ public:
 
     /**
      * Returns underlying mutable EVP_MD_CTX object.
-     * @return Context.
+     * @return Context object.
      */
     operator ::EVP_MD_CTX *() noexcept
     {
@@ -53,7 +53,7 @@ public:
     }
 
 private:
-    /** Context */
+    /** Context object */
     ::EVP_MD_CTX* m_ctx;
 };
 

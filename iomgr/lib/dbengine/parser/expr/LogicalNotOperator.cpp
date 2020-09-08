@@ -11,7 +11,7 @@ MutableOrConstantString LogicalNotOperator::getExpressionText() const
     return "Logical NOT";
 }
 
-Variant LogicalNotOperator::evaluate(Context& context) const
+Variant LogicalNotOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto value = m_operand->evaluate(context);
 

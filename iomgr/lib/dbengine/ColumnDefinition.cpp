@@ -10,7 +10,7 @@
 #include "DefaultValueConstraint.h"
 #include "NotNullConstraint.h"
 #include "ThrowDatabaseError.h"
-#include "parser/EmptyContext.h"
+#include "parser/EmptyExpressionEvaluationContext.h"
 
 namespace siodb::iomgr::dbengine {
 
@@ -59,7 +59,7 @@ Variant ColumnDefinition::getDefaultValue() const
     const auto& index = m_constraints->byConstraintType();
     const auto it = index.find(ConstraintType::kDefaultValue);
     if (it == index.cend()) return Variant();
-    requests::EmptyContext ctx;
+    requests::EmptyExpressionEvaluationContext ctx;
     return dynamic_cast<const DefaultValueConstraint&>((*it)->getConstraint())
             .getExpression()
             .evaluate(ctx);

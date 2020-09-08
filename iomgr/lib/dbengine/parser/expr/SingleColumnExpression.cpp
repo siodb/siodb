@@ -16,7 +16,8 @@ SingleColumnExpression::SingleColumnExpression(
 {
 }
 
-VariantType SingleColumnExpression::getResultValueType(const Context& context) const
+VariantType SingleColumnExpression::getResultValueType(
+        const ExpressionEvaluationContext& context) const
 {
     checkHasTableAndColumnIndices();
     // TODO(cxxman): Make this somehow better, take CLOBs into account.
@@ -29,7 +30,8 @@ VariantType SingleColumnExpression::getResultValueType(const Context& context) c
 #endif
 }
 
-ColumnDataType SingleColumnExpression::getColumnDataType(const Context& context) const
+ColumnDataType SingleColumnExpression::getColumnDataType(
+        const ExpressionEvaluationContext& context) const
 {
     checkHasTableAndColumnIndices();
     return context.getColumnDataType(*m_datasetTableIndex, *m_datasetColumnIndex);
@@ -49,12 +51,13 @@ std::size_t SingleColumnExpression::getSerializedSize() const noexcept
     return getCommonSerializedSize() + ::getSerializedSize(m_columnName);
 }
 
-void SingleColumnExpression::validate([[maybe_unused]] const Context& context) const
+void SingleColumnExpression::validate(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     checkHasTableAndColumnIndices();
 }
 
-Variant SingleColumnExpression::evaluate(Context& context) const
+Variant SingleColumnExpression::evaluate(ExpressionEvaluationContext& context) const
 {
     checkHasTableAndColumnIndices();
     return context.getColumnValue(*m_datasetTableIndex, *m_datasetColumnIndex);

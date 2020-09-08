@@ -7,8 +7,8 @@
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/config/SiodbVersion.h>
+#include <siodb/common/io/BufferedChunkedOutputStream.h>
 #include <siodb/common/io/ChunkedInputStream.h>
-#include <siodb/common/io/ChunkedOutputStream.h>
 #include <siodb/common/io/FDStream.h>
 #include <siodb/common/net/NetConstants.h>
 #include <siodb/common/net/TcpConnection.h>
@@ -216,7 +216,7 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
     // Send payload
     if (verb == iomgr_protocol::POST || verb == iomgr_protocol::PATCH) {
         constexpr std::size_t kChunkSize = 65536;
-        io::ChunkedOutputStream chunkedOutput(kChunkSize, connection);
+        io::BufferedChunkedOutputStream chunkedOutput(kChunkSize, connection);
         if (!params.m_payload.empty()) {
             if (params.m_printDebugMessages) {
                 std::cerr << "debug: Sending payload of " << params.m_payload.length()

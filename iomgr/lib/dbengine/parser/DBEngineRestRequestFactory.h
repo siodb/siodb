@@ -30,11 +30,9 @@ public:
 private:
     /**
      * Creates GET databases request.
-     * @param msg Request message.
      * @return GET databases request.
      */
-    static requests::DBEngineRequestPtr createGetDatabasesRequest(
-            const iomgr_protocol::DatabaseEngineRestRequest& msg);
+    static requests::DBEngineRequestPtr createGetDatabasesRequest();
 
     /**
      * Creates GET tables request.

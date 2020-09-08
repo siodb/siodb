@@ -11,7 +11,7 @@ MutableOrConstantString BitwiseOrOperator::getExpressionText() const
     return "Bitwise OR";
 }
 
-Variant BitwiseOrOperator::evaluate(Context& context) const
+Variant BitwiseOrOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

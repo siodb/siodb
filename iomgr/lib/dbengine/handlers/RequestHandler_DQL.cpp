@@ -12,8 +12,8 @@
 #include "../SystemDatabase.h"
 #include "../TableDataSet.h"
 #include "../ThrowDatabaseError.h"
-#include "../parser/DatabaseContext.h"
-#include "../parser/EmptyContext.h"
+#include "../parser/DBExpressionEvaluationContext.h"
+#include "../parser/EmptyExpressionEvaluationContext.h"
 #include "../parser/expr/AllColumnsExpression.h"
 #include "../parser/expr/SingleColumnExpression.h"
 
@@ -73,7 +73,7 @@ void RequestHandler::executeSelectRequest(
 
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
-    std::unique_ptr<requests::DatabaseContext> dbContext;
+    std::unique_ptr<requests::DBExpressionEvaluationContext> dbContext;
     {
         std::vector<DataSetPtr> tableDataSets;
         tableDataSets.reserve(request.m_tables.size());
@@ -81,7 +81,8 @@ void RequestHandler::executeSelectRequest(
             tableDataSets.push_back(std::make_shared<TableDataSet>(
                     database->findTableChecked(table.m_name), table.m_alias));
         }
-        dbContext = std::make_unique<requests::DatabaseContext>(std::move(tableDataSets));
+        dbContext =
+                std::make_unique<requests::DBExpressionEvaluationContext>(std::move(tableDataSets));
     }
     const auto& dataSets = dbContext->getDataSets();
 
@@ -243,7 +244,7 @@ void RequestHandler::executeSelectRequest(
     std::optional<std::uint64_t> offset;
 
     if (request.m_limit != nullptr) {
-        requests::EmptyContext emptyContext;
+        requests::EmptyExpressionEvaluationContext emptyContext;
         request.m_limit->validate(emptyContext);
 
         const auto limitValue = request.m_limit->evaluate(emptyContext);

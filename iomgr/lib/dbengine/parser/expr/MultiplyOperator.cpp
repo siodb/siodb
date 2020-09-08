@@ -11,7 +11,7 @@ MutableOrConstantString MultiplyOperator::getExpressionText() const
     return "MULTIPLY";
 }
 
-Variant MultiplyOperator::evaluate(Context& context) const
+Variant MultiplyOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

@@ -2,17 +2,17 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "DatabaseContext.h"
+#include "DBExpressionEvaluationContext.h"
 
 namespace siodb::iomgr::dbengine::requests {
 
-const Variant& DatabaseContext::getColumnValue(
+const Variant& DBExpressionEvaluationContext::getColumnValue(
         std::size_t tableIndex, const std::size_t columnIndex)
 {
     return m_dataSets.at(tableIndex)->getColumnValue(columnIndex);
 }
 
-ColumnDataType DatabaseContext::getColumnDataType(
+ColumnDataType DBExpressionEvaluationContext::getColumnDataType(
         std::size_t tableIndex, std::size_t columnIndex) const
 {
     return m_dataSets.at(tableIndex)->getColumnDataType(columnIndex);
@@ -20,7 +20,8 @@ ColumnDataType DatabaseContext::getColumnDataType(
 
 /// ------ internals ------
 
-DatabaseContext::NameToIndexMapping DatabaseContext::makeNameToIndexMapping() const
+DBExpressionEvaluationContext::NameToIndexMapping
+DBExpressionEvaluationContext::makeNameToIndexMapping() const
 {
     NameToIndexMapping result;
     if (!m_dataSets.empty()) {

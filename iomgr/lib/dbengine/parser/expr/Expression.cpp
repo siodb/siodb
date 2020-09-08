@@ -29,7 +29,7 @@ bool Expression::isTernaryOperator() const noexcept
     return false;
 }
 
-bool Expression::canCastAsDateTime(const Context& context) const noexcept
+bool Expression::canCastAsDateTime(const ExpressionEvaluationContext& context) const noexcept
 {
     return isDateTimeType(getResultValueType(context));
 }

@@ -72,10 +72,10 @@ public:
     }
 
     // implements ZeroCopyInputStream
-    bool Next(const void** data, int* size);
-    void BackUp(int count);
-    bool Skip(int count);
-    google::protobuf::int64 ByteCount() const;
+    bool Next(const void** data, int* size) override;
+    void BackUp(int count) override;
+    bool Skip(int count) override;
+    google::protobuf::int64 ByteCount() const override;
 
     /**
      * Checks that there is no error.
@@ -95,7 +95,7 @@ public:
      * Closes stream.
      * @return Zero on success, nonzero otherwise.
      */
-    int close() override;
+    int close() noexcept override;
 
     /**
      * Reads data from stream.
@@ -103,14 +103,14 @@ public:
      * @param size Size of data in bytes.
      * @return Number of read bytes. Negative value indicates error.
      */
-    std::ptrdiff_t read(void* buffer, std::size_t size) override;
+    std::ptrdiff_t read(void* buffer, std::size_t size) noexcept override;
 
     /**
      * Skips data.
      * @param size Number of bytes to skip.
      * @return Number of bytes skipped. Negative value indicates error.
      */
-    std::ptrdiff_t skip(std::size_t size) override;
+    std::ptrdiff_t skip(std::size_t size) noexcept override;
 
 private:
     class CopyingInputStream : public google::protobuf::io::CopyingInputStream {

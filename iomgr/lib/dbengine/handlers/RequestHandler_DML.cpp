@@ -12,8 +12,8 @@
 #include "../Table.h"
 #include "../ThrowDatabaseError.h"
 #include "../TransactionParameters.h"
-#include "../parser/DatabaseContext.h"
-#include "../parser/EmptyContext.h"
+#include "../parser/DBExpressionEvaluationContext.h"
+#include "../parser/EmptyExpressionEvaluationContext.h"
 
 // Common project headers
 #include <siodb/common/io/FileIO.h>
@@ -70,7 +70,7 @@ void RequestHandler::executeUpdateRequest(
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
 
     const auto tableDataSet = std::make_shared<TableDataSet>(table, request.m_table.m_alias);
-    requests::DatabaseContext dbContext(std::vector<DataSetPtr> {tableDataSet});
+    requests::DBExpressionEvaluationContext dbContext(std::vector<DataSetPtr> {tableDataSet});
 
     for (const auto& columnRef : request.m_columns) {
         if (columnRef.m_column == kMasterColumnName) {
@@ -174,7 +174,7 @@ void RequestHandler::executeDeleteRequest(
 
     const auto tableDataSet = std::make_shared<TableDataSet>(
             database->findTableChecked(request.m_table.m_name), request.m_table.m_alias);
-    requests::DatabaseContext dbContext(std::vector<DataSetPtr> {tableDataSet});
+    requests::DBExpressionEvaluationContext dbContext(std::vector<DataSetPtr> {tableDataSet});
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
     if (request.m_where)
@@ -231,7 +231,7 @@ void RequestHandler::executeInsertRequest(
     if (request.m_values.empty()) throwDatabaseError(IOManagerMessageId::kErrorValuesListIsEmpty);
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
-    requests::EmptyContext context;
+    requests::EmptyExpressionEvaluationContext context;
 
     const bool requestHasColumns = !request.m_columns.empty();
 

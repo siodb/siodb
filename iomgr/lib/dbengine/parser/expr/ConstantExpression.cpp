@@ -14,7 +14,8 @@ bool ConstantExpression::isConstant() const noexcept
     return true;
 }
 
-bool ConstantExpression::canCastAsDateTime([[maybe_unused]] const Context& context) const noexcept
+bool ConstantExpression::canCastAsDateTime(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const noexcept
 {
     if (m_value.isDateTime()) return true;
 
@@ -29,12 +30,14 @@ bool ConstantExpression::canCastAsDateTime([[maybe_unused]] const Context& conte
     return false;
 }
 
-VariantType ConstantExpression::getResultValueType([[maybe_unused]] const Context& context) const
+VariantType ConstantExpression::getResultValueType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return m_value.getValueType();
 }
 
-ColumnDataType ConstantExpression::getColumnDataType([[maybe_unused]] const Context& context) const
+ColumnDataType ConstantExpression::getColumnDataType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return convertVariantTypeToColumnDataType(m_value.getValueType());
 }
@@ -44,12 +47,12 @@ std::size_t ConstantExpression::getSerializedSize() const noexcept
     return getExpressionTypeSerializedSize(m_type) + m_value.getSerializedSize();
 }
 
-void ConstantExpression::validate([[maybe_unused]] const Context& context) const
+void ConstantExpression::validate([[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     // Constant expression is always valid.
 }
 
-Variant ConstantExpression::evaluate([[maybe_unused]] Context& context) const
+Variant ConstantExpression::evaluate([[maybe_unused]] ExpressionEvaluationContext& context) const
 {
     return m_value;
 }

@@ -140,8 +140,8 @@ DatabasePtr Instance::findDatabase(const std::string& databaseName)
 }
 
 DatabasePtr Instance::createDatabase(std::string&& name, const std::string& cipherId,
-        BinaryValue&& cipherKey, std::uint32_t currentUserId,
-        std::optional<std::string>&& description)
+        BinaryValue&& cipherKey, std::optional<std::string>&& description,
+        std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
 

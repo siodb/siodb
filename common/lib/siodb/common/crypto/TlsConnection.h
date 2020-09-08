@@ -61,12 +61,18 @@ public:
     bool isValid() const noexcept override;
 
     /**
+     * Closes connection.
+     * @return 0 on success, nonzero otherwise.
+     */
+    int close() noexcept override;
+
+    /**
      * Reads data from secure channel.
      * @param buffer Data buffer.
      * @param size Data size.
      * @return Number of read bytes. Negative values indicate error.
      */
-    std::ptrdiff_t read(void* buffer, std::size_t size) override;
+    std::ptrdiff_t read(void* buffer, std::size_t size) noexcept override;
 
     /**
      * Writes data to secure channel.
@@ -74,20 +80,7 @@ public:
      * @param size Data size.
      * @return Number of written bytes. Negative values indicate error.
      */
-    std::ptrdiff_t write(const void* buffer, std::size_t size) override;
-
-    /**
-     * Skips data.
-     * @param size Number of bytes to skip.
-     * @return Number of bytes skipped. Negative value indicates error.
-     */
-    std::ptrdiff_t skip(std::size_t size) override;
-
-    /**
-     * Closes connection.
-     * @return 0 on success, nonzero otherwise.
-     */
-    int close() override;
+    std::ptrdiff_t write(const void* buffer, std::size_t size) noexcept override;
 
 private:
     /** SSL connection object */

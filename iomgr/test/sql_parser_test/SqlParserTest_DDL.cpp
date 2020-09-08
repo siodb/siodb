@@ -5,7 +5,7 @@
 // Project headers
 #include "TestContext.h"
 #include "dbengine/parser/DBEngineSqlRequestFactory.h"
-#include "dbengine/parser/EmptyContext.h"
+#include "dbengine/parser/EmptyExpressionEvaluationContext.h"
 #include "dbengine/parser/SqlParser.h"
 
 // Google Test
@@ -114,7 +114,7 @@ TEST(DDL, CreateDatabaseWithOptions)
     // Check request
     const auto& request = dynamic_cast<const requests::CreateDatabaseRequest&>(*dbeRequest);
 
-    requests::EmptyContext emptyContext;
+    requests::EmptyExpressionEvaluationContext emptyContext;
     EXPECT_EQ(request.m_database, "MY_DATABASE");
     EXPECT_FALSE(request.m_temporary);
     EXPECT_EQ(request.m_cipherId->evaluate(emptyContext), "aes128k128");

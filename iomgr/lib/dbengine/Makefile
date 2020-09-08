@@ -43,8 +43,8 @@ CXX_SRC:= \
 	parser/DBEngineRestRequestFactory.cpp  \
 	parser/DBEngineSqlRequest.cpp  \
 	parser/DBEngineSqlRequestFactory.cpp  \
-	parser/DatabaseContext.cpp  \
-	parser/EmptyContext.cpp  \
+	parser/DBExpressionEvaluationContext.cpp  \
+	parser/EmptyExpressionEvaluationContext.cpp  \
 	parser/RowDataJsonSaxParser.cpp  \
 	parser/SqlParser.cpp  \
 	parser/antlr_wrappers/SiodbBaseListenerWrapper.cpp  \
@@ -202,7 +202,6 @@ CXX_HDR:= \
 	lob/ColumnLobStream.h  \
 	\
 	parser/AntlrHelpers.h  \
-	parser/DatabaseContext.h  \
 	parser/DBEngineRequest.h  \
 	parser/DBEngineRequestFactoryError.h  \
 	parser/DBEngineRequestPtr.h  \
@@ -210,7 +209,8 @@ CXX_HDR:= \
 	parser/DBEngineRestRequestFactory.h  \
 	parser/DBEngineSqlRequest.h  \
 	parser/DBEngineSqlRequestFactory.h  \
-	parser/EmptyContext.h  \
+	parser/DBExpressionEvaluationContext.h  \
+	parser/EmptyExpressionEvaluationContext.h  \
 	parser/JsonParserError.h  \
 	parser/RowDataJsonSaxParser.h  \
 	parser/SqlParser.h  \
@@ -240,6 +240,7 @@ CXX_HDR:= \
 	parser/expr/ConstantExpression.h \
 	parser/expr/EqualOperator.h  \
 	parser/expr/Expression.h  \
+	parser/expr/ExpressionEvaluationContext.h  \
 	parser/expr/ExpressionFactory.h  \
 	parser/expr/ExpressionType.h  \
 	parser/expr/GreaterOperator.h  \

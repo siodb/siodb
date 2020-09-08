@@ -6,13 +6,14 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType AllColumnsExpression::getResultValueType([[maybe_unused]] const Context& context) const
+VariantType AllColumnsExpression::getResultValueType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     throw std::runtime_error("All columns expression doesn't have result value type");
 }
 
 ColumnDataType AllColumnsExpression::getColumnDataType(
-        [[maybe_unused]] const Context& context) const
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     throw std::runtime_error("All columns expression doesn't have column type");
 }
@@ -27,12 +28,13 @@ std::size_t AllColumnsExpression::getSerializedSize() const noexcept
     return getCommonSerializedSize();
 }
 
-void AllColumnsExpression::validate([[maybe_unused]] const Context& context) const
+void AllColumnsExpression::validate(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     if (!m_datasetTableIndex) throw std::runtime_error("Dataset table index is not set");
 }
 
-Variant AllColumnsExpression::evaluate([[maybe_unused]] Context& context) const
+Variant AllColumnsExpression::evaluate([[maybe_unused]] ExpressionEvaluationContext& context) const
 {
     throw std::runtime_error("Evaluating of '*' column is prohibited");
 }

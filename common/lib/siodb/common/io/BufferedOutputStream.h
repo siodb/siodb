@@ -5,23 +5,22 @@
 #pragma once
 
 // Project headers
-#include "OutputStream.h"
+#include "OutputStreamWrapperStream.h"
 
 // Common project headers
 #include "../stl_ext/buffer.h"
-#include "../utils/HelperMacros.h"
 
 namespace siodb::io {
 
 /** Chunked output wrapper over another output stream. */
-class BufferedOutputStream : public OutputStream {
+class BufferedOutputStream : public OutputStreamWrapperStream {
 public:
     /**
-     * Initializes object of class ChunkedOutputStream.
+     * Initializes object of class BufferedChunkedOutputStream.
      * @param bufferSize Buffer size.
-     * @param stream Underlying stream.
+     * @param out Underlying output stream.
      */
-    BufferedOutputStream(std::size_t bufferSize, OutputStream& stream);
+    BufferedOutputStream(std::size_t bufferSize, OutputStream& out);
 
     /** De-initialized object of class BufferedOutputStream */
     ~BufferedOutputStream();
@@ -47,16 +46,10 @@ public:
     }
 
     /**
-     * Returns indication that stream is valid.
-     * @return true stream if stream is valid, false otherwise.
-     */
-    bool isValid() const noexcept override;
-
-    /**
      * Closes stream.
      * @return Zero on success, nonzero otherwise.
      */
-    int close() override;
+    int close() noexcept override;
 
     /**
      * Writes data to stream.
@@ -64,13 +57,13 @@ public:
      * @param size Data size in bytes.
      * @return Number of written bytes. Negative value indicates error.
      */
-    std::ptrdiff_t write(const void* buffer, std::size_t size) override;
+    std::ptrdiff_t write(const void* buffer, std::size_t size) noexcept override;
 
     /**
      * Flushes buffer to an underlying media.
      * @return Number of written bytes on success, negative number otherwise.
      */
-    virtual std::ptrdiff_t flush();
+    virtual std::ptrdiff_t flush() noexcept;
 
 protected:
     /**
@@ -79,7 +72,7 @@ protected:
      * @param size Data size.
      * @return 0 on success, -1 on failure.
      */
-    virtual int onFlush(std::size_t dataSize);
+    virtual int onFlush(std::size_t dataSize) noexcept;
 
 protected:
     /** Chunk buffer */
@@ -87,12 +80,6 @@ protected:
 
     /** Buffered data size */
     std::size_t m_dataSize;
-
-    /** Underlying stream */
-    OutputStream* m_stream;
-
-    /** Zero write attempt limit */
-    static constexpr unsigned kZeroWriteAttemptLimit = 10;
 };
 
 }  // namespace siodb::io

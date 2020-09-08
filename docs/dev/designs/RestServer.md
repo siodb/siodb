@@ -249,13 +249,13 @@ IOMgr chunked format consists of following elements:
 ## Configuration Parameters
 
 - `rest_server.ipv4_http_port` - IPv4 HTTP port number. Default value `50080`.
-  `0` means do not listen.
+  Zero value means do not listen.
 - `rest_server.ipv4_https_port` - IPv4 HTTPS port number. Default value `50443`.
-  `0` means do not listen.
+  Zero value means do not listen.
 - `rest_server.ipv6_http_port` - IPv6 HTTP port number. Default value `0`.
-  `0` means do not listen.
+  Zero value means do not listen.
 - `rest_server.ipv6_https_port` - IPv6 HTTPS port number. Default value `0`.
-  `0` means do not listen.
+  Zero value means do not listen.
 - `rest_server.tls_certificate` - path to the TLS certificate file.
 - `rest_server.tls_certificate_chain` - path to the TLS certificate chain file.
 - `rest_server.tls_private_key` - path to the TLS private key file.
@@ -263,5 +263,5 @@ IOMgr chunked format consists of following elements:
   to kilobytes and megabytes respectively.
 - `iomgr.rest.ipv4_port` - IPv4 REST protocol poort. Defaulr value `50002`.
   `0` means do not listen.
-- `iomgr.rest.ipv6_port` - IPv6 REST protocol poort. Defaulr value `0`.
-  `0` means do not listen.
+- `iomgr.rest.ipv6_port` - IPv6 REST protocol poort. Default value `0`.
+  Zero value means do not listen.

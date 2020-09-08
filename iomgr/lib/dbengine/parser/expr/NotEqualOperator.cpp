@@ -11,7 +11,7 @@ MutableOrConstantString NotEqualOperator::getExpressionText() const
     return "NOT EQUAL";
 }
 
-Variant NotEqualOperator::evaluate(Context& context) const
+Variant NotEqualOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

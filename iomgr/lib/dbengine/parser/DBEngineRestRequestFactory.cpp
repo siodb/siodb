@@ -11,6 +11,7 @@
 #include "RowDataJsonSaxParser.h"
 
 // Common project headers
+#include <siodb/common/io/ChunkedInputStream.h>
 #include <siodb/common/io/InputStreamStdStreamBuffer.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
@@ -31,7 +32,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createRestRequest(
     switch (msg.verb()) {
         case iomgr_protocol::GET: {
             switch (msg.object_type()) {
-                case iomgr_protocol::DATABASE: return createGetDatabasesRequest(msg);
+                case iomgr_protocol::DATABASE: return createGetDatabasesRequest();
                 case iomgr_protocol::TABLE: return createGetTablesRequest(msg);
                 case iomgr_protocol::ROW: {
                     return msg.object_id() == 0 ? createGetAllRowsRequest(msg)
@@ -74,8 +75,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createRestRequest(
     return nullptr;
 }
 
-requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetDatabasesRequest(
-        [[maybe_unused]] const iomgr_protocol::DatabaseEngineRestRequest& msg)
+requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetDatabasesRequest()
 {
     return std::make_shared<requests::GetDatabasesRestRequest>();
 }
@@ -90,7 +90,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetTablesRequest(
 }
 
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetAllRowsRequest(
-        [[maybe_unused]] const iomgr_protocol::DatabaseEngineRestRequest& msg)
+        const iomgr_protocol::DatabaseEngineRestRequest& msg)
 {
     std::vector<std::string> components;
     boost::split(components, msg.object_name(), boost::is_any_of("."));
@@ -113,7 +113,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetAllRowsRequest
 }
 
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetSingleRowRequest(
-        [[maybe_unused]] const iomgr_protocol::DatabaseEngineRestRequest& msg)
+        const iomgr_protocol::DatabaseEngineRestRequest& msg)
 {
     std::vector<std::string> components;
     boost::split(components, msg.object_name(), boost::is_any_of("."));
@@ -139,8 +139,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetSingleRowReque
 }
 
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
-        [[maybe_unused]] const iomgr_protocol::DatabaseEngineRestRequest& msg,
-        siodb::io::InputStream& input)
+        const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input)
 {
     std::vector<std::string> components;
     boost::split(components, msg.object_name(), boost::is_any_of("."));
@@ -148,23 +147,24 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
 
     boost::trim(components[0]);
     if (!isValidDatabaseObjectName(components[0]))
-        throw DBEngineRequestFactoryError("GET SINGLE ROW: Invalid database name");
+        throw DBEngineRequestFactoryError("POST ROWS: Invalid database name");
 
     boost::trim(components[1]);
     if (!isValidDatabaseObjectName(components[1]))
-        throw DBEngineRequestFactoryError("GET SINGLE ROW: Invalid table name");
+        throw DBEngineRequestFactoryError("POST ROWS: Invalid table name");
 
     std::unordered_map<unsigned, std::string> columnNames;
     std::vector<std::vector<std::pair<unsigned, requests::ConstExpressionPtr>>> values;
     try {
         RowDataJsonSaxParser jsonParser(kMaxPostRowCount, columnNames, values);
-        io::InputStreamStdStreamBuffer streamBuffer(input, kJsonChunkSize);
+        io::ChunkedInputStream chunkedInput(input);
+        io::InputStreamStdStreamBuffer streamBuffer(chunkedInput, kJsonChunkSize);
         std::istream is(&streamBuffer);
         nlohmann::json::sax_parse(
                 std::move(is), static_cast<nlohmann::json_sax<nlohmann::json>*>(&jsonParser));
     } catch (JsonParserError& ex) {
         std::ostringstream err;
-        err << "JSON parsing error: " << ex.what();
+        err << "JSON parse error: " << ex.what();
         throw DBEngineRequestFactoryError(err.str());
     }
 

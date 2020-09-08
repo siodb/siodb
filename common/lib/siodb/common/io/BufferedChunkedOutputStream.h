@@ -9,28 +9,27 @@
 
 // Common project headers
 #include "../stl_ext/buffer.h"
-#include "../utils/HelperMacros.h"
 
 namespace siodb::io {
 
 /** Chunked output wrapper over another output stream. */
-class ChunkedOutputStream : public BufferedOutputStream {
+class BufferedChunkedOutputStream : public BufferedOutputStream {
 public:
     /**
-     * Initializes object of class ChunkedOutputStream.
+     * Initializes object of class BufferedChunkedOutputStream.
      * @param maxChunkSize Maximum chunk size.
-     * @param stream Underlying stream.
+     * @param out Underlying output stream.
      */
-    ChunkedOutputStream(std::size_t maxChunkSize, OutputStream& stream);
+    BufferedChunkedOutputStream(std::size_t maxChunkSize, OutputStream& out);
 
-    /** De-initialized object of class ChunkedOutputStream */
-    ~ChunkedOutputStream();
+    /** De-initialized object of class BufferedChunkedOutputStream */
+    ~BufferedChunkedOutputStream();
 
     /**
      * Closes stream.
      * @return Zero on success, nonzero otherwise.
      */
-    int close() override;
+    int close() noexcept override;
 
 private:
     /**
@@ -39,14 +38,7 @@ private:
      * @param size Data size.
      * @return 0 on success, -1 on failure.
      */
-    int onFlush(std::size_t dataSize) override;
-
-    /**
-     * Writes chunk size to stream.
-     * @param chunkSize Chunk size.
-     * @return 0 on success, -1 on failure.
-     */
-    int writeChunkSize(std::size_t chunkSize);
+    int onFlush(std::size_t dataSize) noexcept override;
 };
 
 }  // namespace siodb::io

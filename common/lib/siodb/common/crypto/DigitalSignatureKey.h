@@ -27,7 +27,7 @@ public:
      * @param str Key string.
      * @param size Key string size.
      * @throw OpenSslError if OpenSSL error happens error.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      */
     void parseFromString(const char* str, std::size_t size);
 
@@ -35,7 +35,7 @@ public:
      * Parses key from a string.
      * @param str Key string.
      * @throw OpenSslError if OpenSSL error happens error.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      */
     void parseFromString(const std::string& str)
     {
@@ -72,7 +72,7 @@ private:
     /**
      * Parses public RSA key from decoded keyblob.
      * @param str Key blob data.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      * @throw OpenSslError if OpenSSL error happens.
      */
     void parseOpenSshRsaPublicKey(const std::string& str);
@@ -80,7 +80,7 @@ private:
     /**
      * Parses public DSA key from decoded keyblob.
      * @param str Key blob data.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      * @throw OpenSslError if OpenSSL error happens.
      */
     void parseOpenSshDsaPublicKey(const std::string& str);
@@ -88,7 +88,7 @@ private:
     /**
      * Parses public ECDSA key from decoded keyblob.
      * @param str Key blob data.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      * @throw OpenSslError if OpenSSL error happens.
      */
     void parseOpenSshEcdsaPublicKey(const std::string& str);
@@ -96,7 +96,7 @@ private:
     /**
      * Parses public ED25519 key from decoded keyblob.
      * @param str Key blob data.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      * @throw OpenSslError if OpenSSL error happens.
      */
     void parseOpenSshEd25519PublicKey(const std::string& str);
@@ -104,7 +104,7 @@ private:
     /**
      * Parses private OpenSSH key from decoded keyblob.
      * @param str Key blob data.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      * @throw OpenSslError if OpenSSL error happens.
      */
     void parseOpenSshPrivateKey(const std::string& str);
@@ -112,7 +112,7 @@ private:
     /**
      * Parses private OpenSSH ED25519 key.
      * @param scanner Scanner.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      * @throw OpenSslError if OpenSSL error happens.
      */
     void parseOpenSshEd25519PrivateKey(utils::StringScanner& scanner);
@@ -120,7 +120,7 @@ private:
     /**
      * Parses OpenSSL keys formats(PEM, PKCS8).
      * @param scanner String data scanner.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      * @throw OpenSslError if OpenSSL error happens.
      */
     void parseOpenSslKey(utils::StringScanner& scanner);
@@ -128,7 +128,7 @@ private:
     /**
      * Parses OpenSSL keys formats(PEM, PKCS8).
      * @param scanner String data scanner.
-     * @throw runtime_error if parsing error happens.
+     * @throw runtime_error if parse error happens.
      * @throw OpenSslError if OpenSSL error happens.
      */
     void parseOpenSshPublicKey(utils::StringScanner& scanner);

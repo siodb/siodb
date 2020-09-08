@@ -7,9 +7,6 @@
 // Project headers
 #include "InputStream.h"
 
-// CRT headers
-#include <cstdint>
-
 namespace siodb::io {
 
 class MemoryInputStream : public InputStream {
@@ -19,7 +16,22 @@ public:
      * @param buffer Memory buffer address.
      * @param size Data size.
      */
-    MemoryInputStream(const void* buffer, std::size_t size);
+    MemoryInputStream(const void* buffer, std::size_t size) noexcept
+        : m_current(buffer)
+        , m_remaining(size)
+    {
+    }
+
+    DECLARE_NONCOPYABLE(MemoryInputStream);
+
+    /**
+     * Returns number of remaining unread bytes in the buffer.
+     * @return Number of unread bytes in the buffer.
+     */
+    std::size_t getRemaining() const noexcept
+    {
+        return m_remaining;
+    }
 
     /**
      * Returns indication that stream is valid.
@@ -31,7 +43,7 @@ public:
      * Closes stream.
      * @return Zero on success, nonzero otherwise.
      */
-    int close() override;
+    int close() noexcept override;
 
     /**
      * Reads data from stream.
@@ -39,18 +51,18 @@ public:
      * @param size Size of data in bytes.
      * @return Number of read bytes. Negative value indicates error.
      */
-    std::ptrdiff_t read(void* buffer, std::size_t size) override;
+    std::ptrdiff_t read(void* buffer, std::size_t size) noexcept override;
 
     /**
      * Skips data.
      * @param size Number of bytes to skip.
      * @return Number of bytes skipped. Negative value indicates error.
      */
-    std::ptrdiff_t skip(std::size_t size) override;
+    std::ptrdiff_t skip(std::size_t size) noexcept override;
 
 private:
     /** Current buffer address */
-    const std::uint8_t* m_buffer;
+    const void* m_current;
 
     /** Remaining size */
     std::size_t m_remaining;

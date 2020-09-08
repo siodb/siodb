@@ -68,14 +68,14 @@ bool StreamInputStream::isValid() const noexcept
     return !m_copyingInput.IsClosed() && m_copyingInput.GetErrno() == 0;
 }
 
-int StreamInputStream::close()
+int StreamInputStream::close() noexcept
 {
     if (Close()) return 0;
     errno = GetErrno();
     return -1;
 }
 
-std::ptrdiff_t StreamInputStream::read(void* buffer, std::size_t size)
+std::ptrdiff_t StreamInputStream::read(void* buffer, std::size_t size) noexcept
 {
     auto remaining = size;
     while (remaining > 0) {
@@ -99,7 +99,7 @@ std::ptrdiff_t StreamInputStream::read(void* buffer, std::size_t size)
     return size - remaining;
 }
 
-std::ptrdiff_t StreamInputStream::skip(std::size_t size)
+std::ptrdiff_t StreamInputStream::skip(std::size_t size) noexcept
 {
     constexpr std::size_t maxInt = std::numeric_limits<int>::max();
     const auto initialByteCount = ByteCount();

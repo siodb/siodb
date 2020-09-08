@@ -17,7 +17,8 @@
 namespace siodb::protobuf {
 
 /** Siodb version of the protobuf output stream which operates over an OutputStream. */
-class StreamOutputStream : public google::protobuf::io::ZeroCopyOutputStream {
+class StreamOutputStream : public google::protobuf::io::ZeroCopyOutputStream,
+                           public io::OutputStream {
 public:
     /**
      * Creates a stream that reads from the given OutputStream.
@@ -48,19 +49,42 @@ public:
      */
     bool Flush()
     {
-        return m_impl.Flush();
+        if (m_isOpen) return m_impl.Flush();
+        return false;
     }
 
     // implements ZeroCopyOutputStream
-    bool Next(void** data, int* size);
-    void BackUp(int count);
-    google::protobuf::int64 ByteCount() const;
+    bool Next(void** data, int* size) override;
+    void BackUp(int count) override;
+    google::protobuf::int64 ByteCount() const override;
 
     /** 
      * Checks for error.
      * @throw std::system_error if error found.
      */
     void CheckNoError() const;
+
+    ////////////// siodb::io::OutputStream implementation /////////////////////
+
+    /**
+     * Returns indication that stream is valid.
+     * @return true stream if stream is valid, false otherwise.
+     */
+    bool isValid() const noexcept override;
+
+    /**
+     * Closes stream.
+     * @return Zero on success, nonzero otherwise.
+     */
+    int close() noexcept override;
+
+    /**
+     * Writes data to stream.
+     * @param buffer Data buffer.
+     * @param size Data size in bytes.
+     * @return Number of written bytes. Negative value indicates error.
+     */
+    std::ptrdiff_t write(const void* buffer, std::size_t size) noexcept override;
 
 private:
     class CopyingOutputStream : public google::protobuf::io::CopyingOutputStream {
@@ -91,6 +115,7 @@ private:
 
     CopyingOutputStream m_copyingOutput;
     google::protobuf::io::CopyingOutputStreamAdaptor m_impl;
+    bool m_isOpen;
 
     GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(StreamOutputStream);
 };

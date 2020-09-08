@@ -164,14 +164,14 @@ public:
      * @param name Database name.
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
-     * @param currentUserId Current user ID.
      * @param description Database description.
+     * @param currentUserId Current user ID.
      * @return New database object.
      * @throw DatabaseError if some error has occurrred.
      */
     DatabasePtr createDatabase(std::string&& name, const std::string& cipherId,
-            BinaryValue&& cipherKey, std::uint32_t currentUserId,
-            std::optional<std::string>&& description);
+            BinaryValue&& cipherKey, std::optional<std::string>&& description,
+            std::uint32_t currentUserId);
 
     /**
      * Deletes existing database.

@@ -9,7 +9,7 @@
 #include "../ThrowDatabaseError.h"
 
 // Common project headers
-#include <siodb/common/io/ChunkedOutputStream.h>
+#include <siodb/common/io/BufferedChunkedOutputStream.h>
 #include <siodb/common/io/JsonWriter.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
@@ -31,9 +31,6 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     response.set_has_affected_row_count(true);
     response.set_affected_row_count(0);
 
-#if 1
-    sendNotImplementedYet(response);
-#else
     std::vector<std::uint64_t> tridList;
 
     // TODO: implement actual INSERT
@@ -52,9 +49,9 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     }
 
     // Write JSON payload
-    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeJsonProlog(jsonWriter);
+    writeModificationJsonProlog(jsonWriter, tridList.size());
     bool needComma = false;
     for (const auto& trid : tridList) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -63,7 +60,6 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     }
     writeJsonEpilog(jsonWriter);
     if (chunkedOutput.close() != 0) stdext::throw_system_error("Failed to send JSON payload");
-#endif
 }
 
 }  // namespace siodb::iomgr::dbengine

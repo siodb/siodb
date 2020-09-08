@@ -5,21 +5,19 @@
 #pragma once
 
 // Project headers
-#include "expr/Expression.h"
+#include "expr/ExpressionEvaluationContext.h"
 #include "../DataSet.h"
 
 namespace siodb::iomgr::dbengine::requests {
 
-/**
- * Context used for expression evaluation
- */
-class DatabaseContext final : public Expression::Context {
+/** DBExpressionEvaluationContext enables expression evaluation with data stored in the database. */
+class DBExpressionEvaluationContext final : public ExpressionEvaluationContext {
 public:
     /**
-     * Initializes object of class DatabaseContext
+     * Initializes object of class DBExpressionEvaluationContext
      * @param dataSets Data sets.
      */
-    explicit DatabaseContext(std::vector<DataSetPtr>&& dataSets)
+    explicit DBExpressionEvaluationContext(std::vector<DataSetPtr>&& dataSets)
         : m_dataSets(std::move(dataSets))
         , m_nameToIndexMapping(makeNameToIndexMapping())
     {
@@ -42,8 +40,7 @@ public:
     std::optional<std::size_t> getDataSetIndex(const std::string& name) const noexcept
     {
         const auto it = m_nameToIndexMapping.find(name);
-        if (it != m_nameToIndexMapping.cend()) return it->second;
-        return {};
+        return (it != m_nameToIndexMapping.cend()) ? it->second : std::optional<std::size_t>();
     }
 
     /**

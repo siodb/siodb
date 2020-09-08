@@ -19,6 +19,7 @@ SUBDIRS:= \
 	key_generator_test  \
 	registry_test  \
 	request_handler_test  \
+	rest_parser_test  \
 	sql_parser_test  \
 	token_auth_test  \
 	variant_test

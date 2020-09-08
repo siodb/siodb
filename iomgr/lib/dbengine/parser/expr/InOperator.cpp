@@ -22,12 +22,14 @@ InOperator::InOperator(
 {
 }
 
-VariantType InOperator::getResultValueType([[maybe_unused]] const Context& context) const
+VariantType InOperator::getResultValueType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return VariantType::kBool;
 }
 
-ColumnDataType InOperator::getColumnDataType([[maybe_unused]] const Context& context) const
+ColumnDataType InOperator::getColumnDataType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return COLUMN_DATA_TYPE_BOOL;
 }
@@ -37,7 +39,7 @@ MutableOrConstantString InOperator::getExpressionText() const
     return m_notIn ? "NOT IN" : "IN";
 }
 
-void InOperator::validate(const Context& context) const
+void InOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_value->validate(context);
     const auto resultType = m_value->getResultValueType(context);
@@ -101,7 +103,7 @@ void InOperator::validate(const Context& context) const
     }
 }
 
-Variant InOperator::evaluate(Context& context) const
+Variant InOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto value = m_value->evaluate(context);
     if (value.isNull()) {

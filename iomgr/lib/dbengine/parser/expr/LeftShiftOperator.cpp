@@ -11,7 +11,7 @@ MutableOrConstantString LeftShiftOperator::getExpressionText() const
     return "LEFT SHIFT";
 }
 
-Variant LeftShiftOperator::evaluate(Context& context) const
+Variant LeftShiftOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

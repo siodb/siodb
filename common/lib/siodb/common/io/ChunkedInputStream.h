@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "InputStream.h"
+#include "InputStreamWrapperStream.h"
 
 // CRT headers
 #include <cstdint>
@@ -13,13 +13,20 @@
 namespace siodb::io {
 
 /** Chunked input wrapper over another input stream. */
-class ChunkedInputStream : public InputStream {
+class ChunkedInputStream : public InputStreamWrapperStream {
 public:
     /**
      * Initializes object of class ChunkedInputStream.
-     * @param stream Underlying stream.
+     * @param in Underlying input stream.
      */
-    explicit ChunkedInputStream(InputStream& stream);
+    explicit ChunkedInputStream(InputStream& in) noexcept
+        : InputStreamWrapperStream(in)
+        , m_chunkSize(0)
+        , m_pos(0)
+        , m_hasChunkSize(false)
+        , m_eof(false)
+    {
+    }
 
     DECLARE_NONCOPYABLE(ChunkedInputStream);
 
@@ -33,53 +40,38 @@ public:
     }
 
     /**
-     * Returns indication that stream is valid.
-     * @return true stream if stream is valid, false otherwise.
-     */
-    bool isValid() const noexcept override;
-
-    /**
-     * Closes stream.
-     * @return Zero on success, nonzero otherwise.
-     */
-    int close() override;
-
-    /**
      * Reads data from stream.
      * @param buffer Data buffer.
      * @param size Size of data in bytes.
      * @return Number of read bytes. Negative value indicates error.
      */
-    std::ptrdiff_t read(void* buffer, std::size_t size) override;
+    std::ptrdiff_t read(void* buffer, std::size_t size) noexcept override;
 
     /**
      * Skips data.
      * @param size Number of bytes to skip.
      * @return Number of bytes skipped. Negative value indicates error.
      */
-    std::ptrdiff_t skip(std::size_t size) override;
+    std::ptrdiff_t skip(std::size_t size) noexcept override;
 
 private:
     /**
      * Reads chunk size.
      * @return 1 on success, 0 on the end of file, -1 on error.
      */
-    int readChunkSize();
+    int readChunkSize() noexcept;
 
 private:
-    /** Underlying stream */
-    InputStream* m_stream;
-
-    /** Position in chunk */
-    std::uint64_t m_pos;
-
     /** Current chunk size */
     std::uint64_t m_chunkSize;
+
+    /** Current position in the chunk */
+    std::uint64_t m_pos;
 
     /** Chunk size presence flag */
     bool m_hasChunkSize;
 
-    /** End of chuunk stream flag */
+    /** End of chunk stream flag */
     bool m_eof;
 };
 

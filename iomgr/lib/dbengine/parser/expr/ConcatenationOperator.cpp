@@ -6,12 +6,14 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType ConcatenationOperator::getResultValueType(const Context& context) const
+VariantType ConcatenationOperator::getResultValueType(
+        const ExpressionEvaluationContext& context) const
 {
     return hasNullOperand(context) ? VariantType::kNull : VariantType::kString;
 }
 
-ColumnDataType ConcatenationOperator::getColumnDataType(const Context& context) const
+ColumnDataType ConcatenationOperator::getColumnDataType(
+        const ExpressionEvaluationContext& context) const
 {
     return hasNullOperand(context) ? COLUMN_DATA_TYPE_UNKNOWN : COLUMN_DATA_TYPE_TEXT;
 }
@@ -21,7 +23,7 @@ MutableOrConstantString ConcatenationOperator::getExpressionText() const
     return "Concatenation";
 }
 
-Variant ConcatenationOperator::evaluate(Context& context) const
+Variant ConcatenationOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

@@ -6,7 +6,8 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType ArithmeticUnaryOperator::getResultValueType(const Context& context) const
+VariantType ArithmeticUnaryOperator::getResultValueType(
+        const ExpressionEvaluationContext& context) const
 {
     // + and - unary operators returns signed numbers always.
     const auto resultType = m_operand->getResultValueType(context);
@@ -14,7 +15,8 @@ VariantType ArithmeticUnaryOperator::getResultValueType(const Context& context) 
     return resultType <= VariantType::kInt32 ? VariantType::kInt32 : getSignedType(resultType);
 }
 
-ColumnDataType ArithmeticUnaryOperator::getColumnDataType(const Context& context) const
+ColumnDataType ArithmeticUnaryOperator::getColumnDataType(
+        const ExpressionEvaluationContext& context) const
 {
     const auto resultType = m_operand->getColumnDataType(context);
     if (!isNumericType(resultType)) return COLUMN_DATA_TYPE_UNKNOWN;
@@ -22,7 +24,7 @@ ColumnDataType ArithmeticUnaryOperator::getColumnDataType(const Context& context
                                                 : getSignedType(resultType);
 }
 
-void ArithmeticUnaryOperator::validate(const Context& context) const
+void ArithmeticUnaryOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_operand->validate(context);
     const auto resultType = m_operand->getResultValueType(context);

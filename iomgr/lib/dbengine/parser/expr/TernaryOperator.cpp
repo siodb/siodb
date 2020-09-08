@@ -26,7 +26,7 @@ std::size_t TernaryOperator::getSerializedSize() const noexcept
            + m_middle->getSerializedSize() + m_right->getSerializedSize();
 }
 
-void TernaryOperator::validate(const Context& context) const
+void TernaryOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_left->validate(context);
     m_middle->validate(context);

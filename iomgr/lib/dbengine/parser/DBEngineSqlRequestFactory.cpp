@@ -30,7 +30,7 @@ namespace {
 /**
  * Parses active/inactive state.
  * @param node A node to parse from.
- * @param errorMessage Error message to use if parsing error occurs.
+ * @param errorMessage Error message to use if parse error occurs.
  * @return true for the ACTIVE state, false for the INACTIVE state.
  * @throw DBEngineRequestFactoryError if state could not be parsed.
  */

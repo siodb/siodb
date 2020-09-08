@@ -102,7 +102,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 dbEngineRequest = dbengine::parser::DBEngineRestRequestFactory::createRestRequest(
                         requestMsg, m_clientConnection.get());
             } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
-                LOG_DEBUG << m_logContext << "Sending request parsing error " << ex.what();
+                LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), ex.what(), kRestParseError);
                 LOG_DEBUG << m_logContext << "Sent request parse error";
                 continue;

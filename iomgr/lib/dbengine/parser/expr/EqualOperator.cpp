@@ -11,7 +11,7 @@ MutableOrConstantString EqualOperator::getExpressionText() const
     return "EQUAL";
 }
 
-Variant EqualOperator::evaluate(Context& context) const
+Variant EqualOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

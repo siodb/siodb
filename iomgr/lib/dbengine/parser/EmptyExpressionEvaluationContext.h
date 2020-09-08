@@ -5,14 +5,14 @@
 #pragma once
 
 // Project headers
-#include "expr/Expression.h"
+#include "expr/ExpressionEvaluationContext.h"
 
 namespace siodb::iomgr::dbengine::requests {
 
 /**
  * Empty context used for expression evaluation
  */
-class EmptyContext : public Expression::Context {
+class EmptyExpressionEvaluationContext : public ExpressionEvaluationContext {
     /**
      * Throws exception on call, invalid method for this class.
      * @param tableIndex Table index.

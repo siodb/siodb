@@ -6,12 +6,14 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType BetweenOperator::getResultValueType([[maybe_unused]] const Context& context) const
+VariantType BetweenOperator::getResultValueType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return VariantType::kBool;
 }
 
-ColumnDataType BetweenOperator::getColumnDataType([[maybe_unused]] const Context& context) const
+ColumnDataType BetweenOperator::getColumnDataType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return COLUMN_DATA_TYPE_BOOL;
 }
@@ -26,7 +28,7 @@ std::size_t BetweenOperator::getSerializedSize() const noexcept
     return TernaryOperator::getSerializedSize() + 1;
 }
 
-void BetweenOperator::validate(const Context& context) const
+void BetweenOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_left->validate(context);
     m_right->validate(context);
@@ -53,7 +55,7 @@ void BetweenOperator::validate(const Context& context) const
     throw std::runtime_error("BETWEEN operands aren't dates or numeric");
 }
 
-Variant BetweenOperator::evaluate(Context& context) const
+Variant BetweenOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto value = m_left->evaluate(context);
     const auto lowerBound = m_middle->evaluate(context);

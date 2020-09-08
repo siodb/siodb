@@ -78,24 +78,24 @@ public:
 
     /**
      * Returns indication that expression result value type can be DateTime.
-     * @param context Context
+     * @param context ExpressionEvaluationContext
      * @return true if expression result value type is DateTime, false otherwise
      */
-    bool canCastAsDateTime(const Context& context) const noexcept override;
+    bool canCastAsDateTime(const ExpressionEvaluationContext& context) const noexcept override;
 
     /**
      * Returns value type of expression.
      * @param context Evaluation context.
      * @return Evaluated expression value type.
      */
-    VariantType getResultValueType(const Context& context) const override;
+    VariantType getResultValueType(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Returns type of generated column from this expression.
      * @param context Evaluation context.
      * @return Column data type.
      */
-    ColumnDataType getColumnDataType(const Context& context) const override;
+    ColumnDataType getColumnDataType(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Returns expression text.
@@ -111,17 +111,17 @@ public:
 
     /**
      * Checks if operands are numeric or  dates and valid.
-     * @param context Context
+     * @param context ExpressionEvaluationContext
      * @std::runtime_error if operands aren't numeric or dates or not valid
      */
-    void validate(const Context& context) const override;
+    void validate(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Evaluates expression.
      * @param context Evaluation context.
      * @return Resulting value.
      */
-    Variant evaluate(Context& context) const override;
+    Variant evaluate(ExpressionEvaluationContext& context) const override;
 
     /**
      * Serializes this expression, doesn't check memory buffer size.

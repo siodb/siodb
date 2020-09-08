@@ -13,37 +13,14 @@
 
 namespace siodb::io {
 
-ChunkedInputStream::ChunkedInputStream(InputStream& stream)
-    : m_stream(&stream)
-    , m_pos(0)
-    , m_chunkSize(0)
-    , m_hasChunkSize(false)
-    , m_eof(false)
-{
-}
-
-bool ChunkedInputStream::isValid() const noexcept
-{
-    return m_stream && m_stream->isValid();
-}
-
-int ChunkedInputStream::close()
-{
-    if (m_stream) {
-        m_stream = nullptr;
-        return 0;
-    }
-    return -1;
-}
-
-std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size)
+std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size) noexcept
 {
     if (!isValid()) return -1;
 
     if (!m_hasChunkSize) {
         const int res = readChunkSize();
         if (SIODB_UNLIKELY(res < 1)) {
-            if (res < 0) m_stream = nullptr;
+            if (res < 0) m_in = nullptr;
             return res;
         }
     }
@@ -55,9 +32,9 @@ std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size)
         const auto bytesToRead = std::min(remaining, m_chunkSize - m_pos);
         if (bytesToRead == 0) break;
 
-        const auto n = m_stream->read(buffer, bytesToRead);
+        const auto n = m_in->read(buffer, bytesToRead);
         if (SIODB_UNLIKELY(n < 1)) {
-            m_stream = nullptr;
+            m_in = nullptr;
             return -1;
         }
 
@@ -73,14 +50,17 @@ std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size)
     return size - remaining;
 }
 
-std::ptrdiff_t ChunkedInputStream::skip(std::size_t size)
+std::ptrdiff_t ChunkedInputStream::skip(std::size_t size) noexcept
 {
     if (!isValid()) return -1;
 
     if (!m_hasChunkSize) {
         const int res = readChunkSize();
         if (SIODB_UNLIKELY(res < 1)) {
-            if (res < 0) m_stream = nullptr;
+            if (res < 0) {
+                errno = EIO;
+                m_in = nullptr;
+            }
             return res;
         }
     }
@@ -92,9 +72,9 @@ std::ptrdiff_t ChunkedInputStream::skip(std::size_t size)
         const auto bytesToSkip = std::min(remaining, m_chunkSize - m_pos);
         if (bytesToSkip == 0) break;
 
-        const auto n = m_stream->skip(bytesToSkip);
+        const auto n = m_in->skip(bytesToSkip);
         if (SIODB_UNLIKELY(n < 1)) {
-            m_stream = nullptr;
+            m_in = nullptr;
             return -1;
         }
 
@@ -104,7 +84,7 @@ std::ptrdiff_t ChunkedInputStream::skip(std::size_t size)
         if (m_pos == m_chunkSize) {
             const int res = readChunkSize();
             if (SIODB_UNLIKELY(res < 1)) {
-                if (res < 0) m_stream = nullptr;
+                if (res < 0) m_in = nullptr;
                 return res;
             }
         }
@@ -114,19 +94,20 @@ std::ptrdiff_t ChunkedInputStream::skip(std::size_t size)
 
 // ----- internals -----
 
-int ChunkedInputStream::readChunkSize()
+int ChunkedInputStream::readChunkSize() noexcept
 {
-    std::uint8_t buffer[5];
+    std::uint8_t buffer[kMaxSerializedInt64Size];
     int i = 0;
-    for (; i < 5; ++i) {
-        const auto n = m_stream->read(buffer + i, 1);
+    for (; i < kMaxSerializedInt64Size; ++i) {
+        const auto n = m_in->read(buffer + i, 1);
         if (SIODB_UNLIKELY(n < 0)) {
-            m_stream = nullptr;
+            m_in = nullptr;
             return -1;
         }
         if (SIODB_UNLIKELY(n == 0)) {
             if (i > 0) {
-                m_stream = nullptr;
+                m_in = nullptr;
+                errno = EIO;
                 return -1;
             }
             m_chunkSize = 0;
@@ -141,14 +122,16 @@ int ChunkedInputStream::readChunkSize()
         }
     }
 
-    if (SIODB_UNLIKELY(i == 5)) {
-        m_stream = nullptr;
+    if (SIODB_UNLIKELY(i == kMaxSerializedInt64Size)) {
+        m_in = nullptr;
+        errno = EIO;
         return -1;
     }
 
     std::uint64_t chunkSize = 0;
     if (SIODB_UNLIKELY(::decodeVarUInt64(buffer, i, &chunkSize) < 1)) {
-        m_stream = nullptr;
+        m_in = nullptr;
+        errno = EIO;
         return -1;
     }
 

@@ -9,7 +9,7 @@
 
 namespace siodb::iomgr::dbengine::parser {
 
-/** JSON parsing error exception */
+/** JSON parse error exception */
 class JsonParserError : public std::runtime_error {
 public:
     /**

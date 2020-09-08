@@ -74,7 +74,7 @@ public:
      * @param size Data size in bytes.
      * @return Number of read bytes. Negative value indicates error.
      */
-    std::ptrdiff_t read(void* buffer, std::size_t size) override;
+    std::ptrdiff_t read(void* buffer, std::size_t size) noexcept override;
 
     /**
      * Writes data to file.
@@ -82,20 +82,20 @@ public:
      * @param size Size of data in bytes.
      * @return Number of written bytes. Negative value indicates error.
      */
-    std::ptrdiff_t write(const void* buffer, std::size_t size) override;
+    std::ptrdiff_t write(const void* buffer, std::size_t size) noexcept override;
 
     /**
      * Skips data.
      * @param size Number of bytes to skip.
      * @return Number of bytes skipped. Negative value indicates error.
      */
-    std::ptrdiff_t skip(std::size_t size) override;
+    std::ptrdiff_t skip(std::size_t size) noexcept override;
 
     /**
      * Closes file descriptor.
      * @return Zero on success, nonzero otherwise.
      */
-    int close() override;
+    int close() noexcept override;
 
     /**
      * Swaps content with other object.

@@ -13,12 +13,14 @@ StreamOutputStream::StreamOutputStream(
         io::OutputStream& stream, const utils::ErrorCodeChecker& errorCodeChecker, int blockSize)
     : m_copyingOutput(stream, errorCodeChecker)
     , m_impl(&m_copyingOutput, blockSize)
+    , m_isOpen(true)
 {
 }
 
 bool StreamOutputStream::Next(void** data, int* size)
 {
-    return m_impl.Next(data, size);
+    if (m_isOpen) return m_impl.Next(data, size);
+    return false;
 }
 
 void StreamOutputStream::BackUp(int count)
@@ -35,6 +37,74 @@ void StreamOutputStream::CheckNoError() const
 {
     if (GetErrno() != 0) stdext::throw_system_error(GetErrno(), "Write error");
 }
+
+bool StreamOutputStream::isValid() const noexcept
+{
+    return m_copyingOutput.GetErrno() == 0;
+}
+
+int StreamOutputStream::close() noexcept
+{
+    if (m_isOpen) {
+        bool result;
+        try {
+            result = Flush();
+        } catch (...) {
+            // Ignore exceptions, but indicate failure
+            m_isOpen = false;
+            errno = ENOMEM;
+            return -1;
+        }
+        m_isOpen = false;
+        if (!result) errno = m_copyingOutput.GetErrno();
+        return result ? 0 : -1;
+    }
+    errno = EIO;
+    return -1;
+}
+
+std::ptrdiff_t StreamOutputStream::write(const void* buffer, std::size_t size) noexcept
+{
+    if (!m_isOpen) {
+        errno = EIO;
+        return -1;
+    }
+    void* streamBuffer = nullptr;
+    int streamBufferSize = 0;
+    auto remaining = size;
+    while (true) {
+        bool hasNext;
+        try {
+            hasNext = Next(&streamBuffer, &streamBufferSize);
+        } catch (...) {
+            // Ignore exceptions but indicate failure
+            errno = ENOMEM;
+            break;
+        }
+        if (hasNext) {
+            if (streamBufferSize > 0) {
+                const auto streamBufferSizeU = static_cast<std::size_t>(streamBufferSize);
+                const auto bytesToWrite = std::min(remaining, streamBufferSizeU);
+                std::memcpy(streamBuffer, buffer, bytesToWrite);
+                remaining -= bytesToWrite;
+                if (remaining == 0) {
+                    if (bytesToWrite < streamBufferSizeU) {
+                        // Hopefully, will not throw
+                        BackUp(static_cast<int>(streamBufferSizeU - bytesToWrite));
+                    }
+                    break;
+                }
+                buffer = static_cast<const std::uint8_t*>(buffer) + bytesToWrite;
+            }
+        } else {
+            errno = m_copyingOutput.GetErrno();
+            break;
+        }
+    }
+    return size - remaining;
+}
+
+//// ---- class StreamOutputStream::CopyingOutputStream -----
 
 StreamOutputStream::CopyingOutputStream::CopyingOutputStream(
         io::OutputStream& stream, const utils::ErrorCodeChecker& errorCodeChecker)
@@ -56,7 +126,7 @@ bool StreamOutputStream::CopyingOutputStream::Write(const void* buffer, int size
             && !m_errorCodeChecker.isError(errno));
 
     if (result < 0) {
-        // Read error (not EOF).
+        // Write error (not EOF).
         m_errno = errno;
     }
 

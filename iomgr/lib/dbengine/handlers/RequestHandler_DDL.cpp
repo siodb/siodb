@@ -12,7 +12,7 @@
 #include "../Table.h"
 #include "../ThrowDatabaseError.h"
 #include "../crypto/GetCipher.h"
-#include "../parser/EmptyContext.h"
+#include "../parser/EmptyExpressionEvaluationContext.h"
 
 // Common project headers
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
@@ -37,7 +37,7 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
 
     // Empty seed makes generateCipherKey using default key seed
     std::string cipherKeySeed;
-    requests::EmptyContext emptyContext;
+    requests::EmptyExpressionEvaluationContext emptyContext;
     if (request.m_cipherId) {
         const auto cipherIdValue = request.m_cipherId->evaluate(emptyContext);
         if (cipherIdValue.isString())
@@ -59,7 +59,7 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
     const auto keyLength = cipher ? crypto::getCipher(cipherId)->getKeySize() : 0;
     auto cipherKey = cipher ? crypto::generateCipherKey(keyLength, cipherKeySeed) : BinaryValue();
     m_instance.createDatabase(
-            std::string(request.m_database), cipherId, std::move(cipherKey), m_userId, {});
+            std::string(request.m_database), cipherId, std::move(cipherKey), {}, m_userId);
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);

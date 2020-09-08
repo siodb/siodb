@@ -38,7 +38,7 @@ public:
 
     /**
      * Returns underlying mutable EVP_PKEY_CTX object.
-     * @return Context.
+     * @return Context object.
      */
     operator ::EVP_PKEY_CTX *() noexcept
     {
@@ -55,7 +55,7 @@ public:
     }
 
 private:
-    /** Context */
+    /** Context object */
     ::EVP_PKEY_CTX* m_ctx;
 };
 

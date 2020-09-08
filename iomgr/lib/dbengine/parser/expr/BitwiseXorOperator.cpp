@@ -11,7 +11,7 @@ MutableOrConstantString BitwiseXorOperator::getExpressionText() const
     return "Bitwise XOR";
 }
 
-Variant BitwiseXorOperator::evaluate(Context& context) const
+Variant BitwiseXorOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

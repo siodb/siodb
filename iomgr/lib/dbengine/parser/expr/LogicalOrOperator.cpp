@@ -11,7 +11,7 @@ MutableOrConstantString LogicalOrOperator::getExpressionText() const
     return "Logical OR";
 }
 
-Variant LogicalOrOperator::evaluate(Context& context) const
+Variant LogicalOrOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftVal = m_left->evaluate(context);
     if (leftVal.isNull()) return nullptr;

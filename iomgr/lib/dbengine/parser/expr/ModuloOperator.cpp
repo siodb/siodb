@@ -11,7 +11,7 @@ MutableOrConstantString ModuloOperator::getExpressionText() const
     return "MODULO";
 }
 
-Variant ModuloOperator::evaluate(Context& context) const
+Variant ModuloOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

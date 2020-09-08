@@ -37,7 +37,7 @@ public:
      * Closes stream.
      * @return Zero on success, nonzero otherwise.
      */
-    virtual int close() = 0;
+    virtual int close() noexcept = 0;
 };
 
 }  // namespace siodb::io

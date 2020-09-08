@@ -12,7 +12,7 @@
 
 // Common project headers
 #include <siodb/common/crt_ext/ct_string.h>
-#include <siodb/common/io/ChunkedOutputStream.h>
+#include <siodb/common/io/BufferedChunkedOutputStream.h>
 #include <siodb/common/io/JsonWriter.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
@@ -41,9 +41,9 @@ void RequestHandler::executeGetDatabasesRestRequest(
     }
 
     // Write JSON payload
-    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeJsonProlog(jsonWriter);
+    writeGetJsonProlog(jsonWriter);
     bool needComma = false;
     for (const auto& databaseName : databaseNames) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -77,9 +77,9 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     }
 
     // Write JSON payload
-    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeJsonProlog(jsonWriter);
+    writeGetJsonProlog(jsonWriter);
     bool needComma = false;
     for (const auto& tableName : tableNames) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -121,9 +121,9 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     }
 
     // Write JSON payload
-    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeJsonProlog(jsonWriter);
+    writeGetJsonProlog(jsonWriter);
     const auto& columns = dataSet.getColumns();
     const auto columnCount = columns.size();
     bool needCommaBeforeRow = false;
@@ -205,9 +205,9 @@ void RequestHandler::executeGetSingleRowRestRequest(
     }
 
     // Write JSON payload
-    siodb::io::ChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeJsonProlog(jsonWriter);
+    writeGetJsonProlog(jsonWriter);
     if (haveRow) {
         jsonWriter.writeObjectBegin();
         jsonWriter.writeFieldName(rowRelatedData->m_columns[0]->getName());

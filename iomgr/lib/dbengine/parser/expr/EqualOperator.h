@@ -35,7 +35,7 @@ public:
      * @param context Evaluation context.
      * @return Resulting value.
      */
-    Variant evaluate(Context& context) const override;
+    Variant evaluate(ExpressionEvaluationContext& context) const override;
 
     /**
      * Creates deep copy of this expression.

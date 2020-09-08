@@ -8,7 +8,7 @@
 #include "dbengine/parser/DBEngineRestRequestFactory.h"
 
 // Common project headers
-#include <siodb/common/io/ChunkedInputStream.h>
+#include <siodb/common/io/InputStreamUtils.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/StreamInputStream.h>
 #include <siodb/common/stl_ext/utility_ext.h>
@@ -54,19 +54,7 @@ TEST(RestGet, GetDatabases)
     ASSERT_EQ(response.message_size(), 0);
 
     // Read JSON
-    std::string jsonPayload;
-    {
-        siodb::io::ChunkedInputStream chunkedInput(inputStream);
-        std::ostringstream str;
-        char buffer[4096];
-        while (!chunkedInput.isEof()) {
-            const auto n = chunkedInput.read(buffer, sizeof(buffer) - 1);
-            if (n < 1) break;
-            buffer[n] = 0;
-            str << buffer;
-        }
-        jsonPayload = str.str();
-    }
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
 
     // Valdiate JSON
     ASSERT_FALSE(jsonPayload.empty());
@@ -81,14 +69,6 @@ TEST(RestGet, GetDatabases)
     // Exclude system database
     const auto ndb = static_cast<int>(instance->getDatbaseCount() - 1);
     ASSERT_EQ(jrows.size(), ndb);
-#if 0
-    ASSERT_TRUE(jrows.size() > 0);
-    ASSERT_TRUE(std::all_of(jrows.cbegin(), jrows.cend(),
-            [](const auto& e) { return e.is_object() && e["name"].is_string(); }));
-    ASSERT_TRUE(std::find_if(jrows.cbegin(), jrows.cend(), [](const auto& e) {
-        return static_cast<std::string>(e["name"]) == "SYS";
-    }) != jrows.cend());
-#endif
 }
 
 TEST(RestGet, GetTables)
@@ -136,20 +116,7 @@ TEST(RestGet, GetTables)
     ASSERT_EQ(response.message_size(), 0);
 
     // Read JSON
-    std::string jsonPayload;
-    {
-        siodb::io::ChunkedInputStream chunkedInput(inputStream);
-        std::ostringstream str;
-        char buffer[4096];
-        buffer[sizeof(buffer) - 1] = 0;
-        while (!chunkedInput.isEof()) {
-            const auto n = chunkedInput.read(buffer, sizeof(buffer) - 1);
-            if (n < 1) break;
-            buffer[n] = 0;
-            str << buffer;
-        }
-        jsonPayload = str.str();
-    }
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
 
     // Valdiate JSON
     ASSERT_FALSE(jsonPayload.empty());
@@ -229,20 +196,7 @@ TEST(RestGet, GetAllRows)
     ASSERT_EQ(response.message_size(), 0);
 
     // Read JSON
-    std::string jsonPayload;
-    {
-        siodb::io::ChunkedInputStream chunkedInput(inputStream);
-        std::ostringstream str;
-        char buffer[4096];
-        buffer[sizeof(buffer) - 1] = 0;
-        while (!chunkedInput.isEof()) {
-            const auto n = chunkedInput.read(buffer, sizeof(buffer) - 1);
-            if (n < 1) break;
-            buffer[n] = 0;
-            str << buffer;
-        }
-        jsonPayload = str.str();
-    }
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
 
     // Valdiate JSON
     ASSERT_FALSE(jsonPayload.empty());
@@ -362,20 +316,7 @@ TEST(RestGet, GetSingleRowWithMatch)
     ASSERT_EQ(response.message_size(), 0);
 
     // Read JSON
-    std::string jsonPayload;
-    {
-        siodb::io::ChunkedInputStream chunkedInput(inputStream);
-        std::ostringstream str;
-        char buffer[4096];
-        buffer[sizeof(buffer) - 1] = 0;
-        while (!chunkedInput.isEof()) {
-            const auto n = chunkedInput.read(buffer, sizeof(buffer) - 1);
-            if (n < 1) break;
-            buffer[n] = 0;
-            str << buffer;
-        }
-        jsonPayload = str.str();
-    }
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
 
     // Valdiate JSON
     ASSERT_FALSE(jsonPayload.empty());
@@ -455,20 +396,7 @@ TEST(RestGet, GetSingleRowNoMatch)
     ASSERT_EQ(response.message_size(), 0);
 
     // Read JSON
-    std::string jsonPayload;
-    {
-        siodb::io::ChunkedInputStream chunkedInput(inputStream);
-        std::ostringstream str;
-        char buffer[4096];
-        buffer[sizeof(buffer) - 1] = 0;
-        while (!chunkedInput.isEof()) {
-            const auto n = chunkedInput.read(buffer, sizeof(buffer) - 1);
-            if (n < 1) break;
-            buffer[n] = 0;
-            str << buffer;
-        }
-        jsonPayload = str.str();
-    }
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
 
     // Valdiate JSON
     ASSERT_FALSE(jsonPayload.empty());

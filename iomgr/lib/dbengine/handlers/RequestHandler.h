@@ -11,7 +11,7 @@
 #include "../TableDataSet.h"
 #include "../parser/DBEngineRestRequest.h"
 #include "../parser/DBEngineSqlRequest.h"
-#include "../parser/DatabaseContext.h"
+#include "../parser/DBExpressionEvaluationContext.h"
 #include "../parser/expr/Expression.h"
 #include "../reg/ColumnRecord.h"
 
@@ -526,14 +526,23 @@ private:
      * @throw DatabaseError if where expression is invalid.
      */
     void checkWhereExpression(const requests::ConstExpressionPtr& whereExpression,
-            requests::DatabaseContext& context);
+            requests::DBExpressionEvaluationContext& context);
 
     /**
-     * Writes JSON prolog.
+     * Writes JSON prolog for GET request.
      * @param jsonWriter JSON writer object.
      * @throw std::system_error on write error.
      */
-    void writeJsonProlog(siodb::io::JsonWriter& jsonWriter);
+    void writeGetJsonProlog(siodb::io::JsonWriter& jsonWriter);
+
+    /**
+     * Writes JSON prolog for POST, PATCH, DELETE requests.
+     * @param jsonWriter JSON writer object.
+     * @param affectedRowCount Affected row count to include.
+     * @throw std::system_error on write error.
+     */
+    void writeModificationJsonProlog(
+            siodb::io::JsonWriter& jsonWriter, std::size_t affectedRowCount);
 
     /**
      * Writes JSON epilog.

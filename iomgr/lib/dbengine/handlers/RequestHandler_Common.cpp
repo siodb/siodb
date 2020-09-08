@@ -784,8 +784,8 @@ void RequestHandler::updateColumnsFromExpression(const std::vector<DataSetPtr>& 
     }
 }
 
-void RequestHandler::checkWhereExpression(
-        const requests::ConstExpressionPtr& whereExpression, requests::DatabaseContext& context)
+void RequestHandler::checkWhereExpression(const requests::ConstExpressionPtr& whereExpression,
+        requests::DBExpressionEvaluationContext& context)
 {
     if (!whereExpression) return;
     try {
@@ -799,7 +799,7 @@ void RequestHandler::checkWhereExpression(
     }
 }
 
-void RequestHandler::writeJsonProlog(siodb::io::JsonWriter& jsonWriter)
+void RequestHandler::writeGetJsonProlog(siodb::io::JsonWriter& jsonWriter)
 {
     // Start top level object
     jsonWriter.writeObjectBegin();
@@ -809,6 +809,26 @@ void RequestHandler::writeJsonProlog(siodb::io::JsonWriter& jsonWriter)
     // Start rows array
     jsonWriter.writeComma();
     jsonWriter.writeFieldName(kRestRowsFieldName, ::ct_strlen(kRestRowsFieldName));
+    jsonWriter.writeArrayBegin();
+}
+
+void RequestHandler::writeModificationJsonProlog(
+        siodb::io::JsonWriter& jsonWriter, std::size_t affectedRowCount)
+{
+    // Start top level object
+    jsonWriter.writeObjectBegin();
+    // Write status
+    jsonWriter.writeFieldName(kRestStatusFieldName, ::ct_strlen(kRestStatusFieldName));
+    jsonWriter.writeValue(kRestStatusOk);
+    // Write affected row count
+    constexpr const char* kAffectedRowCountFieldName = "affected_row_count";
+    jsonWriter.writeComma();
+    jsonWriter.writeFieldName(kAffectedRowCountFieldName, ::ct_strlen(kAffectedRowCountFieldName));
+    jsonWriter.writeValue(affectedRowCount);
+    // Start rows array
+    jsonWriter.writeComma();
+    constexpr const char* kTridsFieldName = "trids";
+    jsonWriter.writeFieldName(kTridsFieldName, ::ct_strlen(kTridsFieldName));
     jsonWriter.writeArrayBegin();
 }
 

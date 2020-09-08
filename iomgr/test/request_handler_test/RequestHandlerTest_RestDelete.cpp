@@ -5,6 +5,9 @@
 // Project headers
 #include "RequestHandlerTest_TestEnv.h"
 #include "dbengine/handlers/RequestHandler.h"
+#include "dbengine/parser/DBEngineRestRequestFactory.h"
+
+namespace parser_ns = dbengine::parser;
 
 TEST(RestDelete, DeleteExistingRow)
 {

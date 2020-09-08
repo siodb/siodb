@@ -54,35 +54,29 @@ bool FDStream::isValid() const noexcept
     return m_fd >= 0;
 }
 
-std::ptrdiff_t FDStream::read(void* buffer, std::size_t size)
+std::ptrdiff_t FDStream::read(void* buffer, std::size_t size) noexcept
 {
     // IMPORTANT: Use exactly read() system call
     return ::read(m_fd, buffer, size);
 }
 
-std::ptrdiff_t FDStream::write(const void* buffer, std::size_t size)
+std::ptrdiff_t FDStream::write(const void* buffer, std::size_t size) noexcept
 {
     // IMPORTANT: Use exactly writeExact()
     return ::writeExact(m_fd, buffer, size, kIgnoreSignals);
 }
 
-std::ptrdiff_t FDStream::skip(std::size_t size)
+std::ptrdiff_t FDStream::skip(std::size_t size) noexcept
 {
     if (::lseek(m_fd, size, SEEK_CUR) >= 0) return size;
-    std::uint8_t buffer[4096];
-    auto remaining = size;
-    while (remaining > 0) {
-        const auto bytesToSkip = std::min(remaining, sizeof(buffer));
-        const auto n = read(buffer, bytesToSkip);
-        if (SIODB_UNLIKELY(n < 1)) break;
-        remaining -= n;
-    }
-    return size - remaining;
+    errno = 0;
+    return InputStream::skip(size);
 }
 
-int FDStream::close()
+int FDStream::close() noexcept
 {
     if (isValid()) return doClose();
+    errno = EIO;
     return -1;
 }
 
