@@ -19,11 +19,14 @@ namespace siodb::io {
 
 /** 
  * BasicInputStreamStdStreamBuffer controls input from a Siodb input stream object.
+ * @tparam CharT Character type.
+ * @tparam Traits Character traits type.
  * @see https://habr.com/ru/post/326578/
  */
 template<class CharT, class Traits = std::char_traits<CharT>>
 class BasicInputStreamStdStreamBuffer : public std::basic_streambuf<CharT, Traits> {
 private:
+    /** Base class type */
     using Base = std::basic_streambuf<CharT, Traits>;
 
 public:
@@ -72,7 +75,10 @@ private:
     stdext::buffer<char_type> m_buffer;
 };
 
+/** Normal character buffer */
 using InputStreamStdStreamBuffer = BasicInputStreamStdStreamBuffer<char>;
+
+/** Wide character buffer */
 using InputStreamStdWStreamBuffer = BasicInputStreamStdStreamBuffer<wchar_t>;
 
 }  // namespace siodb::io

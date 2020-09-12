@@ -31,14 +31,15 @@ int OutputStreamWrapperStream::close() noexcept
 
 // ----- internals -----
 
-int OutputStreamWrapperStream::writeChunkSize(std::size_t chunkSize) noexcept
+int OutputStreamWrapperStream::writeChunkSize(std::uint32_t chunkSize) noexcept
 {
     if (!isValid()) {
         errno = EIO;
         return -1;
     }
-    std::uint8_t buffer[9];
-    const int n = ::encodeVarUInt64(chunkSize, buffer) - buffer;
+
+    std::uint8_t buffer[kMaxSerializedInt32Size];
+    const int n = ::encodeVarUInt32(chunkSize, buffer) - buffer;
     if (m_out->write(buffer, n) != n) {
         m_out = nullptr;
         return -1;

@@ -50,6 +50,7 @@ constexpr const char* kIOManagerOptionTableCacheCapacity = "iomgr.table_cache_ca
 constexpr const char* kIOManagerOptionBlockCacheCapacity = "iomgr.block_cache_capacity";
 constexpr const char* kIOManagerOptionDeadConnectionCleanupInterval =
         "iomgr.dead_connection_cleanup_interval";
+constexpr const char* kIOManagerOptionMaxJsonPayloadSize = "iomgr.max_json_payload_size";
 
 // Encryption options
 constexpr const char* kEncryptionOptionDefaultCipherId = "encryption.default_cipher_id";
@@ -130,6 +131,10 @@ constexpr std::size_t kDefaultIOManagerBlockCacheCapacity = 103;
 constexpr unsigned kMinIOManagerOptionDeadConnectionCleanupInterval = 3;
 constexpr unsigned kMaxIOManagerOptionDeadConnectionCleanupInterval = 3600;
 constexpr unsigned kDefaultIOManagerOptionDeadConnectionCleanupInterval = 30;
+
+// Maximum JSON payload size
+constexpr std::size_t kDefaultIOManagerOptionMaxJsonPayloadSize = 1024 * 1024;
+constexpr std::size_t kMaxIOManagerOptionMaxJsonPayloadSize = 1024 * 1024 * 1024;
 
 /** Default cipher */
 constexpr const char* kDefaultCipherId = "aes128";
@@ -222,6 +227,9 @@ struct IOManagerOptions {
 
     /** Dead connection cleanup period */
     unsigned m_deadConnectionCleanupInterval = kDefaultIOManagerOptionDeadConnectionCleanupInterval;
+
+    /** Maximum JSON payload size */
+    std::size_t m_maxJsonPayloadSize = kDefaultIOManagerOptionMaxJsonPayloadSize;
 };
 
 /** Extenal cipher options */

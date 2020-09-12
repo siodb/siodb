@@ -22,7 +22,8 @@ TEST(Get, GetDatabases)
     requestMsg.set_object_type(siodb::iomgr_protocol::DATABASE);
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Check request object
     ASSERT_EQ(request->m_requestType, req_ns::DBEngineRequestType::kRestGetDatabases);
@@ -40,7 +41,8 @@ TEST(Get, GetTables)
     requestMsg.set_object_name("abcd");
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Check request object
     ASSERT_EQ(request->m_requestType, req_ns::DBEngineRequestType::kRestGetTables);
@@ -59,7 +61,8 @@ TEST(Get, GetAllRows)
     requestMsg.set_object_name("abcd.efgh");
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Check request object
     ASSERT_EQ(request->m_requestType, req_ns::DBEngineRequestType::kRestGetAllRows);
@@ -80,7 +83,8 @@ TEST(Get, GetSingleRow)
     requestMsg.set_object_id(1);
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Check request object
     ASSERT_EQ(request->m_requestType, req_ns::DBEngineRequestType::kRestGetSingleRow);

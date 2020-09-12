@@ -53,7 +53,8 @@ TEST(Post, PostSingleRow)
     // Create request object
     siodb::io::MemoryInputStream in(
             payloadBuffer.data(), payloadBuffer.size() - out.getRemaining());
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg, &in);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg, &in);
 
     // Check request object
     ASSERT_EQ(request->m_requestType, req_ns::DBEngineRequestType::kRestPostRows);
@@ -134,7 +135,8 @@ TEST(Post, PostMultipleRows)
     // Create request object
     siodb::io::MemoryInputStream in(
             payloadBuffer.data(), payloadBuffer.size() - out.getRemaining());
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg, &in);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg, &in);
 
     // Check request object
     ASSERT_EQ(request->m_requestType, req_ns::DBEngineRequestType::kRestPostRows);

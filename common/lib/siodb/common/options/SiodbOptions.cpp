@@ -31,6 +31,7 @@ inline auto constructOptionPath(const std::string& str)
     return boost::property_tree::ptree::path_type(str, ';');
 }
 
+/** Boolean option value translator for the boost::ptree */
 struct BoolTranslator {
     typedef std::string internal_type;
     typedef int external_type;
@@ -210,11 +211,11 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                     err << "Type not defined for the log channel " << logChannelName;
                     throw InvalidConfigurationError(err.str());
                 }
-                if (channelType == "console") {
+                if (channelType == "console")
                     channelOptions.m_type = LogChannelType::kConsole;
-                } else if (channelType == "file") {
+                else if (channelType == "file")
                     channelOptions.m_type = LogChannelType::kFile;
-                } else {
+                else {
                     std::ostringstream err;
                     err << "Unsupported channel type '" << channelType
                         << "' specified for the log channel " << logChannelName;
@@ -261,17 +262,14 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                         }
                         default: break;
                     }
-                    if (multiplier > 0) {
-                        option.erase(option.length() - 1, 1);
-                    }
+                    if (multiplier > 0) option.erase(option.length() - 1, 1);
                 }
-                if (multiplier == 0) {
-                    multiplier = kBytesInMB;
-                }
-                auto value = std::stoll(option);
+                if (multiplier == 0) multiplier = kBytesInMB;
+                auto value = std::stoull(option);
                 if (value == 0) throw std::out_of_range("value is zero");
                 const auto upperLimit = defaults::kMaxMaxLogFileSize / multiplier;
-                if (value > upperLimit) throw std::out_of_range("value is too big");
+                if (value > static_cast<unsigned long long>(upperLimit))
+                    throw std::out_of_range("value is too big");
                 channelOptions.m_maxLogFileSize = value * multiplier;
             } catch (std::exception& ex) {
                 std::ostringstream err;
@@ -499,6 +497,46 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
         tmpOptions.m_ioManagerOptions.m_deadConnectionCleanupInterval = value;
     }
 
+    // Parse maximum JSON payload size
+    try {
+        const auto path = constructOptionPath(kIOManagerOptionMaxJsonPayloadSize);
+        auto option = boost::trim_copy(config.get<std::string>(
+                path, std::to_string(kDefaultIOManagerOptionMaxJsonPayloadSize / kBytesInKB)));
+        off_t multiplier = 0;
+        if (option.size() > 1) {
+            const auto lastChar = option.back();
+            switch (lastChar) {
+                case 'k':
+                case 'K': {
+                    multiplier = kBytesInKB;
+                    break;
+                }
+                case 'm':
+                case 'M': {
+                    multiplier = kBytesInMB;
+                    break;
+                }
+                case 'g':
+                case 'G': {
+                    multiplier = kBytesInGB;
+                    break;
+                }
+                default: break;
+            }
+            if (multiplier > 0) option.erase(option.length() - 1, 1);
+        }
+        if (multiplier == 0) multiplier = kBytesInKB;
+        auto value = std::stoull(option);
+        if (value == 0) throw std::out_of_range("value is zero");
+        const auto upperLimit = kMaxIOManagerOptionMaxJsonPayloadSize / multiplier;
+        if (value > upperLimit) throw std::out_of_range("value is too big");
+        tmpOptions.m_ioManagerOptions.m_maxJsonPayloadSize = value * multiplier;
+    } catch (std::exception& ex) {
+        std::ostringstream err;
+        err << "Invalid value of max. JSON payload size: " << ex.what();
+        throw InvalidConfigurationError(err.str());
+    }
+
     // Encryption options
 
     // Parse default cipher ID
@@ -511,14 +549,9 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                     tmpOptions.m_encryptionOptions.m_defaultCipherId));
 
     // Client options
-
-    {
-        BoolTranslator translator;
-        tmpOptions.m_clientOptions.m_enableEncryption =
-                config.get<bool>(constructOptionPath(kClientOptionEnableEncryption),
-                        kDefaultClientEnableEncryption, translator);
-    }
-
+    tmpOptions.m_clientOptions.m_enableEncryption =
+            config.get<bool>(constructOptionPath(kClientOptionEnableEncryption),
+                    kDefaultClientEnableEncryption, BoolTranslator());
     if (tmpOptions.m_clientOptions.m_enableEncryption) {
         tmpOptions.m_clientOptions.m_tlsCertificate = boost::trim_copy(
                 config.get<std::string>(constructOptionPath(kClientOptionTlsCertificate), ""));

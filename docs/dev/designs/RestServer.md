@@ -237,14 +237,14 @@ NOTE: All values from IOMgr would be converted into UTF-8 JSON.
       to the client in the HTTP 1.1 chunks, chunked per N bytes.
     - Finally REST Server sends zero-length chunk to indicate end of data.
 
-## IOMgr Chunked Format
+## IOMgr Chunked Data Format
 
-IOMgr chunked format consists of following elements:
+IOMgr chunked data format consists of the following elements:
 
-1. Chunk length: `varuint64` number.
+1. Chunk length: `varuint32` number.
 2. Chunk content.
 3. (1) and (2) are repeated as needed.
-4. Zero byte as chunk length - indicates end of chunked data.
+4. Zero byte as chunk length indicates end of chunked data.
 
 ## Configuration Parameters
 
@@ -265,3 +265,6 @@ IOMgr chunked format consists of following elements:
   `0` means do not listen.
 - `iomgr.rest.ipv6_port` - IPv6 REST protocol poort. Default value `0`.
   Zero value means do not listen.
+- `iomgr.max_json_payload_size` - Maximum JSON payload size in kilobytes.
+  Suffixes `k`, `K`, `m`, `M`, `g`, `G` change units to kilobytes, megabytes
+  and gigabytes respectively.

@@ -11,7 +11,7 @@ namespace siodb::io {
 
 BufferedChunkedOutputStream::BufferedChunkedOutputStream(
         std::size_t maxChunkSize, OutputStream& out)
-    : BufferedOutputStream(maxChunkSize, out)
+    : BufferedOutputStream(validateMaxChunkSize(maxChunkSize), out)
 {
 }
 
@@ -38,7 +38,13 @@ int BufferedChunkedOutputStream::close() noexcept
 
 int BufferedChunkedOutputStream::onFlush(std::size_t dataSize) noexcept
 {
-    return writeChunkSize(dataSize);
+    return writeChunkSize(static_cast<std::uint32_t>(dataSize));
+}
+
+std::size_t BufferedChunkedOutputStream::validateMaxChunkSize(std::size_t maxChunkSize)
+{
+    if (maxChunkSize >= kMinMaxChunkSize && maxChunkSize <= kMaxMaxChunkSize) return maxChunkSize;
+    throw std::invalid_argument("Invalid max chunk size: " + std::to_string(maxChunkSize));
 }
 
 }  // namespace siodb::io

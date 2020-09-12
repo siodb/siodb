@@ -13,9 +13,18 @@
 
 namespace siodb::iomgr::dbengine::parser {
 
-/** DBEngineRestRequestFactory produces DB Engine requests for the SQL statements. */
+/** DBEngineRestRequestFactory produces DB Engine requests from the REST requests. */
 class DBEngineRestRequestFactory {
 public:
+    /**
+     * Initializes object of class DBEngineRestRequestFactory.
+     * @param maxJsonPayloadSize Maximum JSON payload size.
+     */
+    DBEngineRestRequestFactory(std::size_t maxJsonPayloadSize) noexcept
+        : m_maxJsonPayloadSize(maxJsonPayloadSize)
+    {
+    }
+
     /**
      * Creates database engine request from a statement.
      * May read additional data from input, if provided.
@@ -23,7 +32,7 @@ public:
      * @param input Input stream.
      * @return Database engine request object filled with parsed data.
      */
-    static requests::DBEngineRequestPtr createRestRequest(
+    requests::DBEngineRequestPtr createRestRequest(
             const iomgr_protocol::DatabaseEngineRestRequest& msg,
             siodb::io::InputStream* input = nullptr);
 
@@ -32,14 +41,14 @@ private:
      * Creates GET databases request.
      * @return GET databases request.
      */
-    static requests::DBEngineRequestPtr createGetDatabasesRequest();
+    requests::DBEngineRequestPtr createGetDatabasesRequest();
 
     /**
      * Creates GET tables request.
      * @param msg Request message.
      * @return GET tables request.
      */
-    static requests::DBEngineRequestPtr createGetTablesRequest(
+    requests::DBEngineRequestPtr createGetTablesRequest(
             const iomgr_protocol::DatabaseEngineRestRequest& msg);
 
     /**
@@ -47,7 +56,7 @@ private:
      * @param msg Request message.
      * @return GET all rows request.
      */
-    static requests::DBEngineRequestPtr createGetAllRowsRequest(
+    requests::DBEngineRequestPtr createGetAllRowsRequest(
             const iomgr_protocol::DatabaseEngineRestRequest& msg);
 
     /**
@@ -55,7 +64,7 @@ private:
      * @param msg Request message.
      * @return GET single row request.
      */
-    static requests::DBEngineRequestPtr createGetSingleRowRequest(
+    requests::DBEngineRequestPtr createGetSingleRowRequest(
             const iomgr_protocol::DatabaseEngineRestRequest& msg);
 
     /**
@@ -64,15 +73,16 @@ private:
      * @param input Input stream.
      * @return POST rows request.
      */
-    static requests::DBEngineRequestPtr createPostRowsRequest(
+    requests::DBEngineRequestPtr createPostRowsRequest(
             const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input);
 
 private:
-    /** JSON chunk size */
-    static constexpr std::size_t kJsonChunkSize = 65536;
+    /** Max JSON payload size */
+    const std::size_t m_maxJsonPayloadSize;
 
-    /** Maximum row count for single POST */
-    static constexpr std::size_t kMaxPostRowCount = 10000;
+private:
+    /** JSON buffer grow step */
+    static constexpr std::size_t kJsonBufferGrowStep = 65536;
 };
 
 }  // namespace siodb::iomgr::dbengine::parser

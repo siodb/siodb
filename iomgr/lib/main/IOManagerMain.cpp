@@ -115,7 +115,8 @@ extern "C" int iomgrMain(int argc, char** argv)
 
         siodb::iomgr::dbengine::InstancePtr instance;
         siodb::iomgr::IOManagerSqlConnectionHandlerFactory sqlConnectionHandlerFactory;
-        siodb::iomgr::IOManagerRestConnectionHandlerFactory restConnectionHandlerFactory;
+        siodb::iomgr::IOManagerRestConnectionHandlerFactory restConnectionHandlerFactory(
+                instanceOptions->m_ioManagerOptions.m_maxJsonPayloadSize);
         std::unique_ptr<siodb::iomgr::IOManagerRequestDispatcher> requestDispatcher;
         std::unique_ptr<siodb::iomgr::IOManagerConnectionManager> ipv4SqlConnectionManager,
                 ipv6SqlConnectionManager, ipv4RestConnectionManager, ipv6RestConnectionManager;

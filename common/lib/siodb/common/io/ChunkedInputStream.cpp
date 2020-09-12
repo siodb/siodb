@@ -29,7 +29,7 @@ std::ptrdiff_t ChunkedInputStream::read(void* buffer, std::size_t size) noexcept
 
     std::size_t remaining = size;
     while (remaining > 0) {
-        const auto bytesToRead = std::min(remaining, m_chunkSize - m_pos);
+        const auto bytesToRead = std::min(remaining, getRemainingBytesInChunk());
         if (bytesToRead == 0) break;
 
         const auto n = m_in->read(buffer, bytesToRead);
@@ -69,7 +69,7 @@ std::ptrdiff_t ChunkedInputStream::skip(std::size_t size) noexcept
 
     std::size_t remaining = size;
     while (remaining > 0) {
-        const auto bytesToSkip = std::min(remaining, m_chunkSize - m_pos);
+        const auto bytesToSkip = std::min(remaining, getRemainingBytesInChunk());
         if (bytesToSkip == 0) break;
 
         const auto n = m_in->skip(bytesToSkip);
@@ -104,9 +104,9 @@ int ChunkedInputStream::readChunkSize() noexcept
         return 1;
     }
 
-    std::uint8_t buffer[kMaxSerializedInt64Size];
+    std::uint8_t buffer[kMaxSerializedInt32Size];
     int i = 0;
-    for (; i < kMaxSerializedInt64Size; ++i) {
+    for (; i < kMaxSerializedInt32Size; ++i) {
         const auto n = m_in->read(buffer + i, 1);
         if (SIODB_UNLIKELY(n < 0)) {
             m_in = nullptr;
@@ -130,14 +130,14 @@ int ChunkedInputStream::readChunkSize() noexcept
         }
     }
 
-    if (SIODB_UNLIKELY(i == kMaxSerializedInt64Size)) {
+    if (SIODB_UNLIKELY(i == kMaxSerializedInt32Size)) {
         m_in = nullptr;
         errno = EIO;
         return -1;
     }
 
-    std::uint64_t chunkSize = 0;
-    if (SIODB_UNLIKELY(::decodeVarUInt64(buffer, i, &chunkSize) < 1)) {
+    std::uint32_t chunkSize = 0;
+    if (SIODB_UNLIKELY(::decodeVarUInt32(buffer, i, &chunkSize) < 1)) {
         m_in = nullptr;
         errno = EIO;
         return -1;

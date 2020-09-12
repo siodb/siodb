@@ -44,7 +44,7 @@ public:
      * Returns number of bytes remaining in the current chunk.
      * @return Number of bytes remaining in the current chunk.
      */
-    std::uint64_t getRemainingBytesInChunk() const noexcept
+    std::size_t getRemainingBytesInChunk() const noexcept
     {
         return m_hasChunkSize ? m_chunkSize - m_pos : 0;
     }
@@ -79,10 +79,10 @@ private:
 
 private:
     /** Current chunk size */
-    std::uint64_t m_chunkSize;
+    std::uint32_t m_chunkSize;
 
     /** Current position in the chunk */
-    std::uint64_t m_pos;
+    std::uint32_t m_pos;
 
     /** Chunk size presence flag */
     bool m_hasChunkSize;

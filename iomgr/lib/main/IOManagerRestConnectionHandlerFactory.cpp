@@ -16,7 +16,8 @@ IOManagerConnectionHandler* IOManagerRestConnectionHandlerFactory::createConnect
         IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd)
 {
     DBG_LOG_DEBUG("Creating REST connection handler object...");
-    return new IOManagerRestConnectionHandler(requestDispatcher, std::move(clientFd));
+    return new IOManagerRestConnectionHandler(
+            requestDispatcher, std::move(clientFd), m_maxJsonPayloadSize);
 }
 
 }  // namespace siodb::iomgr

@@ -16,10 +16,9 @@
 
 namespace siodb ::io {
 
-DynamicMemoryOutputStream::DynamicMemoryOutputStream(
-        std::size_t initialSize, std::size_t growthStep)
+DynamicMemoryOutputStream::DynamicMemoryOutputStream(std::size_t initialSize, std::size_t growStep)
     : m_buffer(initialSize)
-    , m_growthStep(growthStep)
+    , m_growStep(growStep)
     , m_dataSize(0)
     , m_current(m_buffer.data())
     , m_remaining(m_buffer.size())
@@ -42,10 +41,10 @@ std::ptrdiff_t DynamicMemoryOutputStream::write(const void* buffer, std::size_t 
 {
     if (SIODB_LIKELY(isValid())) {
         if (size == 0) return 0;
-        if (size > m_remaining && m_growthStep > 0) {
+        if (size > m_remaining && m_growStep > 0) {
             auto n = size - m_remaining;
-            const auto r = n % m_growthStep;
-            if (r > 0) n += m_growthStep - r;
+            const auto r = n % m_growStep;
+            if (r > 0) n += m_growStep - r;
             try {
                 const auto dataSize = this->size();
                 m_buffer.resize(n);

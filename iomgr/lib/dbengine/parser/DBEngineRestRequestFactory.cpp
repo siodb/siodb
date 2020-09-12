@@ -13,6 +13,7 @@
 // Common project headers
 #include <siodb/common/io/ChunkedInputStream.h>
 #include <siodb/common/io/InputStreamStdStreamBuffer.h>
+#include <siodb/common/io/MemoryStdStreamBuffer.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
@@ -164,39 +165,41 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
     std::unordered_map<unsigned, std::string> columnNames;
     std::vector<std::vector<std::pair<unsigned, Variant>>> values;
 
-    RowDataJsonSaxParser jsonParser(kMaxPostRowCount, columnNames, values);
+    RowDataJsonSaxParser jsonParser(std::numeric_limits<std::size_t>::max(), columnNames, values);
     io::ChunkedInputStream chunkedInput(input);
     try {
-#if 1
-        io::InputStreamStdStreamBuffer streamBuffer(chunkedInput, kJsonChunkSize);
-        std::istream is(&streamBuffer);
+#ifdef SIODB_READ_JSON_PAYLOAD_IN_CHUNKS
+        io::InputStreamStdStreamBuffer payloadInputStreamBuffer(chunkedInput, kReadJsonBufferSize);
 #else
-        std::string payload;
-        {
-            char buffer[4096];
-            std::ostringstream str;
-            std::uint64_t counter = 0;
-            while (!chunkedInput.isEof()) {
-                DBG_LOG_DEBUG(
-                        "DBEngineRestRequestFactory::createPostRowsRequest: Waiting for next part ("
-                        << counter << ")");
-                const auto n = chunkedInput.read(buffer, sizeof(buffer) - 1);
-                ++counter;
-                DBG_LOG_DEBUG("DBEngineRestRequestFactory::createPostRowsRequest: Read "
-                              << n << " bytes");
-                if (n < 1) break;
-                buffer[n] = 0;
-                str << buffer;
-            }
-            payload = str.str();
+        stdext::buffer<char> payloadBuffer(kJsonBufferGrowStep);
+        std::size_t storedPayloadSize = 0;
+        std::uint64_t totalPayloadSize = 0;
+        while (!chunkedInput.isEof()) {
+            if (storedPayloadSize == payloadBuffer.size() - 1)
+                payloadBuffer.resize(payloadBuffer.size() + kJsonBufferGrowStep);
+            auto readLocation = payloadBuffer.data() + storedPayloadSize;
+            const auto n =
+                    chunkedInput.read(readLocation, payloadBuffer.size() - storedPayloadSize - 1);
+            //DBG_LOG_DEBUG("DBEngineRestRequestFactory::createPostRowsRequest: Read "
+            //              << n << " bytes of payload");
+            if (n < 1) break;
+            readLocation[n] = 0;
+            if (totalPayloadSize <= m_maxJsonPayloadSize) storedPayloadSize += n;
+            totalPayloadSize += n;
         }
-        std::istringstream is(payload);
+        if (totalPayloadSize > m_maxJsonPayloadSize)
+            throw DBEngineRequestFactoryError("JSON payload is too long");
+        //DBG_LOG_DEBUG("DBEngineRestRequestFactory::createPostRowsRequest: Payload: "
+        //              << payloadBuffer.data());
+        io::MemoryStdStreamBuffer payloadInputStreamBuffer(payloadBuffer.data(), storedPayloadSize);
 #endif
-        nlohmann::json::sax_parse(
-                std::move(is), static_cast<nlohmann::json_sax<nlohmann::json>*>(&jsonParser));
+        nlohmann::json::sax_parse(std::istream(&payloadInputStreamBuffer),
+                static_cast<nlohmann::json_sax<nlohmann::json>*>(&jsonParser));
     } catch (JsonParserError& ex) {
+#ifdef SIODB_READ_JSON_PAYLOAD_IN_CHUNKS
         chunkedInput.setStopReadingAfterCurrentChunkFinished();
         chunkedInput.skip(chunkedInput.getRemainingBytesInChunk());
+#endif
         std::ostringstream err;
         err << "JSON payload parse error: " << ex.what();
         throw DBEngineRequestFactoryError(err.str());

@@ -69,7 +69,8 @@ TEST(RestPost, PostSingleRow)
     // Create request object
     siodb::io::MemoryInputStream in(
             payloadBuffer.data(), payloadBuffer.size() - out.getRemaining());
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg, &in);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg, &in);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
@@ -161,7 +162,8 @@ TEST(RestPost, PostMultipleRows)
     // Create request object
     siodb::io::MemoryInputStream in(
             payloadBuffer.data(), payloadBuffer.size() - out.getRemaining());
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg, &in);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg, &in);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
@@ -252,7 +254,8 @@ TEST(RestPost, PostWithIncorrectData)
     // Create request object
     siodb::io::MemoryInputStream in(
             payloadBuffer.data(), payloadBuffer.size() - out.getRemaining());
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg, &in);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg, &in);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);

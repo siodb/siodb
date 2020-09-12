@@ -19,17 +19,17 @@ class DynamicMemoryOutputStream : public OutputStream {
 public:
     /** Default buffer initial size */
     static constexpr std::size_t kDefaultInitialSize = 4096;
-    /** Default buffer growth step */
-    static constexpr std::size_t kDefaultGrowthStep = 4096;
+    /** Default buffer grow step */
+    static constexpr std::size_t kDefaultGrowStep = 4096;
 
 public:
     /**
      * Initializes object of class DynamicMemoryOutputStream.
      * @param initialSize Initial size of the buffer.
-     * @param growthStep Data size.
+     * @param growStep Data size.
      */
-    explicit DynamicMemoryOutputStream(std::size_t initialSize = kDefaultInitialSize,
-            std::size_t growthStep = kDefaultGrowthStep);
+    explicit DynamicMemoryOutputStream(
+            std::size_t initialSize = kDefaultInitialSize, std::size_t growStep = kDefaultGrowStep);
 
     DECLARE_NONCOPYABLE(DynamicMemoryOutputStream);
 
@@ -93,8 +93,8 @@ private:
     /** Extensible buffer */
     stdext::buffer<std::uint8_t> m_buffer;
 
-    /** Buffer growth step */
-    const std::size_t m_growthStep;
+    /** Buffer grow step */
+    const std::size_t m_growStep;
 
     /** Current data size */
     std::size_t m_dataSize;

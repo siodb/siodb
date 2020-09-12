@@ -42,6 +42,7 @@ CXX_HDR:= \
 	MemoryInputStream.h  \
 	MemoryMappedFile.h \
 	MemoryOutputStream.h  \
+	MemoryStdStreamBuffer.h  \
 	OutputStream.h  \
 	OutputStreamWrapperStream.h  \
 	Stream.h  \

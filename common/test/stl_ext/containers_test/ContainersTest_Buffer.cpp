@@ -580,8 +580,8 @@ TEST(Buffer, ResizeFromNonEmptyToGreaterSizeWithFill)
     ASSERT_NE(buffer.data(), nullptr);
     ASSERT_EQ(buffer.size(), 5U);
 
-    constexpr std::size_t kGrowth = 5;
-    constexpr auto kNewSize = kSize + kGrowth;
+    constexpr std::size_t kGrow = 5;
+    constexpr auto kNewSize = kSize + kGrow;
     constexpr Element kFill = 0xCAFEBABE;
     buffer.resize(kNewSize, kFill);
     ASSERT_NE(buffer.data(), nullptr);
@@ -590,8 +590,8 @@ TEST(Buffer, ResizeFromNonEmptyToGreaterSizeWithFill)
     int res = std::memcmp(data, buffer.data(), sizeof(Element) * kSize);
     ASSERT_EQ(res, 0);
 
-    const std::vector<Element> requiredData(kGrowth, kFill);
-    res = std::memcmp(requiredData.data(), buffer.data() + kSize, sizeof(Element) * kGrowth);
+    const std::vector<Element> requiredData(kGrow, kFill);
+    res = std::memcmp(requiredData.data(), buffer.data() + kSize, sizeof(Element) * kGrow);
     ASSERT_EQ(res, 0);
 }
 

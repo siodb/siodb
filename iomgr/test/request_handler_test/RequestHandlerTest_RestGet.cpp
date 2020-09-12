@@ -33,7 +33,8 @@ TEST(RestGet, GetDatabases)
     requestMsg.set_object_type(siodb::iomgr_protocol::DATABASE);
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
@@ -95,7 +96,8 @@ TEST(RestGet, GetTables)
     requestMsg.set_object_name("sys");
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
@@ -175,7 +177,8 @@ TEST(RestGet, GetAllRows)
     requestMsg.set_object_name("SYS.rest_GET_ALL_ROWS_1");
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
@@ -233,7 +236,8 @@ TEST(RestGet, GetAllRowsFromSystemTable)
     requestMsg.set_object_name("SYS.SYS_tables");
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
@@ -295,7 +299,8 @@ TEST(RestGet, GetSingleRowWithMatch)
     requestMsg.set_object_id(trids.at(kCheckedRowIndex));
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
@@ -375,7 +380,8 @@ TEST(RestGet, GetSingleRowNoMatch)
     requestMsg.set_object_id(*std::max_element(trids.cbegin(), trids.cend()) + 1);
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
@@ -428,7 +434,8 @@ TEST(RestGet, GetSingleRowFromSystemTable)
     requestMsg.set_object_id(1);
 
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Execute request
     requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);

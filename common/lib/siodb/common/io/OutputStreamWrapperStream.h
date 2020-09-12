@@ -7,6 +7,9 @@
 // Project headers
 #include "OutputStream.h"
 
+// CRT headers
+#include <cstdint>
+
 namespace siodb::io {
 
 /** Base class for the output stream classes which wrap another output stream. */
@@ -43,7 +46,7 @@ protected:
      * @param chunkSize Chunk size.
      * @return 0 on success, -1 on failure.
      */
-    int writeChunkSize(std::size_t chunkSize) noexcept;
+    int writeChunkSize(std::uint32_t chunkSize) noexcept;
 
 protected:
     /** Underlying output stream */

@@ -39,6 +39,20 @@ private:
      * @return 0 on success, -1 on failure.
      */
     int onFlush(std::size_t dataSize) noexcept override;
+
+    /**
+     * Validates max. chunk size.
+     * @param maxChunkSize Max chunk size value.
+     * @return maxChunkSize if it is valid
+     * @throw std::invalid_argument if maxChunkSize is not valid.
+     */
+    static std::size_t validateMaxChunkSize(std::size_t maxChunkSize);
+
+private:
+    /** Minimum allowed max chunk size */
+    static constexpr std::size_t kMinMaxChunkSize = 1;
+    /** Maximum allowed max chunk size */
+    static constexpr std::size_t kMaxMaxChunkSize = 1024 * 1024 * 1024;
 };
 
 }  // namespace siodb::io

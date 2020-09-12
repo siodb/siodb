@@ -8,7 +8,6 @@
 #include "IOManagerRequest.h"
 #include "../dbengine/handlers/RequestHandler.h"
 #include "../dbengine/parser/DBEngineRequestFactoryError.h"
-#include "../dbengine/parser/DBEngineRestRequestFactory.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
@@ -101,8 +100,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
             LOG_DEBUG << m_logContext << "Creating DBEngineRestRequest";
             dbengine::requests::DBEngineRequestPtr dbEngineRequest;
             try {
-                dbEngineRequest = dbengine::parser::DBEngineRestRequestFactory::createRestRequest(
-                        requestMsg, &input);
+                dbEngineRequest = m_requestFactory.createRestRequest(requestMsg, &input);
             } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                 LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), ex.what(), kRestParseError);
