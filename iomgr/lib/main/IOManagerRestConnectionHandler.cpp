@@ -29,6 +29,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
 {
     // Allow EINTR to cause I/O error when exit signal detected.
     const utils::ExitSignalAwareErrorCodeChecker errorCodeChecker;
+    protobuf::StreamInputStream input(*m_clientConnection, errorCodeChecker);
 
     while (m_clientConnection->isValid()) {
         try {
@@ -39,7 +40,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 // NOTE: We can receive an empty message if TCP connection is closed or aborted
                 net::epollWaitForData(m_clientEpollFd.getFD(), true);
                 protobuf::readMessage(protobuf::ProtocolMessageType::kDatabaseEngineRestRequest,
-                        requestMsg, *m_clientConnection, errorCodeChecker);
+                        requestMsg, input);
             } catch (net::ConnectionError& err) {
                 LOG_DEBUG << m_logContext << "Client disconnected.";
                 // Connection was closed or hangup. No reading operation was in progress
@@ -53,10 +54,10 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
 
             DBG_LOG_DEBUG(m_logContext
                           << "Received request: id: " << requestMsg.request_id()
-                          << ", verb: " << static_cast<int>(requestMsg.verb()) << ", object_type "
-                          << static_cast<int>(requestMsg.object_type()) << ", object_id: "
-                          << requestMsg.object_id() << ", object_name: " << requestMsg.object_name()
-                          << ", user: " << requestMsg.user_name());
+                          << ", verb: " << static_cast<int>(requestMsg.verb())
+                          << ", object_type: " << static_cast<int>(requestMsg.object_type())
+                          << ", object_id: " << requestMsg.object_id() << ", object_name: "
+                          << requestMsg.object_name() << ", user: " << requestMsg.user_name());
 
             // Authenticate user with token
             std::uint32_t userId;
@@ -97,10 +98,11 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                     m_requestDispatcher.getInstance(), *m_clientConnection, userId);
 
             // Parse incoming request
+            LOG_DEBUG << m_logContext << "Creating DBEngineRestRequest";
             dbengine::requests::DBEngineRequestPtr dbEngineRequest;
             try {
                 dbEngineRequest = dbengine::parser::DBEngineRestRequestFactory::createRestRequest(
-                        requestMsg, m_clientConnection.get());
+                        requestMsg, &input);
             } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                 LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), ex.what(), kRestParseError);

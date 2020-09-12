@@ -152,55 +152,55 @@ void SiodbConnectionManager::connectionListenerThreadMain()
     }
 
     while (!m_exitRequested) {
-        // Accept connection
-        FDGuard client(m_socketDomain == AF_UNIX ? acceptUnixConnection(server.getFD())
-                                                 : acceptTcpConnection(server.getFD()));
+        try {
+            // Accept connection
+            FDGuard client(m_socketDomain == AF_UNIX ? acceptUnixConnection(server.getFD())
+                                                     : acceptTcpConnection(server.getFD()));
+            if (!client.isValidFd()) continue;
 
-        // Validate connection file descriptor
-        if (!client.isValidFd()) {
-            if (client.getFD() == -2) return;
-            continue;
-        }
-
-        // Prepare user connection worker command-line parameters
-        std::vector<std::string> args;
-        args.reserve(10);
-        args.push_back(m_workerExecutablePath);
-        args.push_back("--instance");
-        args.push_back(m_dbOptions->m_generalOptions.m_name);
-        args.push_back("--client-fd");
-        args.push_back(std::to_string(client.getFD()));
-        if (m_checkUser && m_socketDomain == AF_UNIX) {
-            args.push_back("--admin");
-        }
-        std::vector<char*> execArgs(args.size() + 1);
-        std::transform(args.cbegin(), args.cend(), execArgs.begin(),
-                [](auto& s) noexcept { return stdext::as_mutable_ptr(s.c_str()); });
-        char* envp[] = {nullptr};
-
-        // Start worker process
-        const auto pid = fork();
-        if (pid < 0) {
-            // Error occurred
-            const int errorCode = errno;
-            LOG_ERROR << m_logContext << "Can't create new process: " << std::strerror(errorCode);
-            continue;
-        }
-
-        if (pid > 0) {
-            // Parent process
-            {
-                std::lock_guard lock(m_connectionHandlersMutex);
-                m_connectionHandlers.insert(pid);
+            // Prepare user connection worker command-line parameters
+            std::vector<std::string> args;
+            args.reserve(10);
+            args.push_back(m_workerExecutablePath);
+            args.push_back("--instance");
+            args.push_back(m_dbOptions->m_generalOptions.m_name);
+            args.push_back("--client-fd");
+            args.push_back(std::to_string(client.getFD()));
+            if (m_checkUser && m_socketDomain == AF_UNIX) {
+                args.push_back("--admin");
             }
-            LOG_INFO << m_logContext << "Started new user connection worker, PID " << pid;
-            continue;
-        }
+            std::vector<char*> execArgs(args.size() + 1);
+            std::transform(args.cbegin(), args.cend(), execArgs.begin(),
+                    [](auto& s) noexcept { return stdext::as_mutable_ptr(s.c_str()); });
+            char* envp[] = {nullptr};
 
-        // Child process
-        execve(execArgs.front(), execArgs.data(), envp);
-        // If we have reached here, execve() failed.
-        _exit(5);
+            // Start worker process
+            const auto pid = fork();
+            if (pid < 0) {
+                // Error occurred
+                const int errorCode = errno;
+                LOG_ERROR << m_logContext
+                          << "Can't create new process: " << std::strerror(errorCode);
+                continue;
+            }
+
+            if (pid > 0) {
+                // Parent process
+                {
+                    std::lock_guard lock(m_connectionHandlersMutex);
+                    m_connectionHandlers.insert(pid);
+                }
+                LOG_INFO << m_logContext << "Started new user connection worker, PID " << pid;
+                continue;
+            }
+
+            // Child process
+            execve(execArgs.front(), execArgs.data(), envp);
+            // If we have reached here, execve() failed.
+            _exit(5);
+        } catch (std::exception& ex) {
+            LOG_ERROR << m_logContext << ex.what();
+        }
     }
 }
 

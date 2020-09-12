@@ -17,6 +17,7 @@
 
 // Common project headers
 #include <siodb/common/io/OutputStream.h>
+#include <siodb/common/protobuf/ExtendedCodedOutputStream.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/IOManagerProtocol.pb.h>
@@ -491,7 +492,7 @@ private:
      * @param codedOutput Output stream.
      */
     static void writeVariant(
-            const Variant& value, google::protobuf::io::CodedOutputStream& codedOutput);
+            const Variant& value, protobuf::ExtendedCodedOutputStream& codedOutput);
 
     /**
      * Writes variant value as JSON.

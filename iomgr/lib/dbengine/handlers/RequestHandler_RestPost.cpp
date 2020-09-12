@@ -17,8 +17,11 @@
 namespace siodb::iomgr::dbengine {
 
 void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::PostRowsRestRequest& request)
+        const requests::PostRowsRestRequest& request)
 {
+    response.set_has_affected_row_count(true);
+    response.set_affected_row_count(0);
+
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
@@ -28,17 +31,43 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
                 table->getDatabaseName(), table->getName());
     }
 
-    response.set_has_affected_row_count(true);
-    response.set_affected_row_count(0);
-
     std::vector<std::uint64_t> tridList;
+    tridList.reserve(request.m_values.size());
 
-    // TODO: implement actual INSERT
+    auto& mutableRequest = stdext::as_mutable(request);
+    const auto maxColumnCount = table->getColumnCount() - 1;
 
-    // for now: just simulate activity
-    for (std::size_t i = 0; i < request.m_values.size(); ++i)
-        tridList.push_back(i);
-    response.set_affected_row_count(request.m_values.size());
+    std::vector<std::string> columnNames;
+    columnNames.reserve(maxColumnCount);
+
+    std::vector<Variant> rowValues;
+    rowValues.reserve(maxColumnCount);
+
+    const TransactionParameters transactionParams(m_userId, database->generateNextTransactionId());
+
+    for (std::size_t i = 0, n = mutableRequest.m_values.size(); i < n; ++i) {
+        auto& row = mutableRequest.m_values[i];
+
+        // Check number of columns
+        if (row.size() > maxColumnCount) {
+            throwDatabaseError(IOManagerMessageId::kErrorTooManyValuesInPayload, row.size(), i,
+                    maxColumnCount, database->getName(), table->getName());
+        }
+
+        // Prepare columns
+        columnNames.clear();
+        rowValues.clear();
+        for (auto& e : row) {
+            columnNames.push_back(mutableRequest.m_columnNames.at(e.first));
+            rowValues.push_back(std::move(e.second));
+        }
+
+        // Insert row
+        auto result = table->insertRow(columnNames, rowValues, transactionParams);
+        tridList.push_back(result.first->getTableRowId());
+    }
+
+    response.set_affected_row_count(tridList.size());
 
     // Write response message
     {

@@ -13,6 +13,7 @@
 // Common project headers
 #include <siodb/common/io/ChunkedInputStream.h>
 #include <siodb/common/io/InputStreamStdStreamBuffer.h>
+#include <siodb/common/log/Log.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
 // STL headers
@@ -38,9 +39,13 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createRestRequest(
                     return msg.object_id() == 0 ? createGetAllRowsRequest(msg)
                                                 : createGetSingleRowRequest(msg);
                 }
-                default: throw DBEngineRequestFactoryError("REST request: Invalid object type");
+                default: {
+                    throw DBEngineRequestFactoryError(
+                            "REST request: Invalid object type for the GET request");
+                }
             }
         }
+
         case iomgr_protocol::POST: {
             if (input == nullptr) {
                 throw std::runtime_error(
@@ -48,15 +53,15 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createRestRequest(
                         "it is required to create POST request");
             }
             switch (msg.object_type()) {
-                //case iomgr_protocol::DATABASE: return createPostDatabaseRequest(msg);
-                //case iomgr_protocol::TABLE: return createPostTableRequest(msg);
                 case iomgr_protocol::ROW: return createPostRowsRequest(msg, *input);
-                default:
+                default: {
                     throw DBEngineRequestFactoryError(
-                            "REST request: Invalid or unsupported object type");
+                            "REST request: Invalid or unsupported object type for the POST "
+                            "request");
+                }
             }
-            throw DBEngineRequestFactoryError("POST is not supported yet");
         }
+
         case iomgr_protocol::PATCH: {
             if (input == nullptr) {
                 throw std::runtime_error(
@@ -66,13 +71,14 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createRestRequest(
             // TODO: implement PATCH requests
             throw DBEngineRequestFactoryError("PATCH is not supported yet");
         }
+
         case iomgr_protocol::DELETE: {
             // TODO: implement DELETE requests
             throw DBEngineRequestFactoryError("DELETE is not supported yet");
         }
+
         default: throw DBEngineRequestFactoryError("REST request: Invalid verb");
     }
-    return nullptr;
 }
 
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetDatabasesRequest()
@@ -153,19 +159,52 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
     if (!isValidDatabaseObjectName(components[1]))
         throw DBEngineRequestFactoryError("POST ROWS: Invalid table name");
 
+    LOG_DEBUG << "DBEngineRestRequestFactory::createPostRowsRequest: Reading and parsing JSON "
+                 "payload";
     std::unordered_map<unsigned, std::string> columnNames;
-    std::vector<std::vector<std::pair<unsigned, requests::ConstExpressionPtr>>> values;
+    std::vector<std::vector<std::pair<unsigned, Variant>>> values;
+
+    RowDataJsonSaxParser jsonParser(kMaxPostRowCount, columnNames, values);
+    io::ChunkedInputStream chunkedInput(input);
     try {
-        RowDataJsonSaxParser jsonParser(kMaxPostRowCount, columnNames, values);
-        io::ChunkedInputStream chunkedInput(input);
+#if 1
         io::InputStreamStdStreamBuffer streamBuffer(chunkedInput, kJsonChunkSize);
         std::istream is(&streamBuffer);
+#else
+        std::string payload;
+        {
+            char buffer[4096];
+            std::ostringstream str;
+            std::uint64_t counter = 0;
+            while (!chunkedInput.isEof()) {
+                DBG_LOG_DEBUG(
+                        "DBEngineRestRequestFactory::createPostRowsRequest: Waiting for next part ("
+                        << counter << ")");
+                const auto n = chunkedInput.read(buffer, sizeof(buffer) - 1);
+                ++counter;
+                DBG_LOG_DEBUG("DBEngineRestRequestFactory::createPostRowsRequest: Read "
+                              << n << " bytes");
+                if (n < 1) break;
+                buffer[n] = 0;
+                str << buffer;
+            }
+            payload = str.str();
+        }
+        std::istringstream is(payload);
+#endif
         nlohmann::json::sax_parse(
                 std::move(is), static_cast<nlohmann::json_sax<nlohmann::json>*>(&jsonParser));
     } catch (JsonParserError& ex) {
+        chunkedInput.setStopReadingAfterCurrentChunkFinished();
+        chunkedInput.skip(chunkedInput.getRemainingBytesInChunk());
         std::ostringstream err;
-        err << "JSON parse error: " << ex.what();
+        err << "JSON payload parse error: " << ex.what();
         throw DBEngineRequestFactoryError(err.str());
+    } catch (std::exception& ex) {
+        chunkedInput.setStopReadingAfterCurrentChunkFinished();
+        chunkedInput.skip(chunkedInput.getRemainingBytesInChunk());
+        LOG_ERROR << "DBEngineRestRequestFactory::createPostRowsRequest: " << ex.what();
+        throw DBEngineRequestFactoryError("JSON payload parse error: other error");
     }
 
     boost::to_upper(components[0]);

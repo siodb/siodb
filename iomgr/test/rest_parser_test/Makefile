@@ -22,7 +22,7 @@ CXXFLAGS+=-I../../lib -I$(GENERATED_FILES_ROOT)
 
 TARGET_OWN_LIBS:=iomgr_dbengine
 
-TARGET_COMMON_LIBS:=iomgr_shared unit_test proto utils data sys io stl_ext crt_ext
+TARGET_COMMON_LIBS:=iomgr_shared unit_test proto data sys io utils stl_ext crt_ext
 
 TARGET_LIBS:=-lprotobuf -lantlr4-runtime -lboost_log -lboost_system -lboost_filesystem -lxxhash
 

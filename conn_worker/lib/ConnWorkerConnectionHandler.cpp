@@ -250,9 +250,8 @@ void ConnWorkerConnectionHandler::transmitRowData(protobuf::StreamInputStream& i
     google::protobuf::io::CodedOutputStream codedOutput(&clientOutputStream);
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength)) {
+        if (!codedInput.ReadVarint64(&rowLength))
             stdext::throw_system_error("IO manager socket read error");
-        }
 
         std::uint8_t codedRowLength[9];
         const auto codedRowLengthEnd =

@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "expr/Expression.h"
+#include <siodb/iomgr/shared/dbengine/Variant.h>
 
 // JSON library
 #include <nlohmann/json.hpp>
@@ -23,7 +23,7 @@ public:
      */
     explicit RowDataJsonSaxParser(std::size_t rowCountLimit,
             std::unordered_map<unsigned, std::string>& columnNames,
-            std::vector<std::vector<std::pair<unsigned, requests::ConstExpressionPtr>>>& values);
+            std::vector<std::vector<std::pair<unsigned, Variant>>>& values);
 
 protected:
     /**
@@ -154,7 +154,7 @@ private:
      * @param event Event description. 
      * @throw JsonParserError if parser is in the invalid state.
      */
-    void checkParserState(ParserState requiredState, const char* evenr) const;
+    void checkParserState(ParserState requiredState, const char* event) const;
 
 private:
     /** Row count limit */
@@ -164,7 +164,7 @@ private:
     std::unordered_map<unsigned, std::string>& m_columnNames;
 
     /** Column values container */
-    std::vector<std::vector<std::pair<unsigned, requests::ConstExpressionPtr>>>& m_values;
+    std::vector<std::vector<std::pair<unsigned, Variant>>>& m_values;
 
     /** Column name to numeric column identifier mapping */
     std::unordered_map<std::string, unsigned> m_columnNameToIdMapping;
@@ -179,7 +179,7 @@ private:
     std::string m_columnName;
 
     /** Saved row */
-    std::vector<std::pair<unsigned, requests::ConstExpressionPtr>> m_row;
+    std::vector<std::pair<unsigned, Variant>> m_row;
 };
 
 }  // namespace siodb::iomgr::dbengine::parser

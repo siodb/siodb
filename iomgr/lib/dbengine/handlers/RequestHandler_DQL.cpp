@@ -274,7 +274,7 @@ void RequestHandler::executeSelectRequest(
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
-    google::protobuf::io::CodedOutputStream codedOutput(&rawOutput);
+    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
 
     try {
         bool rowDataAvailable = true;
@@ -407,7 +407,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     stdext::bitmask nullMask;
     if (!nullNotAllowed) nullMask.resize(values.size(), false);
 
-    google::protobuf::io::CodedOutputStream codedOutput(&rawOutput);
+    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
     for (const auto& dbRecord : databaseRecords) {
         values[0] = dbRecord.m_name;
         values[1] = boost::uuids::to_string(dbRecord.m_uuid);

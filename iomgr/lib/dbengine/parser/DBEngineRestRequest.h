@@ -6,10 +6,9 @@
 
 // Project headers
 #include "DBEngineRequest.h"
-#include "expr/Expression.h"
 
-// CRT headers
-#include <cstdint>
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/Variant.h>
 
 namespace siodb::iomgr::dbengine::requests {
 
@@ -97,7 +96,7 @@ struct PostRowsRestRequest : public DBEngineRequest {
      */
     explicit PostRowsRestRequest(std::string&& database, std::string&& table,
             std::unordered_map<unsigned, std::string>&& columnNames,
-            std::vector<std::vector<std::pair<unsigned, ConstExpressionPtr>>>&& values) noexcept
+            std::vector<std::vector<std::pair<unsigned, Variant>>>&& values) noexcept
         : DBEngineRequest(DBEngineRequestType::kRestPostRows)
         , m_database(std::move(database))
         , m_table(std::move(table))
@@ -116,7 +115,7 @@ struct PostRowsRestRequest : public DBEngineRequest {
     const std::unordered_map<unsigned, std::string> m_columnNames;
 
     /** Column values */
-    const std::vector<std::vector<std::pair<unsigned, ConstExpressionPtr>>> m_values;
+    const std::vector<std::vector<std::pair<unsigned, Variant>>> m_values;
 };
 
 }  // namespace siodb::iomgr::dbengine::requests

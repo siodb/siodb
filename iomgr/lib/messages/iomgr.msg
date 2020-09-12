@@ -197,6 +197,7 @@ MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2
 ID 3000
 MSG Error CannotOperateOnSystemTableViaRest Can't operate on the system table '%1%'.'%2%' via REST protocol
 MSG Error JsonPayloadParsingError JSON payload parse error: %1%
+MSG Error TooManyValuesInPayload Too many values (%1%) in the row %2% of the JSON payload, expecting at most %3% while posting data to the table '%4%'.'%5%'
 
 ##########################################
 # INTERNAL MESSAGES

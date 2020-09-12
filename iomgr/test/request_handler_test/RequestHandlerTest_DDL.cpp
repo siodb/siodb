@@ -15,6 +15,7 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/options/SiodbOptions.h>
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/string_builder.h>
 
@@ -103,18 +104,16 @@ TEST(DDL, CreateDatabase)
 
             EXPECT_EQ(response.column_description(0).name(), "NAME");
 
-            google::protobuf::io::CodedInputStream codedInput(&inputStream);
+            siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
             std::uint64_t rowLength = 0;
+
             // Only one row with a single just created database
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
-            std::uint32_t nameLength = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(&nameLength));
-            ASSERT_EQ(nameLength, databaseName.length());
-            std::string name(databaseName.length(), '\0');
-            ASSERT_TRUE(codedInput.ReadRaw(name.data(), nameLength));
+            std::string name;
+            ASSERT_TRUE(codedInput.Read(&name));
             ASSERT_EQ(name, databaseName);
 
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -301,7 +300,7 @@ TEST(DDL, UseDatabase_ExistentDB)
         EXPECT_FALSE(response.has_affected_row_count());
         ASSERT_EQ(response.column_description_size(), 2);
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -577,7 +576,7 @@ TEST(DDL, CreateTable)
         EXPECT_EQ(response.column_description(17).name(), "TEST_BLOB");
         EXPECT_EQ(response.column_description(18).name(), "TEST_TIMESTAMP");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));

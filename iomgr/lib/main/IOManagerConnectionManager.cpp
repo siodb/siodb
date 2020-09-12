@@ -95,16 +95,24 @@ void IOManagerConnectionManager::connectionListenerThreadMain()
     }
 
     while (!m_exitRequested) {
-        if (server.getFD() == -2) return;
+        try {
+            FDGuard fdGuard(acceptTcpConnection(server.getFD()));
+            if (!fdGuard.isValidFd()) continue;
 
-        FDGuard fdGuard(acceptTcpConnection(server.getFD()));
-        if (!fdGuard.isValidFd()) continue;
+            std::unique_ptr<IOManagerConnectionHandler> handler(
+                    m_connectionHandlerFactory.createConnectionHandler(
+                            m_requestDispatcher, std::move(fdGuard)));
 
-        std::unique_ptr<IOManagerConnectionHandler> handler(
-                m_connectionHandlerFactory.createConnectionHandler(
-                        m_requestDispatcher, std::move(fdGuard)));
-        m_connectionHandlers.push_back(
-                std::shared_ptr<IOManagerConnectionHandler>(std::move(handler)));
+            // Start thread here, because we can't do it in the IOManagerConnectionHandler
+            // constructor, because thread procedure calls some virtual methods,
+            // which are pure in the IOManagerConnectionHandler.
+            handler->start();
+
+            m_connectionHandlers.push_back(
+                    std::shared_ptr<IOManagerConnectionHandler>(std::move(handler)));
+        } catch (std::exception& ex) {
+            LOG_ERROR << m_logContext << ex.what();
+        }
     }
 }
 

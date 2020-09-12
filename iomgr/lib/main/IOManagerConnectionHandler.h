@@ -54,6 +54,9 @@ public:
         return m_clientConnection->isValid();
     }
 
+    /** Starts connection handler thread */
+    void start();
+
     /** 
      * Executes database engine request.
      * @param request Request to execute.

@@ -34,9 +34,6 @@ IOManagerConnectionHandler::IOManagerConnectionHandler(
 {
     dynamic_cast<siodb::io::FDStream*>(m_clientConnection.get())->setAutoClose();
     clientFd.release();
-
-    // Start thread only after connection object is initialized
-    m_thread = std::make_unique<std::thread>(&IOManagerConnectionHandler::threadMain, this);
 }
 
 IOManagerConnectionHandler::~IOManagerConnectionHandler()
@@ -46,6 +43,13 @@ IOManagerConnectionHandler::~IOManagerConnectionHandler()
         ::pthread_kill(m_thread->native_handle(), SIGUSR1);
         m_thread->join();
     }
+}
+
+void IOManagerConnectionHandler::start()
+{
+    if (m_thread) throw std::logic_error("Connection handler thread is already running");
+    DBG_LOG_DEBUG("Creating connection handler thread...");
+    m_thread = std::make_unique<std::thread>(&IOManagerConnectionHandler::threadMain, this);
 }
 
 bool IOManagerConnectionHandler::executeIOManagerRequest(const IOManagerRequest& request)

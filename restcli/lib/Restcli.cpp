@@ -219,8 +219,14 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
         io::BufferedChunkedOutputStream chunkedOutput(kChunkSize, connection);
         if (!params.m_payload.empty()) {
             if (params.m_printDebugMessages) {
-                std::cerr << "debug: Sending payload of " << params.m_payload.length()
-                          << " bytes..." << std::endl;
+                std::cerr << "debug: Sending payload:\ndebug: ===== PAYLOAD ("
+                          << params.m_payload.length() << " bytes) ======\n";
+                std::istringstream iss(params.m_payload);
+                std::string s;
+                while (std::getline(iss, s)) {
+                    std::cerr << "debug: " << s << '\n';
+                }
+                std::cerr << "\ndebug: ===== END OF PAYLOAD ======" << std::endl;
             }
             if (static_cast<std::size_t>(
                         chunkedOutput.write(params.m_payload.c_str(), params.m_payload.length()))
@@ -251,10 +257,10 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
         }
         if (params.m_printDebugMessages) {
             std::cerr << "debug: Flushing pending payload from the buffer: "
-                      << chunkedOutput.getDataSize() << "bytes..." << std::endl;
+                      << chunkedOutput.getDataSize() << " bytes..." << std::endl;
         }
         if (chunkedOutput.close() != 0)
-            stdext::throw_system_error("Failed to send payload final part");
+            stdext::throw_system_error("Failed to send last part of the payload");
     }
 
     // Read server response
@@ -339,6 +345,9 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
     if (params.m_printDebugMessages) {
         std::cerr << "debug: Receiving payload..." << std::endl;
     }
+
+    std::ostringstream payloadStream;
+
     io::ChunkedInputStream chunkedInput(input);
     char buffer[4096];
     buffer[sizeof(buffer) - 1] = 0;
@@ -349,10 +358,11 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
         }
         if (n < 1) break;
         buffer[n] = 0;
-        os << buffer;
+        payloadStream << buffer;
     }
-    os << std::endl;
     chunkedInput.close();
+
+    os << payloadStream.str() << std::endl;
 
     return 0;
 }

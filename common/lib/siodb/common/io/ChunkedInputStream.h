@@ -25,6 +25,7 @@ public:
         , m_pos(0)
         , m_hasChunkSize(false)
         , m_eof(false)
+        , m_stopReadingAfterCurrentChunkFinished(false)
     {
     }
 
@@ -37,6 +38,21 @@ public:
     bool isEof() const noexcept
     {
         return m_eof;
+    }
+
+    /**
+     * Returns number of bytes remaining in the current chunk.
+     * @return Number of bytes remaining in the current chunk.
+     */
+    std::uint64_t getRemainingBytesInChunk() const noexcept
+    {
+        return m_hasChunkSize ? m_chunkSize - m_pos : 0;
+    }
+
+    /** Sets indication that stream should stop reading after current chunk finishes. */
+    void setStopReadingAfterCurrentChunkFinished() noexcept
+    {
+        m_stopReadingAfterCurrentChunkFinished = true;
     }
 
     /**
@@ -73,6 +89,9 @@ private:
 
     /** End of chunk stream flag */
     bool m_eof;
+
+    /** Indicates that reading should be stopped as if end of stream received */
+    bool m_stopReadingAfterCurrentChunkFinished;
 };
 
 }  // namespace siodb::io

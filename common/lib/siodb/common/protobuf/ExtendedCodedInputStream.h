@@ -41,94 +41,94 @@ public:
 
     /**
      * Reads boolean value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadBool(bool* value);
+    bool Read(bool* value);
 
     /**
      * Reads signed 8-bit integer value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadInt(std::int8_t* value);
-
-    /**
-     * Reads signed 16-bit integer value.
-     * @param value Address of varible to read value into.
-     * @return true on success, false on read error.
-     */
-    bool ReadInt(std::int16_t* value);
-
-    /**
-     * Reads signed 32-bit integer value.
-     * @param value Address of varible to read value into.
-     * @return true on success, false on read error.
-     */
-    bool ReadInt(std::int32_t* value);
-
-    /**
-     * Reads signed 64-bit integer value.
-     * @param value Address of varible to read value into.
-     * @return true on success, false on read error.
-     */
-    bool ReadInt(std::int64_t* value);
+    bool Read(std::int8_t* value);
 
     /**
      * Reads unsigned 8-bit integer value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadInt(std::uint8_t* value);
+    bool Read(std::uint8_t* value);
+
+    /**
+     * Reads signed 16-bit integer value.
+     * @param value Address of variable to read value into.
+     * @return true on success, false on read error.
+     */
+    bool Read(std::int16_t* value);
 
     /**
      * Reads unsigned 16-bit integer value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadInt(std::uint16_t* value);
+    bool Read(std::uint16_t* value);
+
+    /**
+     * Reads signed 32-bit integer value.
+     * @param value Address of variable to read value into.
+     * @return true on success, false on read error.
+     */
+    bool Read(std::int32_t* value);
 
     /**
      * Reads unsigned 32-bit integer value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadInt(std::uint32_t* value);
+    bool Read(std::uint32_t* value);
+
+    /**
+     * Reads signed 64-bit integer value.
+     * @param value Address of variable to read value into.
+     * @return true on success, false on read error.
+     */
+    bool Read(std::int64_t* value);
 
     /**
      * Reads unsigned 64-bit integer value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadInt(std::uint64_t* value);
+    bool Read(std::uint64_t* value);
 
     /**
      * Reads single precision floating-point value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadFloat(float* value);
+    bool Read(float* value);
 
     /**
      * Reads double precision floating-point value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadDouble(double* value);
+    bool Read(double* value);
 
     /**
      * Reads string value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadString(std::string* value);
+    bool Read(std::string* value);
 
     /**
      * Reads binary value.
-     * @param value Address of varible to read value into.
+     * @param value Address of variable to read value into.
      * @return true on success, false on read error.
      */
-    bool ReadBinary(BinaryValue* value);
+    bool Read(BinaryValue* value);
 
 private:
     GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(ExtendedCodedInputStream);

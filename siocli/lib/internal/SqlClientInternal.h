@@ -4,14 +4,14 @@
 
 #pragma once
 
+// Common project headers
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
+
 // Protobuf message headers
 #include <siodb/common/proto/ColumnDataType.pb.h>
 
 // STL headers
 #include <ostream>
-
-// Protobuf headers
-#include <google/protobuf/io/coded_stream.h>
 
 namespace siodb::sql_client::detail {
 
@@ -57,14 +57,14 @@ constexpr std::size_t kLobReadBufferSize = 4096;
 std::size_t getColumnDataWidth(ColumnDataType type, std::size_t nameLength);
 
 /**
- * Receives and prints column data.
+ * Receives and prints column value.
  * @param is Input stream.
  * @param type Column type.
  * @param width Column width.
  * @param os Output stream.
  * @return true on success, false if error occurred.
  */
-bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is, ColumnDataType type,
+bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDataType type,
         std::size_t width, std::ostream& os);
 
 /**

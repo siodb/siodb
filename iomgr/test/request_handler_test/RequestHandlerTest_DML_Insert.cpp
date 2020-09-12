@@ -9,6 +9,7 @@
 #include "dbengine/parser/expr/ConstantExpression.h"
 
 // Common project headers
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 
@@ -83,19 +84,18 @@ TEST(DML_Insert, InsertSingleRecord)
         EXPECT_EQ(response.column_description(0).name(), "NAME");
         EXPECT_EQ(response.column_description(1).name(), "PRICE_ALIAS");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_EQ(rowLength, 13u);
+        ASSERT_EQ(rowLength, 13U);
 
-        std::uint32_t nameLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint32(&nameLength));
-        ASSERT_EQ(nameLength, 4U);
-        std::string name(4, '\0');
-        ASSERT_TRUE(codedInput.ReadRaw(name.data(), nameLength));
+        std::string name;
+        ASSERT_TRUE(codedInput.Read(&name));
+        ASSERT_EQ(name.length(), 4U);
+
         double priceValue = 0.0;
-        ASSERT_TRUE(codedInput.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&priceValue)));
+        ASSERT_TRUE(codedInput.Read(&priceValue));
         EXPECT_DOUBLE_EQ(priceValue, 123.0);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -167,19 +167,18 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
         EXPECT_EQ(response.column_description(0).name(), "NAME");
         EXPECT_EQ(response.column_description(1).name(), "PRICE_ALIAS");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_EQ(rowLength, 13u);
+        ASSERT_EQ(rowLength, 13U);
 
-        std::uint32_t nameLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint32(&nameLength));
-        ASSERT_EQ(nameLength, 4U);
-        std::string name(4, '\0');
-        ASSERT_TRUE(codedInput.ReadRaw(name.data(), nameLength));
+        std::string name;
+        ASSERT_TRUE(codedInput.Read(&name));
+        ASSERT_EQ(name.length(), 4U);
+
         double priceValue = 0.0;
-        ASSERT_TRUE(codedInput.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&priceValue)));
+        ASSERT_TRUE(codedInput.Read(&priceValue));
         EXPECT_DOUBLE_EQ(priceValue, 123.0);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -251,19 +250,18 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
         EXPECT_EQ(response.column_description(0).name(), "NAME");
         EXPECT_EQ(response.column_description(1).name(), "PRICE_ALIAS");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_EQ(rowLength, 13u);
+        ASSERT_EQ(rowLength, 13U);
 
-        std::uint32_t nameLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint32(&nameLength));
-        ASSERT_EQ(nameLength, 4U);
-        std::string name(4, '\0');
-        ASSERT_TRUE(codedInput.ReadRaw(name.data(), nameLength));
+        std::string name;
+        ASSERT_TRUE(codedInput.Read(&name));
+        ASSERT_EQ(name.length(), 4U);
+
         double priceValue = 0.0;
-        ASSERT_TRUE(codedInput.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&priceValue)));
+        ASSERT_TRUE(codedInput.Read(&priceValue));
         EXPECT_DOUBLE_EQ(priceValue, 123.0);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -352,26 +350,24 @@ TEST(DML_Insert, InsertMultipleRecords)
         EXPECT_EQ(response.column_description(1).name(), "FIRST_NAME");
         EXPECT_EQ(response.column_description(2).name(), "LAST_NAME");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (size_t i = 0; i < kInsertRows; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_EQ(rowLength, 13u);
+            ASSERT_EQ(rowLength, 13U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             ASSERT_EQ(trid, i + 1);
-            std::uint32_t nameLength = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(&nameLength));
-            ASSERT_EQ(nameLength, 5U);
-            std::string name(5, '\0');
-            ASSERT_TRUE(codedInput.ReadRaw(name.data(), nameLength));
-            EXPECT_TRUE(name == std::string("TEST") + std::to_string((i * 2) + 1));
-            ASSERT_TRUE(codedInput.ReadVarint32(&nameLength));
-            ASSERT_EQ(nameLength, 5U);
-            ASSERT_TRUE(codedInput.ReadRaw(name.data(), nameLength));
-            EXPECT_TRUE(name == std::string("TEST") + std::to_string(i * 2));
+
+            std::string name;
+            ASSERT_TRUE(codedInput.Read(&name));
+            EXPECT_EQ(name, std::string("TEST") + std::to_string((i * 2) + 1));
+
+            ASSERT_TRUE(codedInput.Read(&name));
+            EXPECT_EQ(name, std::string("TEST") + std::to_string(i * 2));
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -463,33 +459,31 @@ TEST(DML_Insert, InsertDataTypesWithLength)
     EXPECT_EQ(response.column_description(1).name(), "DIGITAL_SIGNATURE");
     EXPECT_EQ(response.column_description(2).name(), "BOOK_TEXT");
 
-    google::protobuf::io::CodedInputStream codedInput(&inputStream);
+    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
     std::uint64_t rowLength = 0;
     for (size_t i = 0; i < kBufferSize.size(); ++i) {
+        rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         // rowLength must be (kBufferSize[i]*2) + (varint32 * 2) + varint64
         // (2 data length and TRID, TRID assumed to be only 1 byte for this test)
-        ASSERT_TRUE(rowLength >= (kBufferSize[i] * 2) + 3 && rowLength <= (kBufferSize[i] * 2) + 9);
+        ASSERT_GE(rowLength, (kBufferSize[i] * 2) + 3 && rowLength <= (kBufferSize[i] * 2) + 9);
+
         std::uint64_t trid = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+        ASSERT_TRUE(codedInput.Read(&trid));
         ASSERT_EQ(trid, i + 1);
 
-        std::uint32_t digitalSignatureLen = 0;
-        ASSERT_TRUE(codedInput.ReadVarint32(&digitalSignatureLen));
-        ASSERT_EQ(digitalSignatureLen, kBufferSize[i]);
-        std::string digitalSignature(digitalSignatureLen, '\0');
-        ASSERT_TRUE(codedInput.ReadRaw(digitalSignature.data(), digitalSignatureLen));
+        std::string digitalSignature;
+        ASSERT_TRUE(codedInput.Read(&digitalSignature));
+        ASSERT_EQ(digitalSignature.length(), kBufferSize[i]);
         EXPECT_EQ(digitalSignature[0], 'T');
         EXPECT_EQ(digitalSignature[123], 'E');
         EXPECT_EQ(digitalSignature[256], 'S');
         EXPECT_EQ(digitalSignature[2321], 'T');
 
-        std::uint32_t bookTextLength;
-        ASSERT_TRUE(codedInput.ReadVarint32(&bookTextLength));
-        ASSERT_EQ(bookTextLength, kBufferSize[i]);
-        std::string bookText(bookTextLength, '\0');
-        ASSERT_TRUE(codedInput.ReadRaw(bookText.data(), bookTextLength));
+        std::string bookText;
+        ASSERT_TRUE(codedInput.Read(&bookText));
+        ASSERT_EQ(bookText.length(), kBufferSize[i]);
         EXPECT_EQ(bookText[0], 'T');
         EXPECT_EQ(bookText[13], 'E');
         EXPECT_EQ(bookText[512], 'S');
@@ -526,9 +520,9 @@ TEST(DML_Insert, InsertMinMaxValues)
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
     std::vector<std::vector<requests::ConstExpressionPtr>> values;
-    auto v = &values.emplace_back();
 
     // Min values is a first row.
+    auto v = &values.emplace_back();
     v->push_back(std::make_unique<requests::ConstantExpression>(
             std::numeric_limits<std::int8_t>::min()));
     v->push_back(std::make_unique<requests::ConstantExpression>(
@@ -549,9 +543,8 @@ TEST(DML_Insert, InsertMinMaxValues)
     v->push_back(
             std::make_unique<requests::ConstantExpression>(std::numeric_limits<double>::min()));
 
-    v = &values.emplace_back();
-
     // Max values is a second row.
+    v = &values.emplace_back();
     v->push_back(std::make_unique<requests::ConstantExpression>(
             std::numeric_limits<std::int8_t>::max()));
     v->push_back(std::make_unique<requests::ConstantExpression>(
@@ -615,75 +608,94 @@ TEST(DML_Insert, InsertMinMaxValues)
     ASSERT_EQ(response.column_description(9).type(), siodb::COLUMN_DATA_TYPE_FLOAT);
     ASSERT_EQ(response.column_description(10).type(), siodb::COLUMN_DATA_TYPE_DOUBLE);
 
-    google::protobuf::io::CodedInputStream codedInput(&inputStream);
+    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
     std::uint64_t rowLength = 0;
     ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+    ASSERT_GT(rowLength, 0U);
 
     // Check min values
     std::uint64_t trid = 0;
-    ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+    ASSERT_TRUE(codedInput.Read(&trid));
     ASSERT_EQ(trid, 1U);
-    std::int8_t int8_value = 0;
-    ASSERT_TRUE(codedInput.ReadRaw(&int8_value, 1));
-    ASSERT_EQ(int8_value, std::numeric_limits<std::int8_t>::min());
-    std::uint8_t uint8_value = 0;
-    ASSERT_TRUE(codedInput.ReadRaw(&uint8_value, 1));
-    ASSERT_EQ(uint8_value, std::numeric_limits<std::uint8_t>::min());
-    std::int16_t int16_value = 0;
-    ASSERT_TRUE(codedInput.ReadRaw(&int16_value, 2));
-    boost::endian::little_to_native_inplace(int16_value);
-    ASSERT_EQ(int16_value, std::numeric_limits<std::int16_t>::min());
-    std::uint16_t uint16_value = 0;
-    boost::endian::little_to_native_inplace(uint16_value);
-    ASSERT_TRUE(codedInput.ReadRaw(&uint16_value, 2));
-    ASSERT_EQ(uint16_value, std::numeric_limits<std::uint16_t>::min());
-    std::int32_t int32_value = 0;
-    ASSERT_TRUE(codedInput.ReadVarint32(reinterpret_cast<std::uint32_t*>(&int32_value)));
-    ASSERT_EQ(int32_value, std::numeric_limits<std::int32_t>::min());
-    std::uint32_t uint32_value = 0;
-    ASSERT_TRUE(codedInput.ReadVarint32(&uint32_value));
-    ASSERT_EQ(uint32_value, std::numeric_limits<std::uint32_t>::min());
-    std::int64_t int64_value = 0;
-    ASSERT_TRUE(codedInput.ReadVarint64(reinterpret_cast<std::uint64_t*>(&int64_value)));
-    ASSERT_EQ(int64_value, std::numeric_limits<std::int64_t>::min());
-    std::uint64_t uint64_value = 0;
-    ASSERT_TRUE(codedInput.ReadVarint64(&uint64_value));
-    ASSERT_EQ(uint64_value, std::numeric_limits<std::uint64_t>::min());
-    float float_value = 0;
-    ASSERT_TRUE(codedInput.ReadLittleEndian32(reinterpret_cast<std::uint32_t*>(&float_value)));
-    ASSERT_EQ(float_value, std::numeric_limits<float>::min());
-    double double_value = 0;
-    ASSERT_TRUE(codedInput.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&double_value)));
-    ASSERT_EQ(double_value, std::numeric_limits<double>::min());
 
+    std::int8_t int8Value = 0;
+    ASSERT_TRUE(codedInput.Read(&int8Value));
+    ASSERT_EQ(int8Value, std::numeric_limits<std::int8_t>::min());
+
+    std::uint8_t uint8Value = 0;
+    ASSERT_TRUE(codedInput.Read(&uint8Value));
+    ASSERT_EQ(uint8Value, std::numeric_limits<std::uint8_t>::min());
+
+    std::int16_t int16Value = 0;
+    ASSERT_TRUE(codedInput.Read(&int16Value));
+    ASSERT_EQ(int16Value, std::numeric_limits<std::int16_t>::min());
+
+    std::uint16_t uint16Value = 0;
+    ASSERT_TRUE(codedInput.Read(&uint16Value));
+    ASSERT_EQ(uint16Value, std::numeric_limits<std::uint16_t>::min());
+
+    std::int32_t int32Value = 0;
+    ASSERT_TRUE(codedInput.Read(&int32Value));
+    ASSERT_EQ(int32Value, std::numeric_limits<std::int32_t>::min());
+
+    std::uint32_t uint32Value = 0;
+    ASSERT_TRUE(codedInput.Read(&uint32Value));
+    ASSERT_EQ(uint32Value, std::numeric_limits<std::uint32_t>::min());
+
+    std::int64_t int64Value = 0;
+    ASSERT_TRUE(codedInput.Read(&int64Value));
+    ASSERT_EQ(int64Value, std::numeric_limits<std::int64_t>::min());
+
+    std::uint64_t uint64Value = 0;
+    ASSERT_TRUE(codedInput.ReadVarint64(&uint64Value));
+    ASSERT_EQ(uint64Value, std::numeric_limits<std::uint64_t>::min());
+
+    float floatValue = 0;
+    ASSERT_TRUE(codedInput.Read(&floatValue));
+    ASSERT_EQ(floatValue, std::numeric_limits<float>::min());
+
+    double doubleValue = 0;
+    ASSERT_TRUE(codedInput.Read(&doubleValue));
+    ASSERT_EQ(doubleValue, std::numeric_limits<double>::min());
+
+    rowLength = 0;
     ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+    ASSERT_GT(rowLength, 0U);
 
     // Check max values
-    ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+    ASSERT_TRUE(codedInput.Read(&trid));
     ASSERT_EQ(trid, 2U);
-    ASSERT_TRUE(codedInput.ReadRaw(&int8_value, 1));
-    ASSERT_EQ(int8_value, std::numeric_limits<std::int8_t>::max());
-    ASSERT_TRUE(codedInput.ReadRaw(&uint8_value, 1));
-    ASSERT_EQ(uint8_value, std::numeric_limits<std::uint8_t>::max());
-    ASSERT_TRUE(codedInput.ReadRaw(&int16_value, 2));
-    boost::endian::little_to_native_inplace(int16_value);
-    ASSERT_EQ(int16_value, std::numeric_limits<std::int16_t>::max());
-    boost::endian::little_to_native_inplace(uint16_value);
-    ASSERT_TRUE(codedInput.ReadRaw(&uint16_value, 2));
-    ASSERT_EQ(uint16_value, std::numeric_limits<std::uint16_t>::max());
-    ASSERT_TRUE(codedInput.ReadVarint32(reinterpret_cast<std::uint32_t*>(&int32_value)));
-    ASSERT_EQ(int32_value, std::numeric_limits<std::int32_t>::max());
-    ASSERT_TRUE(codedInput.ReadVarint32(&uint32_value));
-    ASSERT_EQ(uint32_value, std::numeric_limits<std::uint32_t>::max());
-    ASSERT_TRUE(codedInput.ReadVarint64(reinterpret_cast<std::uint64_t*>(&int64_value)));
-    ASSERT_EQ(int64_value, std::numeric_limits<std::int64_t>::max());
-    ASSERT_TRUE(codedInput.ReadVarint64(&uint64_value));
-    ASSERT_EQ(uint64_value, std::numeric_limits<std::uint64_t>::max());
-    ASSERT_TRUE(codedInput.ReadLittleEndian32(reinterpret_cast<std::uint32_t*>(&float_value)));
-    ASSERT_EQ(float_value, std::numeric_limits<float>::max());
-    ASSERT_TRUE(codedInput.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&double_value)));
-    ASSERT_EQ(double_value, std::numeric_limits<double>::max());
+
+    ASSERT_TRUE(codedInput.Read(&int8Value));
+    ASSERT_EQ(int8Value, std::numeric_limits<std::int8_t>::max());
+
+    ASSERT_TRUE(codedInput.Read(&uint8Value));
+    ASSERT_EQ(uint8Value, std::numeric_limits<std::uint8_t>::max());
+
+    ASSERT_TRUE(codedInput.Read(&int16Value));
+    ASSERT_EQ(int16Value, std::numeric_limits<std::int16_t>::max());
+
+    ASSERT_TRUE(codedInput.Read(&uint16Value));
+    ASSERT_EQ(uint16Value, std::numeric_limits<std::uint16_t>::max());
+
+    ASSERT_TRUE(codedInput.Read(&int32Value));
+    ASSERT_EQ(int32Value, std::numeric_limits<std::int32_t>::max());
+
+    ASSERT_TRUE(codedInput.Read(&uint32Value));
+    ASSERT_EQ(uint32Value, std::numeric_limits<std::uint32_t>::max());
+
+    ASSERT_TRUE(codedInput.Read(&int64Value));
+    ASSERT_EQ(int64Value, std::numeric_limits<std::int64_t>::max());
+
+    ASSERT_TRUE(codedInput.Read(&uint64Value));
+    ASSERT_EQ(uint64Value, std::numeric_limits<std::uint64_t>::max());
+
+    ASSERT_TRUE(codedInput.Read(&floatValue));
+    ASSERT_EQ(floatValue, std::numeric_limits<float>::max());
+
+    ASSERT_TRUE(codedInput.Read(&doubleValue));
+    ASSERT_EQ(doubleValue, std::numeric_limits<double>::max());
 
     ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
     EXPECT_EQ(rowLength, 0U);
@@ -799,25 +811,33 @@ TEST(DML_Insert, InsertDateTime)
     ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_TIMESTAMP);
     ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_TIMESTAMP);
 
-    google::protobuf::io::CodedInputStream codedInput(&inputStream);
+    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
     std::uint64_t rowLength = 0;
     ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+    ASSERT_GT(rowLength, 0U);
 
     std::uint64_t trid = 0;
-    ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+    ASSERT_TRUE(codedInput.Read(&trid));
     ASSERT_EQ(trid, 1U);
+
     siodb::RawDateTime readDateTime;
     ASSERT_TRUE(siodb::protobuf::readRawDateTime(codedInput, readDateTime));
     ASSERT_EQ(readDateTime, dateTime[0]);
+
     ASSERT_TRUE(siodb::protobuf::readRawDateTime(codedInput, readDateTime));
     ASSERT_EQ(readDateTime, dateTime[1]);
 
+    rowLength = 0;
     ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-    ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+    ASSERT_GT(rowLength, 0U);
+
+    ASSERT_TRUE(codedInput.Read(&trid));
     ASSERT_EQ(trid, 2U);
+
     ASSERT_TRUE(siodb::protobuf::readRawDateTime(codedInput, readDateTime));
     ASSERT_EQ(readDateTime, dateTime[2]);
+
     ASSERT_TRUE(siodb::protobuf::readRawDateTime(codedInput, readDateTime));
     ASSERT_EQ(readDateTime, dateTime[3]);
 
@@ -895,11 +915,11 @@ TEST(DML_Insert, InsertNullValue)
         EXPECT_EQ(response.column_description(1).name(), "I");
         EXPECT_EQ(response.column_description(2).name(), "T");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0);
+        ASSERT_GT(rowLength, 0);
         stdext::bitmask nullBitmask(response.column_description_size(), false);
         ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
 
@@ -907,11 +927,12 @@ TEST(DML_Insert, InsertNullValue)
         ASSERT_FALSE(nullBitmask.get(1));
         ASSERT_TRUE(nullBitmask.get(2));
 
-        std::uint64_t trid;
-        ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+        std::uint64_t trid = 0;
+        ASSERT_TRUE(codedInput.Read(&trid));
         ASSERT_EQ(trid, 1U);
+
         std::uint8_t int8Value = 0;
-        ASSERT_TRUE(codedInput.ReadRaw(&int8Value, 1));
+        ASSERT_TRUE(codedInput.Read(&int8Value));
         ASSERT_EQ(int8Value, std::uint8_t(1));
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -989,21 +1010,22 @@ TEST(DML_Insert, InsertDefaultNullValue)
         EXPECT_EQ(response.column_description(0).name(), "U1");
         EXPECT_EQ(response.column_description(1).name(), "U2");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (std::uint32_t i = 0; i < 2; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0);
+            ASSERT_GT(rowLength, 0);
             stdext::bitmask nullBitmask(response.column_description_size(), false);
             ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
 
             ASSERT_FALSE(nullBitmask.get(0));
             ASSERT_TRUE(nullBitmask.get(1));
 
-            std::uint32_t u32 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(&u32));
-            ASSERT_EQ(u32, i);
+            std::uint32_t uint32Value = 0;
+            ASSERT_TRUE(codedInput.ReadVarint32(&uint32Value));
+            ASSERT_EQ(uint32Value, i);
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));

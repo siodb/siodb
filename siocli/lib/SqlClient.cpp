@@ -32,9 +32,6 @@
 #include <iomanip>
 #include <sstream>
 
-// Boost headers
-#include <boost/endian/conversion.hpp>
-
 // Protobuf headers
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
@@ -145,7 +142,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         if (columnCount > 0) {
             // Create CodedInputStream only if row data is available to read
             // otherwise codedInput constructor will be stucked on waiting on buffering data
-            google::protobuf::io::CodedInputStream codedInput(&input);
+            protobuf::ExtendedCodedInputStream codedInput(&input);
 
             struct ColumnPrintInfo {
                 ColumnDataType type;
@@ -224,8 +221,8 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
 
                     if (nullAllowed && nullBitmask.get(i))
                         detail::printNull(columnPrintInfo[i].width, os);
-                    else if (!detail::receiveAndPrintColumnData(codedInput, columnPrintInfo[i].type,
-                                     columnPrintInfo[i].width, os)) {
+                    else if (!detail::receiveAndPrintColumnValue(codedInput,
+                                     columnPrintInfo[i].type, columnPrintInfo[i].width, os)) {
                         std::ostringstream err;
                         err << "Can't read from server: " << std::strerror(input.GetErrno());
                         throw std::system_error(
@@ -366,7 +363,7 @@ std::size_t getColumnDataWidth(ColumnDataType type, std::size_t nameLength)
                    : nameLength;
 }
 
-bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is, ColumnDataType type,
+bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDataType type,
         std::size_t width, std::ostream& os)
 {
     io::StreamFormatGuard formatGuard(os);
@@ -377,114 +374,112 @@ bool receiveAndPrintColumnData(google::protobuf::io::CodedInputStream& is, Colum
         }
 
         case COLUMN_DATA_TYPE_BOOL: {
-            std::uint8_t data = 0;
-            if (is.ReadRaw(&data, sizeof(data))) {
+            bool value = false;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << std::boolalpha << (data != 0);
+                os << std::boolalpha << value;
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_INT8: {
-            std::int8_t data = 0;
-            if (is.ReadRaw(&data, sizeof(data))) {
+            std::int8_t value = 0;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << static_cast<int>(data);
+                os << static_cast<int>(value);
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_UINT8: {
-            std::uint8_t data = 0;
-            if (is.ReadRaw(&data, sizeof(data))) {
+            std::uint8_t value = 0;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << static_cast<int>(data);
+                os << static_cast<int>(value);
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_INT16: {
-            std::int16_t data = 0;
-            if (is.ReadRaw(&data, sizeof(data))) {
-                boost::endian::little_to_native_inplace(data);
+            std::int16_t value = 0;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << data;
+                os << value;
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_UINT16: {
-            std::uint16_t data = 0;
-            if (is.ReadRaw(&data, sizeof(data))) {
-                boost::endian::little_to_native_inplace(data);
+            std::uint16_t value = 0;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << data;
+                os << value;
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_INT32: {
-            std::int32_t data = 0;
-            if (is.ReadVarint32(reinterpret_cast<std::uint32_t*>(&data))) {
+            std::int32_t value = 0;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << data;
+                os << value;
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_UINT32: {
-            std::uint32_t data = 0;
-            if (is.ReadVarint32(&data)) {
+            std::uint32_t value = 0;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << data;
+                os << value;
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_INT64: {
-            std::int64_t data = 0;
-            if (is.ReadVarint64(reinterpret_cast<std::uint64_t*>(&data))) {
+            std::int64_t value = 0;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << data;
+                os << value;
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_UINT64: {
-            std::uint64_t data = 0;
-            if (is.ReadVarint64(&data)) {
+            std::uint64_t value = 0;
+            if (is.Read(&value)) {
                 os.width(width);
-                os << data;
+                os << value;
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_FLOAT: {
-            float data = 0.0f;
-            if (is.ReadLittleEndian32(reinterpret_cast<std::uint32_t*>(&data))) {
+            float value = 0.0f;
+            if (is.Read(&value)) {
                 os.width(width);
                 os.precision(width);
-                os << data;
+                os << value;
                 return true;
             }
             return false;
         }
 
         case COLUMN_DATA_TYPE_DOUBLE: {
-            double data = 0.0;
-            if (is.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&data))) {
+            double value = 0.0;
+            if (is.Read(&value)) {
                 os.width(width);
                 os.precision(width);
-                os << data;
+                os << value;
                 return true;
             }
             return false;

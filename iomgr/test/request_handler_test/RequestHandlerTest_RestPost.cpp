@@ -95,8 +95,19 @@ TEST(RestPost, PostSingleRow)
 
     // Valdiate JSON
     ASSERT_FALSE(jsonPayload.empty());
-    DBG_LOG_DEBUG("Response payload: " << jsonPayload);
+    LOG_DEBUG << "Response payload: " << jsonPayload;
     const auto j = nlohmann::json::parse(jsonPayload);
+    ASSERT_TRUE(j.is_object());
+    ASSERT_EQ(static_cast<int>(j["status"]), 200);
+    ASSERT_EQ(static_cast<int>(j["affectedRowCount"]), 1);
+
+    // Check TRIDs
+    const auto& trids = j["trids"];
+    ASSERT_TRUE(trids.is_array());
+    ASSERT_EQ(trids.size(), 1U);
+    const auto& trid = trids.at(0);
+    ASSERT_TRUE(trid.is_number_unsigned());
+    ASSERT_EQ(static_cast<unsigned>(trid), 1U);
 }
 
 TEST(RestPost, PostMultipleRows)
@@ -176,8 +187,21 @@ TEST(RestPost, PostMultipleRows)
 
     // Valdiate JSON
     ASSERT_FALSE(jsonPayload.empty());
-    DBG_LOG_DEBUG("Response payload: " << jsonPayload);
+    LOG_DEBUG << "Response payload: " << jsonPayload;
     const auto j = nlohmann::json::parse(jsonPayload);
+    ASSERT_TRUE(j.is_object());
+    ASSERT_EQ(static_cast<int>(j["status"]), 200);
+    ASSERT_EQ(static_cast<int>(j["affectedRowCount"]), 3);
+
+    // Check TRIDs
+    const auto& trids = j["trids"];
+    ASSERT_TRUE(trids.is_array());
+    ASSERT_EQ(trids.size(), 3U);
+    for (std::size_t i = 0; i < 3; ++i) {
+        const auto& trid = trids.at(i);
+        ASSERT_TRUE(trid.is_number_unsigned());
+        ASSERT_EQ(static_cast<unsigned>(trid), i + 1);
+    }
 }
 
 TEST(RestPost, PostWithIncorrectData)
@@ -243,9 +267,9 @@ TEST(RestPost, PostWithIncorrectData)
     // Validate response message
     EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
     EXPECT_TRUE(response.has_affected_row_count());
-    EXPECT_EQ(response.affected_row_count(), 1U);
+    EXPECT_EQ(response.affected_row_count(), 0U);
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
-    ASSERT_EQ(response.message_size(), 0);
+    ASSERT_GT(response.message_size(), 0);
 }

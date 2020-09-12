@@ -414,69 +414,52 @@ std::size_t RequestHandler::getVariantSize(const Variant& value)
 }
 
 void RequestHandler::writeVariant(
-        const Variant& value, google::protobuf::io::CodedOutputStream& codedOutput)
+        const Variant& value, protobuf::ExtendedCodedOutputStream& codedOutput)
 {
     switch (value.getValueType()) {
         case VariantType::kNull: break;
         case VariantType::kBool: {
-            const std::uint8_t val = value.getBool() ? 1 : 0;
-            codedOutput.WriteRaw(&val, sizeof(val));
+            codedOutput.Write(value.getBool());
             break;
         }
         case VariantType::kInt8: {
-            const auto val = value.getInt8();
-            codedOutput.WriteRaw(&val, sizeof(val));
+            codedOutput.Write(value.getInt8());
             break;
         }
         case VariantType::kUInt8: {
-            const auto val = value.getUInt8();
-            codedOutput.WriteRaw(&val, sizeof(val));
+            codedOutput.Write(value.getUInt8());
             break;
         }
         case VariantType::kInt16: {
-            const auto val = boost::endian::native_to_little(value.getInt16());
-            codedOutput.WriteRaw(&val, sizeof(val));
+            codedOutput.Write(value.getInt16());
             break;
         }
         case VariantType::kUInt16: {
-            const auto val = boost::endian::native_to_little(value.getUInt16());
-            codedOutput.WriteRaw(&val, sizeof(val));
+            codedOutput.Write(value.getUInt16());
             break;
         }
         case VariantType::kInt32: {
-            codedOutput.WriteVarint32(value.getInt32());
+            codedOutput.Write(value.getInt32());
             break;
         }
         case VariantType::kUInt32: {
-            codedOutput.WriteVarint32(value.getUInt32());
+            codedOutput.Write(value.getUInt32());
             break;
         }
         case VariantType::kInt64: {
-            codedOutput.WriteVarint64(value.getInt64());
+            codedOutput.Write(value.getInt64());
             break;
         }
         case VariantType::kUInt64: {
-            codedOutput.WriteVarint64(value.getUInt64());
+            codedOutput.Write(value.getUInt64());
             break;
         }
         case VariantType::kFloat: {
-            // Make GCC strict aliasing rules happy
-            union {
-                float m_floatValue;
-                std::uint32_t m_uint32Value;
-            } v;
-            v.m_floatValue = value.getFloat();
-            codedOutput.WriteLittleEndian32(v.m_uint32Value);
+            codedOutput.Write(value.getFloat());
             break;
         }
         case VariantType::kDouble: {
-            // Make GCC strict aliasing rules happy
-            union {
-                double m_doubleValue;
-                std::uint64_t m_uint64Value;
-            } v;
-            v.m_doubleValue = value.getDouble();
-            codedOutput.WriteLittleEndian64(v.m_uint64Value);
+            codedOutput.Write(value.getDouble());
             break;
         }
         case VariantType::kDateTime: {
@@ -484,18 +467,15 @@ void RequestHandler::writeVariant(
             break;
         }
         case VariantType::kString: {
-            codedOutput.WriteVarint32(value.getString().size());
-            codedOutput.WriteRaw(value.getString().data(), value.getString().size());
+            codedOutput.Write(value.getString());
             break;
         }
         case VariantType::kBinary: {
-            codedOutput.WriteVarint32(value.getBinary().size());
-            codedOutput.WriteRaw(value.getBinary().data(), value.getBinary().size());
+            codedOutput.Write(value.getBinary());
             break;
         }
         case VariantType::kClob: {
-            auto clob = value.getClob().clone();
-            if (clob == nullptr) throw std::runtime_error("Could not clone CLOB stream");
+            std::unique_ptr<ClobStream> clob(value.getClob().clone());
             auto size = clob->getRemainingSize();
             stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             codedOutput.WriteVarint32(size);
@@ -508,8 +488,7 @@ void RequestHandler::writeVariant(
             break;
         }
         case VariantType::kBlob: {
-            auto blob = value.getBlob().clone();
-            if (blob == nullptr) throw std::runtime_error("Could not clone BLOB stream");
+            std::unique_ptr<BlobStream> blob(value.getBlob().clone());
             auto size = blob->getRemainingSize();
             stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             codedOutput.WriteVarint32(size);
@@ -593,8 +572,7 @@ void RequestHandler::writeVariantAsJson(const Variant& value, siodb::io::JsonWri
             break;
         }
         case VariantType::kClob: {
-            auto clob = value.getClob().clone();
-            if (clob == nullptr) throw std::runtime_error("Could not clone CLOB stream");
+            std::unique_ptr<ClobStream> clob(value.getClob().clone());
             auto size = clob->getRemainingSize();
             stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             jsonWriter.writeDoubleQuote();
@@ -611,8 +589,7 @@ void RequestHandler::writeVariantAsJson(const Variant& value, siodb::io::JsonWri
             break;
         }
         case VariantType::kBlob: {
-            auto blob = value.getBlob().clone();
-            if (blob == nullptr) throw std::runtime_error("Could not clone BLOB stream");
+            std::unique_ptr<BlobStream> blob(value.getBlob().clone());
             auto size = blob->getRemainingSize();
             stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
             stdext::buffer<char> hexBuffer(buffer.size() * 2);
@@ -821,7 +798,7 @@ void RequestHandler::writeModificationJsonProlog(
     jsonWriter.writeFieldName(kRestStatusFieldName, ::ct_strlen(kRestStatusFieldName));
     jsonWriter.writeValue(kRestStatusOk);
     // Write affected row count
-    constexpr const char* kAffectedRowCountFieldName = "affected_row_count";
+    constexpr const char* kAffectedRowCountFieldName = "affectedRowCount";
     jsonWriter.writeComma();
     jsonWriter.writeFieldName(kAffectedRowCountFieldName, ::ct_strlen(kAffectedRowCountFieldName));
     jsonWriter.writeValue(affectedRowCount);

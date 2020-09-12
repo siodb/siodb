@@ -81,13 +81,11 @@ TEST(Post, PostSingleRow)
         //DBG_LOG_DEBUG("Column #" << i);
         const auto& e = row.at(i);
         ASSERT_EQ(e.first, i + 1);
-        ASSERT_TRUE(e.second->isConstant());
-        const auto v = e.second->evaluate(context);
         const auto& expected = expectedValues[i];
         if (expected.isNull()) {
-            ASSERT_TRUE(v.isNull());
+            ASSERT_TRUE(e.second.isNull());
         } else {
-            ASSERT_TRUE(v.compatibleEqual(expected));
+            ASSERT_TRUE(e.second.compatibleEqual(expected));
         }
     }
 }
@@ -181,12 +179,10 @@ TEST(Post, PostMultipleRows)
             const auto& e = row.at(i);
             const auto& expected = expectedRow[i];
             ASSERT_EQ(e.first, expected.first);
-            ASSERT_TRUE(e.second->isConstant());
-            const auto v = e.second->evaluate(context);
             if (expected.second.isNull()) {
-                ASSERT_TRUE(v.isNull());
+                ASSERT_TRUE(e.second.isNull());
             } else {
-                ASSERT_TRUE(v.compatibleEqual(expected.second));
+                ASSERT_TRUE(e.second.compatibleEqual(expected.second));
             }
         }
     }

@@ -28,7 +28,7 @@ LOGFILE_DIR=$(cat /etc/siodb/instances/siodb/config  | egrep '^log.file.destinat
     | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
 SCRIPT=$(realpath $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
-
+startup_timeout=15
 
 function _Prepare {
   _log "INFO" "Cleanup traces of previous default instance"
@@ -63,7 +63,7 @@ function _Prepare {
 function _StartSiodb {
   _log "INFO" "Starting default Siodb instance"
   ${SIODB_BIN}/siodb --instance siodb --daemon
-  sleep 20
+  sleep ${startup_timeout}
 }
 
 function _StopSiodb {
@@ -128,7 +128,7 @@ function _RunRestRequest3 {
 
 function _RunRestRequest4 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -p ''"$4"'' -u $5 -T $6
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -P ''"$4"'' -u $5 -T $6
 }
 
 function _RunRestRequest5 {
@@ -249,11 +249,22 @@ else
   _RunRestRequest3 get row db2.t2_1 1 user1 ${user1_token}
   _CheckLogFileError
 
-  #set +e
-  # Should fail
-  #_RunRestRequest3 get row db2.t2_1 1 user1 xyz
-  #set -e
+  _RunRestRequest4 post row db2.t2_1 "[{\"a\":1, \"b\": \"text 1\"}]" user1 ${user1_token}
+  _CheckLogFileError
 
+  _RunRestRequest3 get row db2.t2_1 1 user1 ${user1_token}
+  _CheckLogFileError
+
+  _RunRestRequest2 get rows db2.t2_1 user1 ${user1_token}
+  _CheckLogFileError
+
+  _RunRestRequest4 post row db2.t2_1 \
+    "[{\"a\":2, \"b\": \"text 2\"}, {\"a\":3, \"b\": \"text 3\"}]" \
+    user1 ${user1_token}
+  _CheckLogFileError
+
+  _RunRestRequest2 get rows db2.t2_1 user1 ${user1_token}
+  _CheckLogFileError
 fi
 
 _StopSiodb

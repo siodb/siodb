@@ -11,6 +11,7 @@ TARGET_COMMON_LIB:=siodb_common_protobuf
 
 CXX_SRC:= \
 	ExtendedCodedInputStream.cpp  \
+	ExtendedCodedOutputStream.cpp  \
 	ProtobufMessageIO.cpp  \
 	ProtobufUtils.cpp  \
 	RawDateTimeIO.cpp  \
@@ -19,6 +20,7 @@ CXX_SRC:= \
 
 CXX_HDR:= \
 	ExtendedCodedInputStream.h  \
+	ExtendedCodedOutputStream.h  \
 	ProtobufMessageIO.h  \
 	ProtobufUtils.h  \
 	ProtocolError.h  \

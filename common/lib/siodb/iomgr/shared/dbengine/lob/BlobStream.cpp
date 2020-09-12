@@ -16,7 +16,7 @@ constexpr const char* kBlobReadError = "BLOB read error";
 
 BlobStream* BlobStream::clone() const
 {
-    return nullptr;
+    throw std::logic_error("Can't clone BLOB stream");
 }
 
 BinaryValue BlobStream::readAsBinary(std::uint32_t length)

@@ -7,11 +7,15 @@
 // Project headers
 #include "IOManagerRestConnectionHandler.h"
 
+// Common project headers
+#include <siodb/common/log/Log.h>
+
 namespace siodb::iomgr {
 
 IOManagerConnectionHandler* IOManagerRestConnectionHandlerFactory::createConnectionHandler(
         IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd)
 {
+    DBG_LOG_DEBUG("Creating REST connection handler object...");
     return new IOManagerRestConnectionHandler(requestDispatcher, std::move(clientFd));
 }
 

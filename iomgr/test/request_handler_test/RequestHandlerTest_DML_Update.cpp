@@ -8,6 +8,7 @@
 #include "dbengine/parser/SqlParser.h"
 
 // Common project headers
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 
@@ -101,21 +102,21 @@ TEST(DML_Update, UpdateAllValues)
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_INT16);
         EXPECT_EQ(response.column_description(1).name(), "I16");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (std::size_t i = 0; i < 6; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, i + 1);
 
-            std::int16_t int16 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&int16, 2));
-            boost::endian::little_to_native_inplace(int16);
-            EXPECT_EQ(int16, static_cast<std::int16_t>(i + 100));
+            std::int16_t int16Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int16Value));
+            EXPECT_EQ(int16Value, static_cast<std::int16_t>(i + 100));
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -207,38 +208,39 @@ TEST(DML_Update, UpdateWhereByTRID)
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_UINT8);
         EXPECT_EQ(response.column_description(1).name(), "U8");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
-
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0U);
+        ASSERT_GT(rowLength, 0U);
 
         std::uint64_t trid = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+        ASSERT_TRUE(codedInput.Read(&trid));
         EXPECT_EQ(trid, 1U);
 
-        std::uint8_t uint8 = 0;
-        ASSERT_TRUE(codedInput.ReadRaw(&uint8, 1));
-        EXPECT_EQ(uint8, 10U);
+        std::uint8_t uint8Value = 0;
+        ASSERT_TRUE(codedInput.Read(&uint8Value));
+        EXPECT_EQ(uint8Value, 10U);
 
+        rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0U);
+        ASSERT_GT(rowLength, 0U);
 
-        ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+        ASSERT_TRUE(codedInput.Read(&trid));
         EXPECT_EQ(trid, 2U);
 
-        ASSERT_TRUE(codedInput.ReadRaw(&uint8, 1));
-        EXPECT_EQ(uint8, 2U);
+        ASSERT_TRUE(codedInput.Read(&uint8Value));
+        EXPECT_EQ(uint8Value, 2U);
 
+        rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0U);
+        ASSERT_GT(rowLength, 0U);
 
-        ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+        ASSERT_TRUE(codedInput.Read(&trid));
         EXPECT_EQ(trid, 3U);
 
-        ASSERT_TRUE(codedInput.ReadRaw(&uint8, 1));
-        EXPECT_EQ(uint8, 30u);
+        ASSERT_TRUE(codedInput.Read(&uint8Value));
+        EXPECT_EQ(uint8Value, 30U);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);
@@ -341,20 +343,21 @@ TEST(DML_Update, UpdateOneColumnFromThree)
         ASSERT_EQ(response.column_description(3).type(), siodb::COLUMN_DATA_TYPE_DOUBLE);
         EXPECT_EQ(response.column_description(3).name(), "D");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (std::size_t i = 0; i < 3; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, i + 1);
 
-            float flt = 0;
-            ASSERT_TRUE(codedInput.ReadLittleEndian32(reinterpret_cast<std::uint32_t*>(&flt)));
-            EXPECT_FLOAT_EQ(flt, i * 0.1f);
+            float floatValue = 0;
+            ASSERT_TRUE(codedInput.Read(&floatValue));
+            EXPECT_FLOAT_EQ(floatValue, i * 0.1f);
 
             siodb::RawDateTime date;
             ASSERT_TRUE(siodb::protobuf::readRawDateTime(codedInput, date));
@@ -370,9 +373,9 @@ TEST(DML_Update, UpdateOneColumnFromThree)
                 EXPECT_FALSE(date.m_datePart.m_hasTimePart);
             }
 
-            double dbl = 0;
-            ASSERT_TRUE(codedInput.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&dbl)));
-            EXPECT_NEAR(dbl, i * 0.01, 0.0001);
+            double doubleValue = 0;
+            ASSERT_TRUE(codedInput.Read(&doubleValue));
+            EXPECT_NEAR(doubleValue, i * 0.01, 0.0001);
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -475,7 +478,7 @@ TEST(DML_Update, UpdateSeveralColumns)
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_UINT32);
         EXPECT_EQ(response.column_description(2).name(), "U32");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
 
@@ -483,20 +486,21 @@ TEST(DML_Update, UpdateSeveralColumns)
         std::uint8_t expectedU8[] = {2, 4, 6, 4, 5};
         std::uint32_t expectedU32[] = {15, 14, 13, 2, 1};
         for (std::size_t i = 0; i < 5; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
-            std::uint64_t trid;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            std::uint64_t trid = 0;
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, expectedTrid[i]);
 
-            std::uint8_t uint8 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&uint8, 1));
-            EXPECT_EQ(uint8, expectedU8[i]);
+            std::uint8_t uint8Value = 0;
+            ASSERT_TRUE(codedInput.Read(&uint8Value));
+            EXPECT_EQ(uint8Value, expectedU8[i]);
 
-            std::uint32_t uint32 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(&uint32));
-            EXPECT_EQ(uint32, expectedU32[i]);
+            std::uint32_t uint32Value = 0;
+            ASSERT_TRUE(codedInput.Read(&uint32Value));
+            EXPECT_EQ(uint32Value, expectedU32[i]);
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -588,22 +592,20 @@ TEST(DML_Update, UpdateConcatString)
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_TEXT);
         EXPECT_EQ(response.column_description(0).name(), "T");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (std::size_t i = 0; i < 3; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::string expectedText(i, 'A');
             expectedText += 'B';
 
-            std::uint32_t textLength = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(&textLength));
-            ASSERT_EQ(textLength, i + 1U);
-            std::string text(i + 1U, '\0');
-            ASSERT_TRUE(codedInput.ReadRaw(text.data(), textLength));
-            EXPECT_TRUE(text == expectedText);
+            std::string text;
+            ASSERT_TRUE(codedInput.Read(&text));
+            EXPECT_EQ(text, expectedText);
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));

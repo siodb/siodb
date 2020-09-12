@@ -239,84 +239,84 @@ bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType co
     switch (columnDataType) {
         case ColumnDataType::COLUMN_DATA_TYPE_BOOL: {
             bool value = false;
-            if (SIODB_UNLIKELY(!codedInput.ReadBool(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = value ? "true" : "false";
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_INT8: {
             std::int8_t value = 0;
-            if (SIODB_UNLIKELY(!codedInput.ReadInt(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(static_cast<int>(value));
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_UINT8: {
             std::uint8_t value = 0;
-            if (SIODB_UNLIKELY(!codedInput.ReadInt(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(static_cast<unsigned>(value));
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_INT16: {
             std::int16_t value = 0;
-            if (SIODB_UNLIKELY(!codedInput.ReadInt(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_UINT16: {
             std::uint16_t value = 0;
-            if (SIODB_UNLIKELY(!codedInput.ReadInt(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_INT32: {
             std::int32_t value = 0;
-            if (SIODB_UNLIKELY(!codedInput.ReadInt(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_UINT32: {
             std::uint8_t value = 0;
-            if (SIODB_UNLIKELY(!codedInput.ReadInt(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_INT64: {
             std::int64_t value = 0;
-            if (SIODB_UNLIKELY(!codedInput.ReadInt(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_UINT64: {
             std::uint64_t value = 0;
-            if (SIODB_UNLIKELY(!codedInput.ReadInt(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_FLOAT: {
             float value = 0.0f;
-            if (SIODB_UNLIKELY(!codedInput.ReadFloat(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_DOUBLE: {
             double value = 0.0;
-            if (SIODB_UNLIKELY(!codedInput.ReadDouble(&value))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_TEXT: {
             std::string s;
-            if (SIODB_UNLIKELY(!codedInput.ReadString(&s))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&s))) return false;
             std::ostringstream ss;
             ss << '\'';
             for (const auto ch : s) {
@@ -332,7 +332,7 @@ bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType co
 
         case ColumnDataType::COLUMN_DATA_TYPE_BINARY: {
             siodb::BinaryValue bv;
-            if (SIODB_UNLIKELY(!codedInput.ReadBinary(&bv))) return false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&bv))) return false;
             std::ostringstream ss;
             ss << "X'" << std::setfill('0') << std::hex;
             for (std::size_t i = 0; i < bv.size(); ++i) {
@@ -417,9 +417,8 @@ std::vector<DatabaseInfo> dumpDatabasesList(
         if (rowLength == 0) break;
 
         DatabaseInfo database;
-        if (SIODB_LIKELY(codedInput.ReadString(&database.m_name)
-                         && codedInput.ReadString(&database.m_cipherId)
-                         && codedInput.ReadBinary(&database.m_cipherKey))) {
+        if (SIODB_LIKELY(codedInput.Read(&database.m_name) && codedInput.Read(&database.m_cipherId)
+                         && codedInput.Read(&database.m_cipherKey))) {
             if (database.m_name != kSystemDatabaseName) {
                 os << formCreateDatabaseQuery(database) << ';' << '\n';
                 databases.push_back(std::move(database));
@@ -453,9 +452,8 @@ void dumpSpecificDatabase(io::InputOutputStream& connection, std::ostream& os,
 
     // nulls are dissalowed, read values
     DatabaseInfo database;
-    if (SIODB_LIKELY(codedInput.ReadString(&database.m_name)
-                     && codedInput.ReadString(&database.m_cipherId)
-                     && codedInput.ReadBinary(&database.m_cipherKey))) {
+    if (SIODB_LIKELY(codedInput.Read(&database.m_name) && codedInput.Read(&database.m_cipherId)
+                     && codedInput.Read(&database.m_cipherKey))) {
         if (database.m_name != kSystemDatabaseName) {
             os << formCreateDatabaseQuery(database) << ';' << '\n';
         }
@@ -494,7 +492,7 @@ std::vector<ColumnConstraint> getColumnConstraintsList(io::InputOutputStream& co
         if (rowLength == 0) break;
 
         std::uint64_t constaintId = 0;
-        if (SIODB_LIKELY(codedInput.ReadInt(&constaintId)))
+        if (SIODB_LIKELY(codedInput.Read(&constaintId)))
             constaintIds.push_back(constaintId);
         else
             throw std::runtime_error("Read constraint ID failed");
@@ -522,8 +520,8 @@ std::vector<ColumnConstraint> getColumnConstraintsList(io::InputOutputStream& co
         if (SIODB_UNLIKELY(rowLength == 0)) break;
 
         ColumnConstraint constraint;
-        if (SIODB_LIKELY(codedInput.ReadString(&constraint.m_name)
-                         && codedInput.ReadInt(&constraint.m_constraintDefinitionId)))
+        if (SIODB_LIKELY(codedInput.Read(&constraint.m_name)
+                         && codedInput.Read(&constraint.m_constraintDefinitionId)))
             constraints.push_back(std::move(constraint));
         else
             throw std::runtime_error("getColumnConstraintsList: Read constraint record failed");
@@ -553,14 +551,14 @@ std::vector<ColumnConstraint> getColumnConstraintsList(io::InputOutputStream& co
             nullBitmask.resize(columnCount, false);
             if (SIODB_LIKELY(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()))) {
                 std::uint32_t n = 0;
-                if (SIODB_LIKELY(codedInput.ReadInt(&n)))
+                if (SIODB_LIKELY(codedInput.Read(&n)))
                     constraint.m_type = static_cast<ConstraintType>(n);
                 else {
                     throw std::runtime_error(
                             "getColumnConstraintsList: Read constraint type failed");
                 }
                 if (!nullBitmask.get(1)) {
-                    if (SIODB_UNLIKELY(!codedInput.ReadBinary(&constraint.m_expression))) {
+                    if (SIODB_UNLIKELY(!codedInput.Read(&constraint.m_expression))) {
                         throw std::runtime_error(
                                 "getColumnConstraintsList: Read constraint expression failed");
                     }
@@ -601,8 +599,8 @@ std::vector<ColumnInfo> getColumnList(io::InputOutputStream& connection,
 
         // nulls are dissalowed, read values
         ColumnSetInfo columnSetInfo;
-        if (SIODB_LIKELY(codedInput.ReadInt(&columnSetInfo.m_trid)
-                         && codedInput.ReadInt(&columnSetInfo.m_columnDefinitionId)))
+        if (SIODB_LIKELY(codedInput.Read(&columnSetInfo.m_trid)
+                         && codedInput.Read(&columnSetInfo.m_columnDefinitionId)))
             columnSetInfos.push_back(std::move(columnSetInfo));
         else
             throw std::runtime_error("getColumnList: Read column set record failed");
@@ -631,8 +629,8 @@ std::vector<ColumnInfo> getColumnList(io::InputOutputStream& connection,
 
         // nulls are dissalowed, read values
         ColumnDefinitionInfo columnDefInfo;
-        if (SIODB_LIKELY(codedInput.ReadInt(&columnDefInfo.m_trid)
-                         && codedInput.ReadInt(&columnDefInfo.m_columnId))) {
+        if (SIODB_LIKELY(codedInput.Read(&columnDefInfo.m_trid)
+                         && codedInput.Read(&columnDefInfo.m_columnId))) {
             columnIdToColumnDefIdMap[columnDefInfo.m_columnId] = columnDefInfo.m_trid;
             columnDefInfos.push_back(std::move(columnDefInfo));
         } else
@@ -660,8 +658,8 @@ std::vector<ColumnInfo> getColumnList(io::InputOutputStream& connection,
         // nulls are dissalowed, read values
         ColumnInfo columnInfo;
         std::uint32_t n = 0;
-        if (SIODB_LIKELY(codedInput.ReadInt(&columnInfo.m_trid) && codedInput.ReadInt(&n)
-                         && codedInput.ReadString(&columnInfo.m_name))) {
+        if (SIODB_LIKELY(codedInput.Read(&columnInfo.m_trid) && codedInput.Read(&n)
+                         && codedInput.Read(&columnInfo.m_name))) {
             columnInfo.m_dataType = static_cast<ColumnDataType>(n);
             if (columnInfo.m_name != kMasterColumnName) {
                 columnInfo.m_columnDefinitionId = columnIdToColumnDefIdMap[columnInfo.m_trid];
@@ -708,9 +706,8 @@ std::vector<TableInfo> dumpTablesList(io::InputOutputStream& connection, std::os
         if (SIODB_UNLIKELY(rowLength == 0)) break;
 
         TableInfo tableInfo;
-        if (SIODB_LIKELY(codedInput.ReadInt(&tableInfo.m_trid)
-                         && codedInput.ReadString(&tableInfo.m_name)
-                         && codedInput.ReadInt(&tableInfo.m_currentColumnSetId))) {
+        if (SIODB_LIKELY(codedInput.Read(&tableInfo.m_trid) && codedInput.Read(&tableInfo.m_name)
+                         && codedInput.Read(&tableInfo.m_currentColumnSetId))) {
             tableInfos.push_back(std::move(tableInfo));
         } else
             throw std::runtime_error("dumpTablesList: Read table record failed");
@@ -765,7 +762,7 @@ void dumpTableData(io::InputOutputStream& connection, std::ostream& os,
         }
 
         std::uint64_t trid = 0;
-        if (SIODB_UNLIKELY(codedInput.ReadInt(&trid)))
+        if (SIODB_UNLIKELY(codedInput.Read(&trid)))
             throw std::runtime_error("dumpTableData: Read TRID failed");
 
         if (expectedTrid != trid) {

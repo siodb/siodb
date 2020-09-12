@@ -28,7 +28,7 @@ LOGFILE_DIR=$(cat /etc/siodb/instances/siodb/config  | egrep '^log.file.destinat
     | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
 SCRIPT=$(realpath $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
-
+startup_timeout=15
 
 function _Prepare {
   _log "INFO" "Cleanup traces of previous default instance"
@@ -63,7 +63,7 @@ function _Prepare {
 function _StartSiodb {
   _log "INFO" "Starting default Siodb instance"
   ${SIODB_BIN}/siodb --instance siodb --daemon
-  sleep 20
+  sleep ${startup_timeout}
 }
 
 function _StopSiodb {

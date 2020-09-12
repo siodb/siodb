@@ -6,7 +6,6 @@
 
 // Project headers
 #include "JsonParserError.h"
-#include "expr/ConstantExpression.h"
 
 // Common project headers
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
@@ -21,7 +20,7 @@ namespace siodb::iomgr::dbengine::parser {
 
 RowDataJsonSaxParser::RowDataJsonSaxParser(std::size_t rowCountLimit,
         std::unordered_map<unsigned, std::string>& columnNames,
-        std::vector<std::vector<std::pair<unsigned, requests::ConstExpressionPtr>>>& values)
+        std::vector<std::vector<std::pair<unsigned, Variant>>>& values)
     : m_rowCountLimit(validateRowCountLimit(rowCountLimit))
     , m_columnNames(columnNames)
     , m_values(values)
@@ -147,9 +146,8 @@ void RowDataJsonSaxParser::addValue(Variant&& value)
     const auto columnId = it->second;
     auto valueIt = std::find_if(m_row.begin(), m_row.end(),
             [columnId](const auto& e) noexcept { return e.first == columnId; });
-    auto expr = requests::ConstantExpression::create(std::move(value));
     if (valueIt == m_row.end())
-        m_row.emplace_back(columnId, std::move(expr));
+        m_row.emplace_back(columnId, std::move(value));
     else {
         std::ostringstream err;
         err << "Duplicate column '" << m_columnName << "' in the row #" << (m_values.size() + 1);

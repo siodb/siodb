@@ -96,6 +96,14 @@ std::ptrdiff_t ChunkedInputStream::skip(std::size_t size) noexcept
 
 int ChunkedInputStream::readChunkSize() noexcept
 {
+    if (SIODB_UNLIKELY(m_stopReadingAfterCurrentChunkFinished)) {
+        m_chunkSize = 0;
+        m_pos = 0;
+        m_hasChunkSize = true;
+        m_eof = true;
+        return 1;
+    }
+
     std::uint8_t buffer[kMaxSerializedInt64Size];
     int i = 0;
     for (; i < kMaxSerializedInt64Size; ++i) {

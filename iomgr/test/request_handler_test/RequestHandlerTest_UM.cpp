@@ -9,6 +9,7 @@
 #include "dbengine/parser/SqlParser.h"
 
 // Common project headers
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/utils/Debug.h>
 
@@ -207,13 +208,13 @@ void TestUser::checkExists(bool mustExist) const
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
 
-    google::protobuf::io::CodedInputStream codedInput(&inputStream);
+    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
     std::uint64_t rowLength = 0;
     if (mustExist) {
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0);
-        ASSERT_TRUE(rowLength < 1000);
+        ASSERT_GT(rowLength, 0U);
+        ASSERT_LT(rowLength, 1000U);
         siodb::BinaryValue rowData(rowLength);
         ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
     }
@@ -343,13 +344,13 @@ void TestUserAccessKey::checkExists(bool mustExist) const
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
 
-    google::protobuf::io::CodedInputStream codedInput(&inputStream);
+    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
     std::uint64_t rowLength = 0;
     if (mustExist) {
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength < 1000);
-        ASSERT_TRUE(rowLength > 0);
+        ASSERT_LT(rowLength, 1000U);
+        ASSERT_GT(rowLength, 0U);
         siodb::BinaryValue rowData(rowLength);
         ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
     }
@@ -528,13 +529,13 @@ void TestUserToken::checkExists(bool mustExist) const
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
 
-    google::protobuf::io::CodedInputStream codedInput(&inputStream);
+    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
     std::uint64_t rowLength = 0;
     if (mustExist) {
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength < 1000);
-        ASSERT_TRUE(rowLength > 0);
+        ASSERT_LT(rowLength, 1000);
+        ASSERT_GT(rowLength, 0);
         siodb::BinaryValue rowData(rowLength);
         ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
     }

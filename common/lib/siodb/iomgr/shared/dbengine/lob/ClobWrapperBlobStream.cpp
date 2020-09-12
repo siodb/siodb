@@ -17,7 +17,7 @@ ClobWrapperBlobStream::ClobWrapperBlobStream(ClobStream* clobStream, bool owner)
 
 ClobWrapperBlobStream* ClobWrapperBlobStream::clone() const
 {
-    return nullptr;
+    throw std::logic_error("Can't clone CLOB wrapper BLOB stream");
 }
 
 std::ptrdiff_t ClobWrapperBlobStream::read(void* buffer, std::size_t bufferSize)

@@ -19,7 +19,7 @@ constexpr const char* kClobReadError = "CLOB read error";
 
 ClobStream* ClobStream::clone() const
 {
-    return nullptr;
+    throw std::logic_error("Can't clone CLOB stream");
 }
 
 std::string ClobStream::readAsString(std::uint32_t length)
