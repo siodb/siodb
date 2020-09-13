@@ -59,10 +59,8 @@ enum class DBEngineRequestType {
     kRestGetAllRows,
     kRestGetSingleRow,
     kRestPostRows,
-#if 0
     kRestDeleteRow,
     kRestPatchRow,
-#endif
 };
 
 }  // namespace siodb::iomgr::dbengine::requests

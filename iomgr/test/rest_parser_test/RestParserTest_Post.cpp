@@ -5,7 +5,6 @@
 // Project headers
 #include "dbengine/parser/DBEngineRestRequest.h"
 #include "dbengine/parser/DBEngineRestRequestFactory.h"
-#include "dbengine/parser/EmptyExpressionEvaluationContext.h"
 
 // Common project headers
 #include <siodb/common/crt_ext/ct_string.h>
@@ -77,9 +76,7 @@ TEST(Post, PostSingleRow)
             dbengine::Variant(),
     };
 
-    req_ns::EmptyExpressionEvaluationContext context;
     for (std::size_t i = 0; i < expectedValues.size(); ++i) {
-        //DBG_LOG_DEBUG("Column #" << i);
         const auto& e = row.at(i);
         ASSERT_EQ(e.first, i + 1);
         const auto& expected = expectedValues[i];
@@ -170,7 +167,6 @@ TEST(Post, PostMultipleRows)
 
     ASSERT_EQ(r->m_values.size(), expectedValues.size());
 
-    req_ns::EmptyExpressionEvaluationContext context;
     for (std::size_t j = 0; j < expectedValues.size(); ++j) {
         const auto& row = r->m_values.at(j);
         const auto& expectedRow = expectedValues[j];

@@ -136,6 +136,16 @@ function _RunRestRequest5 {
   ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -f "$4" -u $5 -T $6
 }
 
+function _RunRestRequest6 {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' -u $6 -T $7
+}
+
+function _RunRestRequest7 {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 -T $7
+}
+
 function _TestExternalAbort {
   _log "INFO" "Testing an external abort $1"
   pkill -9 siodb
@@ -264,6 +274,22 @@ else
   _CheckLogFileError
 
   _RunRestRequest2 get rows db2.t2_1 user1 ${user1_token}
+  _CheckLogFileError
+
+  _RunRestRequest3 delete row db1.t1_2 1 user1 ${user1_token}
+  _CheckLogFileError
+
+  _RunRestRequest3 delete row db1.t1_2 1001 user1 ${user1_token}
+  _CheckLogFileError
+
+  _RunRestRequest6 patch row db2.t2_1 1 \
+    "[{\"a\":10, \"b\": \"text 2 updated\"}]" \
+    user1 ${user1_token}
+  _CheckLogFileError
+
+  _RunRestRequest6 patch row db2.t2_1 101 \
+    "[{\"a\":10, \"b\": \"text 2 updated\"}]" \
+    user1 ${user1_token}
   _CheckLogFileError
 fi
 

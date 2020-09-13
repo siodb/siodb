@@ -30,10 +30,9 @@ TEST(RestPost, PostSingleRow)
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     requestHandler->suppressSuperUserRights();
 
-    // Create database
-    const std::string kDatabaseName("REST_POST_ROW_DB1");
-    instance->createDatabase(std::string(kDatabaseName), "none", siodb::BinaryValue(), {},
-            dbengine::User::kSuperUserId);
+    // Find database
+    const std::string kDatabaseName("SYS");
+    const auto database = instance->findDatabaseChecked(kDatabaseName);
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -44,9 +43,8 @@ TEST(RestPost, PostSingleRow)
             {"E", siodb::COLUMN_DATA_TYPE_TEXT, false},
     };
     const std::string kTableName("REST_POST_ROW_T1");
-    instance->findDatabase(kDatabaseName)
-            ->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-                    dbengine::User::kSuperUserId, {});
+    database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
+            dbengine::User::kSuperUserId, {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -103,10 +101,10 @@ TEST(RestPost, PostSingleRow)
     ASSERT_EQ(static_cast<int>(j["affectedRowCount"]), 1);
 
     // Check TRIDs
-    const auto& trids = j["trids"];
-    ASSERT_TRUE(trids.is_array());
-    ASSERT_EQ(trids.size(), 1U);
-    const auto& trid = trids.at(0);
+    const auto& jTrids = j["trids"];
+    ASSERT_TRUE(jTrids.is_array());
+    ASSERT_EQ(jTrids.size(), 1U);
+    const auto& trid = jTrids.at(0);
     ASSERT_TRUE(trid.is_number_unsigned());
     ASSERT_EQ(static_cast<unsigned>(trid), 1U);
 }
@@ -119,10 +117,9 @@ TEST(RestPost, PostMultipleRows)
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     requestHandler->suppressSuperUserRights();
 
-    // Create database
-    const std::string kDatabaseName("REST_POST_ROW_DB2");
-    instance->createDatabase(std::string(kDatabaseName), "none", siodb::BinaryValue(), {},
-            dbengine::User::kSuperUserId);
+    // Find database
+    const std::string kDatabaseName("SYS");
+    const auto database = instance->findDatabaseChecked(kDatabaseName);
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -133,9 +130,8 @@ TEST(RestPost, PostMultipleRows)
             {"E", siodb::COLUMN_DATA_TYPE_TEXT, false},
     };
     const std::string kTableName("REST_POST_ROW_T2");
-    instance->findDatabase(kDatabaseName)
-            ->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-                    dbengine::User::kSuperUserId, {});
+    database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
+            dbengine::User::kSuperUserId, {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -196,13 +192,13 @@ TEST(RestPost, PostMultipleRows)
     ASSERT_EQ(static_cast<int>(j["affectedRowCount"]), 3);
 
     // Check TRIDs
-    const auto& trids = j["trids"];
-    ASSERT_TRUE(trids.is_array());
-    ASSERT_EQ(trids.size(), 3U);
+    const auto& jTrids = j["trids"];
+    ASSERT_TRUE(jTrids.is_array());
+    ASSERT_EQ(jTrids.size(), 3U);
     for (std::size_t i = 0; i < 3; ++i) {
-        const auto& trid = trids.at(i);
-        ASSERT_TRUE(trid.is_number_unsigned());
-        ASSERT_EQ(static_cast<unsigned>(trid), i + 1);
+        const auto& jTrid = jTrids.at(i);
+        ASSERT_TRUE(jTrid.is_number_unsigned());
+        ASSERT_EQ(static_cast<unsigned>(jTrid), i + 1);
     }
 }
 
@@ -214,10 +210,9 @@ TEST(RestPost, PostWithIncorrectData)
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     requestHandler->suppressSuperUserRights();
 
-    // Create database
-    const std::string kDatabaseName("REST_POST_ROW_DB3");
-    instance->createDatabase(std::string(kDatabaseName), "none", siodb::BinaryValue(), {},
-            dbengine::User::kSuperUserId);
+    // Find database
+    const std::string kDatabaseName("SYS");
+    const auto database = instance->findDatabaseChecked(kDatabaseName);
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -228,9 +223,8 @@ TEST(RestPost, PostWithIncorrectData)
             {"E", siodb::COLUMN_DATA_TYPE_TEXT, false},
     };
     const std::string kTableName("REST_POST_ROW_T3");
-    instance->findDatabase(kDatabaseName)
-            ->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-                    dbengine::User::kSuperUserId, {});
+    database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
+            dbengine::User::kSuperUserId, {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;

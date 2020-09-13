@@ -115,7 +115,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=RestPost.PostSingleRow"
+                "--gtest_filter=RestPatch.PatchExstingRowWithInvalidData"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

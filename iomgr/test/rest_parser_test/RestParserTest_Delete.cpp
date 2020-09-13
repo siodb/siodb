@@ -20,15 +20,18 @@ TEST(Delete, DeleteRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::DELETE);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
+    requestMsg.set_object_name("abcd.efgh");
     requestMsg.set_object_id(1);
 
-#if 0
     // Create request object
-    const auto request = parser_ns::DBEngineRestRequestFactory::createRestRequest(requestMsg);
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
 
     // Check request object
     ASSERT_EQ(request->m_requestType, req_ns::DBEngineRequestType::kRestDeleteRow);
     const auto r = dynamic_cast<const req_ns::DeleteRowRestRequest*>(request.get());
     ASSERT_NE(r, nullptr);
-#endif
+    ASSERT_EQ(r->m_database, "ABCD");
+    ASSERT_EQ(r->m_table, "EFGH");
+    ASSERT_EQ(r->m_trid, 1U);
 }

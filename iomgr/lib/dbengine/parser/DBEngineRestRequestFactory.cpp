@@ -63,19 +63,31 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createRestRequest(
             }
         }
 
+        case iomgr_protocol::DELETE: {
+            switch (msg.object_type()) {
+                case iomgr_protocol::ROW: return createDeleteRowRequest(msg);
+                default: {
+                    throw DBEngineRequestFactoryError(
+                            "REST request: Invalid or unsupported object type for the POST "
+                            "request");
+                }
+            }
+        }
+
         case iomgr_protocol::PATCH: {
             if (input == nullptr) {
                 throw std::runtime_error(
                         "DBEngineRestRequestFactory::createRestRequest(): Missing input stream, "
                         "it is required to create PATCH request");
             }
-            // TODO: implement PATCH requests
-            throw DBEngineRequestFactoryError("PATCH is not supported yet");
-        }
-
-        case iomgr_protocol::DELETE: {
-            // TODO: implement DELETE requests
-            throw DBEngineRequestFactoryError("DELETE is not supported yet");
+            switch (msg.object_type()) {
+                case iomgr_protocol::ROW: return createPatchRowRequest(msg, *input);
+                default: {
+                    throw DBEngineRequestFactoryError(
+                            "REST request: Invalid or unsupported object type for the PATCH "
+                            "request");
+                }
+            }
         }
 
         default: throw DBEngineRequestFactoryError("REST request: Invalid verb");
@@ -145,6 +157,69 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetSingleRowReque
             std::move(components[0]), std::move(components[1]), msg.object_id());
 }
 
+namespace {
+
+void parseJsonPayload(siodb::io::InputStream& input, std::size_t maxRowCount,
+        std::size_t maxJsonPayloadSize, std::size_t jsonBufferGrowStep,
+        std::unordered_map<unsigned, std::string>& columnNames,
+        std::vector<std::vector<std::pair<unsigned, Variant>>>& values)
+{
+#ifdef SIODB_READ_JSON_PAYLOAD_IN_CHUNKS
+    LOG_DEBUG << "DBEngineRestRequestFactory: Reading and parsing JSON payload";
+#else
+    LOG_DEBUG << "DBEngineRestRequestFactory: Reading JSON payload";
+#endif
+    RowDataJsonSaxParser jsonParser(maxRowCount, columnNames, values);
+    io::ChunkedInputStream chunkedInput(input);
+    try {
+#ifdef SIODB_READ_JSON_PAYLOAD_IN_CHUNKS
+        io::InputStreamStdStreamBuffer payloadInputStreamBuffer(chunkedInput, jsonBufferGrowStep);
+#else
+        stdext::buffer<char> payloadBuffer(jsonBufferGrowStep);
+        std::size_t storedPayloadSize = 0;
+        std::uint64_t totalPayloadSize = 0;
+        while (!chunkedInput.isEof()) {
+            if (storedPayloadSize == payloadBuffer.size() - 1)
+                payloadBuffer.resize(payloadBuffer.size() + jsonBufferGrowStep);
+            auto readLocation = payloadBuffer.data() + storedPayloadSize;
+            const auto n =
+                    chunkedInput.read(readLocation, payloadBuffer.size() - storedPayloadSize - 1);
+            if (n < 1) break;
+            readLocation[n] = 0;
+            if (totalPayloadSize <= maxJsonPayloadSize) storedPayloadSize += n;
+            totalPayloadSize += n;
+        }
+        LOG_DEBUG << "DBEngineRestRequestFactory: JSON payload read, " << totalPayloadSize
+                  << " bytes";
+        if (totalPayloadSize > maxJsonPayloadSize) {
+            std::ostringstream err;
+            err << "JSON payload is too long, " << totalPayloadSize << " bytes, while maximum "
+                << maxJsonPayloadSize << " bytes is allowed";
+            throw DBEngineRequestFactoryError(err.str());
+        }
+        io::MemoryStdStreamBuffer payloadInputStreamBuffer(payloadBuffer.data(), storedPayloadSize);
+        LOG_DEBUG << "DBEngineRestRequestFactory: Parsing JSON payload";
+#endif
+        nlohmann::json::sax_parse(std::istream(&payloadInputStreamBuffer),
+                static_cast<nlohmann::json_sax<nlohmann::json>*>(&jsonParser));
+    } catch (JsonParserError& ex) {
+#ifdef SIODB_READ_JSON_PAYLOAD_IN_CHUNKS
+        chunkedInput.setStopReadingAfterCurrentChunkFinished();
+        chunkedInput.skip(chunkedInput.getRemainingBytesInChunk());
+#endif
+        std::ostringstream err;
+        err << "JSON payload parse error: " << ex.what();
+        throw DBEngineRequestFactoryError(err.str());
+    } catch (std::exception& ex) {
+        chunkedInput.setStopReadingAfterCurrentChunkFinished();
+        chunkedInput.skip(chunkedInput.getRemainingBytesInChunk());
+        LOG_ERROR << "parseJsonPayload: " << ex.what();
+        throw DBEngineRequestFactoryError("JSON payload parse error: other error");
+    }
+}
+
+}  // namespace
+
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
         const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input)
 {
@@ -160,61 +235,77 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
     if (!isValidDatabaseObjectName(components[1]))
         throw DBEngineRequestFactoryError("POST ROWS: Invalid table name");
 
-    LOG_DEBUG << "DBEngineRestRequestFactory::createPostRowsRequest: Reading and parsing JSON "
-                 "payload";
     std::unordered_map<unsigned, std::string> columnNames;
     std::vector<std::vector<std::pair<unsigned, Variant>>> values;
-
-    RowDataJsonSaxParser jsonParser(std::numeric_limits<std::size_t>::max(), columnNames, values);
-    io::ChunkedInputStream chunkedInput(input);
-    try {
-#ifdef SIODB_READ_JSON_PAYLOAD_IN_CHUNKS
-        io::InputStreamStdStreamBuffer payloadInputStreamBuffer(chunkedInput, kReadJsonBufferSize);
-#else
-        stdext::buffer<char> payloadBuffer(kJsonBufferGrowStep);
-        std::size_t storedPayloadSize = 0;
-        std::uint64_t totalPayloadSize = 0;
-        while (!chunkedInput.isEof()) {
-            if (storedPayloadSize == payloadBuffer.size() - 1)
-                payloadBuffer.resize(payloadBuffer.size() + kJsonBufferGrowStep);
-            auto readLocation = payloadBuffer.data() + storedPayloadSize;
-            const auto n =
-                    chunkedInput.read(readLocation, payloadBuffer.size() - storedPayloadSize - 1);
-            //DBG_LOG_DEBUG("DBEngineRestRequestFactory::createPostRowsRequest: Read "
-            //              << n << " bytes of payload");
-            if (n < 1) break;
-            readLocation[n] = 0;
-            if (totalPayloadSize <= m_maxJsonPayloadSize) storedPayloadSize += n;
-            totalPayloadSize += n;
-        }
-        if (totalPayloadSize > m_maxJsonPayloadSize)
-            throw DBEngineRequestFactoryError("JSON payload is too long");
-        //DBG_LOG_DEBUG("DBEngineRestRequestFactory::createPostRowsRequest: Payload: "
-        //              << payloadBuffer.data());
-        io::MemoryStdStreamBuffer payloadInputStreamBuffer(payloadBuffer.data(), storedPayloadSize);
-#endif
-        nlohmann::json::sax_parse(std::istream(&payloadInputStreamBuffer),
-                static_cast<nlohmann::json_sax<nlohmann::json>*>(&jsonParser));
-    } catch (JsonParserError& ex) {
-#ifdef SIODB_READ_JSON_PAYLOAD_IN_CHUNKS
-        chunkedInput.setStopReadingAfterCurrentChunkFinished();
-        chunkedInput.skip(chunkedInput.getRemainingBytesInChunk());
-#endif
-        std::ostringstream err;
-        err << "JSON payload parse error: " << ex.what();
-        throw DBEngineRequestFactoryError(err.str());
-    } catch (std::exception& ex) {
-        chunkedInput.setStopReadingAfterCurrentChunkFinished();
-        chunkedInput.skip(chunkedInput.getRemainingBytesInChunk());
-        LOG_ERROR << "DBEngineRestRequestFactory::createPostRowsRequest: " << ex.what();
-        throw DBEngineRequestFactoryError("JSON payload parse error: other error");
-    }
+    parseJsonPayload(input, std::numeric_limits<std::size_t>::max(), m_maxJsonPayloadSize,
+            kJsonBufferGrowStep, columnNames, values);
 
     boost::to_upper(components[0]);
     boost::to_upper(components[1]);
 
     return std::make_shared<requests::PostRowsRestRequest>(std::move(components[0]),
             std::move(components[1]), std::move(columnNames), std::move(values));
+}
+
+requests::DBEngineRequestPtr DBEngineRestRequestFactory::createDeleteRowRequest(
+        const iomgr_protocol::DatabaseEngineRestRequest& msg)
+{
+    std::vector<std::string> components;
+    boost::split(components, msg.object_name(), boost::is_any_of("."));
+    if (components.size() != 2)
+        throw DBEngineRequestFactoryError("DELETE ROW: Invalid object name");
+
+    boost::trim(components[0]);
+    if (!isValidDatabaseObjectName(components[0]))
+        throw DBEngineRequestFactoryError("DELETE ROW: Invalid database name");
+
+    boost::trim(components[1]);
+    if (!isValidDatabaseObjectName(components[1]))
+        throw DBEngineRequestFactoryError("DELETE ROW: Invalid table name");
+
+    if (msg.object_id() == 0) throw DBEngineRequestFactoryError("DELETE ROW: Invalid object ID");
+
+    boost::to_upper(components[0]);
+    boost::to_upper(components[1]);
+
+    return std::make_shared<requests::DeleteRowRestRequest>(
+            std::move(components[0]), std::move(components[1]), msg.object_id());
+}
+
+requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPatchRowRequest(
+        const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input)
+{
+    std::vector<std::string> components;
+    boost::split(components, msg.object_name(), boost::is_any_of("."));
+    if (components.size() != 2) throw DBEngineRequestFactoryError("PATCH ROW: Invalid object name");
+
+    boost::trim(components[0]);
+    if (!isValidDatabaseObjectName(components[0]))
+        throw DBEngineRequestFactoryError("PATCH ROW: Invalid database name");
+
+    boost::trim(components[1]);
+    if (!isValidDatabaseObjectName(components[1]))
+        throw DBEngineRequestFactoryError("PATCH ROW: Invalid table name");
+
+    std::unordered_map<unsigned, std::string> columnNames0;
+    std::vector<std::vector<std::pair<unsigned, Variant>>> values0;
+    parseJsonPayload(input, 1U, m_maxJsonPayloadSize, kJsonBufferGrowStep, columnNames0, values0);
+    if (values0.empty()) throw DBEngineRequestFactoryError("PATCH ROW: Missing row data");
+
+    boost::to_upper(components[0]);
+    boost::to_upper(components[1]);
+
+    std::vector<std::string> columnNames;
+    std::vector<Variant> values;
+    columnNames.reserve(values0.size());
+    values.reserve(values0.size());
+    for (auto& e : values0.front()) {
+        columnNames.push_back(std::move(columnNames0[e.first]));
+        values.push_back(std::move(e.second));
+    }
+
+    return std::make_shared<requests::PatchRowRestRequest>(std::move(components[0]),
+            std::move(components[1]), msg.object_id(), std::move(columnNames), std::move(values));
 }
 
 }  // namespace siodb::iomgr::dbengine::parser

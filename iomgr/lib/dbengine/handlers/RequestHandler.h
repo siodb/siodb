@@ -435,6 +435,22 @@ private:
     void executePostRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::PostRowsRestRequest& request);
 
+    /**
+     * Executes REST DELETE ROW request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::DeleteRowRestRequest& request);
+
+    /**
+     * Executes REST DELETE ROW request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executePatchRowRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::PatchRowRestRequest& request);
+
     // Helpers
 
     /**
@@ -538,12 +554,13 @@ private:
 
     /**
      * Writes JSON prolog for POST, PATCH, DELETE requests.
-     * @param jsonWriter JSON writer object.
+     * @param statusCode Status code.
      * @param affectedRowCount Affected row count to include.
+     * @param jsonWriter JSON writer object.
      * @throw std::system_error on write error.
      */
     void writeModificationJsonProlog(
-            siodb::io::JsonWriter& jsonWriter, std::size_t affectedRowCount);
+            int statusCode, std::size_t affectedRowCount, siodb::io::JsonWriter& jsonWriter);
 
     /**
      * Writes JSON epilog.
@@ -589,8 +606,11 @@ private:
     /** REST status field name */
     static constexpr const char* kRestStatusFieldName = "status";
 
-    /** REST status OK */
+    /** REST status "OK" */
     static constexpr int kRestStatusOk = 200;
+
+    /** REST status "not found" */
+    static constexpr int kRestStatusNotFound = 404;
 
     /** REST rows field name */
     static constexpr const char* kRestRowsFieldName = "rows";

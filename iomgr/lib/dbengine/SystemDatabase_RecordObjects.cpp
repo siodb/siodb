@@ -27,7 +27,7 @@ void SystemDatabase::recordUser(const User& user, const TransactionParameters& t
     values.at(i++) = user.getRealName();
     values.at(i++) = static_cast<std::uint8_t>(user.isActive() ? 1 : 0);
     values.at(i++) = user.getDescription();
-    m_sysUsersTable->insertRow(values, tp, user.getId());
+    m_sysUsersTable->insertRow(std::move(values), tp, user.getId());
 }
 
 void SystemDatabase::recordUserAccessKey(
@@ -44,7 +44,7 @@ void SystemDatabase::recordUserAccessKey(
     values.at(i++) = accessKey.getText();
     values.at(i++) = (std::uint8_t(accessKey.isActive() ? 1 : 0));
     values.at(i++) = accessKey.getDescription();
-    m_sysUserAccessKeysTable->insertRow(values, tp, accessKey.getId());
+    m_sysUserAccessKeysTable->insertRow(std::move(values), tp, accessKey.getId());
 }
 
 void SystemDatabase::recordUserToken(const UserToken& token, const TransactionParameters& tp)
@@ -60,7 +60,7 @@ void SystemDatabase::recordUserToken(const UserToken& token, const TransactionPa
     if (token.getExpirationTimestamp()) values.at(i) = RawDateTime(*token.getExpirationTimestamp());
     i++;
     values.at(i++) = token.getDescription();
-    m_sysUserTokensTable->insertRow(values, tp, token.getId());
+    m_sysUserTokensTable->insertRow(std::move(values), tp, token.getId());
 }
 
 void SystemDatabase::recordDatabase(const Database& database, const TransactionParameters& tp)
@@ -74,7 +74,7 @@ void SystemDatabase::recordDatabase(const Database& database, const TransactionP
     values.at(i++) = database.getCipherId();
     values.at(i++) = database.getCipherKey();
     values.at(i++) = database.getDescription();
-    m_sysDatabasesTable->insertRow(values, tp, database.getId());
+    m_sysDatabasesTable->insertRow(std::move(values), tp, database.getId());
 }
 
 void SystemDatabase::recordUserPermission(
@@ -90,7 +90,7 @@ void SystemDatabase::recordUserPermission(
     values.at(i++) = permission.getObjectId();
     values.at(i++) = permission.getPermissions();
     values.at(i++) = permission.getGrantOptions();
-    m_sysUserPermissionsTable->insertRow(values, tp, permission.getId());
+    m_sysUserPermissionsTable->insertRow(std::move(values), tp, permission.getId());
 }
 
 void SystemDatabase::deleteDatabase(std::uint32_t databaseId, std::uint32_t currentUserId)
@@ -129,27 +129,29 @@ void SystemDatabase::updateUser(
     columnPositions.reserve(kMaxNumberOfUpdatedColumns);
 
     if (params.m_realName) {
-        columnValues.emplace_back(*params.m_realName);
         columnPositions.push_back(m_sysUsersTable->findColumnChecked(kSysUsers_RealName_ColumnName)
                                           ->getCurrentPosition());
+        columnValues.emplace_back(*params.m_realName);
     }
 
     if (params.m_description) {
-        columnValues.emplace_back(*params.m_description);
         columnPositions.push_back(
                 m_sysUsersTable->findColumnChecked(kSysUsers_Description_ColumnName)
                         ->getCurrentPosition());
+        columnValues.emplace_back(*params.m_description);
     }
 
     if (params.m_active) {
-        columnValues.emplace_back(std::uint8_t(*params.m_active ? 1 : 0));
         columnPositions.push_back(m_sysUsersTable->findColumnChecked(kSysUsers_State_ColumnName)
                                           ->getCurrentPosition());
+        columnValues.emplace_back(std::uint8_t(*params.m_active ? 1 : 0));
     }
 
     if (columnValues.empty()) return;
 
-    if (!m_sysUsersTable->updateRow(userId, std::move(columnValues), columnPositions, tp))
+    const auto result =
+            m_sysUsersTable->updateRow(userId, columnPositions, std::move(columnValues), tp);
+    if (!std::get<0>(result))
         throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userId);
 }
 
@@ -165,23 +167,25 @@ void SystemDatabase::updateUserAccessKey(std::uint64_t accessKeyId,
     columnPositions.reserve(kMaxNumberOfUpdatedColumns);
 
     if (params.m_active) {
-        columnValues.emplace_back(std::uint8_t(*params.m_active ? 1 : 0));
         columnPositions.push_back(
                 m_sysUserAccessKeysTable->findColumnChecked(kSysUserAccessKeys_State_ColumnName)
                         ->getCurrentPosition());
+        columnValues.emplace_back(std::uint8_t(*params.m_active ? 1 : 0));
     }
 
     if (params.m_description) {
-        columnValues.emplace_back(*params.m_description);
         columnPositions.push_back(
                 m_sysUserAccessKeysTable
                         ->findColumnChecked(kSysUserAccessKeys_Description_ColumnName)
                         ->getCurrentPosition());
+        columnValues.emplace_back(*params.m_description);
     }
 
     if (columnValues.empty()) return;
-    if (!m_sysUserAccessKeysTable->updateRow(
-                accessKeyId, std::move(columnValues), columnPositions, tp))
+
+    const auto result = m_sysUserAccessKeysTable->updateRow(
+            accessKeyId, columnPositions, std::move(columnValues), tp);
+    if (!std::get<0>(result))
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIdDoesNotExist, accessKeyId);
 }
 
@@ -197,25 +201,29 @@ void SystemDatabase::updateUserToken(
     columnPositions.reserve(kMaxNumberOfUpdatedColumns);
 
     if (params.m_expirationTimestamp) {
-        if (*params.m_expirationTimestamp)
-            columnValues.emplace_back(RawDateTime(**params.m_expirationTimestamp));
-        else
-            columnValues.emplace_back();
         columnPositions.push_back(
                 m_sysUserTokensTable
                         ->findColumnChecked(kSysUserTokens_ExpirationTimestamp_ColumnName)
                         ->getCurrentPosition());
+
+        if (*params.m_expirationTimestamp)
+            columnValues.emplace_back(RawDateTime(**params.m_expirationTimestamp));
+        else
+            columnValues.emplace_back();
     }
 
     if (params.m_description) {
-        columnValues.emplace_back(*params.m_description);
         columnPositions.push_back(
                 m_sysUserTokensTable->findColumnChecked(kSysUserTokens_Description_ColumnName)
                         ->getCurrentPosition());
+        columnValues.emplace_back(*params.m_description);
     }
 
     if (columnValues.empty()) return;
-    if (!m_sysUserTokensTable->updateRow(tokenId, std::move(columnValues), columnPositions, tp))
+
+    const auto result =
+            m_sysUserTokensTable->updateRow(tokenId, columnPositions, std::move(columnValues), tp);
+    if (!std::get<0>(result))
         throwDatabaseError(IOManagerMessageId::kErrorUserTokenIdDoesNotExist, tokenId);
 }
 

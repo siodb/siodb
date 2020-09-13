@@ -118,4 +118,68 @@ struct PostRowsRestRequest : public DBEngineRequest {
     const std::vector<std::vector<std::pair<unsigned, Variant>>> m_values;
 };
 
+/** DELETE row request */
+struct DeleteRowRestRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class GetSingleRowRestRequest.
+     * @param database A database.
+     * @param table A table.
+     * @param trid Table row ID.
+     */
+    explicit DeleteRowRestRequest(
+            std::string&& database, std::string&& table, std::uint64_t trid) noexcept
+        : DBEngineRequest(DBEngineRequestType::kRestDeleteRow)
+        , m_database(std::move(database))
+        , m_table(std::move(table))
+        , m_trid(trid)
+    {
+    }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
+
+    /** Table row ID */
+    const std::uint64_t m_trid;
+};
+
+/** DELETE row request */
+struct PatchRowRestRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class GetSingleRowRestRequest.
+     * @param database A database.
+     * @param table A table.
+     * @param trid Table row ID.
+     * @param columnNames Column names.
+     * @param values New column values.
+     */
+    explicit PatchRowRestRequest(std::string&& database, std::string&& table, std::uint64_t trid,
+            std::vector<std::string>&& columnNames, std::vector<Variant>&& values) noexcept
+        : DBEngineRequest(DBEngineRequestType::kRestPatchRow)
+        , m_database(std::move(database))
+        , m_table(std::move(table))
+        , m_trid(trid)
+        , m_columnNames(std::move(columnNames))
+        , m_values(std::move(values))
+    {
+    }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
+
+    /** Table row ID */
+    const std::uint64_t m_trid;
+
+    /** Column names */
+    const std::vector<std::string> m_columnNames;
+
+    /** New column values */
+    const std::vector<Variant> m_values;
+};
+
 }  // namespace siodb::iomgr::dbengine::requests

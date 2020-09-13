@@ -74,7 +74,8 @@ void RequestHandler::executeUpdateRequest(
 
     for (const auto& columnRef : request.m_columns) {
         if (columnRef.m_column == kMasterColumnName) {
-            errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorCannotUpdateMasterColumn));
+            errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorCannotUpdateMasterColumn,
+                    database->getName(), table->getName()));
             continue;
         }
 
@@ -109,8 +110,10 @@ void RequestHandler::executeUpdateRequest(
 
     if (request.m_where)
         updateColumnsFromExpression(dbContext.getDataSets(), request.m_where, errors);
+
     for (const auto& expr : request.m_values)
         updateColumnsFromExpression(dbContext.getDataSets(), expr, errors);
+
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
     checkWhereExpression(request.m_where, dbContext);
@@ -308,9 +311,9 @@ void RequestHandler::executeInsertRequest(
             rowValues.push_back(expression->evaluate(context));
 
         if (columnNames.empty())
-            table->insertRow(rowValues, transactionParams);
+            table->insertRow(std::move(rowValues), transactionParams);
         else
-            table->insertRow(columnNames, rowValues, transactionParams);
+            table->insertRow(columnNames, std::move(rowValues), transactionParams);
 
         response.set_affected_row_count(++insertedRowCount);
     }

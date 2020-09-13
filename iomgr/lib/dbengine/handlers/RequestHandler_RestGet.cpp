@@ -104,8 +104,8 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     UseDatabaseGuard databaseGuard(*database);
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable() && !isSuperUser()) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotOperateOnSystemTableViaRest,
-                table->getDatabaseName(), table->getName());
+        throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, table->getDatabaseName(),
+                table->getName());
     }
 
     // Create data set
@@ -159,8 +159,8 @@ void RequestHandler::executeGetSingleRowRestRequest(
     UseDatabaseGuard databaseGuard(*database);
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable() && !isSuperUser()) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotOperateOnSystemTableViaRest,
-                table->getDatabaseName(), table->getName());
+        throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, table->getDatabaseName(),
+                table->getName());
     }
 
     // Find row

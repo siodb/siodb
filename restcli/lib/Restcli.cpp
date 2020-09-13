@@ -170,7 +170,7 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
     iomgr_protocol::RestVerb verb = iomgr_protocol::GET;
     if (params.m_method == "POST")
         verb = iomgr_protocol::POST;
-    else if (params.m_method == "PATCH")
+    else if (params.m_method == "PATCH" || params.m_method == "PUT")
         verb = iomgr_protocol::PATCH;
     else if (params.m_method == "DELETE")
         verb = iomgr_protocol::DELETE;

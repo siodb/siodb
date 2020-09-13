@@ -159,8 +159,8 @@ struct MasterColumnRecord {
     varuint64           TransactionId;
     varuint64           CreateTimestamp;
     varuint64           UpdateTimestamp;
-    varuint64           AtomicOperationId;
-    uint8               AtomicOperationType;
+    varuint64           Version;
+    uint8               OperationType;
     varuint32           UserId;
     varuint64           TableRowId;
     varuint64           ColumnSetId;

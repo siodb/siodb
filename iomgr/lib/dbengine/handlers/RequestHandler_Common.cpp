@@ -287,6 +287,16 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::PostRowsRestRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kRestDeleteRow: {
+                executeDeleteRowRestRequest(
+                        response, dynamic_cast<const requests::DeleteRowRestRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kRestPatchRow: {
+                executePatchRowRestRequest(
+                        response, dynamic_cast<const requests::PatchRowRestRequest&>(request));
+                break;
+            }
             default: throw std::invalid_argument("Unknown request type");
         }
     } catch (const UserVisibleDatabaseError& ex) {
@@ -790,18 +800,21 @@ void RequestHandler::writeGetJsonProlog(siodb::io::JsonWriter& jsonWriter)
 }
 
 void RequestHandler::writeModificationJsonProlog(
-        siodb::io::JsonWriter& jsonWriter, std::size_t affectedRowCount)
+        int statusCode, std::size_t affectedRowCount, siodb::io::JsonWriter& jsonWriter)
 {
     // Start top level object
     jsonWriter.writeObjectBegin();
+
     // Write status
     jsonWriter.writeFieldName(kRestStatusFieldName, ::ct_strlen(kRestStatusFieldName));
-    jsonWriter.writeValue(kRestStatusOk);
+    jsonWriter.writeValue(statusCode);
+
     // Write affected row count
     constexpr const char* kAffectedRowCountFieldName = "affectedRowCount";
     jsonWriter.writeComma();
     jsonWriter.writeFieldName(kAffectedRowCountFieldName, ::ct_strlen(kAffectedRowCountFieldName));
     jsonWriter.writeValue(affectedRowCount);
+
     // Start rows array
     jsonWriter.writeComma();
     constexpr const char* kTridsFieldName = "trids";

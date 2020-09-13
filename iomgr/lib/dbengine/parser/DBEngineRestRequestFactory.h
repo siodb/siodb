@@ -76,6 +76,23 @@ private:
     requests::DBEngineRequestPtr createPostRowsRequest(
             const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input);
 
+    /**
+     * Creates DELETE row request.
+     * @param msg Request message.
+     * @return DELETE row request.
+     */
+    requests::DBEngineRequestPtr createDeleteRowRequest(
+            const iomgr_protocol::DatabaseEngineRestRequest& msg);
+
+    /**
+     * Creates PATCH rows request.
+     * @param msg Request message.
+     * @param input Input stream.
+     * @return PATCH rows request.
+     */
+    requests::DBEngineRequestPtr createPatchRowRequest(
+            const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input);
+
 private:
     /** Max JSON payload size */
     const std::size_t m_maxJsonPayloadSize;

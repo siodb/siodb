@@ -131,7 +131,7 @@ MSG Error ValuesListIsEmpty             VALUES list type is empty
 MSG Error ColumnsListIsEmpty            '%1%'.'%2%' columns list type is empty 
 MSG Error UpdateInvalidValueExpression  UPDATE SET expression is invalid: %1%
 MSG Error CannotUpdateSystemTable       Update system table '%1%'.'%2%' is not allowed
-MSG Error CannotUpdateMasterColumn      Cannot update master column
+MSG Error CannotUpdateMasterColumn      Cannot update master column in the table '%1%'.'%2%'
 MSG Error ValueAndColumnTypeMismatch    Column '%1%' data type '%2%' isn't compatible with value type '%3%'
 MSG Error UpdateValuesDoesNotFitToPositions      '%1%'.'%2%' values count %3% not equal to positions count %4%
 MSG Error UpdateValuesCountGreaterThanAddresses  '%1%'.'%2%' values count %3% greater than column data addresses %4%
@@ -195,7 +195,6 @@ MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2
 # REST ERRORS
 ##########################################
 ID 3000
-MSG Error CannotOperateOnSystemTableViaRest Can't operate on the system table '%1%'.'%2%' via REST protocol
 MSG Error JsonPayloadParsingError JSON payload parse error: %1%
 MSG Error TooManyValuesInPayload Too many values (%1%) in the row %2% of the JSON payload, expecting at most %3% while posting data to the table '%4%'.'%5%'
 
@@ -309,8 +308,6 @@ MSG Error CannotDeserializeSystemObject  Can't deserialize system object for the
 MSG Error UliFlushNodeCacheFailed  There were errors while flushing ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) node cache for the file #%7%: %8%
 
 MSG Error BptiFlushNodeCacheFailed  There were errors while flushing BPTI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) node cache to disk: %7%
-
-MSG Error CannotDeleteTridGreaterThanMax  Can't delete TRID %1% larger than '%2%'.'%3%' table max TRID %4%
 
 MSG Error CannotCreateTridCountersFile  Can't create TRID counter file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
 MSG Error CannotOpenTridCounterFile     Can't open TRID counter file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%

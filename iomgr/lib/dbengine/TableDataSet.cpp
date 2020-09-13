@@ -141,7 +141,7 @@ void TableDataSet::updateCurrentRow(std::vector<Variant>&& values,
 {
     const TransactionParameters tp(
             currentUserId, m_table->getDatabase().generateNextTransactionId());
-    m_table->updateRow(m_currentMcr, m_currentMcrAddress, std::move(values), columnPositions, tp);
+    m_table->updateRow(m_currentMcr, m_currentMcrAddress, columnPositions, std::move(values), tp);
 }
 
 // ---- internals ----

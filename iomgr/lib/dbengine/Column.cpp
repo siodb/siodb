@@ -662,7 +662,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
     ::pbeEncodeUInt64(block->getId(), indexValue.m_data);
     ::pbeEncodeUInt32(pos, indexValue.m_data + 8);
 
-    switch (record.getAtomicOperationType()) {
+    switch (record.getOperationType()) {
         case DmlOperationType::kInsert: {
             m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data, true);
             break;

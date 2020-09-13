@@ -61,15 +61,14 @@ TEST(RestGet, GetDatabases)
     ASSERT_FALSE(jsonPayload.empty());
     const auto j = nlohmann::json::parse(jsonPayload);
 
-    const auto& jstatus = j["status"];
-    ASSERT_TRUE(jstatus.is_number());
-    ASSERT_EQ(static_cast<int>(jstatus), 200);
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 200);
 
-    const auto& jrows = j["rows"];
-    ASSERT_TRUE(jrows.is_array());
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
     // Exclude system database
-    const auto ndb = static_cast<int>(instance->getDatbaseCount() - 1);
-    ASSERT_EQ(jrows.size(), ndb);
+    ASSERT_EQ(jRows.size(), instance->getDatbaseCount() - 1);
 }
 
 TEST(RestGet, GetTables)
@@ -124,18 +123,18 @@ TEST(RestGet, GetTables)
     ASSERT_FALSE(jsonPayload.empty());
     const auto j = nlohmann::json::parse(jsonPayload);
 
-    const auto& jstatus = j["status"];
-    ASSERT_TRUE(jstatus.is_number());
-    ASSERT_EQ(static_cast<int>(jstatus), 200);
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 200);
 
-    const auto& jrows = j["rows"];
-    ASSERT_TRUE(jrows.is_array());
-    ASSERT_TRUE(jrows.size() > 0);
-    ASSERT_TRUE(std::all_of(jrows.cbegin(), jrows.cend(),
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
+    ASSERT_TRUE(jRows.size() > 0);
+    ASSERT_TRUE(std::all_of(jRows.cbegin(), jRows.cend(),
             [](const auto& e) { return e.is_object() && e["name"].is_string(); }));
-    ASSERT_TRUE(std::find_if(jrows.cbegin(), jrows.cend(), [](const auto& e) {
+    ASSERT_TRUE(std::find_if(jRows.cbegin(), jRows.cend(), [](const auto& e) {
         return static_cast<std::string>(e["name"]) == "REST_GET_TABLES_1";
-    }) != jrows.cend());
+    }) != jRows.cend());
 }
 
 TEST(RestGet, GetAllRows)
@@ -154,20 +153,20 @@ TEST(RestGet, GetAllRows)
     const auto database = instance->findDatabase("SYS");
     const auto table = database->createUserTable("REST_GET_ALL_ROWS_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
-            database->generateNextTransactionId(), std::time(nullptr));
 
     // Insert data into table
-    std::vector<dbengine::Variant> values {dbengine::Variant(1), dbengine::Variant("hello")};
+    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+            database->generateNextTransactionId(), std::time(nullptr));
+    std::vector<dbengine::Variant> values {
+            dbengine::Variant(1),
+            dbengine::Variant("hello"),
+    };
     std::vector<std::uint64_t> trids;
-    auto vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -205,18 +204,18 @@ TEST(RestGet, GetAllRows)
     ASSERT_FALSE(jsonPayload.empty());
     const auto j = nlohmann::json::parse(jsonPayload);
 
-    const auto& jstatus = j["status"];
-    ASSERT_TRUE(jstatus.is_number());
-    ASSERT_EQ(static_cast<int>(jstatus), 200);
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 200);
 
-    const auto& jrows = j["rows"];
-    ASSERT_TRUE(jrows.is_array());
-    ASSERT_EQ(jrows.size(), trids.size());
-    ASSERT_TRUE(std::all_of(jrows.cbegin(), jrows.cend(), [](const auto& e) {
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
+    ASSERT_EQ(jRows.size(), trids.size());
+    ASSERT_TRUE(std::all_of(jRows.cbegin(), jRows.cend(), [](const auto& e) {
         return e.is_object() && e["TRID"].is_number() && e["A"].is_number() && e["B"].is_string();
     }));
     for (std::size_t i = 0, n = trids.size(); i < n; ++i) {
-        ASSERT_EQ(static_cast<std::uint64_t>(jrows[i]["TRID"]), trids[i]);
+        ASSERT_EQ(static_cast<std::uint64_t>(jRows[i]["TRID"]), trids[i]);
     }
 }
 
@@ -266,28 +265,32 @@ TEST(RestGet, GetSingleRowWithMatch)
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     requestHandler->suppressSuperUserRights();
 
+    // Find database
+    const std::string kDatabaseName("SYS");
+    const auto database = instance->findDatabaseChecked(kDatabaseName);
+
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
             {"B", siodb::COLUMN_DATA_TYPE_TEXT, true},
     };
-    const auto database = instance->findDatabase("SYS");
-    const auto table = database->createUserTable("REST_GET_SINGLE_ROW_1",
+    const std::string kTableName("REST_GET_SINGLE_ROW_1");
+    const auto table = database->createUserTable(std::string(kTableName),
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
-            database->generateNextTransactionId(), std::time(nullptr));
 
     // Insert data into table
-    std::vector<dbengine::Variant> values {dbengine::Variant(1), dbengine::Variant("hello")};
+    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+            database->generateNextTransactionId(), std::time(nullptr));
+    std::vector<dbengine::Variant> values {
+            dbengine::Variant(1),
+            dbengine::Variant("hello"),
+    };
     std::vector<std::uint64_t> trids;
-    auto vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
 
     // Create source protobuf message
     constexpr std::size_t kCheckedRowIndex = 1;
@@ -295,7 +298,7 @@ TEST(RestGet, GetSingleRowWithMatch)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::GET);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("SYS.REST_GET_SINGLE_row_1");
+    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(trids.at(kCheckedRowIndex));
 
     // Create request object
@@ -327,17 +330,17 @@ TEST(RestGet, GetSingleRowWithMatch)
     ASSERT_FALSE(jsonPayload.empty());
     const auto j = nlohmann::json::parse(jsonPayload);
 
-    const auto& jstatus = j["status"];
-    ASSERT_TRUE(jstatus.is_number());
-    ASSERT_EQ(static_cast<int>(jstatus), 200);
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 200);
 
-    const auto& jrows = j["rows"];
-    ASSERT_TRUE(jrows.is_array());
-    ASSERT_EQ(jrows.size(), 1U);
-    ASSERT_TRUE(std::all_of(jrows.cbegin(), jrows.cend(), [](const auto& e) {
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
+    ASSERT_EQ(jRows.size(), 1U);
+    ASSERT_TRUE(std::all_of(jRows.cbegin(), jRows.cend(), [](const auto& e) {
         return e.is_object() && e["TRID"].is_number() && e["A"].is_number() && e["B"].is_string();
     }));
-    ASSERT_EQ(static_cast<std::uint64_t>(jrows[0]["TRID"]), trids.at(kCheckedRowIndex));
+    ASSERT_EQ(static_cast<std::uint64_t>(jRows[0]["TRID"]), trids.at(kCheckedRowIndex));
 }
 
 TEST(RestGet, GetSingleRowNoMatch)
@@ -348,35 +351,39 @@ TEST(RestGet, GetSingleRowNoMatch)
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     requestHandler->suppressSuperUserRights();
 
+    // Find database
+    const std::string kDatabaseName("SYS");
+    const auto database = instance->findDatabaseChecked(kDatabaseName);
+
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
             {"B", siodb::COLUMN_DATA_TYPE_TEXT, true},
     };
-    const auto database = instance->findDatabase("SYS");
-    const auto table = database->createUserTable("REST_GET_SINGLE_ROW_2",
+    const std::string kTableName("REST_GET_SINGLE_ROW_2");
+    const auto table = database->createUserTable(std::string(kTableName),
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
-            database->generateNextTransactionId(), std::time(nullptr));
 
     // Insert data into table
-    std::vector<dbengine::Variant> values {dbengine::Variant(1), dbengine::Variant("hello")};
+    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+            database->generateNextTransactionId(), std::time(nullptr));
+    std::vector<dbengine::Variant> values {
+            dbengine::Variant(1),
+            dbengine::Variant("hello"),
+    };
     std::vector<std::uint64_t> trids;
-    auto vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    vcopy = stdext::copy(values);
-    trids.push_back(table->insertRow(vcopy, tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::GET);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("sys.REST_GET_single_ROW_2");
+    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(*std::max_element(trids.cbegin(), trids.cend()) + 1);
 
     // Create request object
@@ -408,13 +415,13 @@ TEST(RestGet, GetSingleRowNoMatch)
     ASSERT_FALSE(jsonPayload.empty());
     const auto j = nlohmann::json::parse(jsonPayload);
 
-    const auto& jstatus = j["status"];
-    ASSERT_TRUE(jstatus.is_number());
-    ASSERT_EQ(static_cast<int>(jstatus), 200);
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 200);
 
-    const auto& jrows = j["rows"];
-    ASSERT_TRUE(jrows.is_array());
-    ASSERT_EQ(jrows.size(), 0U);
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
+    ASSERT_EQ(jRows.size(), 0U);
 }
 
 TEST(RestGet, GetSingleRowFromSystemTable)

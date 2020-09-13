@@ -27,8 +27,13 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     UseDatabaseGuard databaseGuard(*database);
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotOperateOnSystemTableViaRest,
-                table->getDatabaseName(), table->getName());
+        if (isSuperUser()) {
+            throwDatabaseError(IOManagerMessageId::kErrorCannotInsertToSystemTable,
+                    table->getDatabaseName(), table->getName());
+        } else {
+            throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist,
+                    table->getDatabaseName(), table->getName());
+        }
     }
 
     std::vector<std::uint64_t> tridList;
@@ -63,7 +68,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
         }
 
         // Insert row
-        auto result = table->insertRow(columnNames, rowValues, transactionParams);
+        auto result = table->insertRow(columnNames, std::move(rowValues), transactionParams);
         tridList.push_back(result.first->getTableRowId());
     }
 
@@ -80,7 +85,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeModificationJsonProlog(jsonWriter, tridList.size());
+    writeModificationJsonProlog(kRestStatusOk, tridList.size(), jsonWriter);
     bool needComma = false;
     for (const auto& trid : tridList) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();

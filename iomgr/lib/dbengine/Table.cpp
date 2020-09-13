@@ -173,7 +173,7 @@ ConstraintPtr Table::findConstraintChecked(Column* column, std::uint64_t constra
 }
 
 std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
-        const std::vector<std::string>& columnNames, std::vector<Variant>& columnValues,
+        const std::vector<std::string>& columnNames, std::vector<Variant>&& columnValues,
         const TransactionParameters& transactionParameters, std::uint64_t customTrid)
 {
     std::lock_guard lock(m_mutex);
@@ -244,11 +244,11 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
         orderedColumnValues.at(i - 1) = columnDefinition->getDefaultValue();
     }
 
-    return doInsertRowUnlocked(orderedColumnValues, transactionParameters, customTrid);
+    return doInsertRowUnlocked(std::move(orderedColumnValues), transactionParameters, customTrid);
 }
 
 std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
-        std::vector<Variant>& columnValues, const TransactionParameters& transactionParameters,
+        std::vector<Variant>&& columnValues, const TransactionParameters& transactionParameters,
         std::uint64_t customTrid)
 {
     std::lock_guard lock(m_mutex);
@@ -278,49 +278,70 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::insertRow(
         }
     }
 
-    return doInsertRowUnlocked(columnValues, transactionParameters, customTrid);
+    return doInsertRowUnlocked(std::move(columnValues), transactionParameters, customTrid);
 }
 
-bool Table::deleteRow(std::uint64_t trid, const TransactionParameters& transactionParameters)
+std::pair<bool, MasterColumnRecordPtr> Table::deleteRow(
+        std::uint64_t trid, const TransactionParameters& transactionParameters)
 {
     std::lock_guard lock(m_mutex);
 
     const auto lastTrid = m_masterColumn->getLastUserTrid();
-    if (trid > lastTrid) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotDeleteTridGreaterThanMax, trid,
-                m_database.getName(), m_name, lastTrid);
-    }
+    if (trid > lastTrid) return std::make_pair(false, MasterColumnRecordPtr());
 
     // Find row
     std::uint8_t key[8];
     IndexValue indexValue;
     ::pbeEncodeUInt64(trid, key);
     if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, indexValue.m_data, 1))
-        return false;
+        return std::make_pair(false, MasterColumnRecordPtr());
 
     // Read master column record
-    ColumnDataAddress oldMcrAddr;
-    oldMcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
-    MasterColumnRecord oldMcr;
-    m_masterColumn->readMasterColumnRecord(oldMcrAddr, oldMcr);
+    ColumnDataAddress mcrAddr;
+    mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
+    MasterColumnRecord mcr;
+    m_masterColumn->readMasterColumnRecord(mcrAddr, mcr);
 
-    deleteRow(oldMcr, oldMcrAddr, transactionParameters);
-    return true;
+    // Delete row
+    return std::make_pair(true, deleteRow(mcr, mcrAddr, transactionParameters));
 }
 
-void Table::deleteRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
-        const TransactionParameters& transactionParameters)
+MasterColumnRecordPtr Table::deleteRow(const MasterColumnRecord& mcr,
+        const ColumnDataAddress& mcrAddress, const TransactionParameters& transactionParameters)
 {
     std::lock_guard lock(m_mutex);
-    MasterColumnRecord newMcr(*this, transactionParameters.m_transactionId,
-            mcr.getCreateTimestamp(), transactionParameters.m_timestamp, DmlOperationType::kDelete,
-            transactionParameters.m_userId, mcr.getTableRowId(), m_currentColumnSet->getId(),
-            mcrAddress);
-    m_masterColumn->writeMasterColumnRecord(newMcr);
+    auto newMcr = std::make_unique<MasterColumnRecord>(*this, transactionParameters.m_transactionId,
+            mcr.getCreateTimestamp(), transactionParameters.m_timestamp, mcr.getVersion() + 1,
+            DmlOperationType::kDelete, transactionParameters.m_userId, mcr.getTableRowId(),
+            m_currentColumnSet->getId(), mcrAddress);
+    m_masterColumn->writeMasterColumnRecord(*newMcr);
+    return newMcr;
 }
 
-bool Table::updateRow(std::uint64_t trid, std::vector<Variant>&& columnValues,
-        const std::vector<std::size_t>& columnPositions, const TransactionParameters& tp)
+std::tuple<bool, MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::updateRow(
+        std::uint64_t trid, const std::vector<std::string>& columnNames,
+        std::vector<Variant>&& columnValues, bool allowTrid, const TransactionParameters& tp)
+{
+    std::lock_guard lock(m_mutex);
+
+    std::vector<std::size_t> columnPositions;
+    columnPositions.reserve(columnNames.size());
+
+    for (const auto& columnName : columnNames) {
+        const auto column = findColumnCheckedUnlocked(columnName);
+        if (!allowTrid && column->isMasterColumn()) {
+            throwDatabaseError(
+                    IOManagerMessageId::kErrorCannotUpdateMasterColumn, getDatabaseName(), m_name);
+        }
+        columnPositions.push_back(column->getCurrentPosition());
+    }
+
+    return updateRow(trid, columnPositions, std::move(columnValues), tp);
+}
+
+std::tuple<bool, MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::updateRow(
+        std::uint64_t trid, const std::vector<std::size_t>& columnPositions,
+        std::vector<Variant>&& columnValues, const TransactionParameters& tp)
 {
     std::lock_guard lock(m_mutex);
 
@@ -329,7 +350,7 @@ bool Table::updateRow(std::uint64_t trid, std::vector<Variant>&& columnValues,
     IndexValue indexValue;
     ::pbeEncodeUInt64(trid, key);
     if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, indexValue.m_data, 1))
-        return false;
+        return std::make_tuple(false, MasterColumnRecordPtr(), std::vector<std::uint64_t>());
 
     // Read master column record
     ColumnDataAddress mcrAddr;
@@ -338,12 +359,13 @@ bool Table::updateRow(std::uint64_t trid, std::vector<Variant>&& columnValues,
     m_masterColumn->readMasterColumnRecord(mcrAddr, mcr);
 
     // Perform update
-    updateRow(mcr, mcrAddr, std::move(columnValues), columnPositions, tp);
-    return true;
+    auto result = updateRow(mcr, mcrAddr, columnPositions, std::move(columnValues), tp);
+    return std::make_tuple(true, std::move(result.first), std::move(result.second));
 }
 
-void Table::updateRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
-        std::vector<Variant>&& columnValues, const std::vector<std::size_t>& columnPositions,
+std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::updateRow(
+        const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
+        const std::vector<std::size_t>& columnPositions, std::vector<Variant>&& columnValues,
         const TransactionParameters& tp)
 {
     std::lock_guard lock(m_mutex);
@@ -359,28 +381,29 @@ void Table::updateRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mc
                 m_database.getName(), m_name, columnValues.size(), columnRecords.size());
     }
 
-    MasterColumnRecord newMcr(*this, tp.m_transactionId, mcr.getCreateTimestamp(), tp.m_timestamp,
+    auto newMcr = std::make_unique<MasterColumnRecord>(*this, tp.m_transactionId,
+            mcr.getCreateTimestamp(), tp.m_timestamp, mcr.getVersion() + 1,
             DmlOperationType::kUpdate, tp.m_userId, mcr.getTableRowId(),
             m_currentColumnSet->getId(), mcrAddress);
 
     const auto tableColumns = getColumnsOrderedByPosition();
     std::vector<std::uint64_t> nextBlockIds;
-    nextBlockIds.reserve(newMcr.getColumnCount());
+    nextBlockIds.reserve(newMcr->getColumnCount());
     try {
         std::size_t valueIndex = 0;
-        for (const auto columnPosition : columnPositions) {
-            const auto& tableColumnRecord = tableColumns[columnPosition];
-            if (tableColumnRecord->isMasterColumn()) continue;
-            auto res = tableColumnRecord->writeRecord(std::move(columnValues[valueIndex]));
+        for (const auto pos : columnPositions) {
+            const auto& tableColumn = tableColumns.at(pos);
+            if (tableColumn->isMasterColumn()) continue;
+            auto res = tableColumn->writeRecord(std::move(columnValues[valueIndex]));
             // Normal column positions start from 1, column at position 0 is master column.
-            auto& record = columnRecords[columnPosition - 1];
+            auto& record = columnRecords[pos - 1];
             record.setAddress(res.first);
             record.setUpdateTimestamp(tp.m_timestamp);
             nextBlockIds.push_back(res.second.getBlockId());
             ++valueIndex;
         }
-        newMcr.setColumnRecords(std::move(columnRecords));
-        m_masterColumn->writeMasterColumnRecord(newMcr);
+        newMcr->setColumnRecords(std::move(columnRecords));
+        m_masterColumn->writeMasterColumnRecord(*newMcr);
     } catch (...) {
         // Rollback updated columns
         auto blockIt = nextBlockIds.cbegin();
@@ -400,6 +423,8 @@ void Table::updateRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mc
         }
         throw;
     }
+
+    return std::make_pair(std::move(newMcr), std::move(nextBlockIds));
 }
 
 void Table::rollbackLastRow(
@@ -673,12 +698,12 @@ void Table::createInitializationFlagFile() const
 }
 
 std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::doInsertRowUnlocked(
-        std::vector<Variant>& columnValues, const TransactionParameters& tp,
+        std::vector<Variant>&& columnValues, const TransactionParameters& tp,
         std::uint64_t customTrid)
 {
     // Write columns
     auto mcr = std::make_unique<MasterColumnRecord>(*this, tp.m_transactionId, tp.m_timestamp,
-            tp.m_timestamp, DmlOperationType::kInsert, tp.m_userId, customTrid,
+            tp.m_timestamp, 0, DmlOperationType::kInsert, tp.m_userId, customTrid,
             m_currentColumnSet->getId(), kNullValueAddress);
 
     std::vector<std::uint64_t> nextBlockIds;
