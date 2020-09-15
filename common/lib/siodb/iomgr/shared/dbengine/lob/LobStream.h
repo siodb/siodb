@@ -29,7 +29,8 @@ public:
 
     /**
      * Creates copy of this stream.
-     * @return copy of this stream ot nullptr of cloning of stream is not possible.
+     * @return Copy of this stream object.
+     * @throw std::logic_error if stream cannot be cloned.
      */
     virtual LobStream* clone() const = 0;
 

@@ -29,7 +29,7 @@ inline constexpr std::enable_if_t<std::is_enum_v<E>, std::underlying_type_t<E>> 
  * @return Copy of the object.
  */
 template<class T>
-inline T copy(const T& src) noexcept(std::is_nothrow_copy_constructible_v<T>)
+T copy(const T& src) noexcept(std::is_nothrow_copy_constructible_v<T>)
 {
     return T(src);
 }

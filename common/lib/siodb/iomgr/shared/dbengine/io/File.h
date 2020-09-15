@@ -5,8 +5,7 @@
 #pragma once
 
 // Common project headers
-#include <siodb/common/io/IOError.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // CRT headers
@@ -14,6 +13,7 @@
 
 // STL headers
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 // System headers
@@ -21,6 +21,89 @@
 #include <sys/types.h>
 
 namespace siodb::iomgr::dbengine::io {
+
+class FileIOError : public std::runtime_error {
+public:
+    /**
+     * Initializes object of class FileIOError.
+     * @param errorCode Error code.
+     * @param errorMessage Error message.
+     */
+    FileIOError(int errorCode, const char* errorMessage)
+        : std::runtime_error(errorMessage)
+        , m_errorCode(errorCode)
+    {
+    }
+
+    /**
+     * Initializes object of class FileIOError.
+     * @param errorCode Error code.
+     * @param errorMessage Error message.
+     */
+    FileIOError(int errorCode, const std::string& errorMessage)
+        : std::runtime_error(errorMessage)
+        , m_errorCode(errorCode)
+    {
+    }
+
+    /**
+     * Returns error code.
+     */
+    int getErrorCode() const noexcept
+    {
+        return m_errorCode;
+    }
+
+private:
+    /** Error code */
+    const int m_errorCode;
+};
+
+class FileReadError : public FileIOError {
+public:
+    /**
+     * Initializes object of class FileReadError.
+     * @param errorCode Error code.
+     * @param errorMessage Error message.
+     */
+    FileReadError(int errorCode, const char* errorMessage)
+        : FileIOError(errorCode, errorMessage)
+    {
+    }
+
+    /**
+     * Initializes object of class FileReadError.
+     * @param errorCode Error code.
+     * @param errorMessage Error message.
+     */
+    FileReadError(int errorCode, const std::string& errorMessage)
+        : FileIOError(errorCode, errorMessage)
+    {
+    }
+};
+
+class FileWriteError : public FileIOError {
+public:
+    /**
+     * Initializes object of class FileWriteError.
+     * @param errorCode Error code.
+     * @param errorMessage Error message.
+     */
+    FileWriteError(int errorCode, const char* errorMessage)
+        : FileIOError(errorCode, errorMessage)
+    {
+    }
+
+    /**
+     * Initializes object of class FileWriteError.
+     * @param errorCode Error code.
+     * @param errorMessage Error message.
+     */
+    FileWriteError(int errorCode, const std::string& errorMessage)
+        : FileIOError(errorCode, errorMessage)
+    {
+    }
+};
 
 /** Provides file I/O. */
 class File {
@@ -53,9 +136,9 @@ public:
      * Returns file descriptor.
      * @return File descriptor.
      */
-    int getFd() const noexcept
+    int getFD() const noexcept
     {
-        return m_fd.getFd();
+        return m_fd.getFD();
     }
 
     /**
@@ -164,7 +247,7 @@ protected:
 
 protected:
     /** File descriptor */
-    FdGuard m_fd;
+    FDGuard m_fd;
 
     /** Last I/O error code */
     int m_lastError;

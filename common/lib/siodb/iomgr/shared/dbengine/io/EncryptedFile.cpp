@@ -62,7 +62,7 @@ EncryptedFile::EncryptedFile(const std::string& path, int extraFlags,
     , m_dataBufferUsefulSize(m_dataBufferBlockCount * m_blockSize)
 {
     struct stat st;
-    if (::fstat(m_fd.getFd(), &st) < 0) {
+    if (::fstat(m_fd.getFD(), &st) < 0) {
         const int errorCode = errno;
         throw std::system_error(errorCode, std::generic_category());
     }
@@ -114,7 +114,7 @@ off_t EncryptedFile::getFileSize() noexcept
 
 bool EncryptedFile::stat(struct stat& st) noexcept
 {
-    if (::fstat(m_fd.getFd(), &st) < 0) {
+    if (::fstat(m_fd.getFD(), &st) < 0) {
         m_lastError = errno;
         return false;
     }
@@ -138,7 +138,7 @@ bool EncryptedFile::extend(off_t length) noexcept
         return writeHeader();
     }
 
-    if (::posixFileAllocateExact(m_fd.getFd(), utils::alignUp(m_plaintextSize, m_blockSize),
+    if (::posixFileAllocateExact(m_fd.getFD(), utils::alignUp(m_plaintextSize, m_blockSize),
                 length - remainingPlaintextSize)
             == 0) {
         m_plaintextSize += length;
@@ -164,7 +164,7 @@ std::size_t EncryptedFile::readInternal(
     if (offsetDiff > 0) {
         // Read partial amount of data from the first block
 
-        if (::preadExact(m_fd.getFd(), m_dataBuffer.data(), m_blockSize, alignedDownOffset,
+        if (::preadExact(m_fd.getFD(), m_dataBuffer.data(), m_blockSize, alignedDownOffset,
                     kIgnoreSignals)
                 != m_blockSize) {
             m_lastError = errno;
@@ -189,7 +189,7 @@ std::size_t EncryptedFile::readInternal(
         // Read data blocks in the middle
 
         const auto bytesRead =
-                ::preadExact(m_fd.getFd(), buffer, alignedDownSize, offset, kIgnoreSignals);
+                ::preadExact(m_fd.getFD(), buffer, alignedDownSize, offset, kIgnoreSignals);
 
         if (bytesRead != alignedDownSize) {
             m_lastError = errno;
@@ -210,7 +210,7 @@ std::size_t EncryptedFile::readInternal(
     if (size > 0) {
         // Read part of the last block if applicable
 
-        if (::preadExact(m_fd.getFd(), m_dataBuffer.data(), m_blockSize, offset, kIgnoreSignals)
+        if (::preadExact(m_fd.getFD(), m_dataBuffer.data(), m_blockSize, offset, kIgnoreSignals)
                 != m_blockSize) {
             m_lastError = errno;
             return totalBytesRead;
@@ -270,7 +270,7 @@ std::size_t EncryptedFile::writeInternal(
         DEBUG_TRACE("EncryptedFile::writeInternal: write2=" << bytesToWrite);
         m_encryptionContext->transform(buffer, bytesToWrite / m_blockSize, m_dataBuffer.data());
 
-        const auto bytesWritten = utils::alignDown(::pwriteExact(m_fd.getFd(), m_dataBuffer.data(),
+        const auto bytesWritten = utils::alignDown(::pwriteExact(m_fd.getFD(), m_dataBuffer.data(),
                                                            bytesToWrite, offset, kIgnoreSignals),
                 m_blockSize);
 
@@ -319,7 +319,7 @@ std::size_t EncryptedFile::writeInternal(
 
 #ifdef _DEBUG
     struct stat st;
-    if (::fstat(m_fd.getFd(), &st) == 0) {
+    if (::fstat(m_fd.getFD(), &st) == 0) {
         DEBUG_TRACE("EncryptedFile::writeInternal: FINALLY: ciphertext_size="
                     << (st.st_size - m_headerBuffer.size()) << " plaintext_size=" << m_plaintextSize
                     << '\n');
@@ -337,7 +337,7 @@ bool EncryptedFile::updateBlock(const std::uint8_t* buffer, std::size_t size, of
     assert(offset >= 0 && offset <= static_cast<off_t>(getEofOffset() - size));
 
     const auto blockOffset = utils::alignDown(offset, m_blockSize);
-    if (::preadExact(m_fd.getFd(), m_dataBuffer.data(), m_blockSize, blockOffset, kIgnoreSignals)
+    if (::preadExact(m_fd.getFD(), m_dataBuffer.data(), m_blockSize, blockOffset, kIgnoreSignals)
             != m_blockSize) {
         m_lastError = errno;
         DEBUG_TRACE("updateBlock: READ block failed: at " << blockOffset << ": " << m_lastError
@@ -350,7 +350,7 @@ bool EncryptedFile::updateBlock(const std::uint8_t* buffer, std::size_t size, of
     std::memcpy(m_dataBuffer.data() + (offset - blockOffset), buffer, size);
     m_encryptionContext->transform(m_dataBuffer.data(), 1, m_dataBuffer.data());
 
-    if (::pwriteExact(m_fd.getFd(), m_dataBuffer.data(), m_blockSize, blockOffset, kIgnoreSignals)
+    if (::pwriteExact(m_fd.getFD(), m_dataBuffer.data(), m_blockSize, blockOffset, kIgnoreSignals)
             != m_blockSize) {
         m_lastError = errno;
         DEBUG_TRACE("updateBlock: WRITE block failed: at " << blockOffset << ": " << m_lastError
@@ -376,7 +376,7 @@ bool EncryptedFile::writeBlock(const std::uint8_t* buffer, std::size_t size, off
     m_encryptionContext->transform(m_dataBuffer.data(), 1, m_dataBuffer.data());
 
     const auto blockOffset = utils::alignUp(offset, m_blockSize);
-    if (::pwriteExact(m_fd.getFd(), m_dataBuffer.data(), m_blockSize, blockOffset, kIgnoreSignals)
+    if (::pwriteExact(m_fd.getFD(), m_dataBuffer.data(), m_blockSize, blockOffset, kIgnoreSignals)
             != m_blockSize) {
         m_lastError = errno;
         return false;
@@ -405,7 +405,7 @@ bool EncryptedFile::writeHeader() noexcept
     ::pbeEncodeInt64(m_plaintextSize, m_headerBuffer.data());
     m_encryptionContext->transform(
             m_headerBuffer.data(), m_headerBuffer.size() / m_blockSize, m_headerBuffer.data());
-    if (::pwriteExact(m_fd.getFd(), m_headerBuffer.data(), m_headerBuffer.size(), 0, kIgnoreSignals)
+    if (::pwriteExact(m_fd.getFD(), m_headerBuffer.data(), m_headerBuffer.size(), 0, kIgnoreSignals)
             == m_headerBuffer.size())
         return true;
     m_lastError = errno;

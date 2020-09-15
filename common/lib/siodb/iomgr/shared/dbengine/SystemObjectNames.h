@@ -28,8 +28,6 @@ static constexpr const char* kSysDatabases_Uuid_ColumnName = "UUID";
 static constexpr const char* kSysDatabases_Uuid_ColumnDescription = "Database UUID";
 static constexpr const char* kSysDatabases_CipherId_ColumnName = "CIPHER_ID";
 static constexpr const char* kSysDatabases_CipherId_ColumnDescription = "Cipher identifier";
-static constexpr const char* kSysDatabases_CipherKey_ColumnName = "CIPHER_KEY";
-static constexpr const char* kSysDatabases_CipherKey_ColumnDescription = "Encryption key";
 static constexpr const char* kSysDatabases_Description_ColumnName = "DESCRIPTION";
 static constexpr const char* kSysDatabases_Description_ColumnDescription = "Database description";
 

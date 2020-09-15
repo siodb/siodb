@@ -10,7 +10,7 @@
 namespace dbengine = siodb::iomgr::dbengine;
 namespace requests = dbengine::requests;
 
-class TestContext : public requests::Expression::Context {
+class TestContext : public requests::ExpressionEvaluationContext {
 private:
     const siodb::iomgr::dbengine::Variant& getColumnValue(
             std::size_t tableIndex, std::size_t columnIndex) override;

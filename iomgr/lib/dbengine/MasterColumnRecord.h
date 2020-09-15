@@ -39,22 +39,22 @@ public:
      * @param createTimestamp Timestamp of the transaction that created this TRID
      *                        at microseconds precision.
      * @param updateTimestamp Timestamp of the transaction at microseconds precision.
-     * @param atomicOperationId ID of the atomic operation.
-     * @param atomicOperationType Atomic operation type.
+     * @param version Record version.
+     * @param operationType Operation type.
      * @param userId The user ID of the author of the transaction.
      * @param tableRowId Unique row identifier.
      * @param columnSetId Column set identifier.
      * @param previousVersionAddress Address of the previous version.
      */
     MasterColumnRecord(std::uint64_t transactionId, std::uint64_t createTimestamp,
-            std::uint64_t updateTimestamp, std::uint64_t atomicOperationId,
-            DmlOperationType atomicOperationType, std::uint32_t userId, std::uint64_t tableRowId,
-            std::uint64_t columnSetId, const ColumnDataAddress& previousVersionAddress) noexcept
+            std::uint64_t updateTimestamp, std::uint64_t version, DmlOperationType operationType,
+            std::uint32_t userId, std::uint64_t tableRowId, std::uint64_t columnSetId,
+            const ColumnDataAddress& previousVersionAddress) noexcept
         : m_transactionId(transactionId)
         , m_createTimestamp(createTimestamp)
         , m_updateTimestamp(updateTimestamp)
-        , m_atomicOperationId(atomicOperationId)
-        , m_atomicOperationType(atomicOperationType)
+        , m_version(version)
+        , m_operationType(operationType)
         , m_userId(userId)
         , m_tableRowId(tableRowId)
         , m_columnSetId(columnSetId)
@@ -70,14 +70,15 @@ public:
      * @param createTimestamp Timestamp of the transaction that created this TRID
      *                        at microseconds precision.
      * @param updateTimestamp Timestamp of the transaction at microseconds precision.
-     * @param atomicOperationType Atomic operation type.
+     * @param version Record version.
+     * @param operationType Operation type.
      * @param userId The user ID of the author of the transaction.
      * @param tableRowId Unique row identifier.
      * @param columnSetId Column set identifier.
      * @param previousVersionAddress Address of the previous version.
      */
     MasterColumnRecord(Table& table, std::uint64_t transactionId, std::uint64_t createTimestamp,
-            std::uint64_t updateTimestamp, DmlOperationType atomicOperationType,
+            std::uint64_t updateTimestamp, std::uint64_t version, DmlOperationType operationType,
             std::uint32_t userId, std::uint64_t tableRowId, std::uint64_t columnSetId,
             const ColumnDataAddress& previousVersionAddress);
 
@@ -109,21 +110,21 @@ public:
     }
 
     /**
-     * Returns atomic operation ID.
-     * @return Atomic operation ID.
+     * Returns record version.
+     * @return Record version.
      */
-    std::uint64_t getAtomicOperationId() const noexcept
+    std::uint64_t getVersion() const noexcept
     {
-        return m_atomicOperationId;
+        return m_version;
     }
 
     /**
      * Returns atomic operation type.
      * @return Atomic operation type.
      */
-    DmlOperationType getAtomicOperationType() const noexcept
+    DmlOperationType getOperationType() const noexcept
     {
-        return m_atomicOperationType;
+        return m_operationType;
     }
 
     /**
@@ -256,8 +257,8 @@ public:
      * @param sizeTag Record size tag.
      * @return Address after the last written byte.
      */
-    std::uint8_t* serializeUncheckedWithSizeTag(std::uint8_t* buffer, std::uint16_t sizeTag) const
-            noexcept;
+    std::uint8_t* serializeUncheckedWithSizeTag(
+            std::uint8_t* buffer, std::uint16_t sizeTag) const noexcept;
 
     /**
      * De-serializes master column with length from a memory buffer.
@@ -290,11 +291,11 @@ private:
     /** Timestamp of the transaction, at the microsecond precision */
     std::uint64_t m_updateTimestamp;
 
-    /** The atomic ID of the transaction (incremented at each siodb transaction). */
-    std::uint64_t m_atomicOperationId;
+    /** Record version (incremented at each operation) */
+    std::uint64_t m_version;
 
-    /** Operation type that has changed this record */
-    DmlOperationType m_atomicOperationType;
+    /** Operation type that has created or changed this record */
+    DmlOperationType m_operationType;
 
     /** The user ID of the author of the transaction (for the time being 1) */
     std::uint32_t m_userId;

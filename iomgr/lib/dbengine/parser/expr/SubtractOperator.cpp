@@ -11,7 +11,7 @@ MutableOrConstantString SubtractOperator::getExpressionText() const
     return "SUBTRACT";
 }
 
-Variant SubtractOperator::evaluate(Context& context) const
+Variant SubtractOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

@@ -19,7 +19,7 @@ class TlsClient final {
 public:
     /**
      * Initializes object of class TlsClient.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     TlsClient()
         : m_sslContext(getSslMethod())
@@ -32,7 +32,7 @@ public:
      * Connects to the server.
      * @param fd File descriptor.
      * @return Client connection.
-     * @throw OpenSslError in case of SSL error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     std::unique_ptr<TlsConnection> connectToServer(int fd)
     {
@@ -51,7 +51,7 @@ private:
     /**
      * Returns TLS method.
      * @return OpenSsl TLS method.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     const ::SSL_METHOD* getSslMethod() const;
 

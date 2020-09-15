@@ -28,7 +28,7 @@ public:
 
     DECLARE_NONCOPYABLE(RsaKey);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~RsaKey()
     {
         RSA_free(m_rsaKey);
@@ -38,7 +38,7 @@ public:
      * Returns underlying mutable RSA object.
      * @return RSA pointer.
      */
-    operator ::RSA*() noexcept
+    operator ::RSA *() noexcept
     {
         return m_rsaKey;
     }
@@ -47,7 +47,7 @@ public:
      * Returns underlying read-only RSA object.
      * @return Const RSA pointer.
      */
-    operator const ::RSA*() const noexcept
+    operator const ::RSA *() const noexcept
     {
         return m_rsaKey;
     }

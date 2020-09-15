@@ -4,10 +4,11 @@
 
 // Project headers
 #include "RequestHandlerTest_TestEnv.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 
 // Common project headers
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 
@@ -23,7 +24,7 @@ TEST(DML_Delete, DeleteAllRows)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -43,7 +44,7 @@ TEST(DML_Delete, DeleteAllRows)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -65,7 +66,7 @@ TEST(DML_Delete, DeleteAllRows)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -86,7 +87,7 @@ TEST(DML_Delete, DeleteAllRows)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -100,7 +101,7 @@ TEST(DML_Delete, DeleteAllRows)
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT16);
         EXPECT_EQ(response.column_description(0).name(), "U16");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -115,7 +116,7 @@ TEST(DML_Delete, DeleteByTrid)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -135,7 +136,7 @@ TEST(DML_Delete, DeleteByTrid)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -157,7 +158,7 @@ TEST(DML_Delete, DeleteByTrid)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -178,7 +179,7 @@ TEST(DML_Delete, DeleteByTrid)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -194,21 +195,21 @@ TEST(DML_Delete, DeleteByTrid)
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_INT16);
         EXPECT_EQ(response.column_description(1).name(), "I16");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (std::size_t i = 0; i < 2; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, i + 1);
 
-            std::int16_t int16 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&int16, 2));
-            boost::endian::little_to_native_inplace(int16);
-            EXPECT_EQ(int16, static_cast<std::int16_t>(i));
+            std::int16_t int16Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int16Value));
+            EXPECT_EQ(int16Value, static_cast<std::int16_t>(i));
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -223,7 +224,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -243,7 +244,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -265,7 +266,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -286,7 +287,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -302,21 +303,21 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_INT16);
         EXPECT_EQ(response.column_description(1).name(), "I16");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (std::size_t i = 0; i < 2; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, i + 1);
 
-            std::int16_t int16 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&int16, 2));
-            boost::endian::little_to_native_inplace(int16);
-            EXPECT_EQ(int16, static_cast<std::int16_t>(i));
+            std::int16_t int16Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int16Value));
+            EXPECT_EQ(int16Value, static_cast<std::int16_t>(i));
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -331,7 +332,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -351,7 +352,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -374,7 +375,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -395,7 +396,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -411,21 +412,21 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_INT16);
         EXPECT_EQ(response.column_description(1).name(), "I16");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (std::size_t i = 0; i < 2; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, i + 1);
 
-            std::int16_t int16 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&int16, 2));
-            boost::endian::little_to_native_inplace(int16);
-            EXPECT_EQ(int16, static_cast<std::int16_t>(i));
+            std::int16_t int16Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int16Value));
+            EXPECT_EQ(int16Value, static_cast<std::int16_t>(i));
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -440,7 +441,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -467,7 +468,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -490,7 +491,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -511,7 +512,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -529,26 +530,24 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_UINT64);
         EXPECT_EQ(response.column_description(2).name(), "U64");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0U);
+        ASSERT_GT(rowLength, 0U);
 
-        std::int16_t int16 = 0;
-        ASSERT_TRUE(codedInput.ReadRaw(&int16, 2));
-        boost::endian::little_to_native_inplace(int16);
-        EXPECT_EQ(int16, 0);
+        std::int16_t int16Value = 0;
+        ASSERT_TRUE(codedInput.Read(&int16Value));
+        EXPECT_EQ(int16Value, 0);
 
-        std::uint16_t uint16 = 0;
-        ASSERT_TRUE(codedInput.ReadRaw(&uint16, 2));
-        boost::endian::little_to_native_inplace(uint16);
-        EXPECT_EQ(uint16, 50u);
+        std::uint16_t uint16Value = 0;
+        ASSERT_TRUE(codedInput.Read(&uint16Value));
+        EXPECT_EQ(uint16Value, 50U);
 
-        std::uint64_t uint64 = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(&uint64));
-        EXPECT_EQ(uint64, 100u);
+        std::uint64_t uint64Value = 0;
+        ASSERT_TRUE(codedInput.ReadVarint64(&uint64Value));
+        EXPECT_EQ(uint64Value, 100U);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);

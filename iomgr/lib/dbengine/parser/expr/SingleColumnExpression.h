@@ -51,14 +51,14 @@ public:
      * @param context Evaluation context.
      * @return Evaluated expression value type.
      */
-    VariantType getResultValueType(const Context& context) const override;
+    VariantType getResultValueType(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Returns type of generated column from this expression.
      * @param context Evaluation context.
      * @return Column data type.
      */
-    ColumnDataType getColumnDataType(const Context& context) const override;
+    ColumnDataType getColumnDataType(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Returns expression text.
@@ -77,16 +77,16 @@ public:
      * @param context Evaluation context.
      * @std::runtime_error if operands aren't numeric or dates or not valid
      */
-    void validate(const Context& context) const override;
+    void validate(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Evaluates expression.
      * @param context Evaluation context.
      * @return Resulting value.
-     * @throw DatabaseError in case of impossible evaluation.
-     * @throw std::runtime_error in case of unitialized dataset and column indexes.
+     * @throw DatabaseError if evaluation is impossible.
+     * @throw std::runtime_error if there is unitialized dataset and column indexes.
      */
-    Variant evaluate(Context& context) const override;
+    Variant evaluate(ExpressionEvaluationContext& context) const override;
 
     /**
      * Serializes this expression, doesn't check memory buffer size.
@@ -119,7 +119,7 @@ protected:
 private:
     /**
      * Checks that @ref m_datasetTableIndex and @ref m_datasetColumnIndex values are set.
-     * @throw std::runtime_error in case of unitialized dataset and column indices.
+     * @throw std::runtime_error if there is unitialized dataset and column indices.
      */
     void checkHasTableAndColumnIndices() const;
 

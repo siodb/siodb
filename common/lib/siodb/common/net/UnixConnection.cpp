@@ -6,7 +6,7 @@
 
 // Project headers
 #include "../stl_ext/system_error_ext.h"
-#include "../utils/FdGuard.h"
+#include "../utils/FDGuard.h"
 
 // CRT headers
 #include <cstring>
@@ -32,7 +32,7 @@ int openUnixConnection(const std::string& serverSocketPath, bool closeOnExecute)
     }
 
     // Create socket
-    FdGuard socket(::socket(AF_UNIX, SOCK_STREAM, 0));
+    FDGuard socket(::socket(AF_UNIX, SOCK_STREAM, 0));
     if (!socket.isValidFd()) {
         stdext::throw_system_error("Can't create new UNIX client socket");
     }
@@ -48,7 +48,7 @@ int openUnixConnection(const std::string& serverSocketPath, bool closeOnExecute)
     std::strcpy(addr.sun_path, serverSocketPath.c_str());
 
     // Attempt to connect
-    if (::connect(socket.getFd(), (struct sockaddr*) &addr, (socklen_t) sizeof(addr)) < 0) {
+    if (::connect(socket.getFD(), (struct sockaddr*) &addr, (socklen_t) sizeof(addr)) < 0) {
         stdext::throw_system_error(
                 "Can't connect via UNIX client socket to the ", serverSocketPath.c_str());
     }

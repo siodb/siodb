@@ -15,8 +15,8 @@
 
 namespace siodb::iomgr::dbengine {
 
-SystemDatabase::SystemDatabase(Instance& instance, const std::string& cipherId,
-        BinaryValue&& cipherKey, [[maybe_unused]] const std::string& superUserInitialAccessKey)
+SystemDatabase::SystemDatabase(
+        Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey)
     : Database(instance, kSystemDatabaseName, cipherId, std::move(cipherKey),
             m_allSystemTables.size() * 2, kSystemDatabaseDescription)
 {
@@ -151,11 +151,6 @@ SystemDatabase::SystemDatabase(Instance& instance, const std::string& cipherId,
                     kSysDatabases_CipherId_ColumnDescription)));
 
     allColumns.push_back(m_sysDatabasesTable->createColumn(
-            ColumnSpecification(kSysDatabases_CipherKey_ColumnName, COLUMN_DATA_TYPE_BINARY,
-                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
-                    kSysDatabases_CipherKey_ColumnDescription)));
-
-    allColumns.push_back(m_sysDatabasesTable->createColumn(
             ColumnSpecification(kSysDatabases_Description_ColumnName, COLUMN_DATA_TYPE_TEXT,
                     kSystemTableDataFileDataAreaSize, stdext::copy(noConstraintsSpec),
                     kSysDatabases_Description_ColumnDescription)));
@@ -250,11 +245,10 @@ SystemDatabase::SystemDatabase(Instance& instance, const std::string& cipherId,
     createInitializationFlagFile();
 }
 
-SystemDatabase::SystemDatabase(
-        Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey)
+SystemDatabase::SystemDatabase(Instance& instance, const std::string& cipherId)
     : Database(instance,
             DatabaseRecord(kSystemDatabaseId, kSystemDatabaseUuid, kSystemDatabaseName,
-                    std::string(cipherId), std::move(cipherKey), kSystemDatabaseDescription),
+                    std::string(cipherId), kSystemDatabaseDescription),
             m_allSystemTables.size() * 2)
     , m_sysUsersTable(loadSystemTable(kSysUsersTableName))
     , m_sysUserAccessKeysTable(loadSystemTable(kSysUserAccessKeysTableName))

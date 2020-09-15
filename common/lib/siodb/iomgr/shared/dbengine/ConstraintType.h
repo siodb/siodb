@@ -42,7 +42,7 @@ enum class ConstraintType {
  * @return Constraint type name.
  * @throw std::out_of_range if type is invalid or kMax.
  */
-const char* getConstaintTypeName(ConstraintType type);
+const char* getConstraintTypeName(ConstraintType type);
 
 /**
  * Returns aut-generated constraint name prefix.

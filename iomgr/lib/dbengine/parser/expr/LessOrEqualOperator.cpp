@@ -11,7 +11,7 @@ MutableOrConstantString LessOrEqualOperator::getExpressionText() const
     return "LESS OR EQUAL";
 }
 
-Variant LessOrEqualOperator::evaluate(Context& context) const
+Variant LessOrEqualOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

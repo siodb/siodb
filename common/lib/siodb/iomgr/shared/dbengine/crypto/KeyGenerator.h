@@ -21,4 +21,23 @@ namespace siodb::iomgr::dbengine::crypto {
  */
 BinaryValue generateCipherKey(unsigned keyLength, const std::string& seed);
 
+/**
+ * Generates cipher key of the specified length.
+ * @param keyLength Key length in bits. Must be nonzero, multiple of 8, must not exceeed 512.
+ * @param seed Seed string.
+ * @throw std::invalid_argument if key length is invalid.
+ * @throw std::runtime_error if there was error reading entropy data.
+ */
+BinaryValue generateCipherKey(unsigned keyLength, const char* seed);
+
+/**
+ * Generates cipher key of the specified length.
+ * @param keyLength Key length in bits. Must be nonzero, multiple of 8, must not exceeed 512.
+ * @param seed Seed data.
+ * @param seedLength Seed length.
+ * @throw std::invalid_argument if key length is invalid.
+ * @throw std::runtime_error if there was error reading entropy data.
+ */
+BinaryValue generateCipherKey(unsigned keyLength, const void* seed, std::size_t seedLength);
+
 }  // namespace siodb::iomgr::dbengine::crypto

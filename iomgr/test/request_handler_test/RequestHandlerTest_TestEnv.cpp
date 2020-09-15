@@ -8,16 +8,16 @@
 #include "dbengine/DatabaseError.h"
 #include "dbengine/Table.h"
 #include "dbengine/handlers/RequestHandler.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/expr/ConstantExpression.h"
 
 // Common project headers
-#include <siodb/common/io/FdDevice.h>
+#include <siodb/common/io/FDStream.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/StartupActions.h>
 
@@ -66,6 +66,7 @@ void TestEnvironment::SetUp()
     // Fill encryption options
     //using siodb::config::defaults::kDefaultCipherId;
     instanceOptions.m_encryptionOptions.m_defaultCipherId = "none";
+    instanceOptions.m_encryptionOptions.m_masterCipherId = "none";
     instanceOptions.m_encryptionOptions.m_systemDbCipherId = "none";
 
     // Fill log options
@@ -123,8 +124,8 @@ void TestEnvironment::SetUp()
     LOG_INFO << "Expanding pipe buffer to the " << kPipeSize << " bytes";
     ASSERT_EQ(::fcntl(m_pipes[1], F_SETPIPE_SZ, kPipeSize), kPipeSize);
 
-    m_input = std::make_unique<siodb::io::FdDevice>(m_pipes[0], true);
-    m_output = std::make_unique<siodb::io::FdDevice>(m_pipes[1], true);
+    m_input = std::make_unique<siodb::io::FDStream>(m_pipes[0], true);
+    m_output = std::make_unique<siodb::io::FDStream>(m_pipes[1], true);
 }
 
 void TestEnvironment::TearDown()

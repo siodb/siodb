@@ -12,8 +12,8 @@
 #include "../Table.h"
 #include "../ThrowDatabaseError.h"
 #include "../TransactionParameters.h"
-#include "../parser/DatabaseContext.h"
-#include "../parser/EmptyContext.h"
+#include "../parser/DBExpressionEvaluationContext.h"
+#include "../parser/EmptyExpressionEvaluationContext.h"
 
 // Common project headers
 #include <siodb/common/io/FileIO.h>
@@ -70,11 +70,12 @@ void RequestHandler::executeUpdateRequest(
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
 
     const auto tableDataSet = std::make_shared<TableDataSet>(table, request.m_table.m_alias);
-    requests::DatabaseContext dbContext(std::vector<DataSetPtr> {tableDataSet});
+    requests::DBExpressionEvaluationContext dbContext(std::vector<DataSetPtr> {tableDataSet});
 
     for (const auto& columnRef : request.m_columns) {
         if (columnRef.m_column == kMasterColumnName) {
-            errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorCannotUpdateMasterColumn));
+            errors.push_back(makeDatabaseError(IOManagerMessageId::kErrorCannotUpdateMasterColumn,
+                    database->getName(), table->getName()));
             continue;
         }
 
@@ -109,8 +110,10 @@ void RequestHandler::executeUpdateRequest(
 
     if (request.m_where)
         updateColumnsFromExpression(dbContext.getDataSets(), request.m_where, errors);
+
     for (const auto& expr : request.m_values)
         updateColumnsFromExpression(dbContext.getDataSets(), expr, errors);
+
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
     checkWhereExpression(request.m_where, dbContext);
@@ -174,7 +177,7 @@ void RequestHandler::executeDeleteRequest(
 
     const auto tableDataSet = std::make_shared<TableDataSet>(
             database->findTableChecked(request.m_table.m_name), request.m_table.m_alias);
-    requests::DatabaseContext dbContext(std::vector<DataSetPtr> {tableDataSet});
+    requests::DBExpressionEvaluationContext dbContext(std::vector<DataSetPtr> {tableDataSet});
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
     if (request.m_where)
@@ -231,7 +234,7 @@ void RequestHandler::executeInsertRequest(
     if (request.m_values.empty()) throwDatabaseError(IOManagerMessageId::kErrorValuesListIsEmpty);
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
-    requests::EmptyContext context;
+    requests::EmptyExpressionEvaluationContext context;
 
     const bool requestHasColumns = !request.m_columns.empty();
 
@@ -308,9 +311,9 @@ void RequestHandler::executeInsertRequest(
             rowValues.push_back(expression->evaluate(context));
 
         if (columnNames.empty())
-            table->insertRow(rowValues, transactionParams);
+            table->insertRow(std::move(rowValues), transactionParams);
         else
-            table->insertRow(columnNames, rowValues, transactionParams);
+            table->insertRow(columnNames, std::move(rowValues), transactionParams);
 
         response.set_affected_row_count(++insertedRowCount);
     }

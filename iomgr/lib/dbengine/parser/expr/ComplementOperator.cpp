@@ -11,7 +11,7 @@ MutableOrConstantString ComplementOperator::getExpressionText() const
     return "Complement";
 }
 
-Variant ComplementOperator::evaluate(Context& context) const
+Variant ComplementOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto value = m_operand->evaluate(context);
     if (value.isNull()) return nullptr;

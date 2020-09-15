@@ -5,14 +5,11 @@
 #pragma once
 
 // Project headers
+#include "ExpressionEvaluationContext.h"
 #include "ExpressionType.h"
 
 // Common project headers
-#include <siodb/iomgr/shared/dbengine/ColumnDataType.h>
-
-// Common project headers
 #include <siodb/common/utils/MutableOrConstantString.h>
-#include <siodb/iomgr/shared/dbengine/Variant.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/ColumnDataType.pb.h>
@@ -32,30 +29,6 @@ protected:
     }
 
 public:
-    /** Expression evaluation context */
-    class Context {
-    public:
-        /** De-initializes object of class Context. */
-        virtual ~Context() = default;
-
-        /**
-         * Returns column value. May read value from the underlying source, 
-         * if it is not yet cached.
-         * @param tableIndex Table index.
-         * @param columnIndex Column index.
-         * @return Value of the specified column.
-         */
-        virtual const Variant& getColumnValue(std::size_t tableIndex, std::size_t columnIndex) = 0;
-        /**
-         * Returns column data type.
-         * @param tableIndex Table index.
-         * @param columnIndex Column index.
-         * @return Column data type.
-         */
-        virtual ColumnDataType getColumnDataType(
-                std::size_t tableIndex, std::size_t columnIndex) const = 0;
-    };
-
     /** De-initializes object of class Expression. */
     virtual ~Expression() = default;
 
@@ -97,21 +70,21 @@ public:
      * @param context Evaluation context.
      * @return true if expression result value type is DateTime, false otherwise
      */
-    virtual bool canCastAsDateTime(const Context& context) const noexcept;
+    virtual bool canCastAsDateTime(const ExpressionEvaluationContext& context) const noexcept;
 
     /**
      * Returns value type of expression.
      * @param context Evaluation context.
      * @return Result value type.
      */
-    virtual VariantType getResultValueType(const Context& context) const = 0;
+    virtual VariantType getResultValueType(const ExpressionEvaluationContext& context) const = 0;
 
     /**
      * Returns type of generated column from this expression.
      * @param context Evaluation context.
      * @return Column data type.
      */
-    virtual ColumnDataType getColumnDataType(const Context& context) const = 0;
+    virtual ColumnDataType getColumnDataType(const ExpressionEvaluationContext& context) const = 0;
 
     /**
      * Returns expression text.
@@ -149,14 +122,14 @@ public:
      * Checks if expression is valid.
      * @param context Evaluation context.
      */
-    virtual void validate(const Context& context) const = 0;
+    virtual void validate(const ExpressionEvaluationContext& context) const = 0;
 
     /**
      * Evaluates expression.
      * @param context Evaluation context.
      * @return Resulting value.
      */
-    virtual Variant evaluate(Context& context) const = 0;
+    virtual Variant evaluate(ExpressionEvaluationContext& context) const = 0;
 
     /**
      * Serializes this expression, doesn't check memory buffer size.

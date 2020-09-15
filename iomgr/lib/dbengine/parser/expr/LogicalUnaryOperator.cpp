@@ -6,20 +6,22 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType LogicalUnaryOperator::getResultValueType(const Context& context) const
+VariantType LogicalUnaryOperator::getResultValueType(
+        const ExpressionEvaluationContext& context) const
 {
     return isBoolType(m_operand->getResultValueType(context)) ? VariantType::kBool
                                                               : VariantType::kNull;
 }
 
-ColumnDataType LogicalUnaryOperator::getColumnDataType(const Context& context) const
+ColumnDataType LogicalUnaryOperator::getColumnDataType(
+        const ExpressionEvaluationContext& context) const
 {
     return (m_operand->getColumnDataType(context) == COLUMN_DATA_TYPE_BOOL)
                    ? COLUMN_DATA_TYPE_BOOL
                    : COLUMN_DATA_TYPE_UNKNOWN;
 }
 
-void LogicalUnaryOperator::validate(const Context& context) const
+void LogicalUnaryOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_operand->validate(context);
     const auto resultType = m_operand->getResultValueType(context);

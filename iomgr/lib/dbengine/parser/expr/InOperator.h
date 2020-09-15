@@ -26,7 +26,7 @@ public:
 
     /**
      * Returns indication that this is NOT IN operator.
-     * @return true in case of NOT IN operator, false otherwise.
+     * @return true if this is NOT IN operator, false otherwise.
      */
     bool isNotIn() const noexcept
     {
@@ -56,14 +56,14 @@ public:
      * @param context Evaluation context.
      * @return Evaluated expression value type.
      */
-    VariantType getResultValueType(const Context& context) const override;
+    VariantType getResultValueType(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Returns type of generated column from this expression.
      * @param context Evaluation context.
      * @return Column data type.
      */
-    ColumnDataType getColumnDataType(const Context& context) const override;
+    ColumnDataType getColumnDataType(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Returns expression text.
@@ -81,14 +81,14 @@ public:
      * Checks that operands are valid.
      * @param context Evaluation context.
      */
-    void validate(const Context& context) const;
+    void validate(const ExpressionEvaluationContext& context) const;
 
     /**
      * Evaluates expression.
      * @param context Evaluation context.
      * @return Resulting value.
      */
-    Variant evaluate(Context& context) const override;
+    Variant evaluate(ExpressionEvaluationContext& context) const override;
 
     /**
      * Serializes this expression, doesn't check memory buffer size.
@@ -125,7 +125,7 @@ private:
     /** Allowed variants of value */
     const std::vector<ExpressionPtr> m_variants;
 
-    /** true in case of NOT IN operator, false otherwise */
+    /** NOT IN operator flag */
     const bool m_notIn;
 };
 

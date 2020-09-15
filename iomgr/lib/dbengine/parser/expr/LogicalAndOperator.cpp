@@ -11,7 +11,7 @@ MutableOrConstantString LogicalAndOperator::getExpressionText() const
     return "Logical AND";
 }
 
-Variant LogicalAndOperator::evaluate(Context& context) const
+Variant LogicalAndOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftVal = m_left->evaluate(context);
     if (leftVal.isNull()) return nullptr;

@@ -36,7 +36,7 @@ public:
 
     /**
      * Creates copy of this stream.
-     * @return copy of this stream or nullptr of cloning of stream is not possible.
+     * @return Copy of this stream object.
      */
     BinaryValueBlobStream* clone() const override;
 

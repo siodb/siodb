@@ -45,7 +45,7 @@ public:
      * @param value Bit value.
      * @throw std::out_of_range if bit index is out of range.
      */
-    void set(std::size_t pos, bool value)
+    void set(std::size_t pos, bool value = true)
     {
         const auto byte_pos = pos / 8;
         const auto bit_pos = pos % 8;
@@ -53,6 +53,18 @@ public:
             m_data.at(byte_pos) |= (1 << bit_pos);
         else
             m_data.at(byte_pos) &= ~(1 << bit_pos);
+    }
+
+    /**
+     * Sets value of a specified bit to 0.
+     * @param pos Bit position.
+     * @throw std::out_of_range if bit index is out of range.
+     */
+    void reset(std::size_t pos)
+    {
+        const auto byte_pos = pos / 8;
+        const auto bit_pos = pos % 8;
+        m_data.at(byte_pos) &= ~(1 << bit_pos);
     }
 
     /**

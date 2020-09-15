@@ -13,7 +13,7 @@
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/StartupActions.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
@@ -109,16 +109,17 @@ void CreateAndLoadInstance(const char* cipherId)
     } while (false);
 
     instanceOptions.m_encryptionOptions.m_defaultCipherId = cipherId;
+    instanceOptions.m_encryptionOptions.m_masterCipherId = cipherId;
     instanceOptions.m_encryptionOptions.m_systemDbCipherId = cipherId;
 
     const auto cipher = siodb::iomgr::dbengine::crypto::getCipher(
-            instanceOptions.m_encryptionOptions.m_systemDbCipherId);
+            instanceOptions.m_encryptionOptions.m_masterCipherId);
     if (cipher) {
-        LOG_INFO << "Filling encryption key...";
-        const auto keyLength = cipher->getKeySize() / 8;
-        auto& key = instanceOptions.m_encryptionOptions.m_systemDbCipherKey;
+        LOG_INFO << "Filling master encryption key...";
+        const auto keyLength = cipher->getKeySizeInBits() / 8;
+        auto& key = instanceOptions.m_encryptionOptions.m_masterCipherKey;
         key.resize(keyLength);
-        std::fill_n(key.begin(), key.size(), 111);
+        std::fill_n(key.begin(), key.size(), 0xAB);
     }
 
     // Create instance

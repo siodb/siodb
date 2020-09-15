@@ -6,12 +6,12 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType ListExpression::getResultValueType(const Context& context) const
+VariantType ListExpression::getResultValueType(const ExpressionEvaluationContext& context) const
 {
     return m_items.empty() ? VariantType::kNull : m_items.back()->getResultValueType(context);
 }
 
-ColumnDataType ListExpression::getColumnDataType(const Context& context) const
+ColumnDataType ListExpression::getColumnDataType(const ExpressionEvaluationContext& context) const
 {
     return m_items.empty() ? COLUMN_DATA_TYPE_UNKNOWN : m_items.back()->getColumnDataType(context);
 }
@@ -29,13 +29,13 @@ std::size_t ListExpression::getSerializedSize() const noexcept
     return result;
 }
 
-void ListExpression::validate(const Context& context) const
+void ListExpression::validate(const ExpressionEvaluationContext& context) const
 {
     for (const auto& item : m_items)
         item->validate(context);
 }
 
-Variant ListExpression::evaluate(Context& context) const
+Variant ListExpression::evaluate(ExpressionEvaluationContext& context) const
 {
     Variant v;
     if (!m_items.empty()) {

@@ -3,6 +3,7 @@
 // in the LICENSE file.
 
 // Project headers
+#include "dbengine/reg/CipherKeyRecord.h"
 #include "dbengine/reg/ColumnDefinitionRecord.h"
 #include "dbengine/reg/ColumnSetRecord.h"
 #include "dbengine/reg/ConstraintRecord.h"
@@ -65,8 +66,8 @@ TEST(Serialization, ColumnDefinitionConstraintRecord_Empty)
 TEST(Serialization, Filled_ColumnDefinitionConstraintRecord)
 {
     constexpr std::size_t kSerializedSize = 26;
-    const dbengine::ColumnDefinitionConstraintRecord src(0x100, 0x10000, 0x1000000);
-    checkRecord(src, kSerializedSize);
+    const dbengine::ColumnDefinitionConstraintRecord record(0x100, 0x10000, 0x1000000);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, ColumnDefinitionRecord_Empty)
@@ -78,15 +79,15 @@ TEST(Serialization, ColumnDefinitionRecord_Empty)
 TEST(Serialization, Filled1_ColumnDefinitionRecord)
 {
     constexpr std::size_t kSerializedSize = 23;
-    const dbengine::ColumnDefinitionRecord src(0x100, 0x10000);
-    checkRecord(src, kSerializedSize);
+    const dbengine::ColumnDefinitionRecord record(0x100, 0x10000);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, Filled2_ColumnDefinitionRecord)
 {
     constexpr std::size_t kSerializedSize = 23;
-    const dbengine::ColumnDefinitionRecord src(0x100, 0x10000);
-    checkRecord(src, kSerializedSize);
+    const dbengine::ColumnDefinitionRecord record(0x100, 0x10000);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, ColumnSetColumnRecord_Empty)
@@ -98,8 +99,8 @@ TEST(Serialization, ColumnSetColumnRecord_Empty)
 TEST(Serialization, ColumnSetColumnRecord_Filled)
 {
     constexpr std::size_t kSerializedSize = 31;
-    const dbengine::ColumnSetColumnRecord src(0x100, 0x10000, 0x1000000, 0x100000000ULL);
-    checkRecord(src, kSerializedSize);
+    const dbengine::ColumnSetColumnRecord record(0x100, 0x10000, 0x1000000, 0x100000000ULL);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, ColumnSetRecord_Empty)
@@ -111,8 +112,8 @@ TEST(Serialization, ColumnSetRecord_Empty)
 TEST(Serialization, ColumnSetRecord_Filled1)
 {
     constexpr std::size_t kSerializedSize = 23;
-    const dbengine::ColumnSetRecord src(0x100, 0x10000);
-    checkRecord(src, kSerializedSize);
+    const dbengine::ColumnSetRecord record(0x100, 0x10000);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, ColumnSetRecord_Filled2)
@@ -122,8 +123,8 @@ TEST(Serialization, ColumnSetRecord_Filled2)
     columns.emplace(0x1, 0x1, 0x1, 0x1);
     columns.emplace(0x100, 0x100, 0x100, 0x100);
     columns.emplace(0x101, 0x10000, 0x1000000, 0x100000000ULL);
-    const dbengine::ColumnSetRecord src(0x100, 0x10000, std::move(columns));
-    checkRecord(src, kSerializedSize);
+    const dbengine::ColumnSetRecord record(0x100, 0x10000, std::move(columns));
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, ConstraintRecord_Empty)
@@ -135,27 +136,24 @@ TEST(Serialization, ConstraintRecord_Empty)
 TEST(Serialization, ConstraintRecord_Filled)
 {
     constexpr std::size_t kSerializedSize = 60;
-    const dbengine::ConstraintRecord src(0x100, "some_name", dbengine::ConstraintState::kActive,
+    const dbengine::ConstraintRecord record(0x100, "some_name", dbengine::ConstraintState::kActive,
             0x10000, 0x1000000, 0x100000000ULL, "some_description");
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, DatabaseRecord_Empty)
 {
-    constexpr std::size_t kSerializedSize = 38;
+    constexpr std::size_t kSerializedSize = 37;
     checkEmptyRecord<dbengine::DatabaseRecord>(kSerializedSize);
 }
 
 TEST(Serialization, DatabaseRecord_Filled)
 {
-    constexpr std::size_t kSerializedSize = 76;
-    const dbengine::DatabaseRecord src(0x100,
+    constexpr std::size_t kSerializedSize = 59;
+    const dbengine::DatabaseRecord record(0x100,
             boost::lexical_cast<siodb::Uuid>("0dfee496-6700-4c73-abab-13ac0a154306"), "db1",
-            "aes128",
-            siodb::BinaryValue {
-                    0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf},
-            "my database");
-    checkRecord(src, kSerializedSize);
+            "aes128", "my database");
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, IndexColumnRecord_Empty)
@@ -167,8 +165,8 @@ TEST(Serialization, IndexColumnRecord_Empty)
 TEST(Serialization, IndexColumnRecord_Filled)
 {
     constexpr std::size_t kSerializedSize = 27;
-    const dbengine::IndexColumnRecord src(0x100, 0x10000, 0x1000000, true);
-    checkRecord(src, kSerializedSize);
+    const dbengine::IndexColumnRecord record(0x100, 0x10000, 0x1000000, true);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, IndexRecord_Empty)
@@ -181,9 +179,9 @@ TEST(Serialization, IndexRecord_Filled1)
 {
     constexpr std::size_t kSerializedSize = 47;
     dbengine::IndexColumnRegistry columns;
-    const dbengine::IndexRecord src(0x100, dbengine::IndexType::kLinearIndexU64, 0x10000, true,
+    const dbengine::IndexRecord record(0x100, dbengine::IndexType::kLinearIndexU64, 0x10000, true,
             "index1", std::move(columns), siodb::kDefaultDataFileSize << 8, "my index");
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, IndexRecord_Filled2)
@@ -193,9 +191,9 @@ TEST(Serialization, IndexRecord_Filled2)
     columns.emplace(0x1, 0x1, 0x1, false);
     columns.emplace(0x100, 0x100, 0x100, true);
     columns.emplace(0x10000, 0x10000, 0x10000, true);
-    const dbengine::IndexRecord src(0x100, dbengine::IndexType::kLinearIndexU64, 0x10000, true,
+    const dbengine::IndexRecord record(0x100, dbengine::IndexType::kLinearIndexU64, 0x10000, true,
             "index1", std::move(columns), siodb::kDefaultDataFileSize << 8, "my index");
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, TableRecord_Empty)
@@ -207,9 +205,9 @@ TEST(Serialization, TableRecord_Empty)
 TEST(Serialization, TableRecord_Filled)
 {
     constexpr std::size_t kSerializedSize = 44;
-    const dbengine::TableRecord src(
+    const dbengine::TableRecord record(
             0x100, dbengine::TableType::kMemory, "table1", 0x10000, 0x1000000, "my table");
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserAccessKeyRecord_Empty)
@@ -221,11 +219,11 @@ TEST(Serialization, UserAccessKeyRecord_Empty)
 TEST(Serialization, UserAccessKeyRecord_Filled)
 {
     constexpr std::size_t kSerializedSize = 138;
-    const dbengine::UserAccessKeyRecord src(0x100, 0x10000, "user1-key1",
+    const dbengine::UserAccessKeyRecord record(0x100, 0x10000, "user1-key1",
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9UkQ "
             "user1@host",
             "my ssh key", true);
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserTokenRecord_Empty)
@@ -237,10 +235,10 @@ TEST(Serialization, UserTokenRecord_Empty)
 TEST(Serialization, UserTokenRecord_Filled)
 {
     constexpr std::size_t kSerializedSize = 64;
-    const dbengine::UserTokenRecord src(0x100, 0x10000, "user1-token1",
+    const dbengine::UserTokenRecord record(0x100, 0x10000, "user1-token1",
             siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 1,
             "my token");
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserPermissionRecord_Empty)
@@ -252,9 +250,9 @@ TEST(Serialization, UserPermissionRecord_Empty)
 TEST(Serialization, UserPermissionRecord_Filled)
 {
     constexpr std::size_t kSerializedSize = 36;
-    const dbengine::UserPermissionRecord src(0x100, 0x10000, 0x1000000,
+    const dbengine::UserPermissionRecord record(0x100, 0x10000, 0x1000000,
             dbengine::DatabaseObjectType::kTable, 0x100000000ULL, 0x1fff, 0x1fff);
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Empty)
@@ -266,8 +264,8 @@ TEST(Serialization, UserRecord_Empty)
 TEST(Serialization, UserRecord_Filled1)
 {
     constexpr std::size_t kSerializedSize = 50;
-    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true, {}, {});
-    checkRecord(src, kSerializedSize);
+    const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true, {}, {});
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled2)
@@ -290,10 +288,10 @@ TEST(Serialization, UserRecord_Filled2)
 
     dbengine::UserTokenRegistry userTokens;
 
-    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true,
+    const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true,
             std::move(userAccessKeys), std::move(userTokens));
 
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled3)
@@ -319,10 +317,10 @@ TEST(Serialization, UserRecord_Filled3)
             siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
             std::nullopt, "my token");
 
-    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true,
+    const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true,
             std::move(userAccessKeys), std::move(userTokens));
 
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled4)
@@ -352,8 +350,22 @@ TEST(Serialization, UserRecord_Filled4)
                     5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
             1, "my token 2");
 
-    const dbengine::UserRecord src(0x100, "user1", "John Doe", "first user", true,
+    const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true,
             std::move(userAccessKeys), std::move(userTokens));
 
-    checkRecord(src, kSerializedSize);
+    checkRecord(record, kSerializedSize);
+}
+
+TEST(Serialization, CipherKeyRecord_Empty)
+{
+    constexpr std::size_t kSerializedSize = 20;
+    checkEmptyRecord<dbengine::CipherKeyRecord>(kSerializedSize);
+}
+
+TEST(Serialization, CipherKeyRecord_Filled)
+{
+    constexpr std::size_t kSerializedSize = 43;
+    const dbengine::CipherKeyRecord record(128U, "aes128",
+            siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    checkRecord(record, kSerializedSize);
 }

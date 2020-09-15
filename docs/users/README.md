@@ -1,18 +1,18 @@
-# User documentation
+# User Documentation
 
-We write the user documentation in Markdown. Then you can build the user documentation with [mkdocs](https://www.mkdocs.org).
+We write the user documentation in Markdown.
+Then you can build the user documentation with [mkdocs](https://www.mkdocs.org).
 
-## How to install mkdocs?
+## Install mkdocs
 
-- https://www.mkdocs.org/#installation
+Refer to the [mkdocs Installation Guide](https://www.mkdocs.org/#installation).
 
-## How to preview the user documentation?
+## Preview user documentation
 
-Then you can view the result of your change before committing with `mkdocs`.
-For instance, that will launch a web server to preview your site as you work:
+You can view the result of your change before committing with `mkdocs`.
+For instance, following will launch a web server to preview your docs as you work:
 
 ```bash
 cd docs/users
 mkdocs serve
 ```
-

@@ -11,7 +11,7 @@ MutableOrConstantString GreaterOrEqualOperator::getExpressionText() const
     return "GREATER OR EQUAL";
 }
 
-Variant GreaterOrEqualOperator::evaluate(Context& context) const
+Variant GreaterOrEqualOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

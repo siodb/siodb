@@ -5,7 +5,7 @@
 #pragma once
 
 // Project headers
-#include "IOManagerConnectionHandler.h"
+#include "IOManagerConnectionHandlerFactory.h"
 
 // Common project headers
 #include <siodb/common/options/SiodbOptions.h>
@@ -21,13 +21,18 @@ class IOManagerConnectionManager {
 public:
     /**
      * Initialized object of class IOManagerConnectionManager.
+     * @param name Connection managr name, used for logging.
      * @param socketDomain TCP/IP socket domain, can be AF_INET or AF_INET6.
-     * @param instanceOptions Database options.
+     * @param port Server port.
+     * @param connectionListenerBacklog Conneciton listener queue size.
+     * @param deadConnectionCleanupInterval Dead connection cleanup interval in seconds.
      * @param requestDispatcher Request dispatcher.
+     * @param connectionHandlerFactory Connection handler factory.
      */
-    IOManagerConnectionManager(int socketDomain,
-            const config::ConstInstaceOptionsPtr& instanceOptions,
-            IOManagerRequestDispatcher& requestDispatcher);
+    IOManagerConnectionManager(const char* name, int socketDomain, int port,
+            unsigned connectionListenerBacklog, unsigned deadConnectionCleanupInterval,
+            IOManagerRequestDispatcher& requestDispatcher,
+            IOManagerConnectionHandlerFactory& connectionHandlerFactory);
 
     /** De-initializes object */
     ~IOManagerConnectionManager();
@@ -53,9 +58,10 @@ private:
 
     /**
      * Creates log context name.
+     * @param Connection manager name.
      * @return Log context name.
      */
-    std::string createLogContextName() const;
+    std::string createLogContextName(const char* name) const;
 
 private:
     /** Socket domain */
@@ -64,11 +70,20 @@ private:
     /** Socket type string */
     const std::string m_logContext;
 
-    /** Database options */
-    const config::ConstInstaceOptionsPtr m_dbOptions;
+    /** Server port */
+    const int m_port;
+
+    /** Connection listener backlog */
+    const unsigned m_userConnectionListenerBacklog;
+
+    /** Dead connection cleanup interval */
+    const std::chrono::seconds m_deadConnectionCleanupInterval;
 
     /** Request dispartcher */
     IOManagerRequestDispatcher& m_requestDispatcher;
+
+    /** Connection handler factory object */
+    IOManagerConnectionHandlerFactory& m_connectionHandlerFactory;
 
     /** Exit request flag */
     std::atomic<bool> m_exitRequested;
@@ -87,9 +102,6 @@ private:
 
     /** Dead connection monitor thread */
     std::thread m_deadConnectionCleanupThread;
-
-    /** Log context name */
-    static constexpr const char* kLogContextBase = "IOManagerConnectionManager";
 };
 
 }  // namespace siodb::iomgr

@@ -19,14 +19,17 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/options/SiodbOptions.h>
+#include <siodb/common/stl_ext/algorithm_ext.h>
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/common/utils/RandomUtils.h>
+#include <siodb/iomgr/shared/dbengine/crypto/KeyGenerator.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/CipherContext.h>
 
 // CRT headers
 #include <cstdio>
@@ -50,10 +53,16 @@ Instance::Instance(const config::SiodbOptions& options)
     , m_name(options.m_generalOptions.m_name)
     , m_dataDir(options.m_generalOptions.m_dataDirectory)
     , m_defaultDatabaseCipherId(options.m_encryptionOptions.m_defaultCipherId)
+    , m_masterCipher(crypto::getCipher(options.m_encryptionOptions.m_masterCipherId))
+    , m_masterCipherKey(
+              options.m_encryptionOptions.m_masterCipherKey.empty()
+                      ? loadMasterCipherKey(options.m_encryptionOptions.m_masterCipherKeyPath)
+                      : options.m_encryptionOptions.m_masterCipherKey)
+    , m_masterEncryptionContext(
+              m_masterCipher ? m_masterCipher->createEncryptionContext(m_masterCipherKey) : nullptr)
+    , m_masterDecryptionContext(
+              m_masterCipher ? m_masterCipher->createDecryptionContext(m_masterCipherKey) : nullptr)
     , m_systemDatabaseCipherId(options.m_encryptionOptions.m_systemDbCipherId)
-    , m_systemDatabaseCipherKey(options.m_encryptionOptions.m_systemDbCipherKey.empty()
-                                        ? loadSystemDatabaseCipherKey()
-                                        : options.m_encryptionOptions.m_systemDbCipherKey)
     , m_superUserInitialAccessKey(options.m_generalOptions.m_superUserInitialAccessKey.empty()
                                           ? loadSuperUserInitialAccessKey()
                                           : options.m_generalOptions.m_superUserInitialAccessKey)
@@ -78,11 +87,6 @@ std::string Instance::makeDisplayName() const
     return oss.str();
 }
 
-std::uint32_t Instance::generateNextDatabaseId(bool system)
-{
-    return m_systemDatabase ? m_systemDatabase->generateNextDatabaseId(system) : 1;
-}
-
 std::size_t Instance::getDatbaseCount() const
 {
     std::lock_guard lock(m_mutex);
@@ -93,12 +97,28 @@ std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName() const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_databaseRegistry.byName();
-    std::vector<DatabaseRecord> databaseRecords(index.begin(), index.end());
+    std::vector<DatabaseRecord> databaseRecords(index.cbegin(), index.cend());
     std::sort(databaseRecords.begin(), databaseRecords.end(),
             [](const auto& left, const auto& right) noexcept {
                 return left.m_name < right.m_name;
             });
     return databaseRecords;
+}
+
+std::vector<std::string> Instance::getDatabaseNames(bool includeSystemDatabase) const
+{
+    std::lock_guard lock(m_mutex);
+    std::vector<std::string> result;
+    result.reserve(m_databaseRegistry.size());
+    const auto& index = m_databaseRegistry.byName();
+    stdext::transform_if(
+            index.cbegin(), index.cend(), std::back_inserter(result),
+            [](const auto& databaseRecord) { return databaseRecord.m_name; },
+            [includeSystemDatabase](const auto& databaseRecord) {
+                return databaseRecord.m_name != kSystemDatabaseName || includeSystemDatabase;
+            });
+    std::sort(result.begin(), result.end());
+    return result;
 }
 
 DatabasePtr Instance::findDatabaseChecked(const std::string& databaseName)
@@ -123,8 +143,8 @@ DatabasePtr Instance::findDatabase(const std::string& databaseName)
 }
 
 DatabasePtr Instance::createDatabase(std::string&& name, const std::string& cipherId,
-        BinaryValue&& cipherKey, std::uint32_t currentUserId,
-        std::optional<std::string>&& description)
+        BinaryValue&& cipherKey, std::optional<std::string>&& description,
+        std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
 
@@ -544,14 +564,27 @@ AuthenticationResult Instance::authenticateUser(
     return AuthenticationResult(user->getId(), beginSession());
 }
 
-AuthenticationResult Instance::authenticateUser(
-        const std::string& userName, const std::string& token)
+std::uint32_t Instance::authenticateUser(const std::string& userName, const std::string& token)
 {
     const auto user = findUserChecked(userName);
     if (!user->authenticate(token))
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessDenied, userName);
-    LOG_INFO << "Instance: User '" << userName << "' authenticated.";
-    return AuthenticationResult(user->getId(), beginSession());
+    LOG_INFO << "Instance: User '" << userName << "' authenticated via token.";
+    return user->getId();
+}
+
+Uuid Instance::beginSession()
+{
+    std::lock_guard lock(m_sessionMutex);
+
+    Uuid sessionUuid;
+    do {
+        sessionUuid = m_sessionUuidGenerator();
+    } while (m_activeSessions.find(sessionUuid) != m_activeSessions.end());
+
+    m_activeSessions.emplace(sessionUuid, std::make_shared<ClientSession>(sessionUuid));
+    LOG_INFO << "Session " << sessionUuid << " started";
+    return sessionUuid;
 }
 
 void Instance::endSession(const Uuid& sessionUuid)
@@ -560,6 +593,54 @@ void Instance::endSession(const Uuid& sessionUuid)
     if (m_activeSessions.erase(sessionUuid) == 0)
         throwDatabaseError(IOManagerMessageId::kErrorSessionDoesNotExist, sessionUuid);
     LOG_INFO << "Session " << sessionUuid << " finished";
+}
+
+std::uint32_t Instance::generateNextDatabaseId(bool system)
+{
+    return m_systemDatabase ? m_systemDatabase->generateNextDatabaseId(system) : 1;
+}
+
+BinaryValue Instance::encryptWithMasterEncryption(const void* data, std::size_t size) const
+{
+    BinaryValue buffer;
+    if (size > 0) {
+        if (m_masterCipher) {
+            const auto blockSize = m_masterCipher->getBlockSizeInBits() / 8;
+            const auto r = size % blockSize;
+            const auto bufferSize = size + (r == 0 ? 0 : blockSize - r);
+            buffer.resize(bufferSize);
+            m_masterEncryptionContext->transform(data, size / blockSize, buffer.data());
+            if (r > 0) {
+                // A bit speculative, but should work for the most cases
+                std::uint8_t xbuffer[2048];
+                std::memcpy(xbuffer, static_cast<const std::uint8_t*>(data) + size - r, r);
+                std::memset(xbuffer + r, 0, blockSize - r);
+                m_masterEncryptionContext->transform(
+                        xbuffer, 1, buffer.data() + buffer.size() - blockSize);
+            }
+        } else {
+            buffer.resize(size);
+            std::memcpy(buffer.data(), data, size);
+        }
+    }
+    return buffer;
+}
+
+BinaryValue Instance::decryptWithMasterEncryption(const void* data, std::size_t size) const
+{
+    BinaryValue buffer;
+    if (size > 0) {
+        if (m_masterCipher) {
+            const auto blockSize = m_masterCipher->getBlockSizeInBits() / 8;
+            if (size % blockSize != 0) throw std::invalid_argument("Invalid data size");
+            buffer.resize(size);
+            m_masterDecryptionContext->transform(data, size / blockSize, buffer.data());
+        } else {
+            buffer.resize(size);
+            std::memcpy(buffer.data(), data, size);
+        }
+    }
+    return buffer;
 }
 
 // ---- internal ----
@@ -584,7 +665,7 @@ void Instance::loadInstanceData()
     m_metadataFile.reset(openMetadataFile());
     loadMetadata();
     loadSystemDatabase();
-    loadSuperUser();
+    loadUsers();
     checkDataConsistency();
 }
 
@@ -611,8 +692,11 @@ void Instance::ensureDataDir() const
 void Instance::createSystemDatabase()
 {
     LOG_DEBUG << "Instance: Creating system database.";
-    m_systemDatabase = std::make_shared<SystemDatabase>(*this, m_systemDatabaseCipherId,
-            BinaryValue(m_systemDatabaseCipherKey), m_superUserInitialAccessKey);
+    const auto cipher = crypto::getCipher(m_systemDatabaseCipherId);
+    const auto keyLength = cipher ? cipher->getKeySizeInBits() : 0;
+    auto cipherKey = cipher ? crypto::generateCipherKey(keyLength, nullptr) : BinaryValue();
+    m_systemDatabase =
+            std::make_shared<SystemDatabase>(*this, m_systemDatabaseCipherId, std::move(cipherKey));
     m_databaseRegistry.emplace(*m_systemDatabase);
     m_databaseCache.emplace(m_systemDatabase->getId(), m_systemDatabase);
 }
@@ -620,10 +704,16 @@ void Instance::createSystemDatabase()
 void Instance::loadSystemDatabase()
 {
     LOG_DEBUG << "Instance: Loading system database.";
-    m_systemDatabase = std::make_shared<SystemDatabase>(
-            *this, m_systemDatabaseCipherId, BinaryValue(m_systemDatabaseCipherKey));
+    m_systemDatabase = std::make_shared<SystemDatabase>(*this, m_systemDatabaseCipherId);
     m_databaseRegistry.emplace(*m_systemDatabase);
     m_databaseCache.emplace(m_systemDatabase->getId(), m_systemDatabase);
+}
+
+void Instance::loadUsers()
+{
+    LOG_DEBUG << "Instance: Loading users.";
+    m_systemDatabase->readAllUsers(m_userRegistry);
+    m_superUser = findUserChecked(User::kSuperUserId);
 }
 
 void Instance::createSuperUser()
@@ -642,13 +732,6 @@ void Instance::createSuperUser()
     m_userCache.emplace(m_superUser->getId(), m_superUser);
 }
 
-void Instance::loadSuperUser()
-{
-    LOG_DEBUG << "Instance: Loading super user.";
-    m_systemDatabase->readAllUsers(m_userRegistry);
-    m_superUser = findUserChecked(User::kSuperUserId);
-}
-
 void Instance::recordSuperUser()
 {
     LOG_DEBUG << "Instance: Recording super user.";
@@ -658,34 +741,36 @@ void Instance::recordSuperUser()
         m_systemDatabase->recordUserAccessKey(*accessKey, tp);
 }
 
-BinaryValue Instance::loadSystemDatabaseCipherKey() const
+BinaryValue Instance::loadMasterCipherKey(const std::string& keyPath) const
 {
-    LOG_DEBUG << "Instance: Loading system database cipher key.";
-    const auto cipher = crypto::getCipher(m_systemDatabaseCipherId);
-    if (!cipher) return BinaryValue();
-    BinaryValue key(cipher->getKeySize() / 8);
-    const auto keyPath = composeInstanceSysDbEncryptionKeyFilePath(m_name);
-    FdGuard fd(::open(keyPath.c_str(), O_RDONLY));
+    LOG_DEBUG << "Instance: Loading master cipher key.";
+    if (!m_masterCipher) return BinaryValue();
+
+    BinaryValue key(m_masterCipher->getKeySizeInBits() / 8);
+    FDGuard fd(::open(keyPath.c_str(), O_RDONLY | O_CLOEXEC));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
-        throwDatabaseError(IOManagerMessageId::kFatalCannotOpenSystemDatabaseEncryptionKey, keyPath,
+        throwDatabaseError(IOManagerMessageId::kFatalCannotOpenMasterEncryptionKey, keyPath,
                 errorCode, std::strerror(errorCode));
     }
+
     struct stat st;
-    if (::fstat(fd.getFd(), &st) < 0) {
+    if (::fstat(fd.getFD(), &st) < 0) {
         const int errorCode = errno;
-        throwDatabaseError(IOManagerMessageId::kFatalCannotStatSystemDatabaseEncryptionKey, keyPath,
+        throwDatabaseError(IOManagerMessageId::kFatalCannotStatMasterEncryptionKey, keyPath,
                 errorCode, std::strerror(errorCode));
     }
     if (st.st_size != static_cast<off_t>(key.size())) {
-        throwDatabaseError(IOManagerMessageId::kFatalInvalidSystemDatabaseEncryptionKey, keyPath,
+        throwDatabaseError(IOManagerMessageId::kFatalInvalidMasterEncryptionKey, keyPath,
                 key.size(), st.st_size);
     }
-    if (::readExact(fd.getFd(), key.data(), key.size(), kIgnoreSignals) != key.size()) {
+
+    if (::readExact(fd.getFD(), key.data(), key.size(), kIgnoreSignals) != key.size()) {
         const int errorCode = errno;
-        throwDatabaseError(IOManagerMessageId::kFatalCannotReadSystemDatabaseEncryptionKey, keyPath,
+        throwDatabaseError(IOManagerMessageId::kFatalCannotReadMasterEncryptionKey, keyPath,
                 errorCode, std::strerror(errorCode));
     }
+
     return key;
 }
 
@@ -708,8 +793,8 @@ std::string Instance::loadSuperUserInitialAccessKey() const
         throwDatabaseError(IOManagerMessageId::kFatalCannotOpenSuperUserKey, fileName);
 
     std::string accessKey(fileSize, '\0');
-
     ifs.read(accessKey.data(), fileSize);
+    ifs.close();
 
     LOG_DEBUG << "Instance: Read super user initial access key from file.";
     return accessKey;
@@ -766,7 +851,7 @@ void Instance::loadMetadata()
 {
     // Read metadata file
     std::uint8_t buffer[kSerializedMetadataSize];
-    if (::preadExact(m_metadataFile.getFd(), buffer, sizeof(buffer), 0, kIgnoreSignals)
+    if (::preadExact(m_metadataFile.getFD(), buffer, sizeof(buffer), 0, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kFatalCannotLoadInstanceMetadata, errorCode,
@@ -787,7 +872,7 @@ void Instance::saveMetadata() const
     serializeMetadata(buffer);
 
     // Write metadata to the file
-    if (::pwriteExact(m_metadataFile.getFd(), buffer, sizeof(buffer), 0, kIgnoreSignals)
+    if (::pwriteExact(m_metadataFile.getFD(), buffer, sizeof(buffer), 0, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotSaveInstanceMetadata, errorCode,
@@ -825,7 +910,10 @@ void Instance::createInitializationFlagFile() const
     }
     ofs.exceptions(std::ios::badbit | std::ios::failbit);
     try {
-        ofs << m_name << '\n' << m_uuid << '\n' << std::time(nullptr) << '\n' << std::flush;
+        ofs << '\"' << m_name << "\"\n"
+            << m_uuid << '\n'
+            << std::time(nullptr) << '\n'
+            << std::flush;
     } catch (std::exception& ex) {
         throwDatabaseError(IOManagerMessageId::kFatalCannotCreateInstanceInitializationFlagFile,
                 initFlagFile, "can't write initialization flag file");
@@ -844,22 +932,10 @@ void Instance::checkInitializationFlagFile() const
     ifs.exceptions(std::ios::badbit | std::ios::failbit);
     std::string instanceName;
     std::getline(ifs, instanceName);
-    if (instanceName != m_name)
+    if (instanceName.size() < 2 || instanceName.front() != '\"' || instanceName.back() != '\"'
+            || instanceName.substr(1, instanceName.length() - 2) != m_name) {
         throwDatabaseError(IOManagerMessageId::kFatalInstanceNameMismatch, instanceName, m_name);
-}
-
-Uuid Instance::beginSession()
-{
-    std::lock_guard lock(m_sessionMutex);
-
-    Uuid sessionUuid;
-    do {
-        sessionUuid = m_sessionUuidGenerator();
-    } while (m_activeSessions.find(sessionUuid) != m_activeSessions.end());
-
-    m_activeSessions.emplace(sessionUuid, std::make_shared<ClientSession>(sessionUuid));
-    LOG_INFO << "Session " << sessionUuid << " started";
-    return sessionUuid;
+    }
 }
 
 UserPtr Instance::findUserUnlocked(const std::string& userName)

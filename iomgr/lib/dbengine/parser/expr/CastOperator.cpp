@@ -9,12 +9,13 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType CastOperator::getResultValueType(const Context& context) const
+VariantType CastOperator::getResultValueType(const ExpressionEvaluationContext& context) const
 {
     return convertColumnDataTypeToVariantType(getColumnDataType(context));
 }
 
-ColumnDataType CastOperator::getColumnDataType([[maybe_unused]] const Context& context) const
+ColumnDataType CastOperator::getColumnDataType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return getColumnDataTypeByName(
             static_cast<const ConstantExpression&>(*m_right).getValue().getString());
@@ -25,12 +26,12 @@ MutableOrConstantString CastOperator::getExpressionText() const
     return "CAST";
 }
 
-void CastOperator::validate(const Context& context) const
+void CastOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_left->validate(context);
 }
 
-Variant CastOperator::evaluate(Context& context) const
+Variant CastOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto resultType = getResultValueType(context);

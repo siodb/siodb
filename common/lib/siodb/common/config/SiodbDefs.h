@@ -25,8 +25,8 @@ constexpr const char* kInstanceSocketPrefix = "/run/siodb/";
 /** IO manager initialization flag file directory */
 constexpr const char* kIoManagerInitaliationFlagFileDir = "/run/siodb/";
 
-/** Siodb system database encryption key file */
-constexpr const char* kInstanceSystemDbEncryptionKeyFile = "system_db_key";
+/** Siodb default master encryption key file name */
+constexpr const char* kDefaultMasterEncryptionKeyFileName = "master_key";
 
 /** Siodb initial supoer user access key file */
 constexpr const char* kInstanceInitialSuperUserAccessKeyFile = "initial_access_key";

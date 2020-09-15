@@ -56,7 +56,7 @@ public:
      * Checks that operands are valid.
      * @param context Evaluation context.
      */
-    void validate(const Context& context) const override;
+    void validate(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Serializes this expression, doesn't check memory buffer size.
@@ -93,7 +93,7 @@ protected:
      * @param context Evaluation context.
      * @return true if any operand is null., false otherwise.
      */
-    bool hasNullOperand(const Context& context) const
+    bool hasNullOperand(const ExpressionEvaluationContext& context) const
     {
         return isNullType(m_left->getResultValueType(context))
                || isNullType(m_right->getResultValueType(context));

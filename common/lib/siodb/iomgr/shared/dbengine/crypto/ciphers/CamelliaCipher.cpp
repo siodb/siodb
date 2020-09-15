@@ -11,7 +11,7 @@ namespace siodb::iomgr::dbengine::crypto {
 
 ///// class CamelliaCipher /////////////////////////////////////////////////////
 
-unsigned CamelliaCipher::getBlockSize() const noexcept
+unsigned CamelliaCipher::getBlockSizeInBits() const noexcept
 {
     return 128;
 }
@@ -35,7 +35,7 @@ const char* Camellia128::getCipherId() const noexcept
     return "camellia128";
 }
 
-unsigned Camellia128::getKeySize() const noexcept
+unsigned Camellia128::getKeySizeInBits() const noexcept
 {
     return 128;
 }
@@ -47,7 +47,7 @@ const char* Camellia192::getCipherId() const noexcept
     return "camellia192";
 }
 
-unsigned Camellia192::getKeySize() const noexcept
+unsigned Camellia192::getKeySizeInBits() const noexcept
 {
     return 192;
 }
@@ -59,7 +59,7 @@ const char* Camellia256::getCipherId() const noexcept
     return "camellia256";
 }
 
-unsigned Camellia256::getKeySize() const noexcept
+unsigned Camellia256::getKeySizeInBits() const noexcept
 {
     return 256;
 }

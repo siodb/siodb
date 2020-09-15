@@ -44,7 +44,6 @@ TRID         UINT64 NOT NULL  Record ID
 NAME         TEXT   NOT NULL  Database name
 UUID         TEXT   NOT NULL  Database UUID
 CIPHER_ID    TEXT   NOT NULL  Cipher ID
-CIPHER_KEY   BINARY NOT NULL  Cipher key
 DESCRIPTION  TEXT   NULL      Database description
 
 
@@ -159,8 +158,8 @@ struct MasterColumnRecord {
     varuint64           TransactionId;
     varuint64           CreateTimestamp;
     varuint64           UpdateTimestamp;
-    varuint64           AtomicOperationId;
-    uint8               AtomicOperationType;
+    varuint64           Version;
+    uint8               OperationType;
     varuint32           UserId;
     varuint64           TableRowId;
     varuint64           ColumnSetId;

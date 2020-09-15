@@ -19,7 +19,7 @@ class TlsServer final {
 public:
     /**
      * Initializes object of class TlsServer.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     TlsServer();
 
@@ -28,28 +28,28 @@ public:
     /**
      * Loads certificate from a file and use it in server context.
      * @param certificateFile Certificate file path.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     void useCertificate(const char* certificateFile);
 
     /**
      * Loads certificate chain from a file and use it in server context.
      * @param certificateChainFile Certificate chain file path.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     void useCertificateChain(const char* certificateChainFile);
 
     /**
      * Loads private key file and use it in server context.
      * @param privateKeyFile Private key file path.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     void usePrivateKey(const char* privateKeyFile);
 
     /**
      * Loads CA list from a file and use it for connection with the client 
      * @param certificateChainFile Certificate chain file path.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     void setClientCAList(const char* certificateChainFile);
 
@@ -58,7 +58,7 @@ public:
      * @param connectionFd Connection file descriptor.
      * @param autoCloseFd Indication to close connection file 
      * descriptor on TLS connection close.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     std::unique_ptr<TlsConnection> acceptConnection(int connectionFd, bool autoCloseFd);
 
@@ -66,7 +66,7 @@ private:
     /**
      * Returns TLS method.
      * @return OpenSsl TLS method.
-     * @throw OpenSslError in case of OpenSsl error.
+     * @throw OpenSslError if OpenSSL error happens.
      */
     const ::SSL_METHOD* getSslMethod() const;
 

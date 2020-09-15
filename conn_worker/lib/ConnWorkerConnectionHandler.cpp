@@ -5,13 +5,13 @@
 #include "ConnWorkerConnectionHandler.h"
 
 // Common project headers
-#include <siodb/common/io/FdDevice.h>
+#include <siodb/common/io/FDStream.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/ConnectionError.h>
 #include <siodb/common/net/EpollHelpers.h>
 #include <siodb/common/net/TcpConnection.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/protobuf/SiodbProtocolTag.h>
+#include <siodb/common/protobuf/ProtocolTag.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/utils/ErrorCodeChecker.h>
@@ -51,31 +51,32 @@ std::string createChallenge()
 }  // namespace
 
 ConnWorkerConnectionHandler::ConnWorkerConnectionHandler(
-        FdGuard&& client, const config::ConstInstaceOptionsPtr& instanceOptions, bool adminMode)
+        FDGuard&& client, const config::ConstInstaceOptionsPtr& instanceOptions, bool adminMode)
     : m_dbOptions(instanceOptions)
     , m_adminMode(adminMode)
 {
-    m_clientEpollFd.reset(net::createEpollFd(client.getFd(), EPOLLIN));
+    m_clientEpollFd.reset(net::createEpollFd(client.getFD(), EPOLLIN));
     if (!m_adminMode && m_dbOptions->m_clientOptions.m_enableEncryption) {
         LOG_DEBUG << kLogContext << "Established secure connection with client";
         m_tlsServer = createTlsServer(m_dbOptions->m_clientOptions);
-        m_clientIo = std::move(m_tlsServer->acceptConnection(client.release(), true));
+        m_clientConnection = std::move(m_tlsServer->acceptConnection(client.release(), true));
     } else {
         LOG_DEBUG << kLogContext << " established non-secure connection with client";
-        m_clientIo = std::make_unique<siodb::io::FdDevice>(client.release(), true);
+        m_clientConnection = std::make_unique<siodb::io::FDStream>(client.release(), true);
     }
 
-    if (!m_clientIo->isValid()) throw std::invalid_argument("Invalid client communication channel");
+    if (!m_clientConnection->isValid())
+        throw std::invalid_argument("Invalid client communication channel");
 
-    int port = m_dbOptions->m_ioManagerOptions.m_ipv4port != 0
-                       ? m_dbOptions->m_ioManagerOptions.m_ipv4port
-                       : m_dbOptions->m_ioManagerOptions.m_ipv6port;
+    int port = m_dbOptions->m_ioManagerOptions.m_ipv4SqlPort != 0
+                       ? m_dbOptions->m_ioManagerOptions.m_ipv4SqlPort
+                       : m_dbOptions->m_ioManagerOptions.m_ipv6SqlPort;
 
-    FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
-    auto iomgrIo = std::make_unique<io::FdDevice>(fdGuard.getFd(), false);
+    FDGuard fdGuard(net::openTcpConnection("localhost", port, true));
+    auto iomgrConnection = std::make_unique<io::FDStream>(fdGuard.getFD(), false);
     fdGuard.release();
-    iomgrIo->setAutoClose(true);
-    m_ioMgrIo = std::move(iomgrIo);
+    iomgrConnection->setAutoClose();
+    m_iomgrConnection = std::move(iomgrConnection);
 }
 
 void ConnWorkerConnectionHandler::run()
@@ -84,7 +85,7 @@ void ConnWorkerConnectionHandler::run()
     const utils::ExitSignalAwareErrorCodeChecker errorCodeChecker;
 
     auto ioMgrInputStream =
-            std::make_unique<protobuf::CustomProtobufInputStream>(*m_ioMgrIo, errorCodeChecker);
+            std::make_unique<protobuf::StreamInputStream>(*m_iomgrConnection, errorCodeChecker);
 
     authenticateUser(*ioMgrInputStream);
 
@@ -96,9 +97,9 @@ void ConnWorkerConnectionHandler::run()
             try {
                 // NOTE: In case of the TCP connection close or abort
                 // we can receive an empty message
-                net::epollWaitForData(m_clientEpollFd.getFd(), true);
-                protobuf::readMessage(protobuf::ProtocolMessageType::kCommand, command, *m_clientIo,
-                        errorCodeChecker);
+                net::epollWaitForData(m_clientEpollFd.getFD(), true);
+                protobuf::readMessage(protobuf::ProtocolMessageType::kCommand, command,
+                        *m_clientConnection, errorCodeChecker);
             } catch (net::ConnectionError& err) {
                 // Connection was closed or hangup. No reading operation was in progress.
                 LOG_DEBUG << kLogContext << "Client disconnected";
@@ -124,23 +125,23 @@ void ConnWorkerConnectionHandler::run()
 
                     // Connect to server
                     protobuf::writeMessage(protobuf::ProtocolMessageType::kDatabaseEngineRequest,
-                            dbeRequest, *m_ioMgrIo);
-                } catch (const SiodbProtocolError& ex) {
+                            dbeRequest, *m_iomgrConnection);
+                } catch (const ProtocolError& ex) {
                     LOG_ERROR << kLogContext << ex.what();
-                    m_ioMgrIo->close();
+                    m_iomgrConnection->close();
 
-                    int port = m_dbOptions->m_ioManagerOptions.m_ipv4port != 0
-                                       ? m_dbOptions->m_ioManagerOptions.m_ipv4port
-                                       : m_dbOptions->m_ioManagerOptions.m_ipv6port;
+                    int port = m_dbOptions->m_ioManagerOptions.m_ipv4SqlPort != 0
+                                       ? m_dbOptions->m_ioManagerOptions.m_ipv4SqlPort
+                                       : m_dbOptions->m_ioManagerOptions.m_ipv6SqlPort;
 
-                    FdGuard fdGuard(net::openTcpConnection("localhost", port, true));
-                    auto iomgrIo = std::make_unique<io::FdDevice>(fdGuard.getFd(), false);
+                    FDGuard fdGuard(net::openTcpConnection("localhost", port, true));
+                    auto iomgrConnection = std::make_unique<io::FDStream>(fdGuard.getFD(), false);
                     fdGuard.release();
-                    iomgrIo->setAutoClose(true);
-                    m_ioMgrIo = std::move(iomgrIo);
+                    iomgrConnection->setAutoClose();
+                    m_iomgrConnection = std::move(iomgrConnection);
 
-                    ioMgrInputStream = std::make_unique<protobuf::CustomProtobufInputStream>(
-                            *m_ioMgrIo, errorCodeChecker);
+                    ioMgrInputStream = std::make_unique<protobuf::StreamInputStream>(
+                            *m_iomgrConnection, errorCodeChecker);
 
                     responseToClientWithError(
                             command.request_id(), ex.what(), kIoMgrConnectionError);
@@ -174,8 +175,8 @@ void ConnWorkerConnectionHandler::run()
                     response.set_has_affected_row_count(dbeResponse.has_affected_row_count());
 
                     // Send response
-                    protobuf::writeMessage(
-                            protobuf::ProtocolMessageType::kServerResponse, response, *m_clientIo);
+                    protobuf::writeMessage(protobuf::ProtocolMessageType::kServerResponse, response,
+                            *m_clientConnection);
 
                     // Capture response count
                     if (responseId == 0) {
@@ -217,9 +218,9 @@ void ConnWorkerConnectionHandler::run()
 void ConnWorkerConnectionHandler::closeConnection()
 {
     LOG_DEBUG << kLogContext << "Closing connection";
-    m_ioMgrIo.reset();
+    m_iomgrConnection.reset();
     m_clientEpollFd.reset();
-    m_clientIo.reset();
+    m_clientConnection.reset();
     m_tlsServer.reset();
 }
 
@@ -233,11 +234,11 @@ void ConnWorkerConnectionHandler::responseToClientWithError(
     const auto message = response.add_message();
     message->set_status_code(errorCode);
     message->set_text(text);
-    protobuf::writeMessage(protobuf::ProtocolMessageType::kServerResponse, response, *m_clientIo);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kServerResponse, response, *m_clientConnection);
 }
 
-void ConnWorkerConnectionHandler::transmitRowData(
-        protobuf::CustomProtobufInputStream& ioMgrInputStream)
+void ConnWorkerConnectionHandler::transmitRowData(protobuf::StreamInputStream& ioMgrInputStream)
 {
     std::uint64_t totalBytesSent = 0;
 
@@ -245,13 +246,12 @@ void ConnWorkerConnectionHandler::transmitRowData(
 
     // Allow EINTR to cause I/O error when exit signal detected.
     const utils::ExitSignalAwareErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufOutputStream clientOutputStream(*m_clientIo, errorCodeChecker);
+    protobuf::StreamOutputStream clientOutputStream(*m_clientConnection, errorCodeChecker);
     google::protobuf::io::CodedOutputStream codedOutput(&clientOutputStream);
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength)) {
+        if (!codedInput.ReadVarint64(&rowLength))
             stdext::throw_system_error("IO manager socket read error");
-        }
 
         std::uint8_t codedRowLength[9];
         const auto codedRowLengthEnd =
@@ -284,7 +284,7 @@ void ConnWorkerConnectionHandler::transmitRowData(
 }
 
 void ConnWorkerConnectionHandler::selectLastUsedDatabase(
-        protobuf::CustomProtobufInputStream& ioMgrInputStream)
+        protobuf::StreamInputStream& ioMgrInputStream)
 {
     LOG_DEBUG << kLogContext << "Selecting last used database";
 
@@ -293,7 +293,7 @@ void ConnWorkerConnectionHandler::selectLastUsedDatabase(
     dbeRequest.set_text(stdext::string_builder() << "USE DATABASE " << m_lastUsedDatabase);
 
     protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineRequest, dbeRequest, *m_ioMgrIo);
+            protobuf::ProtocolMessageType::kDatabaseEngineRequest, dbeRequest, *m_iomgrConnection);
 
     iomgr_protocol::DatabaseEngineResponse dbeResponse;
 
@@ -331,7 +331,7 @@ void ConnWorkerConnectionHandler::processTag(const iomgr_protocol::Tag& tag)
 }
 
 void ConnWorkerConnectionHandler::authenticateUser(
-        [[maybe_unused]] protobuf::CustomProtobufInputStream& ioMgrInputStream)
+        [[maybe_unused]] protobuf::StreamInputStream& ioMgrInputStream)
 {
     client_protocol::BeginSessionRequest beginSessionRequest;
     // Allow EINTR to cause I/O error when exit signal detected.
@@ -339,7 +339,7 @@ void ConnWorkerConnectionHandler::authenticateUser(
 
     LOG_DEBUG << kLogContext << "Waiting for BeginSessionRequest request...";
     protobuf::readMessage(protobuf::ProtocolMessageType::kClientBeginSessionRequest,
-            beginSessionRequest, *m_clientIo, errorCodeChecker);
+            beginSessionRequest, *m_clientConnection, errorCodeChecker);
     LOG_DEBUG << kLogContext << "Received BeginSessionRequest from client";
 
     iomgr_protocol::BeginAuthenticateUserRequest beginAuthenticateUserRequest;
@@ -350,13 +350,13 @@ void ConnWorkerConnectionHandler::authenticateUser(
         beginAuthenticateUserRequest.set_user_name(boost::to_upper_copy(userName));
 
     protobuf::writeMessage(protobuf::ProtocolMessageType::kBeginAuthenticateUserRequest,
-            beginAuthenticateUserRequest, *m_ioMgrIo);
+            beginAuthenticateUserRequest, *m_iomgrConnection);
     LOG_DEBUG << kLogContext << "Sent BeginAuthenticateUserRequest to client";
 
     LOG_DEBUG << kLogContext << "Waiting for iomgr BeginAuthenticateUserResponse...";
     iomgr_protocol::BeginAuthenticateUserResponse beginAuthenticateUserResponse;
     protobuf::readMessage(protobuf::ProtocolMessageType::kBeginAuthenticateUserResponse,
-            beginAuthenticateUserResponse, *m_ioMgrIo, errorCodeChecker);
+            beginAuthenticateUserResponse, *m_iomgrConnection, errorCodeChecker);
     LOG_DEBUG << kLogContext << "Received BeginAuthenticateUserResponse from iomgr";
 
     client_protocol::BeginSessionResponse clientBeginSessionResponse;
@@ -370,7 +370,7 @@ void ConnWorkerConnectionHandler::authenticateUser(
         clientBeginSessionResponse.set_challenge(createChallenge());
 
     protobuf::writeMessage(protobuf::ProtocolMessageType::kClientBeginSessionResponse,
-            clientBeginSessionResponse, *m_clientIo);
+            clientBeginSessionResponse, *m_clientConnection);
     LOG_DEBUG << kLogContext << "Sent BeginSessionResponse to client";
 
     if (!clientBeginSessionResponse.session_started()) {
@@ -381,7 +381,7 @@ void ConnWorkerConnectionHandler::authenticateUser(
     LOG_DEBUG << kLogContext << "Waiting for authentication request...";
     client_protocol::ClientAuthenticationRequest authRequest;
     protobuf::readMessage(protobuf::ProtocolMessageType::kClientAuthenticationRequest, authRequest,
-            *m_clientIo, errorCodeChecker);
+            *m_clientConnection, errorCodeChecker);
     LOG_DEBUG << kLogContext << "Received client authentication request";
 
     iomgr_protocol::AuthenticateUserRequest authenticateUserRequest;
@@ -389,13 +389,13 @@ void ConnWorkerConnectionHandler::authenticateUser(
     authenticateUserRequest.set_signature(authRequest.signature());
 
     protobuf::writeMessage(protobuf::ProtocolMessageType::kAuthenticateUserRequest,
-            authenticateUserRequest, *m_ioMgrIo);
+            authenticateUserRequest, *m_iomgrConnection);
     LOG_DEBUG << kLogContext << "Sent AuthenticateUserRequest to iomgr";
 
     LOG_DEBUG << kLogContext << "Waiting for iomgr authentication response...";
     iomgr_protocol::AuthenticateUserResponse iomgrAuthResponse;
     protobuf::readMessage(protobuf::ProtocolMessageType::kAuthenticateUserResponse,
-            iomgrAuthResponse, *m_ioMgrIo, errorCodeChecker);
+            iomgrAuthResponse, *m_iomgrConnection, errorCodeChecker);
     LOG_DEBUG << kLogContext << "Received authentication response from iomgr";
 
     client_protocol::ClientAuthenticationResponse clientAuthResponse;
@@ -405,7 +405,7 @@ void ConnWorkerConnectionHandler::authenticateUser(
         clientAuthResponse.set_allocated_message(iomgrAuthResponse.release_message());
 
     protobuf::writeMessage(protobuf::ProtocolMessageType::kClientAuthenticationResponse,
-            clientAuthResponse, *m_clientIo);
+            clientAuthResponse, *m_clientConnection);
 
     if (!clientAuthResponse.authenticated()) {
         closeConnection();

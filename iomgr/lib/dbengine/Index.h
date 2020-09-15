@@ -18,6 +18,12 @@ namespace siodb::iomgr::dbengine {
 
 class IndexColumn;
 
+/** Index value record */
+struct IndexValue {
+    /** Data */
+    std::uint8_t m_data[12];
+};
+
 /** Abstract column index */
 class Index {
 public:

@@ -31,8 +31,8 @@ void printData(std::ostream& os, const char* title, const siodb::BinaryValue& da
 
 bool testCipher(const siodb::iomgr::dbengine::crypto::Cipher& cipher, unsigned maxBlockCount)
 {
-    const auto blockSize = cipher.getBlockSize() / 8;
-    const auto keySize = cipher.getKeySize() / 8;
+    const auto blockSize = cipher.getBlockSizeInBits() / 8;
+    const auto keySize = cipher.getKeySizeInBits() / 8;
 
     std::random_device rd;
     std::mt19937 gen(rd());

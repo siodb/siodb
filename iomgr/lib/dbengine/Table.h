@@ -19,6 +19,9 @@
 // Common project headers
 #include <siodb/iomgr/shared/dbengine/Variant.h>
 
+// STL headers
+#include <tuple>
+
 namespace siodb::iomgr::dbengine {
 
 class ColumnSet;
@@ -383,7 +386,7 @@ public:
      * @throw DatabaseError if operation has failed.
      */
     std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> insertRow(
-            const std::vector<std::string>& columnNames, std::vector<Variant>& columnValues,
+            const std::vector<std::string>& columnNames, std::vector<Variant>&& columnValues,
             const TransactionParameters& transactionParameters, std::uint64_t customTrid = 0);
 
     /**
@@ -396,51 +399,71 @@ public:
      * @throw DatabaseError if operation has failed.
      */
     std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> insertRow(
-            std::vector<Variant>& columnValues, const TransactionParameters& transactionParameters,
+            std::vector<Variant>&& columnValues, const TransactionParameters& transactionParameters,
             std::uint64_t customTrid = 0);
 
     /**
      * Deletes existing row from the table.
      * @param trid Table row ID.
      * @param transactionParameters Transaction parameters.
-     * @return true if operation succeeded, false if row not found.
+     * @return Pair of (succes flag (record found), new master column record)
      * @throw DatabaseError if operation has failed.
      */
-    bool deleteRow(std::uint64_t trid, const TransactionParameters& transactionParameters);
+    std::pair<bool, MasterColumnRecordPtr> deleteRow(
+            std::uint64_t trid, const TransactionParameters& transactionParameters);
 
     /**
      * Deletes existing row from the table.
      * @param mcr Master column record to be updated.
      * @param mcrAddress MCR address.
      * @param transactionParameters Transaction parameters.
+     * @return New master column record.
      * @throw DatabaseError if operation has failed.
      */
-    void deleteRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
+    MasterColumnRecordPtr deleteRow(const MasterColumnRecord& mcr,
+            const ColumnDataAddress& mcrAddress,
             const TransactionParameters& transactionParameters);
 
     /**
      * Updates existing row.
      * @param trid Table row ID.
+     * @param columnNames Names of columns to place values.
      * @param columnValues New values.
-     * @param columnPositions Positions of columns to place values.
+     * @param allowTrid Allow TRID columns in the list, will be ignored at update.
      * @param tp Transaction parameters.
-     * @return true if operation succeeded, false if row not found.
+     * @return Tuple of (success indicator (row found), master column record, next block IDs).
      * @throw DatabaseError if operation has failed for any other reason than row not found.
      */
-    bool updateRow(std::uint64_t trid, std::vector<Variant>&& columnValues,
-            const std::vector<std::size_t>& columnPositions, const TransactionParameters& tp);
+    std::tuple<bool, MasterColumnRecordPtr, std::vector<std::uint64_t>> updateRow(
+            std::uint64_t trid, const std::vector<std::string>& columnNames,
+            std::vector<Variant>&& columnValues, bool allowTrid, const TransactionParameters& tp);
+
+    /**
+     * Updates existing row.
+     * @param trid Table row ID.
+     * @param columnPositions Positions of columns to place values.
+     * @param columnValues New values.
+     * @param tp Transaction parameters.
+     * @return Tuple of (success indicator (row found), master column record, next block IDs).
+     * @throw DatabaseError if operation has failed for any other reason than row not found.
+     */
+    std::tuple<bool, MasterColumnRecordPtr, std::vector<std::uint64_t>> updateRow(
+            std::uint64_t trid, const std::vector<std::size_t>& columnPositions,
+            std::vector<Variant>&& columnValues, const TransactionParameters& tp);
 
     /**
      * Updates existing row.
      * @param mcr Master column record to be updated.
      * @param mcrAddress MCR address.
-     * @param columnValues New values.
      * @param columnPositions Positions of columns to place values.
+     * @param columnValues New values.
      * @param tp Transaction parameters.
+     * @return Pair of (master column record, next block IDs).
      * @throw DatabaseError if operation has failed.
      */
-    void updateRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
-            std::vector<Variant>&& columnValues, const std::vector<std::size_t>& columnPositions,
+    std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> updateRow(
+            const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
+            const std::vector<std::size_t>& columnPositions, std::vector<Variant>&& columnValues,
             const TransactionParameters& tp);
 
     /**
@@ -607,8 +630,8 @@ private:
      * @param columnName Column name.
      * @return Corresponding column position or empty value if it doesn't exist.
      */
-    std::optional<std::uint32_t> getColumnPositionUnlocked(const std::string& columnName) const
-            noexcept;
+    std::optional<std::uint32_t> getColumnPositionUnlocked(
+            const std::string& columnName) const noexcept;
 
     /**
      * Ensures that data directory exists and initialized if required.
@@ -631,7 +654,7 @@ private:
      * @throw DatabaseError if operation has failed.
      */
     std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> doInsertRowUnlocked(
-            std::vector<Variant>& columnValues, const TransactionParameters& transactionParameters,
+            std::vector<Variant>&& columnValues, const TransactionParameters& transactionParameters,
             std::uint64_t customTrid);
 
 private:

@@ -11,7 +11,7 @@ MutableOrConstantString LessOperator::getExpressionText() const
     return "LESS";
 }
 
-Variant LessOperator::evaluate(Context& context) const
+Variant LessOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

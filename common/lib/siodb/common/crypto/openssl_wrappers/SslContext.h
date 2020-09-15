@@ -39,7 +39,7 @@ public:
 
     DECLARE_NONCOPYABLE(SslContext);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~SslContext()
     {
         ::SSL_CTX_free(m_sslCtx);
@@ -49,7 +49,7 @@ public:
      * Returns underlying mutable SSL_CTX object.
      * @return SSL_CTX pointer.
      */
-    operator ::SSL_CTX*() noexcept
+    operator ::SSL_CTX *() noexcept
     {
         return m_sslCtx;
     }
@@ -58,7 +58,7 @@ public:
      * Returns underlying read-only SSL_CTX object.
      * @return Const SSL_CTX pointer.
      */
-    operator const ::SSL_CTX*() const noexcept
+    operator const ::SSL_CTX *() const noexcept
     {
         return m_sslCtx;
     }

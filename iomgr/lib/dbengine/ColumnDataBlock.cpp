@@ -14,8 +14,8 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FdGuard.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FDGuard.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
@@ -227,7 +227,7 @@ io::FilePtr ColumnDataBlock::createDataFile() const
 
     if (tmpFilePath.empty()) {
         // Link to the filesystem.
-        const auto fdPath = "/proc/self/fd/" + std::to_string(file->getFd());
+        const auto fdPath = "/proc/self/fd/" + std::to_string(file->getFD());
         if (::linkat(AT_FDCWD, fdPath.c_str(), AT_FDCWD, m_dataFilePath.c_str(), AT_SYMLINK_FOLLOW)
                 < 0) {
             const int errorCode = errno;

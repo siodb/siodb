@@ -25,7 +25,7 @@ void Database::recordTable(const Table& table, const TransactionParameters& tp)
     values.at(i++) = table.getFirstUserTrid();
     values.at(i++) = table.getCurrentColumnSetId();
     values.at(i++) = table.getDescription();
-    m_sysTablesTable->insertRow(values, tp, table.getId());
+    m_sysTablesTable->insertRow(std::move(values), tp, table.getId());
     m_sysTablesTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded table #" << table.getId();
 }
@@ -44,7 +44,7 @@ void Database::recordConstraintDefinition(
         expr.serializeUnchecked(bv.data());
         values.at(i++) = std::move(bv);
     }
-    m_sysConstraintDefsTable->insertRow(values, tp, constraintDefinition.getId());
+    m_sysConstraintDefsTable->insertRow(std::move(values), tp, constraintDefinition.getId());
     m_sysConstraintDefsTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded constraint definition #"
               << constraintDefinition.getId();
@@ -62,7 +62,7 @@ void Database::recordConstraint(const Constraint& constraint, const TransactionP
     values.at(i++) = constraint.getColumn() ? constraint.getColumn()->getId() : 0;
     values.at(i++) = constraint.getDefinitionId();
     values.at(i++) = constraint.getDescription();
-    m_sysConstraintsTable->insertRow(values, tp, constraint.getId());
+    m_sysConstraintsTable->insertRow(std::move(values), tp, constraint.getId());
     m_sysConstraintsTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded constraint #" << constraint.getId();
 }
@@ -74,7 +74,7 @@ void Database::recordColumnSet(const ColumnSet& columnSet, const TransactionPara
     std::size_t i = 0;
     values.at(i++) = static_cast<std::uint32_t>(columnSet.getTableId());
     values.at(i++) = columnSet.getColumns().size();
-    m_sysColumnSetsTable->insertRow(values, tp, columnSet.getId());
+    m_sysColumnSetsTable->insertRow(std::move(values), tp, columnSet.getId());
     m_sysColumnSetsTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded column set #" << columnSet.getId();
 }
@@ -88,7 +88,7 @@ void Database::recordColumnSetColumn(
     std::size_t i = 0;
     values.at(i++) = columnSetColumn.getColumnSet().getId();
     values.at(i++) = columnSetColumn.getColumnDefinitionId();
-    m_sysColumnSetColumnsTable->insertRow(values, tp, columnSetColumn.getId());
+    m_sysColumnSetColumnsTable->insertRow(std::move(values), tp, columnSetColumn.getId());
     m_sysColumnSetColumnsTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded column set column #"
               << columnSetColumn.getId();
@@ -106,7 +106,7 @@ void Database::recordColumn(const Column& column, const TransactionParameters& t
     values.at(i++) = static_cast<std::int8_t>(column.getState());
     values.at(i++) = column.getDataBlockDataAreaSize();
     values.at(i++) = column.getDescription();
-    m_sysColumnsTable->insertRow(values, tp, column.getId());
+    m_sysColumnsTable->insertRow(std::move(values), tp, column.getId());
     m_sysColumnsTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded column #" << column.getId();
 }
@@ -121,7 +121,7 @@ void Database::recordColumnDefinition(
     std::size_t i = 0;
     values.at(i++) = columnDefinition.getColumnId();
     values.at(i++) = columnDefinition.getConstraintCount();
-    m_sysColumnDefsTable->insertRow(values, tp, columnDefinition.getId());
+    m_sysColumnDefsTable->insertRow(std::move(values), tp, columnDefinition.getId());
     m_sysColumnDefsTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded column definition #"
               << columnDefinition.getId();
@@ -138,7 +138,8 @@ void Database::recordColumnDefinitionConstraint(
     std::size_t i = 0;
     values.at(i++) = columnDefinitionConstraint.getColumnDefinition().getId();
     values.at(i++) = columnDefinitionConstraint.getConstraint().getId();
-    m_sysColumnDefConstraintsTable->insertRow(values, tp, columnDefinitionConstraint.getId());
+    m_sysColumnDefConstraintsTable->insertRow(
+            std::move(values), tp, columnDefinitionConstraint.getId());
     m_sysColumnDefConstraintsTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded column definition constraint #"
               << columnDefinitionConstraint.getId();
@@ -174,7 +175,7 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Database::recordInd
     values.at(i++) = index.getTableId();
     values.at(i++) = index.getDataFileSize();
     values.at(i++) = index.getDescription();
-    auto result = m_sysIndicesTable->insertRow(values, tp, index.getId());
+    auto result = m_sysIndicesTable->insertRow(std::move(values), tp, index.getId());
     m_sysIndicesTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded index #" << index.getId();
     return result;
@@ -212,7 +213,7 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Database::recordInd
     values.at(i++) = index.getId();
     values.at(i++) = indexColumn.getColumnDefinitionId();
     values.at(i++) = indexColumn.isDescendingSortOrder();
-    auto result = m_sysIndexColumnsTable->insertRow(values, tp, index.getId());
+    auto result = m_sysIndexColumnsTable->insertRow(std::move(values), tp, index.getId());
     m_sysIndicesTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recording index column [" << columnIndex << "] #"
               << indexColumn.getId();

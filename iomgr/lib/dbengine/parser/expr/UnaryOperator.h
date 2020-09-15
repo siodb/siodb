@@ -39,7 +39,7 @@ public:
      * Checks if operand is valid.
      * @param context Evaluation context.
      */
-    void validate(const Context& context) const override;
+    void validate(const ExpressionEvaluationContext& context) const override;
 
     /**
      * Returns memory size in bytes required to serialize this expression.

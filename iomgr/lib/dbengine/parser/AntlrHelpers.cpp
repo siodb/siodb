@@ -14,7 +14,9 @@ namespace siodb::iomgr::dbengine::parser::helpers {
 
 std::string extractObjectName(const antlr4::tree::ParseTree* node, std::size_t childNodeIndex)
 {
-    return boost::to_upper_copy(node->children.at(childNodeIndex)->getText());
+    auto name = node->children.at(childNodeIndex)->getText();
+    boost::to_upper(name);
+    return name;
 }
 
 std::size_t getStatementCount(const antlr4::tree::ParseTree* tree) noexcept

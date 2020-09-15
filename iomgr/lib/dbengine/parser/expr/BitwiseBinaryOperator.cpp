@@ -6,7 +6,8 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType BitwiseBinaryOperator::getResultValueType(const Context& context) const
+VariantType BitwiseBinaryOperator::getResultValueType(
+        const ExpressionEvaluationContext& context) const
 {
     const auto leftType = m_left->getResultValueType(context);
     const auto rightType = m_right->getResultValueType(context);
@@ -14,7 +15,8 @@ VariantType BitwiseBinaryOperator::getResultValueType(const Context& context) co
     return getNumericResultType(leftType, rightType);
 }
 
-ColumnDataType BitwiseBinaryOperator::getColumnDataType(const Context& context) const
+ColumnDataType BitwiseBinaryOperator::getColumnDataType(
+        const ExpressionEvaluationContext& context) const
 {
     const auto leftType = m_left->getColumnDataType(context);
     const auto rightType = m_right->getColumnDataType(context);
@@ -22,7 +24,7 @@ ColumnDataType BitwiseBinaryOperator::getColumnDataType(const Context& context) 
     return getNumericResultType(leftType, rightType);
 }
 
-void BitwiseBinaryOperator::validate(const Context& context) const
+void BitwiseBinaryOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_left->validate(context);
     m_right->validate(context);

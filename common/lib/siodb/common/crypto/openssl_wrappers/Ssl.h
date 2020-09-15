@@ -33,19 +33,19 @@ public:
      */
     Ssl(Ssl&& src) noexcept
         : m_ssl(src.m_ssl)
-        , m_connectionActive(src.m_connectionActive)
+        , m_connected(src.m_connected)
     {
         src.m_ssl = nullptr;
-        src.m_connectionActive = false;
+        src.m_connected = false;
     }
 
     DECLARE_NONCOPYABLE(Ssl);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~Ssl()
     {
-        if (m_ssl != nullptr) {
-            if (m_connectionActive) SSL_shutdown(m_ssl);
+        if (m_ssl) {
+            if (m_connected) SSL_shutdown(m_ssl);
             SSL_free(m_ssl);
         }
     }
@@ -54,7 +54,7 @@ public:
      * Returns underlying mutable SSL object.
      * @return SSL pointer.
      */
-    operator ::SSL*() noexcept
+    operator ::SSL *() noexcept
     {
         return m_ssl;
     }
@@ -63,7 +63,7 @@ public:
      * Returns underlying read-only SSL object.
      * @return Const SSL pointer.
      */
-    operator const ::SSL*() const noexcept
+    operator const ::SSL *() const noexcept
     {
         return m_ssl;
     }
@@ -83,7 +83,7 @@ public:
     void accept()
     {
         if (SSL_accept(m_ssl) == 1)
-            m_connectionActive = true;
+            m_connected = true;
         else
             throw OpenSslError("SSL_accept failed");
     }
@@ -92,7 +92,7 @@ public:
     void connect()
     {
         if (SSL_connect(m_ssl) == 1)
-            m_connectionActive = true;
+            m_connected = true;
         else
             throw OpenSslError("SSL_connect failed");
     }
@@ -104,7 +104,7 @@ public:
     int close() noexcept
     {
         auto result = SSL_shutdown(m_ssl);
-        if (result == 1) m_connectionActive = false;
+        if (result == 1) m_connected = false;
         return result;
     }
 
@@ -114,7 +114,7 @@ public:
      */
     bool isConnected() const noexcept
     {
-        return m_connectionActive;
+        return m_connected;
     }
 
 private:
@@ -122,7 +122,7 @@ private:
     ::SSL* m_ssl;
 
     /** Indication that connection is active */
-    bool m_connectionActive;
+    bool m_connected;
 };
 
 }  // namespace siodb::crypto

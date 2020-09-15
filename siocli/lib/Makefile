@@ -10,14 +10,14 @@ include ../../mk/Prolog.mk
 TARGET_LIB:=siocli
 
 CXX_SRC:= \
-	Client.cpp  \
 	Siocli.cpp \
+	SqlClient.cpp  \
 	SqlDump.cpp
 
 CXX_HDR:= \
-	Client.h  \
+	internal/SqlClientInternal.h  \
 	Siocli.h  \
-	internal/ClientInternal.h  \
+	SqlClient.h  \
 	SqlDump.h  \
 	SqlQueryException.h
 

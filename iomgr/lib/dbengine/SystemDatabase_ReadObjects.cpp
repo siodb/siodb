@@ -65,7 +65,7 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
     // Scan table and fill temporary registry
     const auto expectedColumnCount = m_sysUsersTable->getColumnCount() - 1;
     UserRegistry reg;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -73,12 +73,12 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysUsersTable->getName(), m_uuid, m_sysUsersTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -133,8 +133,6 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
     const auto nameColumn = m_sysDatabasesTable->findColumnChecked(kSysDatabases_Name_ColumnName);
     const auto cipherIdColumn =
             m_sysDatabasesTable->findColumnChecked(kSysDatabases_CipherId_ColumnName);
-    const auto cipherKeyColumn =
-            m_sysDatabasesTable->findColumnChecked(kSysDatabases_CipherKey_ColumnName);
     const auto descriptionColumn =
             m_sysDatabasesTable->findColumnChecked(kSysDatabases_Description_ColumnName);
 
@@ -162,7 +160,7 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
     // Scan table and fill temporary registry
     const auto expectedColumnCount = m_sysDatabasesTable->getColumnCount() - 1;
     DatabaseRegistry reg;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -171,12 +169,12 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
         LOG_DEBUG << "readAllDatabases: Next key: " << trid;
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysDatabasesTable->getName(), m_uuid, m_sysDatabasesTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -190,17 +188,15 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant uuidValue, nameValue, cipherIdValue, cipherKeyValue, descriptionValue;
+        Variant uuidValue, nameValue, cipherIdValue, descriptionValue;
         std::size_t colIndex = 0;
         uuidColumn->readRecord(columnRecords.at(colIndex++).getAddress(), uuidValue);
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue);
         cipherIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), cipherIdValue);
-        cipherKeyColumn->readRecord(columnRecords.at(colIndex++).getAddress(), cipherKeyValue);
         descriptionColumn->readRecord(columnRecords.at(colIndex++).getAddress(), descriptionValue);
         DatabaseRecord databaseRecord(static_cast<std::uint32_t>(mcr.getTableRowId()),
                 boost::lexical_cast<Uuid>(*uuidValue.asString()), std::move(*nameValue.asString()),
-                std::move(*cipherIdValue.asString()), std::move(*cipherKeyValue.asBinary()),
-                descriptionValue.asOptionalString());
+                std::move(*cipherIdValue.asString()), descriptionValue.asOptionalString());
         LOG_DEBUG << "Database " << m_name << ": readAllDatabases: Database #" << trid << " '"
                   << databaseRecord.m_name << '\'';
         reg.insert(std::move(databaseRecord));
@@ -253,7 +249,7 @@ SystemDatabase::UserAccessKeyRegistries SystemDatabase::readAllUserAccessKeys()
     // Scan table and fill temporary registry
     const auto expectedColumnCount = m_sysUserAccessKeysTable->getColumnCount() - 1;
     UserAccessKeyRegistries registries;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -261,13 +257,13 @@ SystemDatabase::UserAccessKeyRegistries SystemDatabase::readAllUserAccessKeys()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysUserAccessKeysTable->getName(), m_uuid, m_sysUserAccessKeysTable->getId(),
                     2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -346,7 +342,7 @@ SystemDatabase::UserTokenRegistries SystemDatabase::readAllUserTokens()
     // Scan table and fill temporary registry
     const auto expectedColumnCount = m_sysUserTokensTable->getColumnCount() - 1;
     UserTokenRegistries registries;
-    std::uint8_t value[12];
+    IndexValue indexValue;
     std::uint8_t* currentKey = key + 8;
     std::uint8_t* nextKey = key;
     do {
@@ -354,12 +350,12 @@ SystemDatabase::UserTokenRegistries SystemDatabase::readAllUserTokens()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, value, 1) != 1) {
+        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysUserTokensTable->getName(), m_uuid, m_sysUserTokensTable->getId(), 2);
         }
         ColumnDataAddress mcrAddr;
-        mcrAddr.pbeDeserialize(value, sizeof(value));
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
 
         // Read and validate master column record
         MasterColumnRecord mcr;
@@ -389,7 +385,7 @@ SystemDatabase::UserTokenRegistries SystemDatabase::readAllUserTokens()
                                 expirationDateValue.asDateTime().toEpochTimestamp()),
                 descriptionValue.asOptionalString());
         LOG_DEBUG << "Database " << m_name << ": readAllUserTokens: User token #" << trid << " '"
-                  << tokenRecord.m_name << '\'';
+                  << tokenRecord.m_name << '\'' << " userId=" << tokenRecord.m_userId;
         registries[tokenRecord.m_userId].insert(std::move(tokenRecord));
     } while (index->findNextKey(currentKey, nextKey));
 

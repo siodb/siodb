@@ -17,7 +17,7 @@ bool UnaryOperator::isUnaryOperator() const noexcept
     return true;
 }
 
-void UnaryOperator::validate(const Context& context) const
+void UnaryOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_operand->validate(context);
 }

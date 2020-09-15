@@ -20,7 +20,7 @@ bool BinaryOperator::isBinaryOperator() const noexcept
     return true;
 }
 
-void BinaryOperator::validate(const Context& context) const
+void BinaryOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_left->validate(context);
     m_right->validate(context);

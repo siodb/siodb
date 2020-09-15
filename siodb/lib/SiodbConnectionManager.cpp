@@ -14,7 +14,7 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 
 // STL headers
 #include <chrono>
@@ -105,7 +105,7 @@ SiodbConnectionManager::~SiodbConnectionManager()
 void SiodbConnectionManager::connectionListenerThreadMain()
 {
     // Set up server socket
-    FdGuard server;
+    FDGuard server;
     std::string socketPath;
     int port = -1;
     try {
@@ -114,8 +114,8 @@ void SiodbConnectionManager::connectionListenerThreadMain()
             server.reset(net::createUnixServer(socketPath,
                     m_dbOptions->m_generalOptions.m_adminConnectionListenerBacklog, true));
         } else {
-            port = m_socketDomain == AF_INET ? m_dbOptions->m_generalOptions.m_ipv4port
-                                             : m_dbOptions->m_generalOptions.m_ipv6port;
+            port = m_socketDomain == AF_INET ? m_dbOptions->m_generalOptions.m_ipv4Port
+                                             : m_dbOptions->m_generalOptions.m_ipv6Port;
             server.reset(net::createTcpServer(m_socketDomain, nullptr, port,
                     m_dbOptions->m_generalOptions.m_userConnectionListenerBacklog));
         }
@@ -152,55 +152,55 @@ void SiodbConnectionManager::connectionListenerThreadMain()
     }
 
     while (!m_exitRequested) {
-        // Accept connection
-        FdGuard client(m_socketDomain == AF_UNIX ? acceptUnixConnection(server.getFd())
-                                                 : acceptTcpConnection(server.getFd()));
+        try {
+            // Accept connection
+            FDGuard client(m_socketDomain == AF_UNIX ? acceptUnixConnection(server.getFD())
+                                                     : acceptTcpConnection(server.getFD()));
+            if (!client.isValidFd()) continue;
 
-        // Validate connection file descriptor
-        if (!client.isValidFd()) {
-            if (client.getFd() == -2) return;
-            continue;
-        }
-
-        // Prepare user connection worker command-line parameters
-        std::vector<std::string> args;
-        args.reserve(10);
-        args.push_back(m_workerExecutablePath);
-        args.push_back("--instance");
-        args.push_back(m_dbOptions->m_generalOptions.m_name);
-        args.push_back("--client-fd");
-        args.push_back(std::to_string(client.getFd()));
-        if (m_checkUser && m_socketDomain == AF_UNIX) {
-            args.push_back("--admin");
-        }
-        std::vector<char*> execArgs(args.size() + 1);
-        std::transform(args.cbegin(), args.cend(), execArgs.begin(),
-                [](auto& s) noexcept { return stdext::as_mutable_ptr(s.c_str()); });
-        char* envp[] = {nullptr};
-
-        // Start worker process
-        const auto pid = fork();
-        if (pid < 0) {
-            // Error occurred
-            const int errorCode = errno;
-            LOG_ERROR << m_logContext << "Can't create new process: " << std::strerror(errorCode);
-            continue;
-        }
-
-        if (pid > 0) {
-            // Parent process
-            {
-                std::lock_guard lock(m_connectionHandlersMutex);
-                m_connectionHandlers.insert(pid);
+            // Prepare user connection worker command-line parameters
+            std::vector<std::string> args;
+            args.reserve(10);
+            args.push_back(m_workerExecutablePath);
+            args.push_back("--instance");
+            args.push_back(m_dbOptions->m_generalOptions.m_name);
+            args.push_back("--client-fd");
+            args.push_back(std::to_string(client.getFD()));
+            if (m_checkUser && m_socketDomain == AF_UNIX) {
+                args.push_back("--admin");
             }
-            LOG_INFO << m_logContext << "Started new user connection worker, PID " << pid;
-            continue;
-        }
+            std::vector<char*> execArgs(args.size() + 1);
+            std::transform(args.cbegin(), args.cend(), execArgs.begin(),
+                    [](auto& s) noexcept { return stdext::as_mutable_ptr(s.c_str()); });
+            char* envp[] = {nullptr};
 
-        // Child process
-        execve(execArgs.front(), execArgs.data(), envp);
-        // If we have reached here, execve() failed.
-        _exit(5);
+            // Start worker process
+            const auto pid = fork();
+            if (pid < 0) {
+                // Error occurred
+                const int errorCode = errno;
+                LOG_ERROR << m_logContext
+                          << "Can't create new process: " << std::strerror(errorCode);
+                continue;
+            }
+
+            if (pid > 0) {
+                // Parent process
+                {
+                    std::lock_guard lock(m_connectionHandlersMutex);
+                    m_connectionHandlers.insert(pid);
+                }
+                LOG_INFO << m_logContext << "Started new user connection worker, PID " << pid;
+                continue;
+            }
+
+            // Child process
+            execve(execArgs.front(), execArgs.data(), envp);
+            // If we have reached here, execve() failed.
+            _exit(5);
+        } catch (std::exception& ex) {
+            LOG_ERROR << m_logContext << ex.what();
+        }
     }
 }
 
@@ -210,7 +210,8 @@ void SiodbConnectionManager::deadConnectionCleanupThreadMain()
         {
             std::unique_lock lock(m_connectionHandlersMutex);
             const auto waitResult = m_deadConnectionCleanupThreadAwakeCondition.wait_for(
-                    lock, m_dbOptions->m_generalOptions.m_deadConnectionCleanupPeriod);
+                    lock, std::chrono::seconds(
+                                  m_dbOptions->m_generalOptions.m_deadConnectionCleanupInterval));
             if (waitResult != std::cv_status::timeout) continue;
         }
         removeDeadConnections();
@@ -262,7 +263,7 @@ int SiodbConnectionManager::acceptTcpConnection(int serverFd)
 
     // Note that last parameter of the accept4() is zero, so we intentionally want
     // resulting file descriptor to be inherited by child process.
-    FdGuard client(::accept4(serverFd, reinterpret_cast<sockaddr*>(&addr), &addrLength, 0));
+    FDGuard client(::accept4(serverFd, reinterpret_cast<sockaddr*>(&addr), &addrLength, 0));
 
     if (!client.isValidFd()) {
         const int errorCode = errno;
@@ -270,16 +271,17 @@ int SiodbConnectionManager::acceptTcpConnection(int serverFd)
             LOG_INFO << m_logContext << "TCP connection listener thread is exiting"
                      << " because database is shutting down.";
         } else {
-            LOG_ERROR << m_logContext
-                      << "Can't accept user client connection: " << std::strerror(errorCode) << '.';
+            LOG_ERROR << m_logContext << "Can't accept TCP connection: " << std::strerror(errorCode)
+                      << '.';
         }
         return -1;
     }
 
-    char addrBuffer[std::max(INET6_ADDRSTRLEN, INET_ADDRSTRLEN) + 1];
-    *addrBuffer = '\0';
-    inet_ntop(m_socketDomain, &addr, addrBuffer, addrLength);
-    LOG_INFO << m_logContext << "Accepted new user connection from " << addrBuffer << '.';
+    char addrStr[std::max(INET6_ADDRSTRLEN, INET_ADDRSTRLEN) + 1];
+    *addrStr = '\0';
+    inet_ntop(m_socketDomain, &addr, addrStr, addrLength);
+    LOG_INFO << m_logContext << "Accepted new TCP connection from " << addrStr << '.';
+
     return client.release();
 }
 
@@ -287,7 +289,7 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
 {
     // Note that last parameter of the accept4() is zero, so we intentionally want
     // resulting file descriptor to be inherited by child process.
-    FdGuard client(::accept4(serverFd, nullptr, nullptr, 0));
+    FDGuard client(::accept4(serverFd, nullptr, nullptr, 0));
 
     if (!client.isValidFd()) {
         const int errorCode = errno;
@@ -311,7 +313,7 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
     // Get other socket end uid and gid
     struct ucred peerCredentials;
     socklen_t len = sizeof(peerCredentials);
-    if (::getsockopt(client.getFd(), SOL_SOCKET, SO_PEERCRED, &peerCredentials, &len) != 0) {
+    if (::getsockopt(client.getFD(), SOL_SOCKET, SO_PEERCRED, &peerCredentials, &len) != 0) {
         const int errorCode = errno;
         LOG_ERROR << m_logContext << "Can't get peer credentials for incoming UNIX connection: "
                   << std::strerror(errorCode) << '.';
@@ -344,7 +346,7 @@ int SiodbConnectionManager::acceptUnixConnection(int serverFd)
 std::string SiodbConnectionManager::createLogContextName() const
 {
     std::ostringstream oss;
-    oss << net::getSocketDomainName(m_socketDomain) << kLogContextBase << ": ";
+    oss << net::getSocketDomainName(m_socketDomain) << '-' << kLogContextBase << ": ";
     return oss.str();
 }
 

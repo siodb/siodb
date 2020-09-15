@@ -2,12 +2,11 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-// @file Contains protobuf messages used to communicate between Siodb server
-// and IO manager.
+// @file Contains protobuf messages used to communicate with IOManager service.
 
 syntax = "proto3";
 
-import "CommonTypes.proto";
+import "CommonMessages.proto";
 
 package siodb.iomgr_protocol;
 
@@ -53,7 +52,7 @@ message DatabaseEngineResponse {
     /** Description of columns in this data set. */
     repeated ColumnDescription column_description = 4;
 
-    /** Number of this response in series of responses. Starts with 0. */
+    /** Response identifier in this series of responses. Starts with 0. */
     uint32 response_id = 5;
 
     /**
@@ -89,7 +88,7 @@ message BeginAuthenticateUserResponse {
     /** Indication that session is started */
     bool session_started = 1;
 
-    /** Message from IO manager. Set in case of error. */
+    /** Message from IO manager. Set if error has occurred. */
     StatusMessage message = 2;
 }
 
@@ -109,7 +108,7 @@ message AuthenticateUserResponse {
     /** Indication that user is authenticated. */
     bool authenticated = 1;
 
-    /** Message from IO manager. Set in case of error. */
+    /** Message from IO manager. Set if error has occurred */
     StatusMessage message = 2;
 
     /** ID of started session. */
@@ -154,9 +153,6 @@ message DatabaseEngineRestRequest {
 
     /** Token */
     string token = 7;
-
-    /** Payload (e.g. JSON data) */
-    string payload = 8;
 }
 
 /** User token validation request */

@@ -1344,21 +1344,21 @@ public:
     /**
      * Unary minus operator.
      * @return Value after operation.
-     * @throw WrongVariantTypeError in case of non numeric value
+     * @throw WrongVariantTypeError if operand is non-numeric value
      */
     Variant operator-() const;
 
     /**
      * Unary plus operator.
      * @return Value after operation.
-     * @throw WrongVariantTypeError in case of non numeric value
+     * @throw WrongVariantTypeError if operand is non-numeric value
      */
     Variant operator+() const;
 
     /**
      * Unary complement operator.
      * @return Value after operation.
-     * @throw WrongVariantTypeError in case of non integer value
+     * @throw WrongVariantTypeError if value is not integer
      */
     Variant operator~() const;
 
@@ -1507,21 +1507,21 @@ public:
     /**
      * Checks if this number positive(>0)
      * @return true if number is negative, false otherwise
-     * @throw WrongVariantTypeError in case of non numeric value
+     * @throw WrongVariantTypeError if operand is non-numeric value
      */
     bool isPositive() const;
 
     /**
      * Checks if this number negative(<0)
      * @return true if number is negative, false otherwise
-     * @throw WrongVariantTypeError in case of non numeric value
+     * @throw WrongVariantTypeError if operand is non-numeric value
      */
     bool isNegative() const;
 
     /**
      * Checks if this number is zero(==0)
      * @return true if number is negative, false otherwise
-     * @throw WrongVariantTypeError in case of non numeric value
+     * @throw WrongVariantTypeError if operand is non-numeric value
      */
     bool isZero() const;
 

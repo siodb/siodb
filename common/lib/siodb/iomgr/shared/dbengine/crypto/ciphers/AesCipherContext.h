@@ -49,8 +49,7 @@ public:
      * @param blockCount Number of data blocks to process.
      * @param out Output buffer.
      */
-    void transform(const std::uint8_t* in, unsigned blockCount, std::uint8_t* out) const
-            noexcept override final;
+    void transform(const void* in, std::size_t blockCount, void* out) const noexcept override final;
 };
 
 /** Decryption context for all AES ciphers */
@@ -73,8 +72,7 @@ public:
      * @param blockCount Number of data blocks to process.
      * @param out Output buffer.
      */
-    void transform(const std::uint8_t* in, unsigned blockCount, std::uint8_t* out) const
-            noexcept override final;
+    void transform(const void* in, std::size_t blockCount, void* out) const noexcept override final;
 };
 
 }  // namespace siodb::iomgr::dbengine::crypto

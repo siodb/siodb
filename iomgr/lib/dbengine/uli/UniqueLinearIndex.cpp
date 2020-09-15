@@ -19,7 +19,7 @@
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
 // System headers
@@ -324,7 +324,7 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
 
     if (tmpFilePath.empty()) {
         // Link to the filesystem
-        const auto fdPath = "/proc/self/fd/" + std::to_string(file->getFd());
+        const auto fdPath = "/proc/self/fd/" + std::to_string(file->getFD());
         if (::linkat(AT_FDCWD, fdPath.c_str(), AT_FDCWD, indexFilePath.c_str(), AT_SYMLINK_FOLLOW)
                 < 0) {
             const int errorCode = errno;

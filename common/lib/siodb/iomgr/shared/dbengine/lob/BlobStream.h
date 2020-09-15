@@ -26,8 +26,8 @@ protected:
 
 public:
     /**
-     * Creates copy of this stream.
-     * @return copy of this stream ot nullptr of cloning of stream is not possible.
+     * Throws exception because this stream cannot be cloned.
+     * @throw std::logic_error always.
      */
     BlobStream* clone() const override;
 

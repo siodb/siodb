@@ -9,29 +9,38 @@
 #include "../Instance.h"
 #include "../MasterColumnRecord.h"
 #include "../TableDataSet.h"
-#include "../parser/DBEngineRequest.h"
-#include "../parser/DatabaseContext.h"
+#include "../parser/DBEngineRestRequest.h"
+#include "../parser/DBEngineSqlRequest.h"
+#include "../parser/DBExpressionEvaluationContext.h"
 #include "../parser/expr/Expression.h"
 #include "../reg/ColumnRecord.h"
 
 // Common project headers
-#include <siodb/common/io/IODevice.h>
+#include <siodb/common/io/OutputStream.h>
+#include <siodb/common/protobuf/ExtendedCodedOutputStream.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/IOManagerProtocol.pb.h>
 
+namespace siodb::io {
+class JsonWriter;
+}  // namespace siodb::io
+
 namespace siodb::iomgr::dbengine {
 
-/** Handles SQL based requests */
+/** 
+ * Handles SQL based requests.
+ * Request handler automaticall marks current database as used.
+ */
 class RequestHandler final {
 public:
     /**
      * Initializes object of class RequestHandler.
      * @param instance DBMS instance.
-     * @param connection Connection with server file descriptor.
+     * @param connection Connection stream.
      * @param userId Current user ID.
      */
-    RequestHandler(Instance& instance, siodb::io::IODevice& connection, std::uint32_t userId);
+    RequestHandler(Instance& instance, siodb::io::OutputStream& connection, std::uint32_t userId);
 
     /** De-initializes object of class RequestHandler */
     ~RequestHandler();
@@ -46,7 +55,24 @@ public:
     void executeRequest(const requests::DBEngineRequest& request, std::uint64_t requestId,
             std::uint32_t responseId, std::uint32_t responseCount);
 
+    /**
+     * Suppresses super-user effect on some operations.
+     */
+    void suppressSuperUserRights() noexcept
+    {
+        m_suppressSuperUserRights = true;
+    }
+
 private:
+    /**
+     * Returns indication that this RequestHandler acts under the super user rights.
+     * @return true if this RequestHandler acts under the super user rights, false otherwise.
+     */
+    bool isSuperUser() const noexcept
+    {
+        return m_userId == User::kSuperUserId && !m_suppressSuperUserRights;
+    }
+
     // DDL requests
 
     /**
@@ -367,6 +393,66 @@ private:
     void executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::ShowDatabasesRequest& request);
 
+    // REST request handlers
+
+    /**
+     * Executes REST GET DATABASES request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeGetDatabasesRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetDatabasesRestRequest& request);
+
+    /**
+     * Executes REST GET TABLES request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetTablesRestRequest& request);
+
+    /**
+     * Executes REST GET ALL ROWS request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetAllRowsRestRequest& request);
+
+    /**
+     * Executes REST GET SINGLE ROW request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeGetSingleRowRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetSingleRowRestRequest& request);
+
+    /**
+     * Executes REST POST ROWS request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executePostRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::PostRowsRestRequest& request);
+
+    /**
+     * Executes REST DELETE ROW request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::DeleteRowRestRequest& request);
+
+    /**
+     * Executes REST DELETE ROW request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executePatchRowRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::PatchRowRestRequest& request);
+
+    // Helpers
+
     /**
      * Adds user visible database error to the response.
      * @param response Response object.
@@ -417,12 +503,20 @@ private:
     static std::size_t getVariantSize(const Variant& value);
 
     /**
-     * Writes variant value into coded output stream.
-     * @param codedOutput Output stream.
+     * Writes variant value into coded output stream in the binary format.
      * @param value A value.
+     * @param codedOutput Output stream.
      */
     static void writeVariant(
-            google::protobuf::io::CodedOutputStream& codedOutput, const Variant& value);
+            const Variant& value, protobuf::ExtendedCodedOutputStream& codedOutput);
+
+    /**
+     * Writes variant value as JSON.
+     * @param fieldName Field name.
+     * @param value A value.
+     * @param jsonWriter JSON writer object.
+     */
+    static void writeVariantAsJson(const Variant& value, siodb::io::JsonWriter& jsonWriter);
 
     /**
      * Converts request column definition to database engine column info.
@@ -446,23 +540,50 @@ private:
      * Checks where expression.
      * @param whereExpression WHERE clause expression.
      * @param context A context.
-     * @throw DatabaseError in case of invalid where exception.
+     * @throw DatabaseError if where expression is invalid.
      */
     void checkWhereExpression(const requests::ConstExpressionPtr& whereExpression,
-            requests::DatabaseContext& context);
+            requests::DBExpressionEvaluationContext& context);
+
+    /**
+     * Writes JSON prolog for GET request.
+     * @param jsonWriter JSON writer object.
+     * @throw std::system_error on write error.
+     */
+    void writeGetJsonProlog(siodb::io::JsonWriter& jsonWriter);
+
+    /**
+     * Writes JSON prolog for POST, PATCH, DELETE requests.
+     * @param statusCode Status code.
+     * @param affectedRowCount Affected row count to include.
+     * @param jsonWriter JSON writer object.
+     * @throw std::system_error on write error.
+     */
+    void writeModificationJsonProlog(
+            int statusCode, std::size_t affectedRowCount, siodb::io::JsonWriter& jsonWriter);
+
+    /**
+     * Writes JSON epilog.
+     * @param jsonWriter JSON writer object.
+     * @throw std::system_error on write error.
+     */
+    void writeJsonEpilog(siodb::io::JsonWriter& jsonWriter);
 
 private:
     /** DBMS instance */
     Instance& m_instance;
 
-    /** Connection IO descriptor */
-    siodb::io::IODevice& m_connection;
+    /** Connection stream */
+    siodb::io::OutputStream& m_connection;
 
     /** Current user ID */
     const std::uint32_t m_userId;
 
     /** Current database */
     std::string m_currentDatabaseName;
+
+    /** Inidication that super-user access rights should be suppressed */
+    bool m_suppressSuperUserRights;
 
     /** Log context name */
     static constexpr const char* kLogContext = "RequestHandler: ";
@@ -476,11 +597,29 @@ private:
     /** LOB chunk size */
     static constexpr std::uint32_t kLobChunkSize = 4096;
 
-    /** Reserved expressions count */
-    static constexpr std::size_t kReservedExpressionCount = 32;
+    /** JSON chunk size */
+    static constexpr std::size_t kJsonChunkSize = 65536;
 
     /** Token prefix in the freetext message */
     static constexpr const char* kTokenResponsePrefix = "token: ";
+
+    /** REST status field name */
+    static constexpr const char* kRestStatusFieldName = "status";
+
+    /** REST status "OK" */
+    static constexpr int kRestStatusOk = 200;
+
+    /** REST status "not found" */
+    static constexpr int kRestStatusNotFound = 404;
+
+    /** REST rows field name */
+    static constexpr const char* kRestRowsFieldName = "rows";
+
+    /** Database name field name */
+    static constexpr const char* kDatabaseNameFieldName = "name";
+
+    /** Table name field name */
+    static constexpr const char* kTableNameFieldName = "name";
 };
 
 }  // namespace siodb::iomgr::dbengine

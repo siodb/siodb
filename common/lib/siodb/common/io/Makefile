@@ -10,17 +10,42 @@ include ../../../../../mk/Prolog.mk
 TARGET_COMMON_LIB:=siodb_common_io
 
 CXX_SRC:= \
-	FdDevice.cpp  \
-	MemoryMappedFile.cpp
+	BufferedChunkedOutputStream.cpp  \
+	BufferedOutputStream.cpp  \
+	ChunkedInputStream.cpp  \
+	DynamicMemoryOutputStream.cpp  \
+	FDStream.cpp  \
+	InputStream.cpp  \
+	InputStreamUtils.cpp  \
+	InputStreamWrapperStream.cpp  \
+	JsonWriter.cpp  \
+	MemoryInputStream.cpp  \
+	MemoryOutputStream.cpp  \
+	MemoryMappedFile.cpp  \
+	OutputStreamWrapperStream.cpp
 
 C_SRC:= \
 	FileIO.c
 
 CXX_HDR:= \
+	BufferedChunkedOutputStream.h  \
+	BufferedOutputStream.h  \
+	ChunkedInputStream.h  \
+	DynamicMemoryOutputStream.h  \
+	FDStream.h  \
+	InputOutputStream.h  \
+	InputStream.h  \
+	InputStreamStdStreamBuffer.h  \
+	InputStreamUtils.h  \
+	InputStreamWrapperStream.h  \
+	JsonWriter.h  \
+	MemoryInputStream.h  \
 	MemoryMappedFile.h \
-	FdDevice.h  \
-	IODevice.h  \
-	IOError.h  \
+	MemoryOutputStream.h  \
+	MemoryStdStreamBuffer.h  \
+	OutputStream.h  \
+	OutputStreamWrapperStream.h  \
+	Stream.h  \
 	StreamFormatGuard.h
 
 C_HDR:= \

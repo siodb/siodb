@@ -39,15 +39,13 @@ Here is the list of currently supported drivers:
 | UUID                     | not yet       | UUID (128 bits)                                          |
 | XML                      | not yet       | SQL99 XML                                                |
 
-
 ### TIMESTAMP
 
 A timestamp with the nanosecond precision. You can use:
 
 - CURRENT_TIMESTAMP
 - A time string:
-    - YYYY-MM-DD
-    - YYYY-MM-DD HH:MM:SS
-    - YYYY-MM-DD HH:MM:SS.SSS
-    - YYYY-MM-DD HH:MM:SS.SSSSSSSSSS
-
+  - YYYY-MM-DD
+  - YYYY-MM-DD HH:MM:SS
+  - YYYY-MM-DD HH:MM:SS.SSS
+  - YYYY-MM-DD HH:MM:SS.SSSSSSSSSS

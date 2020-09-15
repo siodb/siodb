@@ -4,6 +4,8 @@
 
 // Project headers
 #include "IOManagerConnectionManager.h"
+#include "IOManagerRestConnectionHandlerFactory.h"
+#include "IOManagerSqlConnectionHandlerFactory.h"
 #include "../dbengine/Instance.h"
 
 // Common project headers
@@ -17,7 +19,7 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
 #include <siodb/common/utils/Debug.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/SignalHandlers.h>
@@ -112,9 +114,12 @@ extern "C" int iomgrMain(int argc, char** argv)
                  << " Siodb GmbH. All rights reserved.";
 
         siodb::iomgr::dbengine::InstancePtr instance;
+        siodb::iomgr::IOManagerSqlConnectionHandlerFactory sqlConnectionHandlerFactory;
+        siodb::iomgr::IOManagerRestConnectionHandlerFactory restConnectionHandlerFactory(
+                instanceOptions->m_ioManagerOptions.m_maxJsonPayloadSize);
         std::unique_ptr<siodb::iomgr::IOManagerRequestDispatcher> requestDispatcher;
-        std::unique_ptr<siodb::iomgr::IOManagerConnectionManager> ipv4ConnectionManager;
-        std::unique_ptr<siodb::iomgr::IOManagerConnectionManager> ipv6ConnectionManager;
+        std::unique_ptr<siodb::iomgr::IOManagerConnectionManager> ipv4SqlConnectionManager,
+                ipv6SqlConnectionManager, ipv4RestConnectionManager, ipv6RestConnectionManager;
 
         try {
             LOG_INFO << "Initializing database message catalog...";
@@ -135,16 +140,48 @@ extern "C" int iomgrMain(int argc, char** argv)
             requestDispatcher = std::make_unique<siodb::iomgr::IOManagerRequestDispatcher>(
                     *instanceOptions, *instance);
 
-            if (instanceOptions->m_ioManagerOptions.m_ipv4port != 0) {
-                LOG_INFO << "Initializing IPv4 connection manager...";
-                ipv4ConnectionManager = std::make_unique<siodb::iomgr::IOManagerConnectionManager>(
-                        AF_INET, instanceOptions, *requestDispatcher);
+            if (instanceOptions->m_ioManagerOptions.m_ipv4SqlPort != 0) {
+                LOG_INFO << "Initializing IPv4 SQL connection manager...";
+                ipv4SqlConnectionManager =
+                        std::make_unique<siodb::iomgr::IOManagerConnectionManager>(
+                                "SQLConnectionManager", AF_INET,
+                                instanceOptions->m_ioManagerOptions.m_ipv4SqlPort,
+                                instanceOptions->m_generalOptions.m_userConnectionListenerBacklog,
+                                instanceOptions->m_ioManagerOptions.m_deadConnectionCleanupInterval,
+                                *requestDispatcher, sqlConnectionHandlerFactory);
             }
 
-            if (instanceOptions->m_ioManagerOptions.m_ipv6port != 0) {
-                LOG_INFO << "Initializing IPv6 connection manager...";
-                ipv6ConnectionManager = std::make_unique<siodb::iomgr::IOManagerConnectionManager>(
-                        AF_INET6, instanceOptions, *requestDispatcher);
+            if (instanceOptions->m_ioManagerOptions.m_ipv6SqlPort != 0) {
+                LOG_INFO << "Initializing IPv6 SQL connection manager...";
+                ipv6SqlConnectionManager =
+                        std::make_unique<siodb::iomgr::IOManagerConnectionManager>(
+                                "SQLConnectionManager", AF_INET6,
+                                instanceOptions->m_ioManagerOptions.m_ipv6SqlPort,
+                                instanceOptions->m_generalOptions.m_userConnectionListenerBacklog,
+                                instanceOptions->m_ioManagerOptions.m_deadConnectionCleanupInterval,
+                                *requestDispatcher, sqlConnectionHandlerFactory);
+            }
+
+            if (instanceOptions->m_ioManagerOptions.m_ipv4RestPort != 0) {
+                LOG_INFO << "Initializing IPv4 REST connection manager...";
+                ipv4RestConnectionManager =
+                        std::make_unique<siodb::iomgr::IOManagerConnectionManager>(
+                                "RESTConnectionManager", AF_INET,
+                                instanceOptions->m_ioManagerOptions.m_ipv4RestPort,
+                                instanceOptions->m_generalOptions.m_userConnectionListenerBacklog,
+                                instanceOptions->m_ioManagerOptions.m_deadConnectionCleanupInterval,
+                                *requestDispatcher, restConnectionHandlerFactory);
+            }
+
+            if (instanceOptions->m_ioManagerOptions.m_ipv6RestPort != 0) {
+                LOG_INFO << "Initializing IPv6 REST connection manager...";
+                ipv6RestConnectionManager =
+                        std::make_unique<siodb::iomgr::IOManagerConnectionManager>(
+                                "RESTConnectionManager", AF_INET6,
+                                instanceOptions->m_ioManagerOptions.m_ipv6RestPort,
+                                instanceOptions->m_generalOptions.m_userConnectionListenerBacklog,
+                                instanceOptions->m_ioManagerOptions.m_deadConnectionCleanupInterval,
+                                *requestDispatcher, restConnectionHandlerFactory);
             }
 
             LOG_INFO << "Creating initialization flag file...";
@@ -152,7 +189,7 @@ extern "C" int iomgrMain(int argc, char** argv)
                     instanceOptions->m_generalOptions.m_name);
             if (!fs::exists(initFlagFilePath)) {
                 // Signal to siodb process that database is initialized and checked.
-                siodb::FdGuard lockFile(
+                siodb::FDGuard lockFile(
                         ::open(initFlagFilePath.c_str(), O_CREAT, siodb::kLockFileCreationMode));
                 if (!lockFile.isValidFd())
                     stdext::throw_system_error("Can't create iomgr initialization file");
@@ -173,14 +210,24 @@ extern "C" int iomgrMain(int argc, char** argv)
                  << strsignal(exitSignal) << ").";
 
         // Make shutdown process more detailed in the log
-        if (ipv6ConnectionManager) {
-            LOG_INFO << "Shutting down IPv6 connection manager...";
-            ipv6ConnectionManager.reset();
+        if (ipv6RestConnectionManager) {
+            LOG_INFO << "Shutting down IPv6 REST connection manager...";
+            ipv6RestConnectionManager.reset();
         }
 
-        if (ipv4ConnectionManager) {
-            LOG_INFO << "Shutting down IPv4 connection manager...";
-            ipv4ConnectionManager.reset();
+        if (ipv4RestConnectionManager) {
+            LOG_INFO << "Shutting down IPv4 REST connection manager...";
+            ipv4RestConnectionManager.reset();
+        }
+
+        if (ipv6SqlConnectionManager) {
+            LOG_INFO << "Shutting down IPv6 SQL connection manager...";
+            ipv6SqlConnectionManager.reset();
+        }
+
+        if (ipv4SqlConnectionManager) {
+            LOG_INFO << "Shutting down IPv4 SQL connection manager...";
+            ipv4SqlConnectionManager.reset();
         }
 
         LOG_INFO << "Shutting down request dispatcher...";

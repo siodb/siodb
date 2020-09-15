@@ -134,7 +134,7 @@ void SystemObjectSerializer::serialize(
         try {
             m_file.writeChecked(m_buffer.data(), serializedSize, m_filePos);
             m_filePos += serializedSize;
-        } catch (FileWriteError& ex) {
+        } catch (io::FileWriteError& ex) {
             std::ostringstream err;
             err << "object type '" << objectTypeName << "' id=" << obj.m_id << ": "
                 << ex.getErrorCode() << ' ' << ex.what();
@@ -177,7 +177,7 @@ void SystemObjectSerializer::deserialize(const char* objectTypeName, Collection&
             // Read object
             m_file.readChecked(m_buffer.data(), objectSize, m_filePos);
             m_filePos += objectSize;
-        } catch (FileReadError& ex) {
+        } catch (io::FileReadError& ex) {
             std::ostringstream err;
             err << "object type '" << objectTypeName << "' #" << (i + 1) << " of " << objectCount
                 << ": " << ex.getErrorCode() << ' ' << ex.what();

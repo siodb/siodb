@@ -29,14 +29,15 @@ public:
      * @param context Evaluation context.
      * @return Evaluated expression value type.
      */
-    VariantType getResultValueType(const Context& context) const override final;
+    VariantType getResultValueType(const ExpressionEvaluationContext& context) const override final;
 
     /**
      * Returns type of generated column from this expression.
      * @param context Evaluation context.
      * @return Column data type.
      */
-    ColumnDataType getColumnDataType(const Context& context) const override final;
+    ColumnDataType getColumnDataType(
+            const ExpressionEvaluationContext& context) const override final;
 };
 
 }  // namespace siodb::iomgr::dbengine::requests

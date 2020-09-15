@@ -28,7 +28,7 @@ public:
 
     DECLARE_NONCOPYABLE(DsaKey);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~DsaKey()
     {
         ::DSA_free(m_dsaKey);
@@ -38,7 +38,7 @@ public:
      * Returns underlying mutable DSA object.
      * @return DSA pointer.
      */
-    operator ::DSA*() noexcept
+    operator ::DSA *() noexcept
     {
         return m_dsaKey;
     }
@@ -47,7 +47,7 @@ public:
      * Returns underlying read-only DSA object.
      * @return Const DSA pointer.
      */
-    operator const ::DSA*() const noexcept
+    operator const ::DSA *() const noexcept
     {
         return m_dsaKey;
     }

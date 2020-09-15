@@ -5,7 +5,7 @@
 #include "TlsConnection.h"
 
 // Project headers
-#include "../utils/FdGuard.h"
+#include "../utils/FDGuard.h"
 
 // System headers
 #include <unistd.h>
@@ -17,7 +17,7 @@ TlsConnection::TlsConnection(
     : m_ssl(context)
     , m_autoCloseFd(autoCloseFd)
 {
-    FdGuard guard(m_autoCloseFd ? fd : -1);
+    FDGuard guard(m_autoCloseFd ? fd : -1);
     if (::SSL_set_fd(m_ssl, fd) != 1) throw OpenSslError("SSL_set_fd failed");
     guard.release();
 
@@ -36,50 +36,39 @@ TlsConnection::TlsConnection(TlsConnection&& src) noexcept
 
 TlsConnection::~TlsConnection()
 {
-    if (m_ssl.isConnected()) {
-        const auto fd = ::SSL_get_fd(m_ssl);
-        m_ssl.close();
-        if (m_autoCloseFd) ::close(fd);
-    }
+    close();
 }
 
-std::size_t TlsConnection::write(const void* data, std::size_t size)
-{
-    const int result = ::SSL_write(m_ssl, data, size);
-    if (result < 0) OpenSslError("SSL_write failed");
-    return result;
-}
-
-std::size_t TlsConnection::read(void* data, std::size_t size)
-{
-    const int result = ::SSL_read(m_ssl, data, size);
-    if (result < 0) OpenSslError("SSL_read failed");
-    return result;
-}
-
-off_t TlsConnection::skip(std::size_t size)
-{
-    char buffer[4096];
-    std::size_t remainingBytes = size;
-    while (remainingBytes > 0) {
-        const auto n = std::min(remainingBytes, sizeof(buffer));
-        remainingBytes -= read(buffer, n);
-    }
-    return size;
-}
-
-int TlsConnection::close()
-{
-    const auto fd = ::SSL_get_fd(m_ssl);
-    const auto result = m_ssl.close();
-    if (result != 1) OpenSslError("SSL_close failed");
-    if (m_autoCloseFd) return ::close(fd);
-    return 0;
-}
-
-bool TlsConnection::isValid() const
+bool TlsConnection::isValid() const noexcept
 {
     return m_ssl.isConnected();
+}
+
+int TlsConnection::close() noexcept
+{
+    if (m_ssl.isConnected()) {
+        const auto fd = ::SSL_get_fd(m_ssl);
+        const auto result = m_ssl.close();
+        if (m_autoCloseFd) return ::close(fd);
+        if (result < 0) errno = EIO;
+        return result;
+    }
+    errno = EIO;
+    return -1;
+}
+
+std::ptrdiff_t TlsConnection::read(void* data, std::size_t size) noexcept
+{
+    const auto n = ::SSL_read(m_ssl, data, size);
+    if (n < 0) errno = EIO;
+    return n;
+}
+
+std::ptrdiff_t TlsConnection::write(const void* data, std::size_t size) noexcept
+{
+    const auto n = ::SSL_write(m_ssl, data, size);
+    if (n < 0) errno = EIO;
+    return n;
 }
 
 }  // namespace siodb::crypto

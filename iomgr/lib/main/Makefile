@@ -16,17 +16,26 @@ CXX_SRC:= \
 	IOManagerRequest.cpp  \
 	IOManagerRequestDispatcher.cpp  \
 	IOManagerRequestExecutor.cpp  \
-	IOManagerRequestHandlerBase.cpp
+	IOManagerRequestHandlerBase.cpp  \
+	IOManagerRestConnectionHandler.cpp  \
+	IOManagerRestConnectionHandlerFactory.cpp  \
+	IOManagerSqlConnectionHandler.cpp  \
+	IOManagerSqlConnectionHandlerFactory.cpp
 
 CXX_HDR:= \
 	ClientSession.h  \
 	IOManagerConnectionHandler.h  \
+	IOManagerConnectionHandlerFactory.h  \
 	IOManagerConnectionManager.h  \
 	IOManagerRequest.h  \
 	IOManagerRequestPtr.h  \
 	IOManagerRequestDispatcher.h  \
 	IOManagerRequestExecutor.h  \
-	IOManagerRequestHandlerBase.h
+	IOManagerRequestHandlerBase.h  \
+	IOManagerRestConnectionHandler.h  \
+	IOManagerRestConnectionHandlerFactory.h  \
+	IOManagerSqlConnectionHandler.h  \
+	IOManagerSqlConnectionHandlerFactory.h
 
 CXXFLAGS+=-I$(GENERATED_FILES_ROOT)
 

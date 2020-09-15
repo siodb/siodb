@@ -18,6 +18,10 @@ CXX_SRC:= \
 	handlers/RequestHandler_DDL.cpp  \
 	handlers/RequestHandler_DML.cpp  \
 	handlers/RequestHandler_DQL.cpp  \
+	handlers/RequestHandler_RestDelete.cpp  \
+	handlers/RequestHandler_RestGet.cpp  \
+	handlers/RequestHandler_RestPatch.cpp  \
+	handlers/RequestHandler_RestPost.cpp  \
 	handlers/RequestHandler_TC.cpp  \
 	handlers/RequestHandler_UM.cpp  \
 	\
@@ -36,10 +40,12 @@ CXX_SRC:= \
 	lob/ColumnLobStream.cpp  \
 	\
 	parser/AntlrHelpers.cpp  \
-	parser/DBEngineRequest.cpp  \
-	parser/DBEngineRequestFactory.cpp  \
-	parser/DatabaseContext.cpp  \
-	parser/EmptyContext.cpp  \
+	parser/DBEngineRestRequestFactory.cpp  \
+	parser/DBEngineSqlRequest.cpp  \
+	parser/DBEngineSqlRequestFactory.cpp  \
+	parser/DBExpressionEvaluationContext.cpp  \
+	parser/EmptyExpressionEvaluationContext.cpp  \
+	parser/RowDataJsonSaxParser.cpp  \
 	parser/SqlParser.cpp  \
 	parser/antlr_wrappers/SiodbBaseListenerWrapper.cpp  \
 	parser/antlr_wrappers/SiodbLexerWrapper.cpp  \
@@ -94,6 +100,7 @@ CXX_SRC:= \
 	parser/expr/UnaryMinusOperator.cpp  \
 	parser/expr/UnaryPlusOperator.cpp  \
 	\
+	reg/CipherKeyRecord.cpp  \
 	reg/ColumnRecord.cpp  \
 	reg/ColumnDefinitionConstraintRecord.cpp  \
 	reg/ColumnDefinitionRecord.cpp  \
@@ -196,12 +203,17 @@ CXX_HDR:= \
 	lob/ColumnLobStream.h  \
 	\
 	parser/AntlrHelpers.h  \
-	parser/DatabaseContext.h  \
 	parser/DBEngineRequest.h  \
-	parser/DBEngineRequestFactory.h  \
+	parser/DBEngineRequestFactoryError.h  \
 	parser/DBEngineRequestPtr.h  \
 	parser/DBEngineRequestType.h  \
-	parser/EmptyContext.h  \
+	parser/DBEngineRestRequestFactory.h  \
+	parser/DBEngineSqlRequest.h  \
+	parser/DBEngineSqlRequestFactory.h  \
+	parser/DBExpressionEvaluationContext.h  \
+	parser/EmptyExpressionEvaluationContext.h  \
+	parser/JsonParserError.h  \
+	parser/RowDataJsonSaxParser.h  \
 	parser/SqlParser.h  \
 	parser/antlr_wrappers/Antlr4RuntimeWrapper.h  \
 	parser/antlr_wrappers/SiodbBaseListenerWrapper.h  \
@@ -229,6 +241,7 @@ CXX_HDR:= \
 	parser/expr/ConstantExpression.h \
 	parser/expr/EqualOperator.h  \
 	parser/expr/Expression.h  \
+	parser/expr/ExpressionEvaluationContext.h  \
 	parser/expr/ExpressionFactory.h  \
 	parser/expr/ExpressionType.h  \
 	parser/expr/GreaterOperator.h  \
@@ -256,6 +269,7 @@ CXX_HDR:= \
 	parser/expr/UnaryMinusOperator.h  \
 	parser/expr/UnaryPlusOperator.h  \
 	\
+	reg/CipherKeyRecord.h  \
 	reg/ColumnDefinitionConstraintRecord.h  \
 	reg/ColumnDefinitionConstraintRegistry.h  \
 	reg/ColumnDefinitionRecord.h  \

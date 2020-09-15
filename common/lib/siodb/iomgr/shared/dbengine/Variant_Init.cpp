@@ -25,14 +25,20 @@ Variant::Variant(const Variant& src)
             return;
         }
         case VariantType::kClob: {
-            m_value.m_clob = src.m_value.m_clob->clone();
-            if (m_value.m_clob) return;
-            break;
+            try {
+                m_value.m_clob = src.m_value.m_clob->clone();
+                return;
+            } catch (...) {
+                break;
+            }
         }
         case VariantType::kBlob: {
-            m_value.m_blob = src.m_value.m_blob->clone();
-            if (m_value.m_blob) return;
-            break;
+            try {
+                m_value.m_blob = src.m_value.m_blob->clone();
+                return;
+            } catch (...) {
+                break;
+            }
         }
         case VariantType::kDateTime: {
             m_value.m_dt = new RawDateTime(*src.m_value.m_dt);

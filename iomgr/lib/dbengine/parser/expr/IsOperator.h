@@ -27,7 +27,7 @@ public:
 
     /**
      * Returns indication that this is IS NOT operator
-     * @return true in case of IS NOT operator, false in case of IS
+     * @return true if this is IS NOT operator, false otherwise
      */
     bool isNot() const noexcept
     {
@@ -51,7 +51,7 @@ public:
      * @param context Evaluation context.
      * @return Resulting value.
      */
-    Variant evaluate(Context& context) const override;
+    Variant evaluate(ExpressionEvaluationContext& context) const override;
 
     /**
      * Serializes this expression, doesn't check memory buffer size.

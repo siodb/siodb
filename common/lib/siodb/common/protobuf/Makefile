@@ -10,22 +10,24 @@ include ../../../../../mk/Prolog.mk
 TARGET_COMMON_LIB:=siodb_common_protobuf
 
 CXX_SRC:= \
-	CustomCodedInputStream.cpp  \
-	CustomProtobufInputStream.cpp  \
-	CustomProtobufOutputStream.cpp  \
+	ExtendedCodedInputStream.cpp  \
+	ExtendedCodedOutputStream.cpp  \
 	ProtobufMessageIO.cpp  \
 	ProtobufUtils.cpp  \
-	RawDateTimeIO.cpp
+	RawDateTimeIO.cpp  \
+	StreamInputStream.cpp  \
+	StreamOutputStream.cpp
 
 CXX_HDR:= \
-	CustomCodedInputStream.h  \
-	CustomProtobufInputStream.h  \
-	CustomProtobufOutputStream.h  \
+	ExtendedCodedInputStream.h  \
+	ExtendedCodedOutputStream.h  \
 	ProtobufMessageIO.h  \
 	ProtobufUtils.h  \
-	SiodbProtocolError.h  \
-	SiodbProtocolMessageType.h  \
-	SiodbProtocolTag.h  \
-	RawDateTimeIO.h
+	ProtocolError.h  \
+	ProtocolMessageType.h  \
+	ProtocolTag.h  \
+	RawDateTimeIO.h  \
+	StreamInputStream.h  \
+	StreamOutputStream.h
 
 include $(MK)/Main.mk

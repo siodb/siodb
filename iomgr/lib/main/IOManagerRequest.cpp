@@ -4,8 +4,16 @@
 
 #include "IOManagerRequest.h"
 
+// Project headers
+#include "../dbengine/handlers/RequestHandler.h"
+
 namespace siodb::iomgr {
 
 std::atomic<std::uint64_t> IOManagerRequest::s_idCounter(0);
+
+void IOManagerRequest::execute() const
+{
+    m_requestHandler->executeRequest(*m_dbeRequest, m_requestId, m_responseId, m_statementCount);
+}
 
 }  // namespace siodb::iomgr

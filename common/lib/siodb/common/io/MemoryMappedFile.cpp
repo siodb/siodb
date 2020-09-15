@@ -20,7 +20,7 @@ namespace siodb::io {
 MemoryMappedFile::MemoryMappedFile(
         const char* path, int openFlags, int mappingFlags, off_t offset, std::size_t length)
     : m_fdGuard(::open(path, openFlags | FD_CLOEXEC))
-    , m_fd(m_fdGuard.getFd())
+    , m_fd(m_fdGuard.getFD())
     , m_length(m_fdGuard.isValidFd() ? ((length > 0) ? length : getFileLength(m_fd)) : 0)
     , m_mappingAddr(m_length > 0 ? ::mmap(nullptr, m_length, deduceMemoryProtectionMode(openFlags),
                             MAP_SHARED | mappingFlags, m_fd, offset)
@@ -62,7 +62,7 @@ off_t MemoryMappedFile::getFileLength(int fd)
 
 void MemoryMappedFile::checkInitialized() const
 {
-    if (!m_mappingAddr && (m_fdGuard.getFd() < 0 || m_length > 0))
+    if (!m_mappingAddr && (m_fdGuard.getFD() < 0 || m_length > 0))
         throw std::system_error(std::error_code(errno, std::system_category()));
 }
 

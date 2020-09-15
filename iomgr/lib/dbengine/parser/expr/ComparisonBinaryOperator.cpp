@@ -7,13 +7,13 @@
 namespace siodb::iomgr::dbengine::requests {
 
 VariantType ComparisonBinaryOperator::getResultValueType(
-        [[maybe_unused]] const Context& context) const
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return VariantType::kBool;
 }
 
 ColumnDataType ComparisonBinaryOperator::getColumnDataType(
-        [[maybe_unused]] const Context& context) const
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return COLUMN_DATA_TYPE_BOOL;
 }

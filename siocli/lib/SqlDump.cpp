@@ -7,8 +7,9 @@
 #include "SqlQueryException.h"
 
 // Common project headers
+#include <siodb/common/crt_ext/compiler_defs.h>
 #include <siodb/common/data/RawDateTime.h>
-#include <siodb/common/protobuf/CustomCodedInputStream.h>
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 #include <siodb/common/stl_ext/bitmask.h>
@@ -51,9 +52,6 @@ struct DatabaseInfo {
 
     /** Cipher ID of the database */
     std::string m_cipherId;
-
-    /** Cipher key of the database */
-    BinaryValue m_cipherKey;
 };
 
 /**
@@ -77,7 +75,7 @@ struct ColumnConstraint {
     std::uint64_t m_constraintDefinitionId;
 
     /** Constraint expression */
-    BinaryValue m_expression;
+    siodb::BinaryValue m_expression;
 };
 
 /**
@@ -172,8 +170,7 @@ std::string constraintToString(const ColumnConstraint& constraint)
 {
     // Only NOT NULL constraint is supported for now
     if (constraint.m_type != ConstraintType::kNotNull) return std::string();
-
-    return getConstaintTypeName(constraint.m_type);
+    return getConstraintTypeName(constraint.m_type);
 }
 
 std::string formSelectCoreBody(const char* databaseName, const char* tableName,
@@ -181,14 +178,10 @@ std::string formSelectCoreBody(const char* databaseName, const char* tableName,
 {
     std::ostringstream ss;
     ss << "SELECT ";
-
     for (auto i = 0u; i < columnNames.size() - 1; ++i)
         ss << columnNames[i] << ',';
-
     if (!columnNames.empty()) ss << columnNames.back();
-
     ss << " FROM " << databaseName << '.' << tableName;
-
     return ss.str();
 }
 
@@ -209,25 +202,18 @@ std::string formCreateDatabaseQuery(const DatabaseInfo& dbInfo)
 {
     std::ostringstream ss;
     ss << "CREATE DATABASE " << dbInfo.m_name;
-
-    if (!dbInfo.m_cipherId.empty())
+    if (!dbInfo.m_cipherId.empty()) {
         ss << " WITH " << kSysDatabases_CipherId_ColumnName << " = '" << dbInfo.m_cipherId << '\'';
-
-    // We can't create a seed value from database key
-    // ss << ", " << kSysDatabases_CipherKey_ColumnName << " = " << dbInfo.m_cipherKey;
-
+    }
     return ss.str();
 }
 
 std::string formCreateTableQuery(const std::string& databaseName, const TableInfo& tableInfo)
 {
     std::ostringstream ss;
-
     ss << "CREATE TABLE " << databaseName << '.' << tableInfo.m_name;
-
     if (!tableInfo.m_columns.empty()) {
         ss << " (";
-
         for (auto i = 0u; i < tableInfo.m_columns.size() - 1; ++i) {
             const auto& column = tableInfo.m_columns[i];
             ss << " " << column.m_name << " " << getColumnDataTypeName(column.m_dataType);
@@ -235,89 +221,136 @@ std::string formCreateTableQuery(const std::string& databaseName, const TableInf
                 ss << " " << constraintToString(constraint);
             ss << ',';
         }
-
         const auto& column = tableInfo.m_columns.back();
         ss << " " << column.m_name << " " << getColumnDataTypeName(column.m_dataType);
         for (const auto& constraint : column.m_constraints)
             ss << " " << constraintToString(constraint);
-
         ss << " )";
     }
-
     return ss.str();
 }
 
-std::string readValue(
-        protobuf::CustomCodedInputStream& customCodedInputStream, ColumnDataType columnDataType)
+bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType columnDataType,
+        std::string& result)
 {
     switch (columnDataType) {
         case ColumnDataType::COLUMN_DATA_TYPE_BOOL: {
-            return customCodedInputStream.readBool() ? "true" : "false";
+            bool value = false;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = value ? "true" : "false";
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_INT8: {
-            return std::to_string(customCodedInputStream.readInt8());
+            std::int8_t value = 0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(static_cast<int>(value));
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_UINT8: {
-            return std::to_string(customCodedInputStream.readUInt8());
+            std::uint8_t value = 0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(static_cast<unsigned>(value));
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_INT16: {
-            return std::to_string(customCodedInputStream.readInt16());
+            std::int16_t value = 0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(value);
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_UINT16: {
-            return std::to_string(customCodedInputStream.readUInt16());
+            std::uint16_t value = 0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(value);
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_INT32: {
-            return std::to_string(customCodedInputStream.readInt32());
+            std::int32_t value = 0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(value);
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_UINT32: {
-            return std::to_string(customCodedInputStream.readUInt32());
+            std::uint8_t value = 0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(value);
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_INT64: {
-            return std::to_string(customCodedInputStream.readInt64());
+            std::int64_t value = 0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(value);
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_UINT64: {
-            return std::to_string(customCodedInputStream.readUInt64());
+            std::uint64_t value = 0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(value);
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_FLOAT: {
-            return std::to_string(customCodedInputStream.readFloat());
+            float value = 0.0f;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(value);
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_DOUBLE: {
-            return std::to_string(customCodedInputStream.readDouble());
+            double value = 0.0;
+            if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
+            result = std::to_string(value);
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_TEXT: {
+            std::string s;
+            if (SIODB_UNLIKELY(!codedInput.Read(&s))) return false;
             std::ostringstream ss;
-            const std::string str = customCodedInputStream.readString();
             ss << '\'';
-            for (const auto symbol : str) {
-                if (symbol == '\'')
+            for (const auto ch : s) {
+                if (ch == '\'')
                     ss << "''";
                 else
-                    ss << symbol;
+                    ss << ch;
             }
             ss << '\'';
-            return ss.str();
+            result = ss.str();
+            return true;
         }
-        case ColumnDataType::COLUMN_DATA_TYPE_BINARY: {
-            const auto binaryValue = customCodedInputStream.readBinary();
 
+        case ColumnDataType::COLUMN_DATA_TYPE_BINARY: {
+            siodb::BinaryValue bv;
+            if (SIODB_UNLIKELY(!codedInput.Read(&bv))) return false;
             std::ostringstream ss;
             ss << "X'" << std::setfill('0') << std::hex;
-            for (std::size_t i = 0; i < binaryValue.size(); ++i) {
-                const std::uint16_t v = binaryValue[i];
+            for (std::size_t i = 0; i < bv.size(); ++i) {
+                const std::uint16_t v = bv[i];
                 ss << std::setw(2) << v;
             }
             ss << '\'';
-            return ss.str();
+            result = ss.str();
+            return true;
         }
+
         case ColumnDataType::COLUMN_DATA_TYPE_TIMESTAMP: {
-            std::ostringstream ss;
             siodb::RawDateTime dateTime;
-            if (!siodb::protobuf::readRawDateTime(customCodedInputStream, dateTime))
-                throw std::runtime_error("Read timestamp value failed");
+            if (!siodb::protobuf::readRawDateTime(codedInput, dateTime)) return false;
+            std::ostringstream ss;
             ss << '\'' << dateTime.formatDefault() << '\'';
-            return ss.str();
+            result = ss.str();
+            return true;
         }
-        default: throw std::runtime_error("Unsupported data type");
+
+        default: return false;
     }
 }
 
@@ -343,8 +376,8 @@ void checkResponse(const client_protocol::ServerResponse& response)
     }
 }
 
-client_protocol::ServerResponse sendCommand(
-        std::string&& command, io::IODevice& connection, protobuf::CustomProtobufInputStream& input)
+client_protocol::ServerResponse sendCommand(std::string&& command,
+        io::InputOutputStream& connection, protobuf::StreamInputStream& input)
 {
     static std::int64_t requestId = 0;
     client_protocol::Command clientCommand;
@@ -354,7 +387,6 @@ client_protocol::ServerResponse sendCommand(
 
     client_protocol::ServerResponse response;
     protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
-
     checkResponse(response);
     ++requestId;
 
@@ -362,17 +394,16 @@ client_protocol::ServerResponse sendCommand(
 }
 
 std::vector<DatabaseInfo> dumpDatabasesList(
-        io::IODevice& connection, std::ostream& os, protobuf::CustomProtobufInputStream& input)
+        io::InputOutputStream& connection, std::ostream& os, protobuf::StreamInputStream& input)
 {
     auto query = formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
-            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName,
-                    kSysDatabases_CipherKey_ColumnName});
+            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName});
     const auto response = sendCommand(std::move(query), connection, input);
 
     std::vector<DatabaseInfo> databases;
     databases.reserve(16);
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::ExtendedCodedInputStream codedInput(&input);
 
     while (true) {
         std::uint64_t rowLength = 0;
@@ -381,60 +412,56 @@ std::vector<DatabaseInfo> dumpDatabasesList(
 
         if (rowLength == 0) break;
 
-        // nulls are dissalowed, read values
         DatabaseInfo database;
-        database.m_name = codedInput.readString();
-        database.m_cipherId = codedInput.readString();
-        database.m_cipherKey = codedInput.readBinary();
-
-        if (database.m_name != kSystemDatabaseName) {
-            os << formCreateDatabaseQuery(database) << ';' << '\n';
-            databases.push_back(std::move(database));
-        }
+        if (SIODB_LIKELY(
+                    codedInput.Read(&database.m_name) && codedInput.Read(&database.m_cipherId))) {
+            if (database.m_name != kSystemDatabaseName) {
+                os << formCreateDatabaseQuery(database) << ';' << '\n';
+                databases.push_back(std::move(database));
+            }
+        } else
+            std::runtime_error("dumpDatabasesList: Read database record failed");
     }
 
     return databases;
 }
 
-void dumpSpecificDatabase(io::IODevice& connection, std::ostream& os,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName)
+void dumpSpecificDatabase(io::InputOutputStream& connection, std::ostream& os,
+        protobuf::StreamInputStream& input, const std::string& databaseName)
 {
     std::ostringstream ss;
     ss << formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
-            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName,
-                    kSysDatabases_CipherKey_ColumnName})
+            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName})
        << " WHERE " << kSysDatabases_Name_ColumnName << " = '" << databaseName << '\'';
 
-    std::string query = ss.str();
-    const auto response = sendCommand(std::move(query), connection, input);
+    const auto response = sendCommand(ss.str(), connection, input);
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::ExtendedCodedInputStream codedInput(&input);
 
     std::uint64_t rowLength = 0;
-    if (!codedInput.ReadVarint64(&rowLength))
+    if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
         std::runtime_error("dumpSpecificDatabase: Read row length failed");
 
-    if (rowLength == 0) std::runtime_error("dumpSpecificDatabase: Database does not exist");
+    if (SIODB_UNLIKELY(rowLength == 0))
+        std::runtime_error("dumpSpecificDatabase: Database doesn't exist");
 
     // nulls are dissalowed, read values
     DatabaseInfo database;
-    database.m_name = codedInput.readString();
-    database.m_cipherId = codedInput.readString();
-    database.m_cipherKey = codedInput.readBinary();
+    if (SIODB_LIKELY(codedInput.Read(&database.m_name) && codedInput.Read(&database.m_cipherId))) {
+        if (database.m_name != kSystemDatabaseName) {
+            os << formCreateDatabaseQuery(database) << ';' << '\n';
+        }
+    } else
+        std::runtime_error("dumpSpecificDatabase: Read database record failed");
 
-    if (database.m_name != kSystemDatabaseName) {
-        os << formCreateDatabaseQuery(database) << ';' << '\n';
-    }
-
-    if (!codedInput.ReadVarint64(&rowLength))
+    if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
         std::runtime_error("dumpSpecificDatabase: Read row length failed");
-
-    if (rowLength != 0)
-        std::runtime_error("dumpSpecificDatabase: Unexpected database row with database received");
+    if (SIODB_UNLIKELY(rowLength != 0))
+        std::runtime_error("dumpSpecificDatabase: Invalid row length");
 }
 
-std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IODevice& connection,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
+std::vector<ColumnConstraint> getColumnConstraintsList(io::InputOutputStream& connection,
+        protobuf::StreamInputStream& input, const std::string& databaseName,
         std::int64_t columnSetId)
 {
     // SELECT CONSTRAINT_ID FROM <database-name>SYS_COLUMN_DEF_CONSTRAINTS
@@ -445,23 +472,24 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IODevice& connect
        << " WHERE " << kSysColumnDefinitionConstraintList_ColumnDefinitionId_ColumnName << " = "
        << columnSetId;
 
-    std::string query = ss.str();
+    auto response = sendCommand(ss.str(), connection, input);
 
-    auto response = sendCommand(std::move(query), connection, input);
-
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::ExtendedCodedInputStream codedInput(&input);
 
     std::vector<std::uint64_t> constaintIds;
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength))
+        if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             std::runtime_error(
-                    "receiveColumnConstraintsList: Read SYS_COLUMN_SET_COLUMNS row length failed");
+                    "getColumnConstraintsList: Read SYS_COLUMN_SET_COLUMNS row length failed");
 
         if (rowLength == 0) break;
 
-        const auto constaintId = codedInput.readUInt64();
-        constaintIds.push_back(constaintId);
+        std::uint64_t constaintId = 0;
+        if (SIODB_LIKELY(codedInput.Read(&constaintId)))
+            constaintIds.push_back(constaintId);
+        else
+            throw std::runtime_error("Read constraint ID failed");
     }
 
     if (constaintIds.empty()) return std::vector<ColumnConstraint>();
@@ -472,27 +500,25 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IODevice& connect
     ss << formSelectCoreBody(databaseName, kSysConstraintsTableName,
             {kSysConstraints_Name_ColumnName, kSysConstraints_DefinitionId_ColumnName})
        << " WHERE " << kMasterColumnName << " IN (";
-
     for (auto i = 0u; i < constaintIds.size() - 1; ++i)
         ss << constaintIds[i] << ',';
-
     ss << constaintIds.back() << ')';
 
-    query = ss.str();
-    response = sendCommand(std::move(query), connection, input);
+    response = sendCommand(ss.str(), connection, input);
     std::vector<ColumnConstraint> constraints;
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength))
-            std::runtime_error(
-                    "receiveColumnConstraintsList: Read SYS_CONSTRAINTS row length failed");
+        if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
+            std::runtime_error("getColumnConstraintsList: Read SYS_CONSTRAINTS row length failed");
 
-        if (rowLength == 0) break;
+        if (SIODB_UNLIKELY(rowLength == 0)) break;
 
         ColumnConstraint constraint;
-        constraint.m_name = codedInput.readString();
-        constraint.m_constraintDefinitionId = codedInput.readUInt64();
-        constraints.push_back(std::move(constraint));
+        if (SIODB_LIKELY(codedInput.Read(&constraint.m_name)
+                         && codedInput.Read(&constraint.m_constraintDefinitionId)))
+            constraints.push_back(std::move(constraint));
+        else
+            throw std::runtime_error("getColumnConstraintsList: Read constraint record failed");
     }
 
     for (auto& constraint : constraints) {
@@ -501,40 +527,49 @@ std::vector<ColumnConstraint> receiveColumnConstraintsList(io::IODevice& connect
         ss << formSelectCoreBody(databaseName, kSysConstraintDefsTableName,
                 {kSysConstraintDefs_Type_ColumnName, kSysConstraintDefs_Expr_ColumnName})
            << " WHERE " << kMasterColumnName << " = " << constraint.m_constraintDefinitionId;
-
-        query = ss.str();
-        response = sendCommand(std::move(query), connection, input);
+        response = sendCommand(ss.str(), connection, input);
 
         const int columnCount = response.column_description_size();
 
         while (true) {
             std::uint64_t rowLength = 0;
-            if (!codedInput.ReadVarint64(&rowLength))
+            if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
                 std::runtime_error(
-                        "receiveColumnConstraintsList: Read SYS_CONSTRAINT_DEFS row length failed");
+                        "getColumnConstraintsList: Read SYS_CONSTRAINT_DEFS row length failed");
 
-            if (rowLength == 0) break;
+            if (SIODB_UNLIKELY(rowLength == 0)) break;
 
             stdext::bitmask nullBitmask;
 
             // EXPR is allowed to be null
             nullBitmask.resize(columnCount, false);
-            if (!codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size())) {
+            if (SIODB_LIKELY(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()))) {
+                std::uint32_t n = 0;
+                if (SIODB_LIKELY(codedInput.Read(&n)))
+                    constraint.m_type = static_cast<ConstraintType>(n);
+                else {
+                    throw std::runtime_error(
+                            "getColumnConstraintsList: Read constraint type failed");
+                }
+                if (!nullBitmask.get(1)) {
+                    if (SIODB_UNLIKELY(!codedInput.Read(&constraint.m_expression))) {
+                        throw std::runtime_error(
+                                "getColumnConstraintsList: Read constraint expression failed");
+                    }
+                }
+            } else {
                 std::ostringstream err;
                 err << "Read read null bitmask failed: " << std::strerror(input.GetErrno());
                 throw std::system_error(input.GetErrno(), std::generic_category(), err.str());
             }
-
-            constraint.m_type = static_cast<ConstraintType>(codedInput.readUInt8());
-            if (!nullBitmask.get(1)) constraint.m_expression = codedInput.readBinary();
         }
     }
 
     return constraints;
 }
 
-std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
+std::vector<ColumnInfo> getColumnList(io::InputOutputStream& connection,
+        protobuf::StreamInputStream& input, const std::string& databaseName,
         std::int64_t currentColumnSetId)
 {
     std::ostringstream ss;
@@ -545,25 +580,24 @@ std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
             {kMasterColumnName, kSysColumnSetColumns_ColumnDefinitionId_ColumnName})
        << " WHERE " << kSysColumnSetColumns_ColumnSetId_ColumnName << " = " << currentColumnSetId;
 
-    auto query = ss.str();
-
-    auto response = sendCommand(std::move(query), connection, input);
-    protobuf::CustomCodedInputStream codedInput(&input);
+    auto response = sendCommand(ss.str(), connection, input);
+    protobuf::ExtendedCodedInputStream codedInput(&input);
 
     std::vector<ColumnSetInfo> columnSetInfos;
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength))
-            std::runtime_error("receiveColumnList: Read SYS_COLUMN_SET_COLUMNS row failed");
+        if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
+            std::runtime_error("getColumnList: Read SYS_COLUMN_SET_COLUMNS row failed");
 
-        if (rowLength == 0) break;
+        if (SIODB_UNLIKELY(rowLength == 0)) break;
 
         // nulls are dissalowed, read values
         ColumnSetInfo columnSetInfo;
-        columnSetInfo.m_trid = codedInput.readUInt64();
-        columnSetInfo.m_columnDefinitionId = codedInput.readUInt64();
-
-        columnSetInfos.push_back(std::move(columnSetInfo));
+        if (SIODB_LIKELY(codedInput.Read(&columnSetInfo.m_trid)
+                         && codedInput.Read(&columnSetInfo.m_columnDefinitionId)))
+            columnSetInfos.push_back(std::move(columnSetInfo));
+        else
+            throw std::runtime_error("getColumnList: Read column set record failed");
     }
 
     if (columnSetInfos.empty()) return std::vector<ColumnInfo>();
@@ -573,31 +607,28 @@ std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
     ss << formSelectCoreBody(databaseName, kSysColumnDefsTableName,
             {kMasterColumnName, kSysColumnDefs_ColumnId_ColumnName})
        << " WHERE " << kMasterColumnName << " IN (";
-
     for (auto i = 0u; i < columnSetInfos.size() - 1; ++i)
         ss << columnSetInfos[i].m_columnDefinitionId << ',';
-
     ss << columnSetInfos.back().m_columnDefinitionId << ')';
-    query = ss.str();
-
-    response = sendCommand(std::move(query), connection, input);
+    response = sendCommand(ss.str(), connection, input);
 
     std::unordered_map<std::uint64_t, std::uint64_t> columnIdToColumnDefIdMap;
     std::vector<ColumnDefinitionInfo> columnDefInfos;
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength))
-            std::runtime_error("receiveColumnList: Read SYS_COLUMN_DEFS row length failed");
+        if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
+            std::runtime_error("getColumnList: Read SYS_COLUMN_DEFS row length failed");
 
-        if (rowLength == 0) break;
+        if (SIODB_UNLIKELY(rowLength == 0)) break;
 
         // nulls are dissalowed, read values
         ColumnDefinitionInfo columnDefInfo;
-        columnDefInfo.m_trid = codedInput.readUInt64();
-        columnDefInfo.m_columnId = codedInput.readUInt64();
-
-        columnIdToColumnDefIdMap[columnDefInfo.m_columnId] = columnDefInfo.m_trid;
-        columnDefInfos.push_back(std::move(columnDefInfo));
+        if (SIODB_LIKELY(codedInput.Read(&columnDefInfo.m_trid)
+                         && codedInput.Read(&columnDefInfo.m_columnId))) {
+            columnIdToColumnDefIdMap[columnDefInfo.m_columnId] = columnDefInfo.m_trid;
+            columnDefInfos.push_back(std::move(columnDefInfo));
+        } else
+            throw std::runtime_error("getColumnList: Read column definition record failed");
     }
 
     // SELECT TRID, DATA_TYPE, NAME FROM <database-name>.SYS_COLUMNS WHERE TRID IN (... list of retrieved above COLUMN_IDs ... )
@@ -605,32 +636,31 @@ std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
     ss << formSelectCoreBody(databaseName, kSysColumnsTableName,
             {kMasterColumnName, kSysColumns_DataType_ColumnName, kSysColumns_Name_ColumnName})
        << " WHERE " << kMasterColumnName << " IN (";
-
     for (auto i = 0u; i < columnDefInfos.size() - 1; ++i)
         ss << columnDefInfos[i].m_columnId << ',';
-
     ss << columnDefInfos.back().m_columnId << ')';
-
-    query = ss.str();
-    response = sendCommand(std::move(query), connection, input);
+    response = sendCommand(ss.str(), connection, input);
 
     std::vector<ColumnInfo> columns;
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength))
-            std::runtime_error("receiveColumnList: Read SYS_COLUMNS row length failed");
+        if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
+            std::runtime_error("getColumnList: Read SYS_COLUMNS row length failed");
 
-        if (rowLength == 0) break;
+        if (SIODB_UNLIKELY(rowLength == 0)) break;
 
         // nulls are dissalowed, read values
         ColumnInfo columnInfo;
-        columnInfo.m_trid = codedInput.readUInt64();
-        columnInfo.m_dataType = static_cast<ColumnDataType>(codedInput.readInt8());
-        columnInfo.m_name = codedInput.readString();
-        if (columnInfo.m_name != kMasterColumnName) {
-            columnInfo.m_columnDefinitionId = columnIdToColumnDefIdMap[columnInfo.m_trid];
-            columns.push_back(std::move(columnInfo));
-        }
+        std::uint32_t n = 0;
+        if (SIODB_LIKELY(codedInput.Read(&columnInfo.m_trid) && codedInput.Read(&n)
+                         && codedInput.Read(&columnInfo.m_name))) {
+            columnInfo.m_dataType = static_cast<ColumnDataType>(n);
+            if (columnInfo.m_name != kMasterColumnName) {
+                columnInfo.m_columnDefinitionId = columnIdToColumnDefIdMap[columnInfo.m_trid];
+                columns.push_back(std::move(columnInfo));
+            }
+        } else
+            throw std::runtime_error("getColumnList: Read column record failed");
     }
 
     std::sort(columns.begin(), columns.end(), [](const auto& left, const auto& right) noexcept {
@@ -638,68 +668,60 @@ std::vector<ColumnInfo> receiveColumnList(io::IODevice& connection,
     });
 
     for (auto& column : columns) {
-        column.m_constraints = receiveColumnConstraintsList(
+        column.m_constraints = getColumnConstraintsList(
                 connection, input, databaseName, column.m_columnDefinitionId);
     }
 
     return columns;
 }
 
-std::vector<TableInfo> dumpTablesList(io::IODevice& connection, std::ostream& os,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName)
+std::vector<TableInfo> dumpTablesList(io::InputOutputStream& connection, std::ostream& os,
+        protobuf::StreamInputStream& input, const std::string& databaseName)
 {
     std::ostringstream ss;
-
     // SELECT TRID,NAME,CURRENT_COLUMN_SET_ID FROM <DATABASE>.SYS_TABLES WHERE NAME NOT LIKE 'SYS_%'"
     ss << formSelectCoreBody(databaseName, kSysTablesTableName,
             {kMasterColumnName, kSysTables_Name_ColumnName,
                     kSysTables_CurrentColumnSetId_ColumnName})
        << " WHERE " << kSysTables_Name_ColumnName << " NOT LIKE 'SYS_%' AND "
        << kSysTables_Type_ColumnName << " = 1";
-
-    auto query = ss.str();
-    auto response = sendCommand(std::move(query), connection, input);
+    auto response = sendCommand(ss.str(), connection, input);
 
     std::vector<TableInfo> tableInfos;
     tableInfos.reserve(32);
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::ExtendedCodedInputStream codedInput(&input);
 
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength))
+        if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             std::runtime_error("dumpTablesList: Read row length failed");
 
-        if (rowLength == 0) break;
-        // nulls are dissalowed, read values
-        TableInfo tableInfo;
-        tableInfo.m_trid = codedInput.readUInt64();
-        tableInfo.m_name = codedInput.readString();
-        tableInfo.m_currentColumnSetId = codedInput.readUInt64();
+        if (SIODB_UNLIKELY(rowLength == 0)) break;
 
-        tableInfos.push_back(std::move(tableInfo));
+        TableInfo tableInfo;
+        if (SIODB_LIKELY(codedInput.Read(&tableInfo.m_trid) && codedInput.Read(&tableInfo.m_name)
+                         && codedInput.Read(&tableInfo.m_currentColumnSetId))) {
+            tableInfos.push_back(std::move(tableInfo));
+        } else
+            throw std::runtime_error("dumpTablesList: Read table record failed");
     }
 
     for (auto& tableInfo : tableInfos) {
         tableInfo.m_columns =
-                receiveColumnList(connection, input, databaseName, tableInfo.m_currentColumnSetId);
-
+                getColumnList(connection, input, databaseName, tableInfo.m_currentColumnSetId);
         os << formCreateTableQuery(databaseName, tableInfo) << ';' << '\n';
     }
 
     return tableInfos;
 }
 
-void dumpTableData(io::IODevice& connection, std::ostream& os,
-        protobuf::CustomProtobufInputStream& input, const std::string& databaseName,
-        const TableInfo& table)
+void dumpTableData(io::InputOutputStream& connection, std::ostream& os,
+        protobuf::StreamInputStream& input, const std::string& databaseName, const TableInfo& table)
 {
     std::ostringstream ss;
-
     ss << formSelectAllQuery(databaseName, table.m_name);
-
-    auto query = ss.str();
-    auto response = sendCommand(std::move(query), connection, input);
+    auto response = sendCommand(ss.str(), connection, input);
 
     std::vector<TableInfo> tableInfos;
     tableInfos.reserve(32);
@@ -711,29 +733,32 @@ void dumpTableData(io::IODevice& connection, std::ostream& os,
         nullAllowed |= column.is_null();
     }
 
-    protobuf::CustomCodedInputStream codedInput(&input);
+    protobuf::ExtendedCodedInputStream codedInput(&input);
 
     std::uint64_t expectedTrid = 1;
     while (true) {
         std::uint64_t rowLength = 0;
-        if (!codedInput.ReadVarint64(&rowLength))
+        if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             std::runtime_error("dumpTableData: Read row length failed");
 
-        if (rowLength == 0) break;
+        if (SIODB_UNLIKELY(rowLength == 0)) break;
 
         stdext::bitmask nullBitmask;
 
         if (nullAllowed) {
             nullBitmask.resize(columnCount, false);
-
-            if (!codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size())) {
+            if (SIODB_UNLIKELY(!codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()))) {
                 std::ostringstream err;
-                err << "Read null bitmask from server failed: " << std::strerror(input.GetErrno());
+                err << "dumpTableData: Read null bitmask from server failed: "
+                    << std::strerror(input.GetErrno());
                 throw std::system_error(input.GetErrno(), std::generic_category(), err.str());
             }
         }
 
-        const auto trid = codedInput.readUInt64();
+        std::uint64_t trid = 0;
+        if (SIODB_UNLIKELY(codedInput.Read(&trid)))
+            throw std::runtime_error("dumpTableData: Read TRID failed");
+
         if (expectedTrid != trid) {
             os << formAlterTableSetNextTrid(databaseName, table.m_name, trid) << ';' << '\n';
             expectedTrid = trid + 1;
@@ -747,14 +772,23 @@ void dumpTableData(io::IODevice& connection, std::ostream& os,
         for (auto i = 0u; i < table.m_columns.size() - 1; ++i) {
             if (nullAllowed && nullBitmask.get(i + 1))  // Skip TRID
                 os << "NULL, ";
-            else
-                os << readValue(codedInput, table.m_columns[i].m_dataType) << ", ";
+            else {
+                std::string value;
+                if (SIODB_UNLIKELY(!readValue(codedInput, table.m_columns.at(i).m_dataType, value)))
+                    throw std::runtime_error("Can't read value");
+                os << value << ", ";
+            }
         }
 
         if (nullAllowed && nullBitmask.get(columnCount - 1))
             os << "NULL";
-        else
-            os << readValue(codedInput, table.m_columns.back().m_dataType);
+        else {
+            std::string value;
+            if (SIODB_UNLIKELY(!readValue(
+                        codedInput, table.m_columns.at(columnCount - 1).m_dataType, value)))
+                throw std::runtime_error("Can't read value");
+            os << value;
+        }
 
         if (!table.m_columns.empty()) os << ')';
 
@@ -762,8 +796,8 @@ void dumpTableData(io::IODevice& connection, std::ostream& os,
     }
 }
 
-void dumpDatabaseData(io::IODevice& connection, std::ostream& os, const std::string& databaseName,
-        protobuf::CustomProtobufInputStream& input)
+void dumpDatabaseData(io::InputOutputStream& connection, std::ostream& os,
+        const std::string& databaseName, protobuf::StreamInputStream& input)
 {
     auto tables = dumpTablesList(connection, os, input, databaseName);
     for (const auto& table : tables)
@@ -772,10 +806,10 @@ void dumpDatabaseData(io::IODevice& connection, std::ostream& os, const std::str
 
 }  // namespace
 
-void dumpAllDatabases(io::IODevice& connection, std::ostream& os)
+void dumpAllDatabases(io::InputOutputStream& connection, std::ostream& os)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
+    protobuf::StreamInputStream input(connection, errorCodeChecker);
 
     auto databases = dumpDatabasesList(connection, os, input);
     for (const auto& database : databases)
@@ -784,10 +818,11 @@ void dumpAllDatabases(io::IODevice& connection, std::ostream& os)
     os << std::flush;
 }
 
-void dumpDatabase(io::IODevice& connection, std::ostream& os, const std::string& databaseName)
+void dumpDatabase(
+        io::InputOutputStream& connection, std::ostream& os, const std::string& databaseName)
 {
     const utils::DefaultErrorCodeChecker errorCodeChecker;
-    protobuf::CustomProtobufInputStream input(connection, errorCodeChecker);
+    protobuf::StreamInputStream input(connection, errorCodeChecker);
 
     dumpSpecificDatabase(connection, os, input, databaseName);
     dumpDatabaseData(connection, os, databaseName, input);

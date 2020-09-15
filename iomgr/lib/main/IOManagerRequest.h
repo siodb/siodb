@@ -19,6 +19,10 @@ namespace siodb::iomgr {
 
 class IOManagerConnectionHandler;
 
+namespace dbengine {
+class RequestHandler;
+}  // namespace dbengine
+
 /** IO Manager request from client */
 class IOManagerRequest {
 public:
@@ -35,12 +39,14 @@ public:
      */
     IOManagerRequest(std::uint64_t requestId, std::uint32_t responseId, std::size_t statementCount,
             const std::weak_ptr<IOManagerConnectionHandler>& connectionHandler,
+            std::shared_ptr<dbengine::RequestHandler> requestHandler,
             const dbengine::requests::ConstDBEngineRequestPtr& dbeRequest) noexcept
         : m_id(++s_idCounter)
         , m_requestId(requestId)
         , m_responseId(responseId)
         , m_statementCount(statementCount)
         , m_connectionHandler(connectionHandler)
+        , m_requestHandler(requestHandler)
         , m_dbeRequest(dbeRequest)
         , m_future(m_promise.get_future())
     {
@@ -121,6 +127,9 @@ public:
         m_promise.set_value(std::move(result));
     }
 
+    /** Executes request */
+    void execute() const;
+
 private:
     /** Request object ID */
     const std::uint64_t m_id;
@@ -136,6 +145,9 @@ private:
 
     /** Connection handler */
     const std::weak_ptr<IOManagerConnectionHandler> m_connectionHandler;
+
+    /** Request handler object */
+    const std::shared_ptr<dbengine::RequestHandler> m_requestHandler;
 
     /** Database engine request */
     const dbengine::requests::ConstDBEngineRequestPtr m_dbeRequest;

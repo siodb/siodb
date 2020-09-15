@@ -15,7 +15,7 @@
 
 // Common project headers
 #include <siodb/common/stl_ext/utility_ext.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 
 // STL headers
 #include <numeric>
@@ -131,7 +131,6 @@ const std::unordered_map<std::string, std::unordered_set<std::string>> Database:
                         kSysDatabases_Uuid_ColumnName,
                         kSysDatabases_Name_ColumnName,
                         kSysDatabases_CipherId_ColumnName,
-                        kSysDatabases_CipherKey_ColumnName,
                         kSysDatabases_Description_ColumnName,
                 }},
         {kSysUserPermissionsTableName,
@@ -178,7 +177,7 @@ Database::Database(Instance& instance, std::string&& name, const std::string& ci
     , m_cipherKey(std::move(cipherKey))
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
     , m_decryptionContext(m_cipher ? m_cipher->createDecryptionContext(m_cipherKey) : nullptr)
-    , m_metadataFile(createMetadataFile(makeMetadataFilePath().c_str()))
+    , m_metadataFile(createMetadataFile())
     , m_metadata(static_cast<DatabaseMetadata*>(m_metadataFile->getMappingAddress()))
     , m_createTransactionParams(User::kSuperUserId, generateNextTransactionId())
     , m_tableCache(m_name,
@@ -191,6 +190,7 @@ Database::Database(Instance& instance, std::string&& name, const std::string& ci
               ConstraintType::kDefaultValue, std::make_unique<requests::ConstantExpression>(0)))
 {
     createSystemTables();
+    saveCurrentCipherKey();
 }
 
 // Init existing database
@@ -203,10 +203,10 @@ Database::Database(
     , m_id(dbRecord.m_id)
     , m_dataDir(ensureDataDir(false))
     , m_cipher(crypto::getCipher(dbRecord.m_cipherId))
-    , m_cipherKey(dbRecord.m_cipherKey)
+    , m_cipherKey(loadCipherKey())
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
     , m_decryptionContext(m_cipher ? m_cipher->createDecryptionContext(m_cipherKey) : nullptr)
-    , m_metadataFile(openMetadataFile(makeMetadataFilePath().c_str()))
+    , m_metadataFile(openMetadataFile())
     , m_metadata(static_cast<DatabaseMetadata*>(m_metadataFile->getMappingAddress()))
     , m_tableCache(m_name,
               tableCacheCapacity > 0 ? tableCacheCapacity : instance.getTableCacheCapacity())

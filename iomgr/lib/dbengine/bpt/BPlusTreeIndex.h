@@ -10,7 +10,7 @@
 
 // Common project headers
 #include <siodb/common/stl_ext/lru_cache.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 
 // System headers
 #include <sys/types.h>

@@ -39,7 +39,7 @@ sudo update-alternatives --set git-clang-format \
     /usr/lib/llvm-10/bin/git-clang-format
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### Ubuntu 20.04 LTS
 
@@ -67,7 +67,7 @@ sudo update-alternatives --set git-clang-format /usr/lib/llvm-10/bin/git-clang-f
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### Debian 10
 
@@ -107,7 +107,7 @@ sudo update-alternatives --set git-clang-format \
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### Ubuntu 20.04 LTS
 
@@ -199,7 +199,7 @@ sudo ln -s /usr/lib/libatomic.so.1.0.0 /usr/lib/libatomic.so
 sudo ln -s /usr/lib64/libatomic.so.1.0.0 /usr/lib64/libatomic.so
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### CentOS 8
 
@@ -224,7 +224,7 @@ sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### RHEL 7
 
@@ -291,7 +291,7 @@ sudo ln -s /usr/lib/libatomic.so.1.0.0 /usr/lib/libatomic.so
 sudo ln -s /usr/lib64/libatomic.so.1.0.0 /usr/lib64/libatomic.so
 ```
 
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
+Now, proceed to the section [All Systems](#all-systems).
 
 ### RHEL 8
 
@@ -315,6 +315,32 @@ sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
+
+Now, proceed to the section [All Systems](#all-systems).
+
+## All Systems
+
+For better debugging experience, it is recommended to install
+[Boost Pretty Printers](https://github.com/ruediger/Boost-Pretty-Printer):
+
+1. Run following commands
+
+    ```shell
+    mkdir -p ~/.local/share
+    cd ~/.local/share
+    git clone git://github.com/ruediger/Boost-Pretty-Printer.git
+    ```
+
+2. Add following lines to the file `~/.gdbinit` (create it if it doesn't exist yet):
+
+    ```text
+    python
+    import sys
+    sys.path.insert(1, '~/.local/share/Boost-Pretty-Printer')
+    import boost
+    boost.register_printers(boost_version=(x,y,z))
+    end
+    ```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
@@ -401,6 +427,20 @@ cd googletest-release-${SIODB_GTEST_VERSION}/googlemock/scripts
 sudo mkdir -p "${SIODB_GTEST_PREFIX}"
 sudo cp -Rf include "${SIODB_GTEST_PREFIX}"
 cd ../../../..
+
+# Build and install JSON library
+cd date
+tar --no-same-owner -xaf date-${SIODB_JSON_VERSION}.tar.xz
+cd date-${SIODB_JSON_VERSION}
+mkdir build
+cd build
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
+    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_JSON_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
+    -DJSON_BuildTests=OFF ..
+make -j4
+sudo make install
+sudo ldconfig
+cd ../../..
 
 # Build and install Oat++ library
 cd oatpp
@@ -512,8 +552,8 @@ sudo -u siodb /etc/siodb/instances/siodb
 sudo cp config/siodb.conf /etc/siodb/instances/siodb/config
 sudo chmod 0600 /etc/siodb/instances/siodb/config
 sudo chown siodb:siodb /etc/siodb/instances/siodb/config
-sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/system_db_key bs=16 count=1
-sudo chmod 0600 /etc/siodb/instances/siodb/system_db_key
+sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/master_key bs=16 count=1
+sudo chmod 0600 /etc/siodb/instances/siodb/master_key
 sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/initial_access_key
 sudo chmod 0600 /etc/siodb/instances/siodb/initial_access_key
 sudo chown siodb:siodb /etc/siodb/instances/siodb/initial_access_key
@@ -569,7 +609,7 @@ To allow running SQL tests under your own user (may be required on the CentOS an
 
 # 2. Adjust Siodb defult instance configuration file permissions
 sudo chmod 0660 /etc/siodb/instances/siodb/config
-sudo chmod 0660 /etc/siodb/instances/siodb/system_db_key
+sudo chmod 0660 /etc/siodb/instances/siodb/master_key
 sudo chmod 0660 /etc/siodb/instances/siodb/initial_access_key
 
 # 3. Edit default instance configuration file /etc/siodb/instances/siodb/config
@@ -591,9 +631,9 @@ allow_group_permissions_on_config_files = true
 Before running Siodb, you need to create some instance configuration files:
 
 - `/etc/siodb/instances/<configuration-name>/config` - instance configuration options file.
-- `/etc/siodb/instances/<configuration-name>/system_db_key` - encryption key for the system database.
-  Note that this file must be present even if encryption of the system database is set to the `none`
-  (in such case it can be just zero length).
+- `/etc/siodb/instances/<configuration-name>/master_key` - master encryption key for.
+  Note that this file must be present even if master cipher ID is set to the `none`
+  (in such case it can be just zero length file).
 
 These files owner must be owned by the user `siodb` and group `siodb`. File mode must be `0400` or `0600`.
 Debug build of Siodb also allows members of owner group to have access to these files.

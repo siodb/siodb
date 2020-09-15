@@ -15,7 +15,7 @@ fi
 
 format_file()
 {
-    local file="${1}"
+    local file="$1"
     local ext="${file##*\.}"
     if [[ -f $file ]] && ( \
             [[ $ext == "c" ]] \
@@ -23,13 +23,13 @@ format_file()
             || [[ $ext == "h" ]] \
         );
     then
-        echo "Formatting ${1}"
-        ${CLANG_FORMAT} -i ${STYLEARG} ${1}
-        git add ${1}
+        echo "Formatting $1"
+        ${CLANG_FORMAT} -i ${STYLEARG} $1
+        git add $1
     fi
 }
 
-case "${1}" in
+case "$1" in
     --about)
         echo "Runs clang-format on source files"
         ;;

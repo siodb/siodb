@@ -22,7 +22,7 @@
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/Base128VariantEncoding.h>
 #include <siodb/common/utils/ByteOrder.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
 
@@ -658,21 +658,21 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
     // Update main index
     std::uint8_t indexKey[8];
     ::pbeEncodeUInt64(record.getTableRowId(), indexKey);
-    std::uint8_t indexValue[12];
-    ::pbeEncodeUInt64(block->getId(), indexValue);
-    ::pbeEncodeUInt32(pos, indexValue + 8);
+    IndexValue indexValue;
+    ::pbeEncodeUInt64(block->getId(), indexValue.m_data);
+    ::pbeEncodeUInt32(pos, indexValue.m_data + 8);
 
-    switch (record.getAtomicOperationType()) {
+    switch (record.getOperationType()) {
         case DmlOperationType::kInsert: {
-            m_masterColumnData->m_mainIndex->insert(indexKey, indexValue, true);
+            m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data, true);
             break;
         }
         case DmlOperationType::kDelete: {
-            m_masterColumnData->m_mainIndex->markAsDeleted(indexKey, indexValue);
+            m_masterColumnData->m_mainIndex->markAsDeleted(indexKey, indexValue.m_data);
             break;
         }
         case DmlOperationType::kUpdate: {
-            m_masterColumnData->m_mainIndex->update(indexKey, indexValue);
+            m_masterColumnData->m_mainIndex->update(indexKey, indexValue.m_data);
             break;
         }
     }
@@ -848,7 +848,7 @@ void Column::setLastUserTrid(std::uint64_t lastUserTrid)
 int Column::createTridCountersFile(std::uint64_t firstUserTrid)
 {
     const auto tridCounterFilePath = utils::constructPath(m_dataDir, kTridCounterFile);
-    FdGuard fd(::open(tridCounterFilePath.c_str(), O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC,
+    FDGuard fd(::open(tridCounterFilePath.c_str(), O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC,
             kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
@@ -857,14 +857,14 @@ int Column::createTridCountersFile(std::uint64_t firstUserTrid)
                 m_id, errorCode, std::strerror(errorCode));
     }
     TridCounters data(firstUserTrid);
-    writeFullTridCounters(fd.getFd(), data);
+    writeFullTridCounters(fd.getFD(), data);
     return fd.release();
 }
 
 int Column::openTridCountersFile()
 {
     const auto tridCounterFilePath = utils::constructPath(m_dataDir, kTridCounterFile);
-    FdGuard fd(::open(tridCounterFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC));
+    FDGuard fd(::open(tridCounterFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotOpenTridCounterFile, getDatabaseName(),
@@ -872,7 +872,7 @@ int Column::openTridCountersFile()
                 std::strerror(errorCode));
     }
     TridCounters data(0);
-    if (readExact(fd.getFd(), &data, sizeof(data), kIgnoreSignals) != sizeof(data)) {
+    if (readExact(fd.getFD(), &data, sizeof(data), kIgnoreSignals) != sizeof(data)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadTridCounterFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
@@ -894,7 +894,7 @@ int Column::openTridCountersFile()
         }
         utils::reverseByteOrder(data.m_lastUserTrid);
         utils::reverseByteOrder(data.m_lastSystemTrid);
-        writeFullTridCounters(fd.getFd(), data);
+        writeFullTridCounters(fd.getFD(), data);
         if (::rename(tridCounterMigrationFilePath.c_str(), tridCounterFilePath.c_str())) {
             const auto errorCode = errno;
             throwDatabaseError(IOManagerMessageId::kErrorCannotReadTridCounterFile,
@@ -915,7 +915,7 @@ void Column::loadMasterColumnMainIndex()
 
     // Open file
     const auto mainIndexIdFilePath = utils::constructPath(m_dataDir, kMainIndexIdFile);
-    FdGuard fd(::open(mainIndexIdFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME,
+    FDGuard fd(::open(mainIndexIdFilePath.c_str(), O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME,
             kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
@@ -926,7 +926,7 @@ void Column::loadMasterColumnMainIndex()
 
     // Read data
     std::uint64_t indexId0 = 0;
-    if (readExact(fd.getFd(), &indexId0, sizeof(indexId0), kIgnoreSignals) != sizeof(indexId0)) {
+    if (readExact(fd.getFD(), &indexId0, sizeof(indexId0), kIgnoreSignals) != sizeof(indexId0)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadMainIndexIdFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
@@ -1471,7 +1471,7 @@ void Column::createMasterColumnMainIndex()
 
     // Write index ID file
     const auto mainIndexIdFilePath = utils::constructPath(m_dataDir, kMainIndexIdFile);
-    FdGuard fd(::open(mainIndexIdFilePath.c_str(),
+    FDGuard fd(::open(mainIndexIdFilePath.c_str(),
             O_CREAT | O_RDWR | O_DSYNC | O_CLOEXEC | O_NOATIME, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const auto errorCode = errno;
@@ -1479,7 +1479,7 @@ void Column::createMasterColumnMainIndex()
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
                 std::strerror(errorCode));
     }
-    if (writeExact(fd.getFd(), &indexId, sizeof(indexId), kIgnoreSignals) != sizeof(indexId)) {
+    if (writeExact(fd.getFD(), &indexId, sizeof(indexId), kIgnoreSignals) != sizeof(indexId)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteMainIndexIdFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,

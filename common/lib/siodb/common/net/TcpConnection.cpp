@@ -10,7 +10,7 @@
 #include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
 #include "../utils/Debug.h"
-#include "../utils/FdGuard.h"
+#include "../utils/FDGuard.h"
 
 // STL headers
 #include <iostream>
@@ -89,7 +89,6 @@ int openTcpConnection(const std::string& host, int port, bool closeOnExecute)
             err << "Could not resolve host " << host1 << ": " << gai_strerror(errorCode);
             throw std::invalid_argument(err.str());
         }
-        //std::cout << "Resolved host" << std::endl;
     }
 
     AddrInfosGuard guard(addrInfos, addrInfos != &addrInfo1);
@@ -98,7 +97,7 @@ int openTcpConnection(const std::string& host, int port, bool closeOnExecute)
     struct addrinfo* currentAddrInfo = addrInfos;
     while (currentAddrInfo != nullptr) {
         // Create socket
-        FdGuard socket(::socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype,
+        FDGuard socket(::socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype,
                 currentAddrInfo->ai_protocol));
         if (!socket.isValidFd()) {
             stdext::throw_system_error("Can't create TCP socket");
@@ -130,7 +129,7 @@ int openTcpConnection(const std::string& host, int port, bool closeOnExecute)
         }
 
         // Connect to server
-        if (::connect(socket.getFd(), currentAddrInfo->ai_addr, currentAddrInfo->ai_addrlen) < 0) {
+        if (::connect(socket.getFD(), currentAddrInfo->ai_addr, currentAddrInfo->ai_addrlen) < 0) {
             lastError = errno;
             errors << "Could not connect to " << serverName << ":" << port << ": "
                    << std::strerror(lastError) << '.' << std::endl;

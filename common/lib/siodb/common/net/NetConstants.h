@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace siodb {
+namespace siodb::net {
 
 // Localhost constant
 constexpr const char* kLocalhost = "localhost";
@@ -13,4 +13,4 @@ constexpr const char* kLocalhost = "localhost";
 constexpr int kMinPortNumber = 0;
 constexpr int kMaxPortNumber = 65535;
 
-}  //  namespace siodb
+}  //  namespace siodb::net

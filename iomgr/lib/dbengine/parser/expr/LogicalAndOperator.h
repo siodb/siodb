@@ -36,7 +36,7 @@ public:
      * @return Resulting value.
      * @throw std::runtime_error If expression has non bool operand
      */
-    Variant evaluate(Context& context) const override;
+    Variant evaluate(ExpressionEvaluationContext& context) const override;
 
     /**
      * Creates deep copy of this expression.

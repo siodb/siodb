@@ -30,7 +30,7 @@ public:
 
     DECLARE_NONCOPYABLE(BioMemBuf);
 
-    /** Deinitializes object. */
+    /** De-initializes object. */
     ~BioMemBuf()
     {
         ::BIO_free(m_bio);
@@ -40,7 +40,7 @@ public:
      * Return mutable underlying BIO object.
      * @return BIO pointer.
      */
-    operator ::BIO*() noexcept
+    operator ::BIO *() noexcept
     {
         return m_bio;
     }
@@ -49,7 +49,7 @@ public:
      * Returns read-only underlying BIO object.
      * @return const BIO pointer.
      */
-    operator const ::BIO*() const noexcept
+    operator const ::BIO *() const noexcept
     {
         return m_bio;
     }

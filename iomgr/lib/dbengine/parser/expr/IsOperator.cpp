@@ -16,7 +16,7 @@ std::size_t IsOperator::getSerializedSize() const noexcept
     return ComparisonBinaryOperator::getSerializedSize() + 1;
 }
 
-Variant IsOperator::evaluate(Context& context) const
+Variant IsOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

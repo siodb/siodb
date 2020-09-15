@@ -20,6 +20,8 @@ MSG:6 Error TooFewParameters    Too few parameters for the message #%1%: expecte
 MSG:7 Error TooManyParameters   Too many parameters for the message #%1%: expected %2%, but got %3%
 MSG:8 Error ParametersIndexOutOfRange   Parameter index is out of range for the message #%1%: index is %2%, but range is (%3%, %4%)
 MSG:10 Error Feature is not implemented yet
+MSG:11 Error Authentication error: %1%
+MSG:12 Error REST request parse error: %1%
 
 ##########################################
 # Severe malfunctions
@@ -129,7 +131,7 @@ MSG Error ValuesListIsEmpty             VALUES list type is empty
 MSG Error ColumnsListIsEmpty            '%1%'.'%2%' columns list type is empty 
 MSG Error UpdateInvalidValueExpression  UPDATE SET expression is invalid: %1%
 MSG Error CannotUpdateSystemTable       Update system table '%1%'.'%2%' is not allowed
-MSG Error CannotUpdateMasterColumn      Cannot update master column
+MSG Error CannotUpdateMasterColumn      Cannot update master column in the table '%1%'.'%2%'
 MSG Error ValueAndColumnTypeMismatch    Column '%1%' data type '%2%' isn't compatible with value type '%3%'
 MSG Error UpdateValuesDoesNotFitToPositions      '%1%'.'%2%' values count %3% not equal to positions count %4%
 MSG Error UpdateValuesCountGreaterThanAddresses  '%1%'.'%2%' values count %3% greater than column data addresses %4%
@@ -179,7 +181,7 @@ MSG Error UserAccessDenied        User '%1%' access denied
 MSG Error SessionDoesNotExist     Session '%1%' doesn't exist
 MSG Error UserTokenCheckFailed    User token '%1%'.'%2%' check failed
 MSG Error UserTokenMismatch       User '%1%' token mismatch
-MSG Error InvalidUserTokenValue1  Invalid user token
+MSG Error InvalidUserTokenValue   Invalid user token
 
 # UNSUPPORTED FEATURES
 MSG Error ConstraintNotSupported   Constraint type #%4% is not supported (constraint definition '%1%'.%2% (%3%.%2%)
@@ -187,6 +189,14 @@ MSG Error ConstraintNotSupported2  Constraint type #%4% is not supported
 
 # INVALID ATTRIBUTES
 MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2%'
+
+
+##########################################
+# REST ERRORS
+##########################################
+ID 3000
+MSG Error JsonPayloadParsingError JSON payload parse error: %1%
+MSG Error TooManyValuesInPayload Too many values (%1%) in the row %2% of the JSON payload, expecting at most %3% while posting data to the table '%4%'.'%5%'
 
 ##########################################
 # INTERNAL MESSAGES
@@ -199,42 +209,48 @@ MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2
 ID -2
 STEP -1
 
-MSG Fatal InstanceNameMismatch  Instance name in the instance data files '%1%' doesn't match to the current instance name '%2%'
+MSG Fatal InstanceNameMismatch           Instance name %1% in the instance data folder doesn't match to the current instance name '%2%'
+MSG Fatal CannotOpenInstanceMetadata     Can't open instance metadata file '%1%': (%2%) %3%
+MSG Fatal CannotLoadInstanceMetadata     Can't load instance metadata: (%1%) %2%
+MSG Error CannotSaveInstanceMetadata     Can't save instance metadata: (%1%) %2%
+MSG Fatal CannotOpenMasterEncryptionKey  Can't open master encryption key file '%1%': (%2%) %3%
+MSG Fatal CannotStatMasterEncryptionKey  Can't stat master encryption key file '%1%': (%2%) %3%
+MSG Fatal InvalidMasterEncryptionKey     Master encryption key file '%1%' is invalid. Expected size %2%, but actual size is %3%
+MSG Fatal CannotReadMasterEncryptionKey  Can't read master encryption key file '%1%': (%2%) %3%
+MSG Fatal CannotStatSuperUserKey         Can't stat super user access key file '%1%'
+MSG Fatal CannotOpenSuperUserKey         Can't open super user access key file '%1%'
+MSG Fatal SuperUserAccessKeyIsTooLong    Super user initial access key length %1% is larger than maximum %2%
 
-MSG Fatal CannotOpenInstanceMetadata  Can't open instance metadata file %1%: (%2%) %3%
-MSG Fatal CannotLoadInstanceMetadata  Can't load instance metadata: (%1%) %2%
-MSG Error CannotSaveInstanceMetadata  Can't save instance metadata: (%1%) %2%
-MSG Fatal CannotOpenSystemDatabaseEncryptionKey  Can't open system database encryption key file %1%: (%2%) %3%
-MSG Fatal CannotStatSystemDatabaseEncryptionKey  Can't stat system database encryption key file %1%: (%2%) %3%
-MSG Fatal InvalidSystemDatabaseEncryptionKey  System database encryption key file %1% is invalid. Expected size %2%, but actual size is %3%
-MSG Fatal CannotReadSystemDatabaseEncryptionKey  Can't read system database encryption key file %1%: (%2%) %3%
-MSG Fatal CannotStatSuperUserKey                 Can't stat super user access key file %1%
-MSG Fatal CannotOpenSuperUserKey                 Can't open super user access key file %1%
-MSG Fatal SuperUserAccessKeyIsTooLong      Super user initial access key length %1% is larger than maximum %2%
+MSG Warning CannotRemoveDatabaseDataDirectory  Can't remove data directory for the database '%1%' (%2%): (%3%) %4%
 
 MSG Error CannotCreateDatabaseMetadataFile  Can't create metadata file '%1%' for the database '%2%' (%3%): (%4%) %5%
 MSG Error CannotOpenDatabaseMetadataFile    Can't open metadata file '%1%' for the database '%2%' (%3%): (%4%) %5%
 MSG Error CannotReadDatabaseMetadataFile    Can't read from metadata file for the database '%1%' (%2%): (%3%) %4%
-MSG Error CannotWriteDatabaseMetadataFile   Can't write to metadata for the database '%1%' (%2%): (%3%) %4%
-MSG Warning CannotRemoveDatabaseDataDirectory  Can't remove data directory for the database '%1%' (%2%): (%3%) %4%
+MSG Error CannotWriteDatabaseMetadataFile   Can't write to metadata file for the database '%1%' (%2%): (%3%) %4%
 MSG Error DatabaseMetadataFileCorrupted     Metadata file '%1%' for the database '%2%' (%3%) is corrupted: %4%
 
-MSG Error CannotCreateInstanceDataDir   Can't create instance data directory %1%: (%2%) %3%
-MSG Error CannotClearInstanceDataDir    Can't clear instance directory %1%: (%2%) %3%
-MSG Error InstanceDataDirIsNotDir       Instance directory path %1% is not a directory
-MSG Error CannotCreateDatabaseDataDir   Can't create data directory %1% for the database '%2%' (%3%): (%4%) %5%
-MSG Error CannotCreateTableDataDir      Can't create data directory %1% for the table '%2%'.'%3%' (%4%.%5%): (%6%) %7%
-MSG Error CannotCreateColumnDataDir     Can't create data directory %1% for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
-MSG Error CannotCreateIndexDataDir      Can't create data directory %1% for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotCreateDatabaseCipherKeyFile  Can't create cipher key file '%1%' for the database '%2%' (%3%): (%4%) %5%
+MSG Error CannotOpenDatabaseCipherKeyFile    Can't open cipher key file '%1%' for the database '%2%' (%3%): (%4%) %5%
+MSG Error CannotReadDatabaseCipherKeyFile    Can't read from cipher key file for the database '%1%' (%2%): (%3%) %4%
+MSG Error CannotWriteDatabaseCipherKeyFile   Can't write to cipher key file for the database '%1%' (%2%): (%3%) %4%
+MSG Error DatabaseCipherKeyFileCorrupted     Cipher key file '%1%' for the database '%2%' (%3%) is corrupted: %4%
 
-MSG Fatal CannotCreateInstanceInitializationFlagFile  Can't create instance initialization success data file %1%: %2%
-MSG Fatal CannotOpenInstanceInitializationFlagFile    Can't open instance initialization success data file %1%: %2%
-MSG Error CannotCreateDatabaseInitializationFlagFile  Can't create initialization success data file %1% for the database %2% (%3%): %4%
-MSG Error CannotCreateTableInitializationFlagFile  Can't create initialization success data file %1% for the table '%2%'.'%3%' (%4%.%5%): %6%
-MSG Error CannotCreateColumnInitializationFlagFile  Can't create initialization success data file %1% for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): %8%
-MSG Error CannotCreateIndexInitializationFlagFile  Can't create initialization success data file %1% for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): %8%
+MSG Error CannotCreateInstanceDataDir   Can't create instance data directory '%1%': (%2%) %3%
+MSG Error CannotClearInstanceDataDir    Can't clear instance directory '%1%': (%2%) %3%
+MSG Error InstanceDataDirIsNotDir       Instance directory path '%1%' is not a directory
+MSG Error CannotCreateDatabaseDataDir   Can't create data directory '%1%' for the database '%2%' (%3%): (%4%) %5%
+MSG Error CannotCreateTableDataDir      Can't create data directory '%1%' for the table '%2%'.'%3%' (%4%.%5%): (%6%) %7%
+MSG Error CannotCreateColumnDataDir     Can't create data directory '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotCreateIndexDataDir      Can't create data directory '%1%' for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
 
-MSG Error CannotCreateNewColumnDataBlockFile  Can't create new data block file %1% for the column '%2%'.'%3%'.'%4%'.%5% (%6%.%7%.%8%.%5%) : %9%: (%10%) %11%
+MSG Fatal CannotCreateInstanceInitializationFlagFile  Can't create instance initialization success data file '%1%': %2%
+MSG Fatal CannotOpenInstanceInitializationFlagFile    Can't open instance initialization success data file '%1%': %2%
+MSG Error CannotCreateDatabaseInitializationFlagFile  Can't create initialization success data file '%1%' for the database %2% (%3%): %4%
+MSG Error CannotCreateTableInitializationFlagFile  Can't create initialization success data file '%1%' for the table '%2%'.'%3%' (%4%.%5%): %6%
+MSG Error CannotCreateColumnInitializationFlagFile  Can't create initialization success data file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): %8%
+MSG Error CannotCreateIndexInitializationFlagFile  Can't create initialization success data file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): %8%
+
+MSG Error CannotCreateNewColumnDataBlockFile  Can't create new data block file '%1%' for the column '%2%'.'%3%'.'%4%'.%5% (%6%.%7%.%8%.%5%) : %9%: (%10%) %11%
 MSG Error CannotOpenColumnDataBlockFile       Can't open data block file '%1%' for '%2%'.'%3%'.'%4%'.%5% (%6%.%7%.%8%.%5%)
 MSG Error CannotReadColumnDataBlockFile       Can't read data block file '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%) offset %8% length %9%: (%10%) %11%
 MSG Error CannotWriteColumnDataBlockFile      Can't write data block file '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%) offset %8% %9%: (%10%) %11%
@@ -253,20 +269,20 @@ MSG Error InvalidBlockListDataFileSize    Invalid block list data file size for 
 MSG Error CannotReadBlockListDataFile     %1%: Can't read block list data file for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%) offset %8% length %9%: (%10%) %11%
 MSG Error CannotWriteBlockListDataFile    %1%: Can't write block list data file for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%) offset %8% length %9%: (%10%) %11%
 
-MSG Error CannotCreateNextBlockListDataFile   Can't create next block list data file %1% for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotCreateNextBlockListDataFile   Can't create next block list data file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
 MSG Error CannotOpenNextBlockListDataFile     Can't open next block list data file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
 MSG Error CannotGetNextBlockListDataFileSize  Can't get next block list data file size for the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): (%7%) %8%
 MSG Error InvalidNextBlockListDataFileSize    Invalid next block list data file size for the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %7%
 MSG Error CannotReadNextBlockListDataFile     %1%: Can't read next block list data file for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%) offset %9% length %9%: (%10%) %11%
 MSG Error CannotWriteNextBlockListDataFile    %1%: Can't write next block list data file for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%) offset %8% length %9%: (%10%) %11%
 
-MSG Error CannotCreateIndexFile  Can't create data file %1% for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
-MSG Error CannotLinkIndexFile    Can't link to filesystem data file %1% for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
-MSG Error CannotRenameIndexFile  Can't rename data file %1% into %2% for the index '%3%'.'%4%'.'%5%' (%6%.%7%.%8%): (%9%) %10%
-MSG Error CannotOpenIndexFile    Can't open data file %1% for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
-MSG Error CannotStatIndexFile    Can't stat data file %1% for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
-MSG Error CannotReadIndexFile    Can't read from data file %1% for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%) offset %8% length %9%: (%10%) %11%
-MSG Error CannotWriteIndexFile   Can't write to data file %1% for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%) offset %8% length %9%: (%10%) %11%
+MSG Error CannotCreateIndexFile  Can't create data file '%1%' for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotLinkIndexFile    Can't link to filesystem data file '%1%' for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotRenameIndexFile  Can't rename data file '%1%' into '%2%' for the index '%3%'.'%4%'.'%5%' (%6%.%7%.%8%): (%9%) %10%
+MSG Error CannotOpenIndexFile    Can't open data file '%1%' for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotStatIndexFile    Can't stat data file '%1%' for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotReadIndexFile    Can't read from data file '%1%' for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%) offset %8% length %9%: (%10%) %11%
+MSG Error CannotWriteIndexFile   Can't write to data file '%1%' for the index '%2%'.'%3%'.'%4%' (%5%.%6%.%7%) offset %8% length %9%: (%10%) %11%
 MSG Error IndexFileCorrupted     Index file '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) corrupted: %7%
 MSG Error CannotFindIndexRoot    Can't find root node for the index '%1%'.'%2%'.'%3%' (%4%.%5%.%6%)
 MSG Error CannotFindIndexNode    Can't find root node for the index '%1%'.'%2%'.'%3%'.'%4%' (%5%.%6%.%7%.%4%)
@@ -274,8 +290,8 @@ MSG Error IndexNodeCorrupted     Index node '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%
 
 MSG Error MasterColumnRecordIndexCorrupted Master column record index on table '%1%'.'%2%' (%3%.%4%) corrupted. Defect code %5%
 
-MSG Error CannotCreateMainIndexIdFile  Can't create main index ID file %1 for column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
-MSG Error CannotOpenMainIndexIdFile    Can't open main index ID file %1 for column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotCreateMainIndexIdFile  Can't create main index ID file '%1%' for column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
+MSG Error CannotOpenMainIndexIdFile    Can't open main index ID file '%1%' for column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
 MSG Error CannotReadMainIndexIdFile    Can't read main index ID file for column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): (%7%) %8%
 MSG Error CannotWriteMainIndexIdFile   Can't write main index ID file for column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): (%7%) %8%
 
@@ -298,8 +314,6 @@ MSG Error CannotDeserializeSystemObject  Can't deserialize system object for the
 MSG Error UliFlushNodeCacheFailed  There were errors while flushing ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) node cache for the file #%7%: %8%
 
 MSG Error BptiFlushNodeCacheFailed  There were errors while flushing BPTI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) node cache to disk: %7%
-
-MSG Error CannotDeleteTridGreaterThanMax  Can't delete TRID %1% larger than '%2%'.'%3%' table max TRID %4%
 
 MSG Error CannotCreateTridCountersFile  Can't create TRID counter file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
 MSG Error CannotOpenTridCounterFile     Can't open TRID counter file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%

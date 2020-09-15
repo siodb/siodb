@@ -16,7 +16,7 @@
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/FsUtils.h>
+#include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
@@ -59,7 +59,7 @@ std::uint64_t BlockRegistry::findPrevBlockId(std::uint64_t blockId) const
     // Read previous block ID
     std::uint8_t buffer[sizeof(std::uint64_t)];
     const auto readOffset = blockRecordOffset + BlockListRecord::kPrevBlockIdSerializedFieldOffset;
-    if (::preadExact(m_blockListFile.getFd(), buffer, sizeof(buffer), readOffset, kIgnoreSignals)
+    if (::preadExact(m_blockListFile.getFD(), buffer, sizeof(buffer), readOffset, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
@@ -87,7 +87,7 @@ std::vector<std::uint64_t> BlockRegistry::findNextBlockIds(std::uint64_t blockId
     while (nextBlockRecord.m_nextBlockListFileOffset != 0) {
         // Read next block list record
         std::uint8_t buffer[NextBlockListRecord::kSerializedSize];
-        if (::preadExact(m_nextBlockListFile.getFd(), buffer, sizeof(buffer),
+        if (::preadExact(m_nextBlockListFile.getFD(), buffer, sizeof(buffer),
                     nextBlockRecord.m_nextBlockListFileOffset, kIgnoreSignals)
                 != sizeof(buffer)) {
             const int errorCode = errno;
@@ -136,7 +136,7 @@ void BlockRegistry::recordBlock(
 
     // Write record
     if (::pwriteExact(
-                m_blockListFile.getFd(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
+                m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteBlockListDataFile, __func__,
@@ -160,7 +160,7 @@ void BlockRegistry::updateBlockState(std::uint64_t blockId, ColumnDataBlockState
     std::uint8_t buffer[sizeof(std::uint32_t)];
     ::pbeEncodeUInt32(static_cast<std::uint32_t>(state), buffer);
     const auto writeOffset = blockRecordOffset + BlockListRecord::kBlockStateSerializedFieldOffset;
-    if (::pwriteExact(m_blockListFile.getFd(), buffer, sizeof(buffer), writeOffset, kIgnoreSignals)
+    if (::pwriteExact(m_blockListFile.getFD(), buffer, sizeof(buffer), writeOffset, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteBlockListDataFile, __func__,
@@ -180,7 +180,7 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
 
     // Load block record
     std::uint8_t blockRecordBuffer[BlockListRecord::kSerializedSize];
-    if (::preadExact(m_blockListFile.getFd(), blockRecordBuffer, sizeof(blockRecordBuffer),
+    if (::preadExact(m_blockListFile.getFD(), blockRecordBuffer, sizeof(blockRecordBuffer),
                 blockRecordOffset, kIgnoreSignals)
             != sizeof(blockRecordBuffer)) {
         const int errorCode = errno;
@@ -202,7 +202,7 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
     record.serialize(buffer);
 
     // Write record
-    if (::pwriteExact(m_nextBlockListFile.getFd(), buffer, sizeof(buffer), newRecordLocation,
+    if (::pwriteExact(m_nextBlockListFile.getFD(), buffer, sizeof(buffer), newRecordLocation,
                 kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
@@ -291,7 +291,7 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
         // This is some subsequent one, therefore also update last record in the chain.
 
         // Load old last next block record
-        if (::preadExact(m_nextBlockListFile.getFd(), buffer, NextBlockListRecord::kSerializedSize,
+        if (::preadExact(m_nextBlockListFile.getFD(), buffer, NextBlockListRecord::kSerializedSize,
                     blockRecord.m_lastNextBlockListFileOffset, kIgnoreSignals)
                 != NextBlockListRecord::kSerializedSize) {
             const int errorCode = errno;
@@ -309,14 +309,14 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
         lastRecord.serialize(buffer);
 
         // Update record
-        lastRecordUpdate = std::make_unique<LastRecordUpdate>(m_column, m_nextBlockListFile.getFd(),
+        lastRecordUpdate = std::make_unique<LastRecordUpdate>(m_column, m_nextBlockListFile.getFD(),
                 blockRecord.m_lastNextBlockListFileOffset, buffer, lastRecord.m_blockId);
     }
 
     // Update block record
     blockRecord.m_lastNextBlockListFileOffset = newRecordLocation;
     blockRecord.serialize(blockRecordBuffer);
-    if (::pwriteExact(m_blockListFile.getFd(), blockRecordBuffer, sizeof(blockRecordBuffer),
+    if (::pwriteExact(m_blockListFile.getFD(), blockRecordBuffer, sizeof(blockRecordBuffer),
                 blockRecordOffset, kIgnoreSignals)
             != sizeof(blockRecordBuffer)) {
         // Save error code
@@ -345,7 +345,7 @@ void BlockRegistry::createDataFiles()
     const auto nextBlockListFilePath = utils::constructPath(
             m_dataDir, kNextBlockListFileName, m_column.getId(), kDataFileExtension);
 
-    FdGuard blockListFile(::open(blockListFilePath.c_str(), O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR,
+    FDGuard blockListFile(::open(blockListFilePath.c_str(), O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR,
             kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -355,7 +355,7 @@ void BlockRegistry::createDataFiles()
                 m_column.getId(), errorCode, std::strerror(errorCode));
     }
 
-    FdGuard nextBlockListFile(::open(nextBlockListFilePath.c_str(),
+    FDGuard nextBlockListFile(::open(nextBlockListFilePath.c_str(),
             O_CREAT | O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -381,7 +381,7 @@ void BlockRegistry::openDataFiles()
     const auto nextBlockListFilePath = utils::constructPath(
             m_dataDir, kNextBlockListFileName, m_column.getId(), kDataFileExtension);
 
-    FdGuard blockListFile(
+    FDGuard blockListFile(
             ::open(blockListFilePath.c_str(), O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -391,7 +391,7 @@ void BlockRegistry::openDataFiles()
                 std::strerror(errorCode));
     }
 
-    const auto blockListFileSize = lseek(blockListFile.getFd(), 0, SEEK_END);
+    const auto blockListFileSize = lseek(blockListFile.getFD(), 0, SEEK_END);
     if (blockListFileSize < 0) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotGetBlockListDataFileSize,
@@ -406,7 +406,7 @@ void BlockRegistry::openDataFiles()
                 blockListFileSize);
     }
 
-    FdGuard nextBlockListFile(::open(
+    FDGuard nextBlockListFile(::open(
             nextBlockListFilePath.c_str(), O_CLOEXEC | O_DSYNC | O_RDWR, kDataFileCreationMode));
     if (!blockListFile.isValidFd()) {
         const int errorCode = errno;
@@ -416,7 +416,7 @@ void BlockRegistry::openDataFiles()
                 m_column.getId(), errorCode, std::strerror(errorCode));
     }
 
-    const auto nextBlockListFileSize = lseek(nextBlockListFile.getFd(), 0, SEEK_END);
+    const auto nextBlockListFileSize = lseek(nextBlockListFile.getFD(), 0, SEEK_END);
     if (nextBlockListFileSize < 0) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotGetNextBlockListDataFileSize,
@@ -456,7 +456,7 @@ void BlockRegistry::loadRecord(std::uint64_t blockId, BlockListRecord& record) c
     // Load block record
     std::uint8_t buffer[BlockListRecord::kSerializedSize];
     if (::preadExact(
-                m_blockListFile.getFd(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
+                m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
@@ -488,7 +488,7 @@ off_t BlockRegistry::checkBlockRecordPresent(std::uint64_t blockId) const
     // Read block presence flag
     std::uint8_t buffer[1];
     if (::preadExact(
-                m_blockListFile.getFd(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
+                m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
             != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
@@ -540,7 +540,7 @@ std::string&& BlockRegistry::ensureDataDir(std::string&& dataDir, bool create) c
 void BlockRegistry::createInitializationFlagFile() const
 {
     const auto initFlagFile = utils::constructPath(m_dataDir, kInitializationFlagFile);
-    FdGuard fd(::open(initFlagFile.c_str(), O_CREAT | O_WRONLY | O_CLOEXEC | O_NOATIME,
+    FDGuard fd(::open(initFlagFile.c_str(), O_CREAT | O_WRONLY | O_CLOEXEC | O_NOATIME,
             kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
@@ -553,7 +553,7 @@ void BlockRegistry::createInitializationFlagFile() const
                 err.str());
     }
     const auto timeStr = std::to_string(std::time(nullptr));
-    if (::writeExact(fd.getFd(), timeStr.c_str(), timeStr.length(), kIgnoreSignals)
+    if (::writeExact(fd.getFD(), timeStr.c_str(), timeStr.length(), kIgnoreSignals)
             != timeStr.length()) {
         const int errorCode = errno;
         std::ostringstream err;

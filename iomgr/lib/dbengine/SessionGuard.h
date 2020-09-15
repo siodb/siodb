@@ -26,7 +26,7 @@ public:
     DECLARE_NONCOPYABLE(SessionGuard);
 
     /**
-     * Deinitializes object of class SessionGuard.
+     * De-initializes object of class SessionGuard.
      * Ends active session.
      */
     ~SessionGuard()

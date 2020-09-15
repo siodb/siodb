@@ -41,6 +41,8 @@ User::User(const UserRecord& userRecord)
 {
     for (const auto& accessKeyRecord : userRecord.m_accessKeys.byId())
         m_accessKeys.push_back(std::make_shared<UserAccessKey>(*this, accessKeyRecord));
+    for (const auto& tokenRecord : userRecord.m_tokens.byId())
+        m_tokens.push_back(std::make_shared<UserToken>(*this, tokenRecord));
 }
 
 UserAccessKeyPtr User::findAccessKeyChecked(const std::string& name) const
@@ -174,12 +176,12 @@ bool User::authenticate(const std::string& tokenValue) const
     // Validate and parse token value
     if (tokenValue.empty() || tokenValue.length() % 2 != 0
             || tokenValue.length() > UserToken::kMaxSize * 2)
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenValue1);
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenValue);
     BinaryValue bv(tokenValue.length() / 2);
     try {
         boost::algorithm::unhex(tokenValue.cbegin(), tokenValue.cend(), bv.begin());
     } catch (...) {
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenValue1);
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenValue);
     }
 
     // Check that user is active

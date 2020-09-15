@@ -5,13 +5,11 @@
 #pragma once
 
 // Project headers
-#include "ClientSession.h"
 #include "IOManagerRequestDispatcher.h"
-#include "../dbengine/AuthenticationResult.h"
 
 // Common project headers
-#include <siodb/common/io/IODevice.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/io/InputOutputStream.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // STL headers
@@ -32,18 +30,18 @@ namespace siodb::iomgr {
  * Handler for the connection with downstream client like client connection worker
  * or REST server.
  */
-class IOManagerConnectionHandler final
-    : public std::enable_shared_from_this<IOManagerConnectionHandler> {
-public:
+class IOManagerConnectionHandler : public std::enable_shared_from_this<IOManagerConnectionHandler> {
+protected:
     /**
      * Initializes object of class IOManagerConnectionHandler.
      * @param clientFd Client connection file descriptor guard.
      * @param requestDispatcher Request dispatcher.
      */
-    IOManagerConnectionHandler(IOManagerRequestDispatcher& requestDispatcher, FdGuard&& clientFd);
+    IOManagerConnectionHandler(IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd);
 
-    /** Deinitializes object */
-    ~IOManagerConnectionHandler();
+public:
+    /** De-initializes object */
+    virtual ~IOManagerConnectionHandler();
 
     DECLARE_NONCOPYABLE(IOManagerConnectionHandler);
 
@@ -53,8 +51,11 @@ public:
      */
     bool isConnected() noexcept
     {
-        return m_clientIo->isValid();
+        return m_clientConnection->isValid();
     }
+
+    /** Starts connection handler thread */
+    void start();
 
     /** 
      * Executes database engine request.
@@ -63,25 +64,34 @@ public:
      */
     bool executeIOManagerRequest(const IOManagerRequest& request);
 
+protected:
+    /** Thread logic implementation. */
+    virtual void threadLogicImpl() = 0;
+
+    /**
+     * Responds to server with error code.
+     * @param requestId id of request for response.
+     * @throw std::system_error when I/O error happens.
+     * @throw ProtocolError when protocol error happens.
+     */
+    void sendAuthenticatedReponse(std::uint64_t requestId);
+
+    /**
+     * Responds to server with error code.
+     * @param requestId id of request for response.
+     * @param errorCode Error code.
+     * @param errorMessage Error message.
+     * @throw std::system_error when I/O error happens.
+     * @throw ProtocolError when protocol error happens.
+     */
+    void sendErrorReponse(std::uint64_t requestId, int errorCode, const char* errorMessage);
+
     /** Closes connection. */
     void closeConnection() noexcept;
 
 private:
     /** Entry point of the connection handler thread. */
     void threadMain();
-
-    /** Authenticates user on the connection. */
-    void authenticateUser();
-
-    /**
-     * Responds to server with error code.
-     * @param requestId id of request for response.
-     * @param text Text of error.
-     * @param errorCode Error code.
-     * @throw std::system_error when I/O error happens.
-     * @throw SiodbProtocolError when protocol error happens.
-     */
-    void sendErrorReponse(int requestId, const char* text, int errorCode);
 
     /**
      * Creates log context name.
@@ -90,16 +100,7 @@ private:
      */
     std::string createLogContextName(int fd) const;
 
-private:
-    /** Error codes enumeration */
-    enum {
-        /** SQL parsing error */
-        kSqlParseError = 2,
-
-        /* Internal error happened */
-        kInternalError = 3,
-    };
-
+protected:
     /** Connection handler ID */
     const std::uint64_t m_id;
 
@@ -110,25 +111,19 @@ private:
     IOManagerRequestDispatcher& m_requestDispatcher;
 
     /** A file descriptor for polling connection with Client */
-    FdGuard m_clientEpollFd;
+    FDGuard m_clientEpollFd;
 
     /** Client connection IO */
-    std::unique_ptr<siodb::io::IODevice> m_clientIo;
-
-    /** User name */
-    std::string m_userName;
-
-    /** Authentication result */
-    dbengine::AuthenticationResult m_authResult;
-
-    /** Request handler object */
-    std::shared_ptr<dbengine::RequestHandler> m_requestHandler;
+    std::unique_ptr<siodb::io::InputOutputStream> m_clientConnection;
 
     /** Client communication handler thread */
     std::unique_ptr<std::thread> m_thread;
 
     /** Conneciton handler ID counter */
     static std::atomic<std::uint64_t> s_idCounter;
+
+    /* Internal error message code */
+    static constexpr int kInternalError = 4;
 
     /** Log context name */
     static constexpr const char* kLogContextBase = "IOManagerConnectionHandler";

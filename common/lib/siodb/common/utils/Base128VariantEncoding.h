@@ -21,16 +21,8 @@
 #define kMaxSerializedInt64Size 10
 
 #ifdef __cplusplus
-
-// STL headers
-#include <optional>
-#include <string>
-#include <type_traits>
-#include <vector>
-
 extern "C" {
-
-#endif
+#endif  // __cplusplus
 
 /**
  * Encodes 16-bit unsigned integer into Base128 variant.
@@ -238,6 +230,12 @@ static inline int decodeVarInt64(const uint8_t* src, size_t size, int64_t* value
 #include "BinaryValue.h"
 #include "DeserializationError.h"
 #include "Uuid.h"
+
+// STL headers
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 /**
  * Encodes 16-bit signed integer as Base128 variant.

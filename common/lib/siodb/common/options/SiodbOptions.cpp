@@ -31,6 +31,7 @@ inline auto constructOptionPath(const std::string& str)
     return boost::property_tree::ptree::path_type(str, ';');
 }
 
+/** Boolean option value translator for the boost::ptree */
 struct BoolTranslator {
     typedef std::string internal_type;
     typedef int external_type;
@@ -74,27 +75,23 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
 
     // Parse IPv4 port number
     {
-        tmpOptions.m_generalOptions.m_ipv4port = config.get<int>(
+        tmpOptions.m_generalOptions.m_ipv4Port = config.get<int>(
                 constructOptionPath(kGeneralOptionIpv4Port), kDefaultIpv4PortNumber);
-        if (tmpOptions.m_generalOptions.m_ipv4port != 0
-                && (tmpOptions.m_generalOptions.m_ipv4port < kMinPortNumber
-                        || tmpOptions.m_generalOptions.m_ipv4port > kMaxPortNumber))
+        if (tmpOptions.m_generalOptions.m_ipv4Port != 0
+                && (tmpOptions.m_generalOptions.m_ipv4Port < net::kMinPortNumber
+                        || tmpOptions.m_generalOptions.m_ipv4Port > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IPv4 server port number");
     }
 
     // Parse IPv6 port number
     {
-        tmpOptions.m_generalOptions.m_ipv6port = config.get<int>(
+        tmpOptions.m_generalOptions.m_ipv6Port = config.get<int>(
                 constructOptionPath(kGeneralOptionIpv6Port), kDefaultIpv6PortNumber);
-        if (tmpOptions.m_generalOptions.m_ipv6port != 0
-                && (tmpOptions.m_generalOptions.m_ipv6port < kMinPortNumber
-                        || tmpOptions.m_generalOptions.m_ipv6port > kMaxPortNumber))
+        if (tmpOptions.m_generalOptions.m_ipv6Port != 0
+                && (tmpOptions.m_generalOptions.m_ipv6Port < net::kMinPortNumber
+                        || tmpOptions.m_generalOptions.m_ipv6Port > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IPv6 server port number");
     }
-
-    // Ensure that at least one of IPv4 or IPv6 ports is specified
-    if (tmpOptions.m_generalOptions.m_ipv6port == 0 && tmpOptions.m_generalOptions.m_ipv4port == 0)
-        throw InvalidConfigurationError("Both IPv4 and IPv6 are disabled");
 
     // Parse data directory
     {
@@ -159,16 +156,14 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
 
     // Parse dead connection cleanup period in seconds
     {
-        const auto value =
-                config.get<unsigned>(constructOptionPath(kGeneralOptionDeadConnectionCleanupPeriod),
-                        kDefaultOptionDeadConnectionCleanupPeriod);
-        if (value < kMinOptionDeadConnectionCleanupPeriod) {
-            throw InvalidConfigurationError("Dead connection cleanup period is too small");
-        }
-        if (value > kMaxOptionDeadConnectionCleanupPeriod) {
-            throw InvalidConfigurationError("Dead connection cleanup period is too big");
-        }
-        tmpOptions.m_generalOptions.m_deadConnectionCleanupPeriod = std::chrono::seconds(value);
+        const auto value = config.get<unsigned>(
+                constructOptionPath(kGeneralOptionDeadConnectionCleanupInterval),
+                kDefaultOptionDeadConnectionCleanupInterval);
+        if (value < kMinOptionDeadConnectionCleanupInterval)
+            throw InvalidConfigurationError("Dead connection cleanup interval is too small");
+        if (value > kMaxOptionDeadConnectionCleanupInterval)
+            throw InvalidConfigurationError("Dead connection cleanup interval is too big");
+        tmpOptions.m_generalOptions.m_deadConnectionCleanupInterval = value;
     }
 
     // Parse allow group permission of config files
@@ -216,11 +211,11 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                     err << "Type not defined for the log channel " << logChannelName;
                     throw InvalidConfigurationError(err.str());
                 }
-                if (channelType == "console") {
+                if (channelType == "console")
                     channelOptions.m_type = LogChannelType::kConsole;
-                } else if (channelType == "file") {
+                else if (channelType == "file")
                     channelOptions.m_type = LogChannelType::kFile;
-                } else {
+                else {
                     std::ostringstream err;
                     err << "Unsupported channel type '" << channelType
                         << "' specified for the log channel " << logChannelName;
@@ -267,17 +262,14 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
                         }
                         default: break;
                     }
-                    if (multiplier > 0) {
-                        option.erase(option.length() - 1, 1);
-                    }
+                    if (multiplier > 0) option.erase(option.length() - 1, 1);
                 }
-                if (multiplier == 0) {
-                    multiplier = kBytesInMB;
-                }
-                auto value = std::stoll(option);
+                if (multiplier == 0) multiplier = kBytesInMB;
+                auto value = std::stoull(option);
                 if (value == 0) throw std::out_of_range("value is zero");
                 const auto upperLimit = defaults::kMaxMaxLogFileSize / multiplier;
-                if (value > upperLimit) throw std::out_of_range("value is too big");
+                if (value > static_cast<unsigned long long>(upperLimit))
+                    throw std::out_of_range("value is too big");
                 channelOptions.m_maxLogFileSize = value * multiplier;
             } catch (std::exception& ex) {
                 std::ostringstream err;
@@ -386,42 +378,46 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
 
     // Parse IPv4 port number
     {
-        tmpOptions.m_ioManagerOptions.m_ipv4port = config.get<int>(
-                constructOptionPath(kIOManagerOptionIpv4Port), kDefaultIOManagerIpv4PortNumber);
-        if (tmpOptions.m_ioManagerOptions.m_ipv4port != 0
-                && (tmpOptions.m_ioManagerOptions.m_ipv4port < kMinPortNumber
-                        || tmpOptions.m_ioManagerOptions.m_ipv4port > kMaxPortNumber))
-            throw InvalidConfigurationError("Invalid IO Manager IPv4 port number");
-
-        if (tmpOptions.m_ioManagerOptions.m_ipv4port != 0
-                && tmpOptions.m_ioManagerOptions.m_ipv4port
-                           == tmpOptions.m_generalOptions.m_ipv4port) {
-            throw InvalidConfigurationError(
-                    "IO Manager and database use the same IPv4 port number");
-        }
+        tmpOptions.m_ioManagerOptions.m_ipv4SqlPort =
+                config.get<int>(constructOptionPath(kIOManagerOptionIpv4SqlPort),
+                        kDefaultIOManagerIpv4SqlPortNumber);
+        if (tmpOptions.m_ioManagerOptions.m_ipv4SqlPort != 0
+                && (tmpOptions.m_ioManagerOptions.m_ipv4SqlPort < net::kMinPortNumber
+                        || tmpOptions.m_ioManagerOptions.m_ipv4SqlPort > net::kMaxPortNumber))
+            throw InvalidConfigurationError("Invalid IO Manager IPv4 SQL port number");
     }
 
     // Parse IPv6 port number
     {
-        tmpOptions.m_ioManagerOptions.m_ipv6port = config.get<int>(
-                constructOptionPath(kIOManagerOptionIpv6Port), kDefaultIOManagerIpv6PortNumber);
-        if (tmpOptions.m_ioManagerOptions.m_ipv6port != 0
-                && (tmpOptions.m_ioManagerOptions.m_ipv6port < kMinPortNumber
-                        || tmpOptions.m_ioManagerOptions.m_ipv6port > kMaxPortNumber))
+        tmpOptions.m_ioManagerOptions.m_ipv6SqlPort =
+                config.get<int>(constructOptionPath(kIOManagerOptionIpv6SqlPort),
+                        kDefaultIOManagerIpv6SqlPortNumber);
+        if (tmpOptions.m_ioManagerOptions.m_ipv6SqlPort != 0
+                && (tmpOptions.m_ioManagerOptions.m_ipv6SqlPort < net::kMinPortNumber
+                        || tmpOptions.m_ioManagerOptions.m_ipv6SqlPort > net::kMaxPortNumber))
             throw InvalidConfigurationError("Invalid IO Manager IPv6 port number");
-
-        if (tmpOptions.m_ioManagerOptions.m_ipv6port != 0
-                && tmpOptions.m_ioManagerOptions.m_ipv6port
-                           == tmpOptions.m_generalOptions.m_ipv6port) {
-            throw InvalidConfigurationError(
-                    "IO Manager and database use the same IPv6 port number");
-        }
     }
 
-    // Ensure that at least one of IPv4 or IPv6 port is specified
-    if (tmpOptions.m_ioManagerOptions.m_ipv6port == 0
-            && tmpOptions.m_ioManagerOptions.m_ipv4port == 0) {
-        throw InvalidConfigurationError("Both IPv4 and IPv6 are disabled for IO Manager");
+    // Parse IPv4 port number
+    {
+        tmpOptions.m_ioManagerOptions.m_ipv4RestPort =
+                config.get<int>(constructOptionPath(kIOManagerOptionIpv4RestPort),
+                        kDefaultIOManagerIpv4RestPortNumber);
+        if (tmpOptions.m_ioManagerOptions.m_ipv4RestPort != 0
+                && (tmpOptions.m_ioManagerOptions.m_ipv4RestPort < net::kMinPortNumber
+                        || tmpOptions.m_ioManagerOptions.m_ipv4RestPort > net::kMaxPortNumber))
+            throw InvalidConfigurationError("Invalid IO Manager IPv4 REST port number");
+    }
+
+    // Parse IPv6 port number
+    {
+        tmpOptions.m_ioManagerOptions.m_ipv6RestPort =
+                config.get<int>(constructOptionPath(kIOManagerOptionIpv6RestPort),
+                        kDefaultIOManagerIpv6RestPortNumber);
+        if (tmpOptions.m_ioManagerOptions.m_ipv6RestPort != 0
+                && (tmpOptions.m_ioManagerOptions.m_ipv6RestPort < net::kMinPortNumber
+                        || tmpOptions.m_ioManagerOptions.m_ipv6RestPort > net::kMaxPortNumber))
+            throw InvalidConfigurationError("Invalid IO Manager IPv6 REST port number");
     }
 
     // Parse worker thread number
@@ -488,16 +484,57 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
     // Parse dead connection cleanup period in seconds
     {
         const auto value = config.get<unsigned>(
-                constructOptionPath(kIOManagerOptionDeadConnectionCleanupPeriod),
-                kDefaultIOManagerOptionDeadConnectionCleanupPeriod);
-        if (value < kMinIOManagerOptionDeadConnectionCleanupPeriod) {
+                constructOptionPath(kIOManagerOptionDeadConnectionCleanupInterval),
+                kDefaultIOManagerOptionDeadConnectionCleanupInterval);
+        if (value < kMinIOManagerOptionDeadConnectionCleanupInterval) {
             throw InvalidConfigurationError(
-                    "IO Manager dead connection cleanup period is too small");
+                    "IO Manager dead connection cleanup interval is too small");
         }
-        if (value > kMaxIOManagerOptionDeadConnectionCleanupPeriod) {
-            throw InvalidConfigurationError("IO Manager dead connection cleanup period is too big");
+        if (value > kMaxIOManagerOptionDeadConnectionCleanupInterval) {
+            throw InvalidConfigurationError(
+                    "IO Manager dead connection cleanup interval is too big");
         }
-        tmpOptions.m_ioManagerOptions.m_deadConnectionCleanupPeriod = std::chrono::seconds(value);
+        tmpOptions.m_ioManagerOptions.m_deadConnectionCleanupInterval = value;
+    }
+
+    // Parse maximum JSON payload size
+    try {
+        const auto path = constructOptionPath(kIOManagerOptionMaxJsonPayloadSize);
+        auto option = boost::trim_copy(config.get<std::string>(
+                path, std::to_string(kDefaultIOManagerOptionMaxJsonPayloadSize / kBytesInKB)));
+        off_t multiplier = 0;
+        if (option.size() > 1) {
+            const auto lastChar = option.back();
+            switch (lastChar) {
+                case 'k':
+                case 'K': {
+                    multiplier = kBytesInKB;
+                    break;
+                }
+                case 'm':
+                case 'M': {
+                    multiplier = kBytesInMB;
+                    break;
+                }
+                case 'g':
+                case 'G': {
+                    multiplier = kBytesInGB;
+                    break;
+                }
+                default: break;
+            }
+            if (multiplier > 0) option.erase(option.length() - 1, 1);
+        }
+        if (multiplier == 0) multiplier = kBytesInKB;
+        auto value = std::stoull(option);
+        if (value == 0) throw std::out_of_range("value is zero");
+        const auto upperLimit = kMaxIOManagerOptionMaxJsonPayloadSize / multiplier;
+        if (value > upperLimit) throw std::out_of_range("value is too big");
+        tmpOptions.m_ioManagerOptions.m_maxJsonPayloadSize = value * multiplier;
+    } catch (std::exception& ex) {
+        std::ostringstream err;
+        err << "Invalid value of max. JSON payload size: " << ex.what();
+        throw InvalidConfigurationError(err.str());
     }
 
     // Encryption options
@@ -506,20 +543,25 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
     tmpOptions.m_encryptionOptions.m_defaultCipherId = boost::trim_copy(config.get<std::string>(
             constructOptionPath(kEncryptionOptionDefaultCipherId), kDefaultCipherId));
 
+    // Parse master cipher ID
+    tmpOptions.m_encryptionOptions.m_masterCipherId = boost::trim_copy(
+            config.get<std::string>(constructOptionPath(kEncryptionOptionMasterCipherId),
+                    tmpOptions.m_encryptionOptions.m_defaultCipherId));
+
+    // Parse master cipher key path
+    tmpOptions.m_encryptionOptions.m_masterCipherKeyPath = boost::trim_copy(
+            config.get<std::string>(constructOptionPath(kEncryptionOptionMasterKey),
+                    composeDefaultMasterEncryptionKeyFilePath(instanceName)));
+
     // Parse system database cipher ID
     tmpOptions.m_encryptionOptions.m_systemDbCipherId = boost::trim_copy(
             config.get<std::string>(constructOptionPath(kEncryptionOptionSystemDbCipherId),
                     tmpOptions.m_encryptionOptions.m_defaultCipherId));
 
     // Client options
-
-    {
-        BoolTranslator translator;
-        tmpOptions.m_clientOptions.m_enableEncryption =
-                config.get<bool>(constructOptionPath(kClientOptionEnableEncryption),
-                        kDefaultClientEnableEncryption, translator);
-    }
-
+    tmpOptions.m_clientOptions.m_enableEncryption =
+            config.get<bool>(constructOptionPath(kClientOptionEnableEncryption),
+                    kDefaultClientEnableEncryption, BoolTranslator());
     if (tmpOptions.m_clientOptions.m_enableEncryption) {
         tmpOptions.m_clientOptions.m_tlsCertificate = boost::trim_copy(
                 config.get<std::string>(constructOptionPath(kClientOptionTlsCertificate), ""));
@@ -538,6 +580,64 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
 
         if (tmpOptions.m_clientOptions.m_tlsPrivateKey.empty())
             throw std::runtime_error("Client TLS private keys is empty");
+    }
+
+    // Check ports
+    std::unordered_map<int, std::string> ports;
+    constexpr const char* kConflictsWith = " conflicts with ";
+
+    const char* portName = "Database IPv4 port";
+    if (tmpOptions.m_generalOptions.m_ipv4Port != 0)
+        ports.emplace(tmpOptions.m_generalOptions.m_ipv4Port, portName);
+
+    portName = "Database IPv6 port";
+    if (tmpOptions.m_generalOptions.m_ipv6Port != 0) {
+        const auto result = ports.emplace(tmpOptions.m_generalOptions.m_ipv4Port, portName);
+        if (!result.second) {
+            std::ostringstream err;
+            err << portName << kConflictsWith << result.first->second;
+            throw std::runtime_error(err.str());
+        }
+    }
+
+    portName = "IO Manager SQL IPv4 port";
+    if (tmpOptions.m_ioManagerOptions.m_ipv4SqlPort != 0) {
+        const auto result = ports.emplace(tmpOptions.m_ioManagerOptions.m_ipv4SqlPort, portName);
+        if (!result.second) {
+            std::ostringstream err;
+            err << portName << kConflictsWith << result.first->second;
+            throw std::runtime_error(err.str());
+        }
+    }
+
+    portName = "IO Manager SQL IPv6 port";
+    if (tmpOptions.m_ioManagerOptions.m_ipv6SqlPort != 0) {
+        const auto result = ports.emplace(tmpOptions.m_ioManagerOptions.m_ipv6SqlPort, portName);
+        if (!result.second) {
+            std::ostringstream err;
+            err << portName << kConflictsWith << result.first->second;
+            throw std::runtime_error(err.str());
+        }
+    }
+
+    portName = "IO Manager REST IPv4 port";
+    if (tmpOptions.m_ioManagerOptions.m_ipv4RestPort != 0) {
+        const auto result = ports.emplace(tmpOptions.m_ioManagerOptions.m_ipv4RestPort, portName);
+        if (!result.second) {
+            std::ostringstream err;
+            err << portName << kConflictsWith << result.first->second;
+            throw std::runtime_error(err.str());
+        }
+    }
+
+    portName = "IO Manager REST IPv6 port";
+    if (tmpOptions.m_ioManagerOptions.m_ipv6RestPort != 0) {
+        const auto result = ports.emplace(tmpOptions.m_ioManagerOptions.m_ipv6RestPort, portName);
+        if (!result.second) {
+            std::ostringstream err;
+            err << portName << kConflictsWith << result.first->second;
+            throw std::runtime_error(err.str());
+        }
     }
 
     // All options valid, save them

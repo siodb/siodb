@@ -11,7 +11,7 @@ MutableOrConstantString UnaryPlusOperator::getExpressionText() const
     return "UNARY PLUS";
 }
 
-Variant UnaryPlusOperator::evaluate(Context& context) const
+Variant UnaryPlusOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto value = m_operand->evaluate(context);
     if (value.isNull()) return nullptr;

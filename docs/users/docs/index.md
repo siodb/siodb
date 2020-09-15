@@ -1,4 +1,4 @@
-# Siodb documentation
+# Siodb Documentation
 
 ## Release note
 
@@ -35,4 +35,3 @@ Do you want to add content to the Siodb documentation? Here is our procedure:
 - Write as you were speaking to your friend.
 - Write short sentences. Avoid long sentences.
 - Don't use passive voice.
-

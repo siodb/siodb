@@ -6,14 +6,16 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType BitwiseUnaryOperator::getResultValueType(const Context& context) const
+VariantType BitwiseUnaryOperator::getResultValueType(
+        const ExpressionEvaluationContext& context) const
 {
     const auto resultType = m_operand->getResultValueType(context);
     if (!isIntegerType(resultType)) return VariantType::kNull;
     return resultType <= VariantType::kInt32 ? VariantType::kInt32 : resultType;
 }
 
-ColumnDataType BitwiseUnaryOperator::getColumnDataType(const Context& context) const
+ColumnDataType BitwiseUnaryOperator::getColumnDataType(
+        const ExpressionEvaluationContext& context) const
 {
     const auto resultType = m_operand->getColumnDataType(context);
     if (!isIntegerType(resultType)) return COLUMN_DATA_TYPE_UNKNOWN;
@@ -24,7 +26,7 @@ ColumnDataType BitwiseUnaryOperator::getColumnDataType(const Context& context) c
  * Checks if operand is integer and valid.
  * @std::runtime_error if operand isn't integer or not valid
  */
-void BitwiseUnaryOperator::validate(const Context& context) const
+void BitwiseUnaryOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_operand->validate(context);
     const auto resultType = m_operand->getResultValueType(context);

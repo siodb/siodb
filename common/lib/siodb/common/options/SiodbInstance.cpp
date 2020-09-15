@@ -185,11 +185,13 @@ void validateInstance(const std::string& instanceName)
             configPath, options.m_generalOptions.m_allowGroupPermissionsOnConfigFiles);
 #endif
 
-    // Check system database encryption key file
-    const auto encryptionKeyPath = composeInstanceSysDbEncryptionKeyFilePath(instanceName);
+    // Check master encryption key file
+    const auto encryptionKeyPath = options.m_encryptionOptions.m_masterCipherKeyPath.empty()
+                                           ? composeDefaultMasterEncryptionKeyFilePath(instanceName)
+                                           : options.m_encryptionOptions.m_masterCipherKeyPath;
     if (!fs::exists(encryptionKeyPath)) {
         std::ostringstream err;
-        err << "Missing system database encryption key for the instance '" << instanceName << "'";
+        err << "Missing master encryption key for the instance '" << instanceName << "'";
         throw std::invalid_argument(err.str());
     }
 
@@ -226,9 +228,9 @@ std::string composeInstanceConfigFilePath(const std::string& instanceName)
     return composeConfigFilePath(instanceName, kInstanceConfigFile);
 }
 
-std::string composeInstanceSysDbEncryptionKeyFilePath(const std::string& instanceName)
+std::string composeDefaultMasterEncryptionKeyFilePath(const std::string& instanceName)
 {
-    return composeConfigFilePath(instanceName, kInstanceSystemDbEncryptionKeyFile);
+    return composeConfigFilePath(instanceName, kDefaultMasterEncryptionKeyFileName);
 }
 
 std::string composeInstanceInitialSuperUserAccessKeyFilePath(const std::string& instanceName)

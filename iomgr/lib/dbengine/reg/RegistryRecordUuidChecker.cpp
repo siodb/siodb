@@ -5,6 +5,7 @@
 #include "RegistryRecordUuidChecker.h"
 
 // Project headers
+#include "CipherKeyRecord.h"
 #include "ColumnDefinitionRecord.h"
 #include "ColumnRecord.h"
 #include "ColumnSetRecord.h"
@@ -45,6 +46,7 @@ void checkRegistryRecordUuids()
     CHECK_RECORD(UserPermissionRecord);
     CHECK_RECORD(UserRecord);
     CHECK_RECORD(UserTokenRecord);
+    CHECK_RECORD(CipherKeyRecord);
 }
 
 }  // namespace siodb::iomgr::dbengine

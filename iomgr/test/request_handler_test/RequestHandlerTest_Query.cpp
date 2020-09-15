@@ -4,11 +4,12 @@
 
 // Project headers
 #include "RequestHandlerTest_TestEnv.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 
@@ -21,7 +22,7 @@ TEST(Query, SelectFromSys_Databases)
     ASSERT_NE(instance, nullptr);
 
     instance->createDatabase(
-            "TEST", "none", siodb::BinaryValue(), dbengine::User::kSuperUserId, {});
+            "TEST", "none", siodb::BinaryValue(), {}, dbengine::User::kSuperUserId);
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
@@ -29,13 +30,13 @@ TEST(Query, SelectFromSys_Databases)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto selectRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+    const auto request =
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-    requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     siodb::protobuf::readMessage(
@@ -47,15 +48,16 @@ TEST(Query, SelectFromSys_Databases)
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
 
-    google::protobuf::io::CodedInputStream codedInput(&inputStream);
+    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
     std::uint64_t rowLength = 0;
     // SYS and TEST databases
 
     for (std::size_t i = 0, n = instance->getDatbaseCount(); i < n; ++i) {
+        rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength < 200);
-        ASSERT_TRUE(rowLength > 0);
+        ASSERT_LT(rowLength, 200);
+        ASSERT_GT(rowLength, 0);
         siodb::BinaryValue rowData(rowLength);
         ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
     }
@@ -75,15 +77,14 @@ TEST(Query, ShowDatabases)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto showDatabasesRequest =
-            parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+    const auto request =
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-    requestHandler->executeRequest(*showDatabasesRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -96,13 +97,14 @@ TEST(Query, ShowDatabases)
     EXPECT_EQ(response.column_description(0).name(), "NAME");
     EXPECT_EQ(response.column_description(1).name(), "UUID");
 
-    google::protobuf::io::CodedInputStream codedInput(&inputStream);
+    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
     std::uint64_t rowLength = 0;
     for (std::size_t i = 0, n = instance->getDatbaseCount(); i < n; ++i) {
+        rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength < 100);
-        ASSERT_TRUE(rowLength > 0);
+        ASSERT_LT(rowLength, 100);
+        ASSERT_GT(rowLength, 0);
         std::vector<std::uint8_t> rowData(rowLength);
         ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
     }
@@ -117,15 +119,14 @@ TEST(Query, SelectWithWhere)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
-    // create table
+    // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
             {"B", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
-
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_1",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
@@ -145,10 +146,10 @@ TEST(Query, SelectWithWhere)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -166,11 +167,12 @@ TEST(Query, SelectWithWhere)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -187,14 +189,15 @@ TEST(Query, SelectWithWhere)
         EXPECT_EQ(response.column_description(1).name(), "A");
         EXPECT_EQ(response.column_description(2).name(), "B");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
         std::uint64_t rowLength = 0;
         for (auto i = 0; i < 6; ++i) {
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0);
+            ASSERT_GT(rowLength, 0);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             ASSERT_TRUE(trid > 0);
 
             std::int32_t a = 0;
@@ -217,7 +220,7 @@ TEST(Query, SelectWithWhereBetweenDatetime)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -243,10 +246,10 @@ TEST(Query, SelectWithWhereBetweenDatetime)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -266,11 +269,12 @@ TEST(Query, SelectWithWhereBetweenDatetime)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -282,12 +286,13 @@ TEST(Query, SelectWithWhereBetweenDatetime)
 
         EXPECT_EQ(response.column_description(0).name(), "DT");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (unsigned i = 0U; i < 3U; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             siodb::RawDateTime date;
             ASSERT_TRUE(siodb::protobuf::readRawDateTime(codedInput, date));
@@ -308,7 +313,7 @@ TEST(Query, SelectWithWhereCompoundExpression)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -337,10 +342,10 @@ TEST(Query, SelectWithWhereCompoundExpression)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -360,11 +365,12 @@ TEST(Query, SelectWithWhereCompoundExpression)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -380,22 +386,24 @@ TEST(Query, SelectWithWhereCompoundExpression)
         EXPECT_EQ(response.column_description(1).name(), "I8");
         EXPECT_EQ(response.column_description(2).name(), "U32");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         for (auto i = 0U; i < 3U; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
-            double dbl = 0;
-            ASSERT_TRUE(codedInput.ReadLittleEndian64(reinterpret_cast<std::uint64_t*>(&dbl)));
+            ASSERT_GT(rowLength, 0U);
 
-            std::int8_t int8 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&int8, sizeof(std::int8_t)));
+            double doubleValue = 0;
+            ASSERT_TRUE(codedInput.Read(&doubleValue));
 
-            std::uint32_t uint32 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(&uint32));
+            std::int8_t int8Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int8Value));
 
-            EXPECT_TRUE(((uint32 + int8) / 2) > (uint32 + dbl) / 2);
+            std::uint32_t int32Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int32Value));
+
+            EXPECT_TRUE(((int32Value + int8Value) / 2) > (int32Value + doubleValue) / 2);
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -409,7 +417,7 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -434,10 +442,10 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -462,11 +470,12 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
             parser_ns::SqlParser parser(statement);
             parser.parse();
 
-            const auto selectRequest =
-                    parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            const auto request =
+                    parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+            requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
             siodb::protobuf::readMessage(
                     siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response,
                     inputStream);
@@ -479,15 +488,15 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
 
             EXPECT_EQ(response.column_description(0).name(), "I64");
 
-            google::protobuf::io::CodedInputStream codedInput(&inputStream);
+            siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
             std::uint64_t rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
-            std::int64_t int64 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(reinterpret_cast<std::uint64_t*>(&int64)));
-            EXPECT_EQ(int64, 200);
+            std::int64_t int64Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int64Value));
+            EXPECT_EQ(int64Value, 200);
 
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
             EXPECT_EQ(rowLength, 0U);
@@ -501,11 +510,12 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
             parser_ns::SqlParser parser(statement);
             parser.parse();
 
-            const auto selectRequest =
-                    parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+            const auto request =
+                    parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+            requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
             siodb::iomgr_protocol::DatabaseEngineResponse response;
-            requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
             siodb::protobuf::readMessage(
                     siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response,
                     inputStream);
@@ -518,15 +528,15 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
 
             EXPECT_EQ(response.column_description(0).name(), "I64");
 
-            google::protobuf::io::CodedInputStream codedInput(&inputStream);
+            siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
             std::uint64_t rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
-            std::int64_t int64 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(reinterpret_cast<std::uint64_t*>(&int64)));
-            EXPECT_EQ(int64, 200);
+            std::int64_t int64Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int64Value));
+            EXPECT_EQ(int64Value, 200);
 
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
             EXPECT_EQ(rowLength, 0U);
@@ -541,7 +551,7 @@ TEST(Query, SelectWithWhereUsingTableAlias)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -560,10 +570,10 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -583,11 +593,12 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -600,15 +611,15 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         // Table order
         EXPECT_EQ(response.column_description(0).name(), "ALIASED_COLUMN");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
-        std::uint64_t rowLength = 0;
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
+        std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0);
+        ASSERT_GT(rowLength, 0);
 
         std::int32_t a = 0;
-        ASSERT_TRUE(codedInput.ReadVarint32(reinterpret_cast<std::uint32_t*>(&a)));
-        ASSERT_TRUE(a == 1);
+        ASSERT_TRUE(codedInput.Read(&a));
+        ASSERT_EQ(a, 1);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);
@@ -621,7 +632,7 @@ TEST(Query, SelectWithWhereColumnAlias)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -640,10 +651,10 @@ TEST(Query, SelectWithWhereColumnAlias)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -661,11 +672,12 @@ TEST(Query, SelectWithWhereColumnAlias)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -677,15 +689,15 @@ TEST(Query, SelectWithWhereColumnAlias)
 
         EXPECT_EQ(response.column_description(0).name(), "AC");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0);
+        ASSERT_GT(rowLength, 0);
 
         std::int32_t a = 0;
-        ASSERT_TRUE(codedInput.ReadVarint32(reinterpret_cast<std::uint32_t*>(&a)));
-        ASSERT_TRUE(a == 2);
+        ASSERT_TRUE(codedInput.Read(&a));
+        ASSERT_EQ(a, 2);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);
@@ -698,7 +710,7 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -725,10 +737,10 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -748,11 +760,12 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -766,12 +779,11 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         EXPECT_EQ(response.column_description(0).name(), "DT");
         EXPECT_EQ(response.column_description(1).name(), "T");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
-
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0U);
+        ASSERT_GT(rowLength, 0U);
 
         // Read 2015-03-02', 'abc'
         siodb::RawDateTime date;
@@ -781,12 +793,9 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         EXPECT_EQ(date.m_datePart.m_dayOfMonth, 1U);
         EXPECT_FALSE(date.m_datePart.m_hasTimePart);
 
-        std::uint32_t textLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint32(&textLength));
-        ASSERT_EQ(textLength, 3U);
-        std::string text(3, '\0');
-        ASSERT_TRUE(codedInput.ReadRaw(text.data(), textLength));
-        EXPECT_TRUE(text == "abc");
+        std::string text;
+        ASSERT_TRUE(codedInput.Read(&text));
+        EXPECT_EQ(text, "abc");
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);
@@ -799,7 +808,7 @@ TEST(Query, SelectFrom2Tables)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -828,10 +837,10 @@ TEST(Query, SelectFrom2Tables)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -854,10 +863,10 @@ TEST(Query, SelectFrom2Tables)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -878,11 +887,12 @@ TEST(Query, SelectFrom2Tables)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -898,26 +908,26 @@ TEST(Query, SelectFrom2Tables)
         EXPECT_EQ(response.column_description(1).name(), "B");
         EXPECT_EQ(response.column_description(2).name(), "F");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
-
         for (std::size_t i = 0; i < 5; ++i) {
             for (int j = 2; j >= 0; --j) {
+                rowLength = 0;
                 ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-                ASSERT_TRUE(rowLength > 0U);
+                ASSERT_GT(rowLength, 0U);
 
-                std::int8_t i8 = 0;
-                ASSERT_TRUE(codedInput.ReadRaw(&i8, 1));
-                EXPECT_EQ(i8, static_cast<std::int8_t>(i));
+                std::int8_t int8Value = 0;
+                ASSERT_TRUE(codedInput.Read(&int8Value));
+                EXPECT_EQ(int8Value, static_cast<std::int8_t>(i));
 
-                std::uint8_t boolValue = 2;
-                ASSERT_TRUE(codedInput.ReadRaw(&boolValue, 1));
-                EXPECT_EQ(boolValue, std::uint8_t(1));
+                bool boolValue = false;
+                ASSERT_TRUE(codedInput.Read(&boolValue));
+                EXPECT_EQ(boolValue, true);
 
-                float flt = 0;
-                ASSERT_TRUE(codedInput.ReadLittleEndian32(reinterpret_cast<std::uint32_t*>(&flt)));
-                EXPECT_FLOAT_EQ(flt, j * 1.0f);
+                float floatValue = 0;
+                ASSERT_TRUE(codedInput.Read(&floatValue));
+                EXPECT_FLOAT_EQ(floatValue, j * 1.0f);
             }
         }
 
@@ -932,7 +942,7 @@ TEST(Query, SelectWithExpression)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -954,10 +964,10 @@ TEST(Query, SelectWithExpression)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -976,11 +986,12 @@ TEST(Query, SelectWithExpression)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -991,21 +1002,21 @@ TEST(Query, SelectWithExpression)
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT32);
         EXPECT_EQ(response.column_description(0).name(), "TEST");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
-
         for (std::size_t i = 3; i < 5; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             stdext::bitmask nullBitmask(response.column_description_size(), false);
             ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
             ASSERT_FALSE(nullBitmask.get(0));
 
-            std::uint32_t u32 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(&u32));
-            EXPECT_EQ(u32, static_cast<std::uint32_t>(i * 10 + i));
+            std::uint32_t uint32Value = 0;
+            ASSERT_TRUE(codedInput.Read(&uint32Value));
+            EXPECT_EQ(uint32Value, static_cast<std::uint32_t>(i * 10 + i));
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -1024,7 +1035,7 @@ TEST(Query, SelectWithExpressionFrom2Tables)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     /// ----------- SELECT -----------
@@ -1035,11 +1046,12 @@ TEST(Query, SelectWithExpressionFrom2Tables)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1052,11 +1064,11 @@ TEST(Query, SelectWithExpressionFrom2Tables)
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_TEXT);
         EXPECT_EQ(response.column_description(1).name(), "NAME");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
-
         do {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
             std::vector<std::uint8_t> data(rowLength);
             ASSERT_TRUE(codedInput.ReadRaw(data.data(), rowLength));
@@ -1073,7 +1085,7 @@ TEST(Query, SelectWithExpressionWithNull)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -1094,10 +1106,10 @@ TEST(Query, SelectWithExpressionWithNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1116,11 +1128,12 @@ TEST(Query, SelectWithExpressionWithNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1133,12 +1146,11 @@ TEST(Query, SelectWithExpressionWithNull)
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_INT64);
         ASSERT_EQ(response.column_description(3).type(), siodb::COLUMN_DATA_TYPE_UNKNOWN);
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
-
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0U);
+        ASSERT_GT(rowLength, 0U);
 
         stdext::bitmask nullBitmask(response.column_description_size(), false);
         ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
@@ -1147,13 +1159,13 @@ TEST(Query, SelectWithExpressionWithNull)
         ASSERT_FALSE(nullBitmask.get(2));
         ASSERT_TRUE(nullBitmask.get(3));
 
-        std::uint8_t u8 = 0;
-        ASSERT_TRUE(codedInput.ReadRaw(&u8, 1));
-        EXPECT_EQ(u8, 13u);
+        std::uint8_t uint8Value = 0;
+        ASSERT_TRUE(codedInput.Read(&uint8Value));
+        EXPECT_EQ(uint8Value, 13U);
 
-        std::int64_t i64 = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(reinterpret_cast<std::uint64_t*>(&i64)));
-        EXPECT_EQ(i64, 10);
+        std::int64_t int64Value = 0;
+        ASSERT_TRUE(codedInput.Read(&int64Value));
+        EXPECT_EQ(int64Value, 10);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);
@@ -1169,7 +1181,7 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // Create table
@@ -1186,11 +1198,12 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1200,7 +1213,7 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
         ASSERT_EQ(response.column_description_size(), 1);
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_INT32);
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -1226,7 +1239,7 @@ TEST(Query, SelectWithWhereIsNull)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -1235,10 +1248,10 @@ TEST(Query, SelectWithWhereIsNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1255,10 +1268,11 @@ TEST(Query, SelectWithWhereIsNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -1280,24 +1294,25 @@ TEST(Query, SelectWithWhereIsNull)
         EXPECT_EQ(response.column_description(1).name(), "I");
         EXPECT_EQ(response.column_description(2).name(), "T");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_TRUE(rowLength > 0);
+        ASSERT_GT(rowLength, 0);
+
         stdext::bitmask nullBitmask(response.column_description_size(), false);
         ASSERT_TRUE(codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()));
-
         ASSERT_FALSE(nullBitmask.get(0));
         ASSERT_FALSE(nullBitmask.get(1));
         ASSERT_TRUE(nullBitmask.get(2));
 
-        std::uint64_t trid;
-        ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+        std::uint64_t trid = 0;
+        ASSERT_TRUE(codedInput.Read(&trid));
         ASSERT_EQ(trid, 1U);
+
         std::uint8_t int8Value = 0;
-        ASSERT_TRUE(codedInput.ReadRaw(&int8Value, 1));
-        ASSERT_EQ(int8Value, std::uint8_t(1));
+        ASSERT_TRUE(codedInput.Read(&int8Value));
+        ASSERT_EQ(int8Value, 1);
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_TRUE(rowLength == 0);
@@ -1322,7 +1337,7 @@ TEST(Query, SelectWithWhereEqualNull)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
@@ -1331,10 +1346,10 @@ TEST(Query, SelectWithWhereEqualNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1351,10 +1366,11 @@ TEST(Query, SelectWithWhereEqualNull)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -1376,7 +1392,7 @@ TEST(Query, SelectWithWhereEqualNull)
         EXPECT_EQ(response.column_description(1).name(), "I");
         EXPECT_EQ(response.column_description(2).name(), "T");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -1390,7 +1406,7 @@ TEST(Query, SelectWithLimit)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1412,10 +1428,10 @@ TEST(Query, SelectWithLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1433,11 +1449,12 @@ TEST(Query, SelectWithLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1449,15 +1466,17 @@ TEST(Query, SelectWithLimit)
 
         EXPECT_EQ(response.column_description(0).name(), "A");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
         std::uint64_t rowLength = 0;
         for (auto i = 0; i < 5; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0);
+            ASSERT_GT(rowLength, 0);
 
             std::int32_t a = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(reinterpret_cast<std::uint32_t*>(&a)));
-            ASSERT_TRUE(a == i);
+            ASSERT_TRUE(codedInput.Read(&a));
+            ASSERT_EQ(a, i);
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -1471,7 +1490,7 @@ TEST(Query, SelectWithZeroLimit)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1493,10 +1512,10 @@ TEST(Query, SelectWithZeroLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1514,11 +1533,12 @@ TEST(Query, SelectWithZeroLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1530,7 +1550,7 @@ TEST(Query, SelectWithZeroLimit)
 
         EXPECT_EQ(response.column_description(0).name(), "A");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -1544,7 +1564,7 @@ TEST(Query, SelectWithNegativeLimit)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1566,10 +1586,10 @@ TEST(Query, SelectWithNegativeLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1587,11 +1607,12 @@ TEST(Query, SelectWithNegativeLimit)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1606,7 +1627,7 @@ TEST(Query, SelectWithLimitAndOffset)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1629,10 +1650,10 @@ TEST(Query, SelectWithLimitAndOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1651,11 +1672,12 @@ TEST(Query, SelectWithLimitAndOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1667,15 +1689,17 @@ TEST(Query, SelectWithLimitAndOffset)
 
         EXPECT_EQ(response.column_description(0).name(), "A");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
         std::uint64_t rowLength = 0;
         for (auto i = 5; i < 10; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0);
+            ASSERT_GT(rowLength, 0);
 
             std::int32_t a = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(reinterpret_cast<std::uint32_t*>(&a)));
-            ASSERT_TRUE(a == i);
+            ASSERT_TRUE(codedInput.Read(&a));
+            ASSERT_EQ(a, i);
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -1689,7 +1713,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1712,10 +1736,10 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1734,11 +1758,12 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1750,7 +1775,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
 
         EXPECT_EQ(response.column_description(0).name(), "A");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
         std::uint64_t rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -1764,7 +1789,7 @@ TEST(Query, SelectWithNegativeOffset)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1787,10 +1812,10 @@ TEST(Query, SelectWithNegativeOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1809,11 +1834,12 @@ TEST(Query, SelectWithNegativeOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1828,7 +1854,7 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
     ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -1852,10 +1878,10 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1875,11 +1901,12 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+        const auto request =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
 
@@ -1891,15 +1918,17 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
 
         EXPECT_EQ(response.column_description(0).name(), "A");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
         std::uint64_t rowLength = 0;
         for (auto i = 9; i < 10; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0);
+            ASSERT_GT(rowLength, 0);
 
             std::int32_t a = 0;
-            ASSERT_TRUE(codedInput.ReadVarint32(reinterpret_cast<std::uint32_t*>(&a)));
-            ASSERT_TRUE(a == i);
+            ASSERT_TRUE(codedInput.Read(&a));
+            ASSERT_EQ(a, i);
         }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));

@@ -17,8 +17,10 @@
 #include "../main/ClientSession.h"
 
 // Common project headers
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/CipherContextPtr.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/CipherPtr.h>
 
 // STL headers
 #include <mutex>
@@ -117,16 +119,32 @@ public:
     }
 
     /**
+     * Returns system database object.
+     * @return System database.
+     */
+    auto& getSystemDatabase() noexcept
+    {
+        return *m_systemDatabase;
+    }
+
+    /**
      * Retuns number of known databases.
      * @return Number of databases.
      */
     std::size_t getDatbaseCount() const;
 
     /**
-     * Returns a vector with databases ordered by name.
-     * @return Vector with databases.
+     * Returns list of database records ordered by name.
+     * @return List of database records.
      */
     std::vector<DatabaseRecord> getDatabaseRecordsOrderedByName() const;
+
+    /**
+     * Returns list of databasesordered by name.
+     * @param includeSystemDatabase Indication that system database should be included.
+     * @return List of databases.
+     */
+    std::vector<std::string> getDatabaseNames(bool includeSystemDatabase = true) const;
 
     /**
      * Returns existing database object.
@@ -148,14 +166,14 @@ public:
      * @param name Database name.
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
-     * @param currentUserId Current user ID.
      * @param description Database description.
+     * @param currentUserId Current user ID.
      * @return New database object.
      * @throw DatabaseError if some error has occurrred.
      */
     DatabasePtr createDatabase(std::string&& name, const std::string& cipherId,
-            BinaryValue&& cipherKey, std::uint32_t currentUserId,
-            std::optional<std::string>&& description);
+            BinaryValue&& cipherKey, std::optional<std::string>&& description,
+            std::uint32_t currentUserId);
 
     /**
      * Deletes existing database.
@@ -325,10 +343,16 @@ public:
      * Authenticates user.
      * @param userName User name.
      * @param token User token.
-     * @return Pair (user ID, new session UUID).
+     * @return User ID.
      * @throw DatabaseError if some error has occurrred.
      */
-    AuthenticationResult authenticateUser(const std::string& userName, const std::string& token);
+    std::uint32_t authenticateUser(const std::string& userName, const std::string& token);
+
+    /**
+     * Begins new session.
+     * @return New session UUID.
+     */
+    Uuid beginSession();
 
     /**
      * Closes session.
@@ -343,6 +367,22 @@ public:
      * @return Next database ID.
      */
     std::uint32_t generateNextDatabaseId(bool system);
+
+    /**
+     * Encrypts data with master encryption.
+     * @param data Data buffer address.
+     * @param size Data size.
+     * @return Buffer with encrypted data. Buffer size is multiple of the master cipher block size.
+     */
+    BinaryValue encryptWithMasterEncryption(const void* data, std::size_t size) const;
+
+    /**
+     * Decrypts data with master encryption.
+     * @param data Data buffer address.
+     * @param size Data size. Must be multiple of the master cipher block size.
+     * @return Buffer with encrypted data.
+     */
+    BinaryValue decryptWithMasterEncryption(const void* data, std::size_t size) const;
 
 private:
     /** Creates new instance data */
@@ -360,23 +400,25 @@ private:
     /** Loads system database */
     void loadSystemDatabase();
 
+    /** Loads users */
+    void loadUsers();
+
     /** Creates superuser */
     void createSuperUser();
-
-    /** Loads superuser */
-    void loadSuperUser();
 
     /** Records superuser into the system database. */
     void recordSuperUser();
 
     /** 
-     * Loads system database encryption key.
-     * @return System database encryption key.
-     * @throw DatabaseError 1) If file doesn't not exist or could not be open.
-     * 2) If Read error happens.
-     * 3) If key data is invalid.
+     * Loads master encryption key.
+     * @param keyPath Key path.
+     * @return Master encryption key.
+     * @throw DatabaseError In the following cases: 
+     *                      - If file doesn't not exist or could not be open.
+     *                      - If Read error happens.
+     *                      - If key data is invalid.
      */
-    BinaryValue loadSystemDatabaseCipherKey() const;
+    BinaryValue loadMasterCipherKey(const std::string& keyPath) const;
 
     /**
      * Loads initial super-user access key.
@@ -460,12 +502,6 @@ private:
     void checkInitializationFlagFile() const;
 
     /**
-     * Begins new session.
-     * @return New session UUID.
-     */
-    Uuid beginSession();
-
-    /**
      * Returns existing user object.
      * @param userName User name.
      * @return Corresponding user object or nullptr if it doesn't exist.
@@ -502,11 +538,20 @@ private:
     /** System database cipher */
     const std::string m_defaultDatabaseCipherId;
 
+    /** Cipher object */
+    crypto::CipherPtr m_masterCipher;
+
+    /** Master encryption key */
+    BinaryValue m_masterCipherKey;
+
+    /** Master encryption context */
+    crypto::CipherContextPtr m_masterEncryptionContext;
+
+    /** Master decryption context */
+    crypto::CipherContextPtr m_masterDecryptionContext;
+
     /** System database cipher */
     const std::string m_systemDatabaseCipherId;
-
-    /** System database cipher key */
-    BinaryValue m_systemDatabaseCipherKey;
 
     /** Superuser's initial access key */
     std::string m_superUserInitialAccessKey;
@@ -542,7 +587,7 @@ private:
     const std::size_t m_blockCacheCapacity;
 
     /* Metadata file descriptor */
-    FdGuard m_metadataFile;
+    FDGuard m_metadataFile;
 
     /** Flag which allows creating user tables in the system database */
     const bool m_allowCreatingUserTablesInSystemDatabase;

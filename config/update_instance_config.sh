@@ -10,7 +10,7 @@ if [[ $# -lt 1 ]]; then
 fi
 
 if [[ $EUID -ne 0 ]]; then
-   echo "You must be root to do this." 1>&2
+   echo "Only root can do this." 1>&2
    exit 100
 fi
 
@@ -19,7 +19,7 @@ instance_name=$1
 instance_cfg_root=/etc/siodb/instances
 instance_cfg_dir=${instance_cfg_root}/${instance_name}
 config_file=${instance_name}.conf
-system_db_key_file=${instance_name}.system_db_key
+system_db_key_file=${instance_name}.master_key
 
 if [[ ! -d "${instance_cfg_dir}" ]]; then
     is_creating=1
@@ -30,14 +30,17 @@ fi
 echo "Copying config file"
 cp -f ${config_file} ${instance_cfg_dir}/config
 chown siodb:siodb ${instance_cfg_dir}/config
+chmod u-x ${instance_cfg_dir}/config
+chmod g-x ${instance_cfg_dir}/config
+chmod o-rwx ${instance_cfg_dir}/config
 
 echo "Copying system db key file"
 if [[ -f ${system_db_key_file} ]]; then
-    cp -f ${system_db_key_file} ${instance_cfg_dir}/system_db_key
+    cp -f ${system_db_key_file} ${instance_cfg_dir}/master_key
 else
-    cp -f siodb.system_db_key ${instance_cfg_dir}/system_db_key
+    cp -f siodb.master_key ${instance_cfg_dir}/master_key
 fi
-chown siodb:siodb ${instance_cfg_dir}/system_db_key
+chown siodb:siodb ${instance_cfg_dir}/master_key
 
 if [[ ${is_creating} -eq 1 ]]; then
     echo "Instance configuration created."

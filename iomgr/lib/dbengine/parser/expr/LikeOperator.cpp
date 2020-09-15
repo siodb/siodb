@@ -11,12 +11,14 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType LikeOperator::getResultValueType([[maybe_unused]] const Context& context) const
+VariantType LikeOperator::getResultValueType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return VariantType::kBool;
 }
 
-ColumnDataType LikeOperator::getColumnDataType([[maybe_unused]] const Context& context) const
+ColumnDataType LikeOperator::getColumnDataType(
+        [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
     return COLUMN_DATA_TYPE_BOOL;
 }
@@ -31,7 +33,7 @@ std::size_t LikeOperator::getSerializedSize() const noexcept
     return BinaryOperator::getSerializedSize() + 1;
 }
 
-void LikeOperator::validate(const Context& context) const
+void LikeOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_left->validate(context);
     m_right->validate(context);
@@ -45,7 +47,7 @@ void LikeOperator::validate(const Context& context) const
         throw std::runtime_error("LIKE operator: right operand type isn't string");
 }
 
-Variant LikeOperator::evaluate(Context& context) const
+Variant LikeOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto value = m_left->evaluate(context);
     const auto pattern = m_right->evaluate(context);

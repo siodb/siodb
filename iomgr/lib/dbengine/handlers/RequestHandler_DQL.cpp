@@ -8,13 +8,12 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "../Column.h"
 #include "../ColumnSet.h"
-#include "../Database.h"
 #include "../Index.h"
-#include "../Table.h"
+#include "../SystemDatabase.h"
 #include "../TableDataSet.h"
 #include "../ThrowDatabaseError.h"
-#include "../parser/DatabaseContext.h"
-#include "../parser/EmptyContext.h"
+#include "../parser/DBExpressionEvaluationContext.h"
+#include "../parser/EmptyExpressionEvaluationContext.h"
 #include "../parser/expr/AllColumnsExpression.h"
 #include "../parser/expr/SingleColumnExpression.h"
 
@@ -74,7 +73,7 @@ void RequestHandler::executeSelectRequest(
 
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
-    std::unique_ptr<requests::DatabaseContext> dbContext;
+    std::unique_ptr<requests::DBExpressionEvaluationContext> dbContext;
     {
         std::vector<DataSetPtr> tableDataSets;
         tableDataSets.reserve(request.m_tables.size());
@@ -82,7 +81,8 @@ void RequestHandler::executeSelectRequest(
             tableDataSets.push_back(std::make_shared<TableDataSet>(
                     database->findTableChecked(table.m_name), table.m_alias));
         }
-        dbContext = std::make_unique<requests::DatabaseContext>(std::move(tableDataSets));
+        dbContext =
+                std::make_unique<requests::DBExpressionEvaluationContext>(std::move(tableDataSets));
     }
     const auto& dataSets = dbContext->getDataSets();
 
@@ -244,7 +244,7 @@ void RequestHandler::executeSelectRequest(
     std::optional<std::uint64_t> offset;
 
     if (request.m_limit != nullptr) {
-        requests::EmptyContext emptyContext;
+        requests::EmptyExpressionEvaluationContext emptyContext;
         request.m_limit->validate(emptyContext);
 
         const auto limitValue = request.m_limit->evaluate(emptyContext);
@@ -270,11 +270,11 @@ void RequestHandler::executeSelectRequest(
     }
 
     utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::CustomProtobufOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
-    google::protobuf::io::CodedOutputStream codedOutput(&rawOutput);
+    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
 
     try {
         bool rowDataAvailable = true;
@@ -326,7 +326,9 @@ void RequestHandler::executeSelectRequest(
                             dynamic_cast<const requests::AllColumnsExpression*>(
                                     expr.m_expression.get());
                     const auto tableIndex = *allColumnsExpression->getDatasetTableIndex();
-                    for (const auto& rowValue : dataSets[tableIndex]->getCurrentRow()) {
+                    auto& dataSet = *dataSets[tableIndex];
+                    dataSet.readCurrentRow();
+                    for (const auto& rowValue : dataSet.getValues()) {
                         auto& value = values[valueIndex];
                         value = rowValue;
                         rowLength += getVariantSize(value);
@@ -345,18 +347,18 @@ void RequestHandler::executeSelectRequest(
             rowLength += nullMask.size();
 
             codedOutput.WriteVarint64(rowLength);
-            protobuf::checkOutputStreamError(rawOutput);
+            rawOutput.CheckNoError();
 
             //DBG_LOG_DEBUG(">>> OUTPUT: Row# " << rowNumber << ": Length=" << rowLength);
 
             if (hasNullableColumns) {
                 codedOutput.WriteRaw(nullMask.data(), nullMask.size());
-                protobuf::checkOutputStreamError(rawOutput);
+                rawOutput.CheckNoError();
             }
 
             for (std::size_t i = 0; i < columnCountToSend; ++i) {
-                writeVariant(codedOutput, values[i]);
-                protobuf::checkOutputStreamError(rawOutput);
+                writeVariant(values[i], codedOutput);
+                rawOutput.CheckNoError();
             }
 
             if (limit) --(*limit);
@@ -369,13 +371,13 @@ void RequestHandler::executeSelectRequest(
         // so data shouldn't be sent to the server at that moment.
         // All other exceptions are caught on the upper level.
         codedOutput.WriteVarint64(kNoMoreRows);
-        protobuf::checkOutputStreamError(rawOutput);
+        rawOutput.CheckNoError();
 
         // NOTE: Do not re-throw here to prevent double response.
     }
 
     codedOutput.WriteVarint64(kNoMoreRows);
-    protobuf::checkOutputStreamError(rawOutput);
+    rawOutput.CheckNoError();
 }
 
 void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,
@@ -384,8 +386,8 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    const auto sysDb = m_instance.findDatabaseChecked(kSystemDatabaseName);
-    const auto sysDbTable = sysDb->findTableChecked(kSysDatabasesTableName);
+    auto& systemDatabase = m_instance.getSystemDatabase();
+    const auto sysDbTable = systemDatabase.findTableChecked(kSysDatabasesTableName);
     const auto nameColumn = sysDbTable->findColumnChecked(kSysDatabases_Name_ColumnName);
     const auto uuidColumn = sysDbTable->findColumnChecked(kSysDatabases_Uuid_ColumnName);
 
@@ -397,7 +399,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     const auto databaseRecords = m_instance.getDatabaseRecordsOrderedByName();
 
     utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::CustomProtobufOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
@@ -405,7 +407,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     stdext::bitmask nullMask;
     if (!nullNotAllowed) nullMask.resize(values.size(), false);
 
-    google::protobuf::io::CodedOutputStream codedOutput(&rawOutput);
+    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
     for (const auto& dbRecord : databaseRecords) {
         values[0] = dbRecord.m_name;
         values[1] = boost::uuids::to_string(dbRecord.m_uuid);
@@ -422,19 +424,19 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
 
         if (!nullNotAllowed) {
             codedOutput.WriteRaw(nullMask.data(), nullMask.size());
-            protobuf::checkOutputStreamError(rawOutput);
+            rawOutput.CheckNoError();
         }
 
-        protobuf::checkOutputStreamError(rawOutput);
+        rawOutput.CheckNoError();
 
         for (std::size_t i = 0; i < values.size(); ++i) {
-            writeVariant(codedOutput, values[i]);
-            protobuf::checkOutputStreamError(rawOutput);
+            writeVariant(values[i], codedOutput);
+            rawOutput.CheckNoError();
         }
     }
 
     codedOutput.WriteVarint64(kNoMoreRows);
-    protobuf::checkOutputStreamError(rawOutput);
+    rawOutput.CheckNoError();
 }
 
 }  // namespace siodb::iomgr::dbengine

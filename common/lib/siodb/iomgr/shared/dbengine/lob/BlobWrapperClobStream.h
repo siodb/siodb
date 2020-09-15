@@ -29,8 +29,8 @@ public:
     DECLARE_NONCOPYABLE(BlobWrapperClobStream);
 
     /**
-     * Cloning of this stream is not supported.
-     * @return Always nullptr.
+     * Throws exception because this stream cannot be cloned.
+     * @throw std::logic_error always.
      */
     BlobWrapperClobStream* clone() const override;
 

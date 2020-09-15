@@ -4,10 +4,11 @@
 
 // Project headers
 #include "RequestHandlerTest_TestEnv.h"
-#include "dbengine/parser/DBEngineRequestFactory.h"
+#include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 
 // Common project headers
+#include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 
@@ -29,7 +30,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -49,7 +50,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -65,7 +66,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -81,7 +82,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -97,7 +98,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -113,7 +114,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -130,7 +131,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -146,7 +147,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -164,23 +165,24 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_UINT64);
         EXPECT_EQ(response.column_description(2).name(), "U64");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
         std::uint64_t rowLength = 0;
         for (std::size_t i : {2U, 4U}) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, i);
 
-            std::int16_t int8 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&int8, 1));
-            EXPECT_EQ(int8, static_cast<std::int8_t>(i));
+            std::int8_t int8Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int8Value));
+            EXPECT_EQ(int8Value, static_cast<std::int8_t>(i));
 
-            std::uint64_t uint64 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&uint64));
-            EXPECT_EQ(uint64, 1000000u * i);
+            std::uint64_t uint64Value = 0;
+            ASSERT_TRUE(codedInput.Read(&uint64Value));
+            EXPECT_EQ(uint64Value, 1000000u * i);
         }
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);
@@ -196,7 +198,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -217,7 +219,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         parser.parse();
 
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -239,7 +241,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -255,7 +257,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         parser.parse();
 
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -276,7 +278,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -292,7 +294,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -308,7 +310,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -330,7 +332,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         parser_ns::SqlParser parser(statement);
         parser.parse();
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -351,7 +353,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -369,23 +371,24 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_UINT64);
         EXPECT_EQ(response.column_description(2).name(), "U64");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
         std::uint64_t rowLength = 0;
         for (auto i = 1U; i <= 5U; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, i);
 
-            std::int16_t int8 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&int8, 1));
-            EXPECT_EQ(int8, static_cast<std::int8_t>(6 - i));
+            std::int8_t int8Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int8Value));
+            EXPECT_EQ(int8Value, static_cast<std::int8_t>(6 - i));
 
-            std::uint64_t uint64 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&uint64));
-            EXPECT_EQ(uint64, 6000000llu - (1000000llu * i));
+            std::uint64_t uint64Value = 0;
+            ASSERT_TRUE(codedInput.Read(&uint64Value));
+            EXPECT_EQ(uint64Value, 6000000llu - (1000000llu * i));
         }
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);
@@ -404,7 +407,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-    siodb::protobuf::CustomProtobufInputStream inputStream(
+    siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     // create table
@@ -425,7 +428,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
         parser.parse();
 
         const auto insertRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -442,7 +445,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
         parser.parse();
 
         const auto updateRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*updateRequest, TestEnvironment::kTestRequestId, 0, 1);
         siodb::iomgr_protocol::DatabaseEngineResponse response;
@@ -463,7 +466,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
         parser.parse();
 
         const auto deleteRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         requestHandler->executeRequest(*deleteRequest, TestEnvironment::kTestRequestId, 0, 1);
 
@@ -484,7 +487,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
         parser.parse();
 
         const auto selectRequest =
-                parser_ns::DBEngineRequestFactory::createRequest(parser.findStatement(0));
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
@@ -502,23 +505,24 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_UINT64);
         EXPECT_EQ(response.column_description(2).name(), "U64");
 
-        google::protobuf::io::CodedInputStream codedInput(&inputStream);
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
         std::uint64_t rowLength = 0;
         for (auto i = 1U; i <= 2U; ++i) {
+            rowLength = 0;
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_TRUE(rowLength > 0U);
+            ASSERT_GT(rowLength, 0U);
 
             std::uint64_t trid = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&trid));
+            ASSERT_TRUE(codedInput.Read(&trid));
             EXPECT_EQ(trid, i);
 
-            std::int16_t int8 = 0;
-            ASSERT_TRUE(codedInput.ReadRaw(&int8, 1));
-            EXPECT_EQ(int8, static_cast<std::int8_t>(i));
+            std::int8_t int8Value = 0;
+            ASSERT_TRUE(codedInput.Read(&int8Value));
+            EXPECT_EQ(int8Value, static_cast<std::int8_t>(i));
 
-            std::uint64_t uint64 = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&uint64));
-            EXPECT_EQ(uint64, 1000000u * i);
+            std::uint64_t uint64Value = 0;
+            ASSERT_TRUE(codedInput.Read(&uint64Value));
+            EXPECT_EQ(uint64Value, 1000000u * i);
         }
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);

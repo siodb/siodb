@@ -14,7 +14,7 @@ namespace siodb {
 
 /**
  * Checks that SIODB database instance is running.
- * @param instanceName Database instance name.
+ * @param instanceName Instance name.
  * @param serverExecutable Server executable path.
  * @return Database server process PID if instance is running or -1 if instance not found.
  * @throw std::system_error On I/O errors.
@@ -24,56 +24,56 @@ pid_t checkInstance(const std::string& instanceName, const std::string& serverEx
 
 /**
  * Validates database instance. Returns if instance is known, throws exception otherwise.
- * @param instanceName Database instance name.
+ * @param instanceName Instance name.
  * @throw std::invalid_argument If instance name is invalid or such instance is not known.
  */
 void validateInstance(const std::string& instanceName);
 
 /**
  * Validates database instance name.
- * @param instanceName Database instance name.
+ * @param instanceName Instance name.
  * @return true if instance name is valid, false otherwise.
  */
 bool validateInstanceName(const std::string& instanceName);
 
 /**
  * Composes database instance configuration file path.
- * @param instanceName Database instance name.
+ * @param instanceName Instance name.
  * @return Database instance configuration file path.
  */
 std::string composeInstanceConfigFilePath(const std::string& instanceName);
 
 /**
- * Composes instance system database encryption key file path.
- * @param instanceName Database instance name.
- * @return Instance system database encryption key file path.
+ * Composes default master encryption key file path.
+ * @param instanceName Instance name.
+ * @return Default master encryption key file path.
  */
-std::string composeInstanceSysDbEncryptionKeyFilePath(const std::string& instanceName);
+std::string composeDefaultMasterEncryptionKeyFilePath(const std::string& instanceName);
 
 /**
  * Composes instance initial super user access key file path.
- * @param instanceName Database instance name.
+ * @param instanceName Instance name.
  * @return Initial super user access key file path.
  */
 std::string composeInstanceInitialSuperUserAccessKeyFilePath(const std::string& instanceName);
 
 /**
  * Composes instance initialization lock file path.
- * @param instanceName Database instance name.
+ * @param instanceName Instance name.
  * @return Instance initialization lock file path.
  */
 std::string composeInstanceInitializationLockFilePath(const std::string& instanceName);
 
 /**
  * Composes iomgr initialization flag file path.
- * @param instanceName Database instance name.
+ * @param instanceName Instance name.
  * @return iomgr initialization flag file path.
  */
 std::string composeIomgrInitializionFlagFilePath(const std::string& instanceName);
 
 /**
  * Compose database instance socket path.
- * @param instanceName Database instance name.
+ * @param instanceName Instance name.
  * @return Database instance configuration file path.
  */
 std::string composeInstanceSocketPath(const std::string& instanceName);

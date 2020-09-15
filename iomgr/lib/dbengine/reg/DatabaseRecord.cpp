@@ -21,7 +21,6 @@ DatabaseRecord::DatabaseRecord(const Database& database)
     , m_uuid(database.getUuid())
     , m_name(database.getName())
     , m_cipherId(database.getCipherId())
-    , m_cipherKey(database.getCipherKey())
     , m_description(database.getDescription())
 {
 }
@@ -30,11 +29,11 @@ std::size_t DatabaseRecord::getSerializedSize(unsigned version) const noexcept
 {
     return Uuid::static_size() + ::getVarIntSize(version) + ::getVarIntSize(m_id)
            + Uuid::static_size() + ::getSerializedSize(m_name) + ::getSerializedSize(m_cipherId)
-           + ::getSerializedSize(m_cipherKey) + ::getSerializedSize(m_description);
+           + ::getSerializedSize(m_description);
 }
 
-std::uint8_t* DatabaseRecord::serializeUnchecked(std::uint8_t* buffer, unsigned version) const
-        noexcept
+std::uint8_t* DatabaseRecord::serializeUnchecked(
+        std::uint8_t* buffer, unsigned version) const noexcept
 {
     std::memcpy(buffer, s_classUuid.data, Uuid::static_size());
     buffer += Uuid::static_size();
@@ -44,7 +43,6 @@ std::uint8_t* DatabaseRecord::serializeUnchecked(std::uint8_t* buffer, unsigned 
     buffer += Uuid::static_size();
     buffer = ::serializeUnchecked(m_name, buffer);
     buffer = ::serializeUnchecked(m_cipherId, buffer);
-    buffer = ::serializeUnchecked(m_cipherKey, buffer);
     buffer = ::serializeUnchecked(m_description, buffer);
     return buffer;
 }
@@ -84,10 +82,6 @@ std::size_t DatabaseRecord::deserialize(const std::uint8_t* buffer, std::size_t 
         field = "cipherId";
         totalConsumed +=
                 ::deserializeObject(buffer + totalConsumed, length - totalConsumed, m_cipherId);
-
-        field = "cipherKey";
-        totalConsumed +=
-                ::deserializeObject(buffer + totalConsumed, length - totalConsumed, m_cipherKey);
 
         field = "description";
         totalConsumed +=

@@ -6,7 +6,7 @@
 
 namespace siodb::iomgr::dbengine::requests {
 
-VariantType AddOperator::getResultValueType(const Context& context) const
+VariantType AddOperator::getResultValueType(const ExpressionEvaluationContext& context) const
 {
     const auto leftType = m_left->getResultValueType(context);
     const auto rightType = m_right->getResultValueType(context);
@@ -16,7 +16,7 @@ VariantType AddOperator::getResultValueType(const Context& context) const
     return ArithmeticBinaryOperator::getResultValueType(context);
 }
 
-ColumnDataType AddOperator::getColumnDataType(const Context& context) const
+ColumnDataType AddOperator::getColumnDataType(const ExpressionEvaluationContext& context) const
 {
     const auto leftType = m_left->getColumnDataType(context);
     const auto rightType = m_right->getColumnDataType(context);
@@ -33,7 +33,7 @@ MutableOrConstantString AddOperator::getExpressionText() const
     return "ADD";
 }
 
-void AddOperator::validate(const Context& context) const
+void AddOperator::validate(const ExpressionEvaluationContext& context) const
 {
     m_left->validate(context);
     m_right->validate(context);
@@ -52,7 +52,7 @@ void AddOperator::validate(const Context& context) const
     throw std::runtime_error("Add operator: operand types aren't strings or numeric");
 }
 
-Variant AddOperator::evaluate(Context& context) const
+Variant AddOperator::evaluate(ExpressionEvaluationContext& context) const
 {
     const auto leftValue = m_left->evaluate(context);
     const auto rightValue = m_right->evaluate(context);

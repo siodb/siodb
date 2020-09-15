@@ -6,7 +6,7 @@
 
 syntax = "proto3";
 
-import "CommonTypes.proto";
+import "CommonMessages.proto";
 
 package siodb.client_protocol;
 
@@ -67,10 +67,10 @@ message BeginSessionResponse {
     /** Indication that session is started. */
     bool session_started = 1;
 
-    /** Message from IO manager. Set in case of error(session_started = false). */
+    /** Message from IO manager. Set if error occurred(session_started = false). */
     StatusMessage message = 2;
 
-    /** Challenge. Sent only in case if session is started. */
+    /** Challenge. Sent only if session is started. */
     bytes challenge = 3;
 }
 
@@ -87,7 +87,7 @@ message ClientAuthenticationResponse {
     /** Indication that user is authenticated. */
     bool authenticated = 1;
 
-    /** Message from IO manager. Set in case of error. */
+    /** Message from IO manager. Set if error has occurred. */
     StatusMessage message = 2;
 
     /** ID of started session. */

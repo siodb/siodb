@@ -7,11 +7,11 @@
 // Common project headers
 #include <siodb/common/crypto/TlsConnection.h>
 #include <siodb/common/crypto/TlsServer.h>
-#include <siodb/common/io/IODevice.h>
+#include <siodb/common/io/InputOutputStream.h>
 #include <siodb/common/options/SiodbOptions.h>
-#include <siodb/common/protobuf/CustomProtobufInputStream.h>
-#include <siodb/common/protobuf/CustomProtobufOutputStream.h>
-#include <siodb/common/utils/FdGuard.h>
+#include <siodb/common/protobuf/StreamInputStream.h>
+#include <siodb/common/protobuf/StreamOutputStream.h>
+#include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
 // Protobuf message headers
@@ -29,7 +29,7 @@ public:
      * @param instanceOptions Database instance options.
      * @param adminMode Database administrator mode.
      */
-    ConnWorkerConnectionHandler(FdGuard&& client,
+    ConnWorkerConnectionHandler(FDGuard&& client,
             const config::ConstInstaceOptionsPtr& instanceOptions, bool adminMode);
 
     DECLARE_NONCOPYABLE(ConnWorkerConnectionHandler);
@@ -49,7 +49,7 @@ private:
      * @param ioMgrInputStream Input steam
      * @return Database engine response from IO manager
      * @throw std::system_error when I/O error happens.
-     * @throw SiodbProtocolError when protocol error happens.
+     * @throw ProtocolError when protocol error happens.
      */
     void responseToClientWithError(int requestId, const char* text, int errorCode);
 
@@ -58,7 +58,7 @@ private:
      * @param ioMgrInputStream Input stream.
      * @throw std::system_error when I/O error happens.
      * */
-    void transmitRowData(protobuf::CustomProtobufInputStream& ioMgrInputStream);
+    void transmitRowData(protobuf::StreamInputStream& ioMgrInputStream);
 
     /**
      * Updates used database to @ref m_lastUsedDatabase (Sends USE DATABASE to Iomgr).
@@ -66,7 +66,7 @@ private:
      * @throw std::system_error when I/O error happens.
      * @throw std::runtime_error when Iomgr responses with non expected answer.
      */
-    void selectLastUsedDatabase(protobuf::CustomProtobufInputStream& ioMgrInputStream);
+    void selectLastUsedDatabase(protobuf::StreamInputStream& ioMgrInputStream);
 
     /**
      * Processes Iomgr response tag.
@@ -87,7 +87,7 @@ private:
      * 8b) [Non-Authenticated] Sends authentication result to the client and closes connection.
      * @param ioMgrInputStream Iomgr input stream.
      */
-    void authenticateUser(protobuf::CustomProtobufInputStream& ioMgrInputStream);
+    void authenticateUser(protobuf::StreamInputStream& ioMgrInputStream);
 
     /**
      * Creates TLS server.
@@ -105,10 +105,10 @@ private:
     const bool m_adminMode;
 
     /** IO for connection with Siodb client */
-    std::unique_ptr<io::IODevice> m_clientIo;
+    std::unique_ptr<io::InputOutputStream> m_clientConnection;
 
     /** IO for connection with IO manager */
-    std::unique_ptr<io::IODevice> m_ioMgrIo;
+    std::unique_ptr<io::InputOutputStream> m_iomgrConnection;
 
     /** TLS server for handling secure connnection */
     std::unique_ptr<crypto::TlsServer> m_tlsServer;
@@ -117,7 +117,7 @@ private:
     std::string m_lastUsedDatabase;
 
     /** A file descriptor for polling connection with the client */
-    FdGuard m_clientEpollFd;
+    FDGuard m_clientEpollFd;
 
     /** Log context name */
     static constexpr const char* kLogContext = "ConnWorkerConnectionHandler: ";

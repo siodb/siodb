@@ -31,16 +31,14 @@ struct DatabaseRecord {
      * @param uuid Database UUID.
      * @param name Database name.
      * @param cipherId Cipher identifier.
-     * @param cipherKey Cipher key.
      * @param description Database description.
      */
     DatabaseRecord(std::uint32_t id, const Uuid& uuid, std::string&& name, std::string&& cipherId,
-            BinaryValue&& cipherKey, std::optional<std::string>&& description)
+            std::optional<std::string>&& description)
         : m_id(id)
         , m_uuid(uuid)
         , m_name(std::move(name))
         , m_cipherId(std::move(cipherId))
-        , m_cipherKey(std::move(cipherKey))
         , m_description(std::move(description))
     {
     }
@@ -59,8 +57,7 @@ struct DatabaseRecord {
     bool operator==(const DatabaseRecord& other) const noexcept
     {
         return m_id == other.m_id && m_uuid == other.m_uuid && m_name == other.m_name
-               && m_cipherId == other.m_cipherId && m_cipherKey == other.m_cipherKey
-               && m_description == other.m_description;
+               && m_cipherId == other.m_cipherId && m_description == other.m_description;
     }
 
     /**
@@ -76,8 +73,8 @@ struct DatabaseRecord {
      * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
-            noexcept;
+    std::uint8_t* serializeUnchecked(
+            std::uint8_t* buffer, unsigned version = kClassVersion) const noexcept;
 
     /**
      * Deserializes object from buffer.
@@ -98,9 +95,6 @@ struct DatabaseRecord {
 
     /** Cipher ID */
     std::string m_cipherId;
-
-    /** Cipher key */
-    BinaryValue m_cipherKey;
 
     /** Database description */
     std::optional<std::string> m_description;
