@@ -52,9 +52,6 @@ struct DatabaseInfo {
 
     /** Cipher ID of the database */
     std::string m_cipherId;
-
-    /** Cipher key of the database */
-    siodb::BinaryValue m_cipherKey;
 };
 
 /**
@@ -400,8 +397,7 @@ std::vector<DatabaseInfo> dumpDatabasesList(
         io::InputOutputStream& connection, std::ostream& os, protobuf::StreamInputStream& input)
 {
     auto query = formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
-            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName,
-                    kSysDatabases_CipherKey_ColumnName});
+            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName});
     const auto response = sendCommand(std::move(query), connection, input);
 
     std::vector<DatabaseInfo> databases;
@@ -417,8 +413,8 @@ std::vector<DatabaseInfo> dumpDatabasesList(
         if (rowLength == 0) break;
 
         DatabaseInfo database;
-        if (SIODB_LIKELY(codedInput.Read(&database.m_name) && codedInput.Read(&database.m_cipherId)
-                         && codedInput.Read(&database.m_cipherKey))) {
+        if (SIODB_LIKELY(
+                    codedInput.Read(&database.m_name) && codedInput.Read(&database.m_cipherId))) {
             if (database.m_name != kSystemDatabaseName) {
                 os << formCreateDatabaseQuery(database) << ';' << '\n';
                 databases.push_back(std::move(database));
@@ -435,8 +431,7 @@ void dumpSpecificDatabase(io::InputOutputStream& connection, std::ostream& os,
 {
     std::ostringstream ss;
     ss << formSelectCoreBody(kSystemDatabaseName, kSysDatabasesTableName,
-            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName,
-                    kSysDatabases_CipherKey_ColumnName})
+            {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName})
        << " WHERE " << kSysDatabases_Name_ColumnName << " = '" << databaseName << '\'';
 
     const auto response = sendCommand(ss.str(), connection, input);
@@ -452,8 +447,7 @@ void dumpSpecificDatabase(io::InputOutputStream& connection, std::ostream& os,
 
     // nulls are dissalowed, read values
     DatabaseInfo database;
-    if (SIODB_LIKELY(codedInput.Read(&database.m_name) && codedInput.Read(&database.m_cipherId)
-                     && codedInput.Read(&database.m_cipherKey))) {
+    if (SIODB_LIKELY(codedInput.Read(&database.m_name) && codedInput.Read(&database.m_cipherId))) {
         if (database.m_name != kSystemDatabaseName) {
             os << formCreateDatabaseQuery(database) << ';' << '\n';
         }

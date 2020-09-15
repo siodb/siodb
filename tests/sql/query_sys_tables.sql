@@ -47,7 +47,7 @@ FROM sys.sys_user_access_keys;
 SELECT trid, user_id, name, value, expiration_timestamp, description
 FROM sys.sys_user_tokens;
 
-SELECT trid, uuid, name, cipher_id, cipher_key, description
+SELECT trid, uuid, name, cipher_id, description
 FROM sys.sys_databases;
 
 SELECT trid, user_id, database_id, object_type, object_id, permissions, grant_options

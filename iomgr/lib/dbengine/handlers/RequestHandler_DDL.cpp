@@ -56,7 +56,7 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
 
     // nullptr is possible in the case of 'none' cipher
     const auto cipher = crypto::getCipher(cipherId);
-    const auto keyLength = cipher ? crypto::getCipher(cipherId)->getKeySize() : 0;
+    const auto keyLength = cipher ? cipher->getKeySizeInBits() : 0;
     auto cipherKey = cipher ? crypto::generateCipherKey(keyLength, cipherKeySeed) : BinaryValue();
     m_instance.createDatabase(
             std::string(request.m_database), cipherId, std::move(cipherKey), {}, m_userId);

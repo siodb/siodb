@@ -100,6 +100,7 @@ CXX_SRC:= \
 	parser/expr/UnaryMinusOperator.cpp  \
 	parser/expr/UnaryPlusOperator.cpp  \
 	\
+	reg/CipherKeyRecord.cpp  \
 	reg/ColumnRecord.cpp  \
 	reg/ColumnDefinitionConstraintRecord.cpp  \
 	reg/ColumnDefinitionRecord.cpp  \
@@ -268,6 +269,7 @@ CXX_HDR:= \
 	parser/expr/UnaryMinusOperator.h  \
 	parser/expr/UnaryPlusOperator.h  \
 	\
+	reg/CipherKeyRecord.h  \
 	reg/ColumnDefinitionConstraintRecord.h  \
 	reg/ColumnDefinitionConstraintRegistry.h  \
 	reg/ColumnDefinitionRecord.h  \

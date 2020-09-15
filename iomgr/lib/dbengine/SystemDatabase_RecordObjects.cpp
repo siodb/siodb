@@ -72,7 +72,6 @@ void SystemDatabase::recordDatabase(const Database& database, const TransactionP
     values.at(i++) = boost::uuids::to_string(database.getUuid());
     values.at(i++) = database.getName();
     values.at(i++) = database.getCipherId();
-    values.at(i++) = database.getCipherKey();
     values.at(i++) = database.getDescription();
     m_sysDatabasesTable->insertRow(std::move(values), tp, database.getId());
 }

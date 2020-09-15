@@ -543,6 +543,16 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
     tmpOptions.m_encryptionOptions.m_defaultCipherId = boost::trim_copy(config.get<std::string>(
             constructOptionPath(kEncryptionOptionDefaultCipherId), kDefaultCipherId));
 
+    // Parse master cipher ID
+    tmpOptions.m_encryptionOptions.m_masterCipherId = boost::trim_copy(
+            config.get<std::string>(constructOptionPath(kEncryptionOptionMasterCipherId),
+                    tmpOptions.m_encryptionOptions.m_defaultCipherId));
+
+    // Parse master cipher key path
+    tmpOptions.m_encryptionOptions.m_masterCipherKeyPath = boost::trim_copy(
+            config.get<std::string>(constructOptionPath(kEncryptionOptionMasterKey),
+                    composeDefaultMasterEncryptionKeyFilePath(instanceName)));
+
     // Parse system database cipher ID
     tmpOptions.m_encryptionOptions.m_systemDbCipherId = boost::trim_copy(
             config.get<std::string>(constructOptionPath(kEncryptionOptionSystemDbCipherId),

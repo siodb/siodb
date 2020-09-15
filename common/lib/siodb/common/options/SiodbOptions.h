@@ -54,6 +54,8 @@ constexpr const char* kIOManagerOptionMaxJsonPayloadSize = "iomgr.max_json_paylo
 
 // Encryption options
 constexpr const char* kEncryptionOptionDefaultCipherId = "encryption.default_cipher_id";
+constexpr const char* kEncryptionOptionMasterCipherId = "encryption.master_cipher_id";
+constexpr const char* kEncryptionOptionMasterKey = "encryption.master_key";
 constexpr const char* kEncryptionOptionSystemDbCipherId = "encryption.system_db_cipher_id";
 
 // Client options
@@ -243,11 +245,17 @@ struct EncryptionOptions {
     /** Default cipher ID */
     std::string m_defaultCipherId;
 
+    /** Master cipher ID */
+    std::string m_masterCipherId;
+
+    /** Master key */
+    std::string m_masterCipherKeyPath;
+
     /** System database cipher ID */
     std::string m_systemDbCipherId;
 
-    /** Explicit system database cipher key. Use this one only for unit tests. */
-    BinaryValue m_systemDbCipherKey;
+    /** Explicit master cipher key. Use this one only for unit tests. */
+    BinaryValue m_masterCipherKey;
 
     /** External cipher options */
     ExternalCipherOptions m_externalCipherOptions;

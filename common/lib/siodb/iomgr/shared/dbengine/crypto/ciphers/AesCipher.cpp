@@ -11,7 +11,7 @@ namespace siodb::iomgr::dbengine::crypto {
 
 ///// class AesCipher //////////////////////////////////////////////////////////
 
-unsigned AesCipher::getBlockSize() const noexcept
+unsigned AesCipher::getBlockSizeInBits() const noexcept
 {
     return 128;
 }
@@ -35,7 +35,7 @@ const char* Aes128::getCipherId() const noexcept
     return "aes128";
 }
 
-unsigned Aes128::getKeySize() const noexcept
+unsigned Aes128::getKeySizeInBits() const noexcept
 {
     return 128;
 }
@@ -47,7 +47,7 @@ const char* Aes192::getCipherId() const noexcept
     return "aes192";
 }
 
-unsigned Aes192::getKeySize() const noexcept
+unsigned Aes192::getKeySizeInBits() const noexcept
 {
     return 192;
 }
@@ -59,7 +59,7 @@ const char* Aes256::getCipherId() const noexcept
     return "aes256";
 }
 
-unsigned Aes256::getKeySize() const noexcept
+unsigned Aes256::getKeySizeInBits() const noexcept
 {
     return 256;
 }

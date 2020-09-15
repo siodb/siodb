@@ -66,6 +66,7 @@ void TestEnvironment::SetUp()
     // Fill encryption options
     //using siodb::config::defaults::kDefaultCipherId;
     instanceOptions.m_encryptionOptions.m_defaultCipherId = "none";
+    instanceOptions.m_encryptionOptions.m_masterCipherId = "none";
     instanceOptions.m_encryptionOptions.m_systemDbCipherId = "none";
 
     // Fill log options

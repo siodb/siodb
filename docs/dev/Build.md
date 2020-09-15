@@ -528,8 +528,8 @@ sudo -u siodb /etc/siodb/instances/siodb
 sudo cp config/siodb.conf /etc/siodb/instances/siodb/config
 sudo chmod 0600 /etc/siodb/instances/siodb/config
 sudo chown siodb:siodb /etc/siodb/instances/siodb/config
-sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/system_db_key bs=16 count=1
-sudo chmod 0600 /etc/siodb/instances/siodb/system_db_key
+sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/master_key bs=16 count=1
+sudo chmod 0600 /etc/siodb/instances/siodb/master_key
 sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/initial_access_key
 sudo chmod 0600 /etc/siodb/instances/siodb/initial_access_key
 sudo chown siodb:siodb /etc/siodb/instances/siodb/initial_access_key
@@ -585,7 +585,7 @@ To allow running SQL tests under your own user (may be required on the CentOS an
 
 # 2. Adjust Siodb defult instance configuration file permissions
 sudo chmod 0660 /etc/siodb/instances/siodb/config
-sudo chmod 0660 /etc/siodb/instances/siodb/system_db_key
+sudo chmod 0660 /etc/siodb/instances/siodb/master_key
 sudo chmod 0660 /etc/siodb/instances/siodb/initial_access_key
 
 # 3. Edit default instance configuration file /etc/siodb/instances/siodb/config
@@ -607,9 +607,9 @@ allow_group_permissions_on_config_files = true
 Before running Siodb, you need to create some instance configuration files:
 
 - `/etc/siodb/instances/<configuration-name>/config` - instance configuration options file.
-- `/etc/siodb/instances/<configuration-name>/system_db_key` - encryption key for the system database.
-  Note that this file must be present even if encryption of the system database is set to the `none`
-  (in such case it can be just zero length).
+- `/etc/siodb/instances/<configuration-name>/master_key` - master encryption key for.
+  Note that this file must be present even if master cipher ID is set to the `none`
+  (in such case it can be just zero length file).
 
 These files owner must be owned by the user `siodb` and group `siodb`. File mode must be `0400` or `0600`.
 Debug build of Siodb also allows members of owner group to have access to these files.

@@ -9,6 +9,7 @@
 #include "CamelliaCipher.h"
 
 // STL headers
+#include <sstream>
 #include <string_view>
 #include <unordered_map>
 
@@ -43,8 +44,13 @@ CipherContextPtr Cipher::createDecryptionContext(const BinaryValue& key) const
 
 void Cipher::validateKeyLength(const BinaryValue& key) const
 {
-    if (key.size() != getKeySize() / 8)
-        throw std::runtime_error(std::string("Invalid cipher key for the cipher ") + getCipherId());
+    const auto expectedKeySize = getKeySizeInBits() / 8;
+    if (key.size() != expectedKeySize) {
+        std::ostringstream err;
+        err << "Invalid cipher key size for the cipher " << getCipherId() << ": expecting "
+            << expectedKeySize << " bytes, but got " << key.size() << " bytes";
+        throw std::runtime_error(err.str());
+    }
     //        throwDatabaseError(IOManagerMessageId::kErrorInvalidCipherKey, getCipherId());
 }
 

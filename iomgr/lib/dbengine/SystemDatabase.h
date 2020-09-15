@@ -15,20 +15,18 @@ public:
     /**
      * Initializes object of class SystemDatabase for new instance.
      * @param instance Instance object.
-     * @param cipherId Cipher ID used for encryption of this database.
-     * @param cipherKey Key used for encryption of this database.
-     * @param superUserInitialAccessKey Initial access key for the superuser.
+     * @param cipherId Cipher used for encryption of this database.
+     * @param cipherKey Cipher key.
      */
-    SystemDatabase(Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey,
-            const std::string& superUserInitialAccessKey);
+    SystemDatabase(Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey);
 
     /**
      * Initializes object of class SystemDatabase for existing instance.
      * @param instance Instance object.
-     * @param cipherId Cipher ID used for encryption of this database.
+     * @param cipherId Cipher used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
      */
-    SystemDatabase(Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey);
+    SystemDatabase(Instance& instance, const std::string& cipherId);
 
     /**
      * Gives indication that this is system database.

@@ -113,15 +113,16 @@ void CreateAndLoadInstance(const char* cipherId)
     } while (false);
 
     instanceOptions.m_encryptionOptions.m_defaultCipherId = cipherId;
+    instanceOptions.m_encryptionOptions.m_masterCipherId = cipherId;
     instanceOptions.m_encryptionOptions.m_systemDbCipherId = cipherId;
 
     const auto cipher = crypto::getCipher(instanceOptions.m_encryptionOptions.m_systemDbCipherId);
     if (cipher) {
         LOG_INFO << "Filling encryption key...";
-        const auto keyLength = cipher->getKeySize() / 8;
-        auto& key = instanceOptions.m_encryptionOptions.m_systemDbCipherKey;
+        const auto keyLength = cipher->getKeySizeInBits() / 8;
+        auto& key = instanceOptions.m_encryptionOptions.m_masterCipherKey;
         key.resize(keyLength);
-        std::fill_n(key.begin(), key.size(), 111);
+        std::fill_n(key.begin(), key.size(), 0xEF);
     }
 
     // Create instance

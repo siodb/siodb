@@ -28,12 +28,13 @@ Default cipher can be specified in the Siodb instance config file with the follo
 
 If this parameter is not explicitly specified, effective default cipher must be 'aes128'.
 
-Siodb can use a different encryption algorithms to encrypt the system database. It is specified
-by the following configuration parameter:
+Siodb can use a different encryption algorithms to encrypt database keys. It is specified
+by the configuration parameter `encryption.master_cipher_id`. If it is not specified explicitly,
+Siodb uses the effective default cipher.
 
-- `encryption.system_db_cipher_id`
-
-If it is not specified explicitly, Siodb uses the effective default cipher.
+Siodb can also use a different encryption algorithms to system database. It is specified
+by the following configuration parameter: `encryption.system_db_cipher_id`. If it is not specified
+explicitly, Siodb uses the effective default cipher.
 
 There are currently two ciphers available out-of-the-box:
 
@@ -46,12 +47,10 @@ You can eventually disable the encryption by using the `CIPHER_ID` `none`:
 create database abcd with cipher_id = 'none' ;
 ```
 
-Siodb stores the encryption keys for each database in the system database. The system
-database is encrypted as well with a different encryption key. The encryption
-key for the system database is available in the file
-`/etc/siodb/instances/<INSTANCE_NAME>/system_db_key`. Siodb reads this file at startup
-time to get the system database encryption key and decrypts the encryption key of
-each database.
+Siodb stores the encryption keys for each database in the database directory.
+Each database key is encrypted as well with a master encryption key. The master encryption
+key `/etc/siodb/instances/<INSTANCE_NAME>/master_key`. Siodb reads this file at startup
+time to get the master encryption key and decrypts the encryption key of each database.
 
 Siodb identified the cipher with a `CIPHER_ID` which is a single string that includes:
 
@@ -160,7 +159,7 @@ Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
 siocli>
 ```
 
-### How to verify that your data are encrypted on the network?
+### How to verify that your data are encrypted on the network
 
 A simple way to verify if encryption works are to view the traffic between `siocli` and Siodb.
 I use the tool `tcpdump` to view those data:

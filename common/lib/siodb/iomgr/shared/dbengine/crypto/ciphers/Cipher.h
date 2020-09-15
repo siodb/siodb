@@ -36,13 +36,13 @@ public:
      * Returns cipher block size in bits.
      * @return Block size in bits.
      */
-    virtual unsigned getBlockSize() const noexcept = 0;
+    virtual unsigned getBlockSizeInBits() const noexcept = 0;
 
     /**
      * Returns cipher key size in bits.
      * @return Key size in bits.
      */
-    virtual unsigned getKeySize() const noexcept = 0;
+    virtual unsigned getKeySizeInBits() const noexcept = 0;
 
     /**
      * Creates encryption context with a specified key.

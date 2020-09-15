@@ -1,4 +1,4 @@
-# Quick start
+# Quick Start
 
 ## Docker container
 
@@ -41,6 +41,7 @@ sudo ./InstallSiodb.sh
 sudo su - siodb
 siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
 ```
+
 - or (simplified)
 
 ```bash

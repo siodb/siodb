@@ -16,7 +16,7 @@ public:
      * Returns cipher block size in bits.
      * @return Block size in bits.
      */
-    unsigned getBlockSize() const noexcept override final;
+    unsigned getBlockSizeInBits() const noexcept override final;
 
 protected:
     /**
@@ -47,7 +47,7 @@ public:
      * Returns cipher key size in bits.
      * @return Key size in bits.
      */
-    unsigned getKeySize() const noexcept override;
+    unsigned getKeySizeInBits() const noexcept override;
 };
 
 /** Implementation of the Camellia with 192 bit key. */
@@ -63,7 +63,7 @@ public:
      * Returns cipher key size in bits.
      * @return Key size in bits.
      */
-    unsigned getKeySize() const noexcept override;
+    unsigned getKeySizeInBits() const noexcept override;
 };
 
 /** Implementation of the Camellia with 256 bit key. */
@@ -79,7 +79,7 @@ public:
      * Returns cipher key size in bits.
      * @return Key size in bits.
      */
-    unsigned getKeySize() const noexcept override;
+    unsigned getKeySizeInBits() const noexcept override;
 };
 
 }  // namespace siodb::iomgr::dbengine::crypto

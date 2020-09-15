@@ -52,7 +52,7 @@ public:
         m_fileId = 0;
 
         const auto cipher = std::make_shared<CipherClass>();
-        const auto keySizeBytes = cipher->getKeySize() / 8;
+        const auto keySizeBytes = cipher->getKeySizeInBits() / 8;
         siodb::BinaryValue cipherKey(keySizeBytes);
         for (std::size_t i = 0; i < keySizeBytes; ++i)
             cipherKey[i] = i;

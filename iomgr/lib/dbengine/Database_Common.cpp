@@ -16,6 +16,7 @@
 #include "SystemDatabase.h"
 #include "Table.h"
 #include "ThrowDatabaseError.h"
+#include "reg/CipherKeyRecord.h"
 
 // Common project headers
 #include <siodb/common/io/FileIO.h>
@@ -668,11 +669,124 @@ void Database::checkDataConsistency()
     }
 }
 
-std::unique_ptr<MemoryMappedFile> Database::createMetadataFile(const char* path) const
+BinaryValue Database::loadCipherKey() const
 {
+    if (!m_cipher) return BinaryValue();
+
+    // Check file size
+    const auto path = makeCipherKeyFilePath();
+    boost::system::error_code sysErrorCode;
+    const auto fileSize = fs::file_size(path, sysErrorCode);
+    if (fileSize == static_cast<std::uintmax_t>(-1)) {
+        throwDatabaseError(IOManagerMessageId::kErrorCannotOpenDatabaseCipherKeyFile, path, m_name,
+                m_uuid, sysErrorCode.value(), std::strerror(sysErrorCode.value()));
+    }
+    if (m_cipher && fileSize < kCipherKeyFileMinSize) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseCipherKeyFileCorrupted, path, m_name,
+                m_uuid, "File is too small");
+    }
+    if (fileSize > kCipherKeyFileMaxSize) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseCipherKeyFileCorrupted, path, m_name,
+                m_uuid, std::strerror(EFBIG));
+    }
+
+    // Open cipher key file
+    constexpr auto kOpenFlags = O_RDONLY | O_CLOEXEC;
+    FDGuard fd(::open(path.c_str(), kOpenFlags));
+    if (!fd.isValidFd()) {
+        const int errorCode = errno;
+        throwDatabaseError(IOManagerMessageId::kErrorCannotOpenDatabaseCipherKeyFile, path, m_name,
+                m_uuid, errorCode, std::strerror(errorCode));
+    }
+
+    // Read cipher key file
+    BinaryValue encryptedKey(fileSize);
+    if (::readExact(fd.getFD(), encryptedKey.data(), fileSize, kIgnoreSignals) != fileSize) {
+        const int errorCode = errno;
+        throwDatabaseError(IOManagerMessageId::kErrorCannotReadDatabaseCipherKeyFile, m_name,
+                m_uuid, errorCode, std::strerror(errorCode));
+    }
+
+    // Decrypt and deserialize key
+    CipherKeyRecord cipherKeyRecord;
+    try {
+        const auto decryptedKey =
+                m_instance.decryptWithMasterEncryption(encryptedKey.data(), encryptedKey.size());
+        cipherKeyRecord.deserialize(decryptedKey.data(), decryptedKey.size());
+    } catch (std::invalid_argument& ex) {
+        std::ostringstream err;
+        err << "Key decryption error: " << ex.what();
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseCipherKeyFileCorrupted, path, m_name,
+                m_uuid, err.str());
+    } catch (utils::DeserializationError& ex) {
+        std::ostringstream err;
+        err << "Key deserialization error: " << ex.what();
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseCipherKeyFileCorrupted, path, m_name,
+                m_uuid, err.str());
+    }
+
+    if (cipherKeyRecord.m_id != (static_cast<std::uint64_t>(m_id) << 32)) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseCipherKeyFileCorrupted, path, m_name,
+                m_uuid, "Cipher mistmatch");
+    }
+
+    if (cipherKeyRecord.m_cipherId != m_cipher->getCipherId()) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseCipherKeyFileCorrupted, path, m_name,
+                m_uuid, "Cipher mistmatch");
+    }
+
+    if (cipherKeyRecord.m_key.size() != m_cipher->getKeySizeInBits() / 8) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseCipherKeyFileCorrupted, path, m_name,
+                m_uuid, "Cipher key length mismatch");
+    }
+
+    return cipherKeyRecord.m_key;
+}
+
+void Database::saveCurrentCipherKey() const
+{
+    // Don't create this file if encryption is not used
+    if (!m_cipher) return;
+
+    // Create cipher key file
+    const auto path = makeCipherKeyFilePath();
+    constexpr auto kOpenFlags = O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME;
+    FDGuard fd(::open(path.c_str(), kOpenFlags, kDataFileCreationMode));
+    if (!fd.isValidFd()) {
+        const int errorCode = errno;
+        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateDatabaseCipherKeyFile, path,
+                m_name, m_uuid, errorCode, std::strerror(errorCode));
+    }
+
+    // Serialize and encrypt database encryption key
+    const CipherKeyRecord cipherKeyRecord((static_cast<std::uint64_t>(m_id) << 32),
+            m_cipher->getCipherId(), BinaryValue(m_cipherKey));
+    BinaryValue serializedKey(cipherKeyRecord.getSerializedSize());
+    cipherKeyRecord.serializeUnchecked(serializedKey.data());
+    const auto encryptedKey =
+            m_instance.encryptWithMasterEncryption(serializedKey.data(), serializedKey.size());
+
+    // Write encrypted key to file
+    const auto n = encryptedKey.size();
+    if (::writeExact(fd.getFD(), encryptedKey.data(), n, kIgnoreSignals) != n) {
+        const int errorCode = errno;
+        throwDatabaseError(IOManagerMessageId::kErrorCannotWriteDatabaseCipherKeyFile, m_name,
+                m_uuid, errorCode, std::strerror(errorCode));
+    }
+}
+
+std::string Database::makeCipherKeyFilePath() const
+{
+    return utils::constructPath(m_dataDir, kCipherKeyFileName);
+}
+
+std::unique_ptr<MemoryMappedFile> Database::createMetadataFile() const
+{
+    const auto path = makeMetadataFilePath();
+
     // Create metadata file
     constexpr auto kOpenFlags = O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME;
-    FDGuard fd(::open(path, kOpenFlags, kDataFileCreationMode));
+    FDGuard fd(::open(path.c_str(), kOpenFlags, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateDatabaseMetadataFile, path, m_name,
@@ -690,14 +804,16 @@ std::unique_ptr<MemoryMappedFile> Database::createMetadataFile(const char* path)
 
     fd.reset();
 
-    return openMetadataFile(path);
+    return openMetadataFile();
 }
 
-std::unique_ptr<MemoryMappedFile> Database::openMetadataFile(const char* path) const
+std::unique_ptr<MemoryMappedFile> Database::openMetadataFile() const
 {
+    const auto path = makeMetadataFilePath();
+
     // Open metadata file
     constexpr auto kOpenFlags = O_RDWR | O_CLOEXEC | O_NOATIME;
-    FDGuard fd(::open(path, kOpenFlags, kDataFileCreationMode));
+    FDGuard fd(::open(path.c_str(), kOpenFlags, kDataFileCreationMode));
     if (!fd.isValidFd()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotOpenDatabaseMetadataFile, path, m_name,

@@ -9,8 +9,8 @@ Siodb expects to find the configuration file of an instance in the folder
 All files below must be present at each startup time:
 
 - `/etc/siodb/instances/<INSTANCE_NAME>/config`: The Siodb parameter files.
-- `/etc/siodb/instances/<INSTANCE_NAME>/system_db_key`: The master encryption
-key for Siodb.
+- `/etc/siodb/instances/<INSTANCE_NAME>/master_key`: The master encryption key
+  for Siodb.
 
 The file below must be present at the first startup time to indicate Siodb which
 public key to use for the Siodb `root` user:
@@ -19,7 +19,7 @@ public key to use for the Siodb `root` user:
 
 ### Parameters
 
-```bash
+```ini
 # Listening port for IPv4 client connections
 # 0 means do not listen
 ipv4_port = 50000
@@ -63,12 +63,51 @@ iomgr.table_cache_capacity = 100
 # Capacity of the block cache (in 10M blocks)
 iomgr.block_cache_capacity = 103
 
+# Maximum JSON payload size in the REST request in kilobytes
+# Suffixes k, K, m, M, g, G switch measure unit to KiB, MiB and GiB respectively.
+iomgr.max_json_payload_size = 1024
+
+# IPv4 HTTP port number
+# 0 means do not listen
+rest_server.ipv4_http_port = 50080
+
+# IPv4 HTTPS port number
+# 0 means do not listen
+rest_server.ipv4_https_port = 50443
+
+# IPv6 HTTP port number
+# 0 means do not listen
+rest_server.ipv6_http_port = 0
+
+# IPv6 HTTPS port number
+# 0 means do not listen
+rest_server.ipv6_https_port = 0
+
+# Path to the TLS certificate file
+#rest_server.tls_certificate = cert.pem
+
+# Path to the TLS certificate chain file
+# If both rest_server.tls_certificate and tls_certificate_chain are set,
+# then rest_server.tls_certificate_chain is used.
+#rest_server.tls_certificate_chain = certChain.pem
+
+# Path to the TLS private key file
+#rest_server.tls_private_key = key.pem
+
+# HTTP chunk size in bytes. Suffixes `k`, `K`, `m`, `M` change units
+# to the kilobytes and megabytes respectively.
+rest_server.chunk_size=64K
+
 # Encryption default cipher id (aes128 is used if not set)
 encryption.default_cipher_id = aes128
 
-# Encryption algorithm used to encrypt system database
+# Encryption algorithm used to encrypt instance level data
 # (encryption.default_cipher_id is used if not set)
-encryption.system_db_cipher_id = aes128
+encryption.master_cipher_id = aes128
+
+# Encryption key used to encrypt and decrypt instance level data
+# /etc/siodb/instances/<instance-name>/master_key is used if not set
+# encryption.master_key = /etc/siodb/instances/siodb/master_key
 
 # Should encrypted connection be used for client (yes(default)/no)
 client.enable_encryption = yes

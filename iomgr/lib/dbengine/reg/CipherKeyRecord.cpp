@@ -2,52 +2,41 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-#include "DatabaseRecord.h"
+#include "CipherKeyRecord.h"
 
 // Project headers
 #include "Helpers.h"
-#include "../Database.h"
+
+// Common project headers
+#include <siodb/common/utils/Base128VariantEncoding.h>
 
 // Boost headers
 #include <boost/lexical_cast.hpp>
 
 namespace siodb::iomgr::dbengine {
 
-const Uuid DatabaseRecord::s_classUuid =
-        boost::lexical_cast<Uuid>("34623147-9211-46dd-a5cc-83f88c001476");
+const Uuid CipherKeyRecord::s_classUuid =
+        boost::lexical_cast<Uuid>("dffb2d5a-a781-428b-bdb5-54633e3ab8dd");
 
-DatabaseRecord::DatabaseRecord(const Database& database)
-    : m_id(database.getId())
-    , m_uuid(database.getUuid())
-    , m_name(database.getName())
-    , m_cipherId(database.getCipherId())
-    , m_description(database.getDescription())
-{
-}
-
-std::size_t DatabaseRecord::getSerializedSize(unsigned version) const noexcept
+std::size_t CipherKeyRecord::getSerializedSize(unsigned version) const noexcept
 {
     return Uuid::static_size() + ::getVarIntSize(version) + ::getVarIntSize(m_id)
-           + Uuid::static_size() + ::getSerializedSize(m_name) + ::getSerializedSize(m_cipherId)
-           + ::getSerializedSize(m_description);
+           + ::getSerializedSize(m_cipherId) + ::getSerializedSize(m_key);
 }
 
-std::uint8_t* DatabaseRecord::serializeUnchecked(
+std::uint8_t* CipherKeyRecord::serializeUnchecked(
         std::uint8_t* buffer, unsigned version) const noexcept
 {
     std::memcpy(buffer, s_classUuid.data, Uuid::static_size());
     buffer += Uuid::static_size();
     buffer = ::encodeVarInt(version, buffer);
     buffer = ::encodeVarInt(m_id, buffer);
-    std::memcpy(buffer, m_uuid.data, Uuid::static_size());
-    buffer += Uuid::static_size();
-    buffer = ::serializeUnchecked(m_name, buffer);
     buffer = ::serializeUnchecked(m_cipherId, buffer);
-    buffer = ::serializeUnchecked(m_description, buffer);
+    buffer = ::serializeUnchecked(m_key, buffer);
     return buffer;
 }
 
-std::size_t DatabaseRecord::deserialize(const std::uint8_t* buffer, std::size_t length)
+std::size_t CipherKeyRecord::deserialize(const std::uint8_t* buffer, std::size_t length)
 {
     if (length < Uuid::static_size())
         helpers::reportInvalidOrNotEnoughData(kClassName, "$classUuid", 0);
@@ -68,24 +57,14 @@ std::size_t DatabaseRecord::deserialize(const std::uint8_t* buffer, std::size_t 
     if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "id", consumed);
     totalConsumed += consumed;
 
-    if (length - totalConsumed < Uuid::static_size())
-        helpers::reportInvalidOrNotEnoughData(kClassName, "uuid", 0);
-    std::memcpy(m_uuid.data, buffer + totalConsumed, Uuid::static_size());
-    totalConsumed += m_uuid.size();
-
     const char* field;
     try {
-        field = "name";
-        totalConsumed +=
-                ::deserializeObject(buffer + totalConsumed, length - totalConsumed, m_name);
-
         field = "cipherId";
         totalConsumed +=
                 ::deserializeObject(buffer + totalConsumed, length - totalConsumed, m_cipherId);
 
-        field = "description";
-        totalConsumed +=
-                ::deserializeObject(buffer + totalConsumed, length - totalConsumed, m_description);
+        field = "key";
+        totalConsumed += ::deserializeObject(buffer + totalConsumed, length - totalConsumed, m_key);
     } catch (std::exception& ex) {
         helpers::reportDeserializationFailure(kClassName, field, ex.what());
     }

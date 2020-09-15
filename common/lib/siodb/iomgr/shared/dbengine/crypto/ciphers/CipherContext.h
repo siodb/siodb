@@ -18,7 +18,7 @@ protected:
      */
     explicit CipherContext(ConstCipherPtr&& cipher) noexcept
         : m_cipher(std::move(cipher))
-        , m_blockSizeInBytes(m_cipher->getBlockSize() / 8)
+        , m_blockSizeInBytes(m_cipher->getBlockSizeInBits() / 8)
     {
     }
 
@@ -50,8 +50,7 @@ public:
      * @param blockCount Number of data blocks to process.
      * @param out Output buffer.
      */
-    virtual void transform(const std::uint8_t* in, unsigned blockCount, std::uint8_t* out) const
-            noexcept = 0;
+    virtual void transform(const void* in, std::size_t blockCount, void* out) const noexcept = 0;
 
 protected:
     /** Cipher which this context belongs to */

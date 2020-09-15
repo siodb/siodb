@@ -133,8 +133,6 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
     const auto nameColumn = m_sysDatabasesTable->findColumnChecked(kSysDatabases_Name_ColumnName);
     const auto cipherIdColumn =
             m_sysDatabasesTable->findColumnChecked(kSysDatabases_CipherId_ColumnName);
-    const auto cipherKeyColumn =
-            m_sysDatabasesTable->findColumnChecked(kSysDatabases_CipherKey_ColumnName);
     const auto descriptionColumn =
             m_sysDatabasesTable->findColumnChecked(kSysDatabases_Description_ColumnName);
 
@@ -190,17 +188,15 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant uuidValue, nameValue, cipherIdValue, cipherKeyValue, descriptionValue;
+        Variant uuidValue, nameValue, cipherIdValue, descriptionValue;
         std::size_t colIndex = 0;
         uuidColumn->readRecord(columnRecords.at(colIndex++).getAddress(), uuidValue);
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue);
         cipherIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), cipherIdValue);
-        cipherKeyColumn->readRecord(columnRecords.at(colIndex++).getAddress(), cipherKeyValue);
         descriptionColumn->readRecord(columnRecords.at(colIndex++).getAddress(), descriptionValue);
         DatabaseRecord databaseRecord(static_cast<std::uint32_t>(mcr.getTableRowId()),
                 boost::lexical_cast<Uuid>(*uuidValue.asString()), std::move(*nameValue.asString()),
-                std::move(*cipherIdValue.asString()), std::move(*cipherKeyValue.asBinary()),
-                descriptionValue.asOptionalString());
+                std::move(*cipherIdValue.asString()), descriptionValue.asOptionalString());
         LOG_DEBUG << "Database " << m_name << ": readAllDatabases: Database #" << trid << " '"
                   << databaseRecord.m_name << '\'';
         reg.insert(std::move(databaseRecord));

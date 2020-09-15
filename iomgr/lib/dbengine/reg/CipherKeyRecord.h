@@ -9,55 +9,39 @@
 #include <siodb/common/utils/Uuid.h>
 
 // STL headers
-#include <optional>
 #include <string>
 
 namespace siodb::iomgr::dbengine {
 
-class Database;
-
-/** In-memory database registry record */
-struct DatabaseRecord {
-    /** Initializes object of class DatabaseRecord */
-    DatabaseRecord() noexcept
+/** Cipher key information */
+struct CipherKeyRecord {
+    /** Initializes object of class CipherKeyRecord */
+    CipherKeyRecord() noexcept
         : m_id(0)
-        , m_uuid(utils::getZeroUuid())
     {
     }
 
-    /**
-     * Initializes object of class DatabaseRecord.
-     * @param id Database ID.
-     * @param uuid Database UUID.
-     * @param name Database name.
+    /** 
+     * Initializes object of class CipherKeyRecord.
+     * @param id Record identifier.
      * @param cipherId Cipher identifier.
-     * @param description Database description.
+     * @param key Cipher key.
      */
-    DatabaseRecord(std::uint32_t id, const Uuid& uuid, std::string&& name, std::string&& cipherId,
-            std::optional<std::string>&& description)
+    CipherKeyRecord(std::uint64_t id, std::string&& cipherId, BinaryValue&& key) noexcept
         : m_id(id)
-        , m_uuid(uuid)
-        , m_name(std::move(name))
         , m_cipherId(std::move(cipherId))
-        , m_description(std::move(description))
+        , m_key(std::move(key))
     {
     }
-
-    /**
-     * Initializes object of class DatabaseRecord.
-     * @param database Database object.
-     */
-    DatabaseRecord(const Database& database);
 
     /**
      * Equality comparison operator.
      * @param other Other object.
      * @return true if this and other objects are equal, false otherwise.
      */
-    bool operator==(const DatabaseRecord& other) const noexcept
+    bool operator==(const CipherKeyRecord& other) const noexcept
     {
-        return m_id == other.m_id && m_uuid == other.m_uuid && m_name == other.m_name
-               && m_cipherId == other.m_cipherId && m_description == other.m_description;
+        return m_id == other.m_id && m_cipherId == other.m_cipherId && m_key == other.m_key;
     }
 
     /**
@@ -84,26 +68,20 @@ struct DatabaseRecord {
      */
     std::size_t deserialize(const std::uint8_t* buffer, std::size_t length);
 
-    /** Database ID */
-    std::uint32_t m_id;
+    /** Record identifier */
+    std::uint64_t m_id;
 
-    /** Database UUID */
-    Uuid m_uuid;
-
-    /** Database name */
-    std::string m_name;
-
-    /** Cipher ID */
+    /** Cipher ID. */
     std::string m_cipherId;
 
-    /** Database description */
-    std::optional<std::string> m_description;
+    /** Cipher key */
+    BinaryValue m_key;
 
     /** Structure UUID */
     static const Uuid s_classUuid;
 
     /** Structure name */
-    static constexpr const char* kClassName = "DatabaseRecord";
+    static constexpr const char* kClassName = "CipherKeyRecord";
 
     /** Structure version */
     static constexpr std::uint32_t kClassVersion = 0;

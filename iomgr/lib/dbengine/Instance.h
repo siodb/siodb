@@ -19,6 +19,8 @@
 // Common project headers
 #include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/CipherContextPtr.h>
+#include <siodb/iomgr/shared/dbengine/crypto/ciphers/CipherPtr.h>
 
 // STL headers
 #include <mutex>
@@ -366,6 +368,22 @@ public:
      */
     std::uint32_t generateNextDatabaseId(bool system);
 
+    /**
+     * Encrypts data with master encryption.
+     * @param data Data buffer address.
+     * @param size Data size.
+     * @return Buffer with encrypted data. Buffer size is multiple of the master cipher block size.
+     */
+    BinaryValue encryptWithMasterEncryption(const void* data, std::size_t size) const;
+
+    /**
+     * Decrypts data with master encryption.
+     * @param data Data buffer address.
+     * @param size Data size. Must be multiple of the master cipher block size.
+     * @return Buffer with encrypted data.
+     */
+    BinaryValue decryptWithMasterEncryption(const void* data, std::size_t size) const;
+
 private:
     /** Creates new instance data */
     void createInstanceData();
@@ -392,13 +410,15 @@ private:
     void recordSuperUser();
 
     /** 
-     * Loads system database encryption key.
-     * @return System database encryption key.
-     * @throw DatabaseError 1) If file doesn't not exist or could not be open.
-     * 2) If Read error happens.
-     * 3) If key data is invalid.
+     * Loads master encryption key.
+     * @param keyPath Key path.
+     * @return Master encryption key.
+     * @throw DatabaseError In the following cases: 
+     *                      - If file doesn't not exist or could not be open.
+     *                      - If Read error happens.
+     *                      - If key data is invalid.
      */
-    BinaryValue loadSystemDatabaseCipherKey() const;
+    BinaryValue loadMasterCipherKey(const std::string& keyPath) const;
 
     /**
      * Loads initial super-user access key.
@@ -518,11 +538,20 @@ private:
     /** System database cipher */
     const std::string m_defaultDatabaseCipherId;
 
+    /** Cipher object */
+    crypto::CipherPtr m_masterCipher;
+
+    /** Master encryption key */
+    BinaryValue m_masterCipherKey;
+
+    /** Master encryption context */
+    crypto::CipherContextPtr m_masterEncryptionContext;
+
+    /** Master decryption context */
+    crypto::CipherContextPtr m_masterDecryptionContext;
+
     /** System database cipher */
     const std::string m_systemDatabaseCipherId;
-
-    /** System database cipher key */
-    BinaryValue m_systemDatabaseCipherKey;
 
     /** Superuser's initial access key */
     std::string m_superUserInitialAccessKey;

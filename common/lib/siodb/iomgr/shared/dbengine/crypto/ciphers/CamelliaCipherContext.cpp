@@ -9,19 +9,27 @@ namespace siodb::iomgr::dbengine::crypto {
 ////////// class CamelliaEncryptionContext ////////////////////////////////////
 
 void CamelliaEncryptionContext::transform(
-        const std::uint8_t* in, unsigned blockCount, std::uint8_t* out) const noexcept
+        const void* in, std::size_t blockCount, void* out) const noexcept
 {
-    for (; blockCount > 0; --blockCount, in += m_blockSizeInBytes, out += m_blockSizeInBytes)
-        Camellia_encrypt(in, out, &m_preparedKey);
+    for (; blockCount > 0; --blockCount,
+            in = static_cast<const std::uint8_t*>(in) + m_blockSizeInBytes,
+            out = static_cast<std::uint8_t*>(out) + m_blockSizeInBytes) {
+        Camellia_encrypt(static_cast<const unsigned char*>(in), static_cast<unsigned char*>(out),
+                &m_preparedKey);
+    }
 }
 
 ////////// class CamelliaDecryptionContext ////////////////////////////////////
 
 void CamelliaDecryptionContext::transform(
-        const std::uint8_t* in, unsigned blockCount, std::uint8_t* out) const noexcept
+        const void* in, std::size_t blockCount, void* out) const noexcept
 {
-    for (; blockCount > 0; --blockCount, in += m_blockSizeInBytes, out += m_blockSizeInBytes)
-        Camellia_decrypt(in, out, &m_preparedKey);
+    for (; blockCount > 0; --blockCount,
+            in = static_cast<const std::uint8_t*>(in) + m_blockSizeInBytes,
+            out = static_cast<std::uint8_t*>(out) + m_blockSizeInBytes) {
+        Camellia_decrypt(static_cast<const unsigned char*>(in), static_cast<unsigned char*>(out),
+                &m_preparedKey);
+    }
 }
 
 }  // namespace siodb::iomgr::dbengine::crypto

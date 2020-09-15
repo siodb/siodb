@@ -1,4 +1,4 @@
-# Siodb documentation
+# Siodb Documentation
 
 ## Release note
 

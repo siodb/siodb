@@ -1,4 +1,4 @@
-# System tables
+# System Tables
 
 This page reference the tables that Siodb manages to function.
 Siodb adds an internal column `TRID`. Siodb uses that column as a primary key for all
@@ -114,7 +114,6 @@ The number is 64-bit unsigned integer that can grow up to 18446744073709551615.
 - uuid
 - name
 - cipher_id
-- cipher_key
 - description
 
 ## sys_user_permissions

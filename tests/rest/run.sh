@@ -56,7 +56,7 @@ function _Prepare {
   sleep 5
 
   _log "INFO" "Preparing default Siodb instance"
-  dd if=/dev/urandom of=/etc/siodb/instances/siodb/system_db_key bs=16 count=1
+  dd if=/dev/urandom of=/etc/siodb/instances/siodb/master_key bs=16 count=1
   cp -f ${SCRIPT_DIR}/../share/public_key /etc/siodb/instances/siodb/initial_access_key
 }
 

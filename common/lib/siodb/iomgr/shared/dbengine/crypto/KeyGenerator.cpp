@@ -34,6 +34,16 @@ constexpr std::size_t kRandomSeedSize = 32;
 
 BinaryValue generateCipherKey(unsigned keyLength, const std::string& seed)
 {
+    return generateCipherKey(keyLength, seed.c_str(), seed.length());
+}
+
+BinaryValue generateCipherKey(unsigned keyLength, const char* seed)
+{
+    return generateCipherKey(keyLength, seed, seed ? std::strlen(seed) : 0);
+}
+
+BinaryValue generateCipherKey(unsigned keyLength, const void* seed, std::size_t seedLength)
+{
     if (keyLength == 0 || keyLength > 512 || keyLength % 8 != 0)
         throw std::invalid_argument("Invalid key length");
 
@@ -49,15 +59,19 @@ BinaryValue generateCipherKey(unsigned keyLength, const std::string& seed)
     ::pbeDecodeUInt16(rdata + 32, &n);
     const unsigned hashRoundCount = n | 32768;
 
+    // Check seed
+    if (seed == nullptr) {
+        seed = kDefaultSeed;
+        seedLength = ct_strlen(kDefaultSeed);
+    }
+
     // Perform hashing
     std::uint8_t hash[64];
-    const char* seedData = seed.empty() ? kDefaultSeed : seed.data();
-    const std::size_t seedLength = seed.empty() ? ct_strlen(kDefaultSeed) : seed.length();
     if (keyLength <= 256) {
         // Use SHA-256
         ::SHA256_CTX ctx;
         ::SHA256_Init(&ctx);
-        ::SHA256_Update(&ctx, seedData, seedLength);
+        ::SHA256_Update(&ctx, seed, seedLength);
         ::SHA256_Update(&ctx, &t, sizeof(t));
         ::SHA256_Update(&ctx, rdata, kRandomSeedSize);
         ::SHA256_Final(hash, &ctx);
@@ -70,7 +84,7 @@ BinaryValue generateCipherKey(unsigned keyLength, const std::string& seed)
         // Use SHA-512
         ::SHA512_CTX ctx;
         ::SHA512_Init(&ctx);
-        ::SHA512_Update(&ctx, seedData, seedLength);
+        ::SHA512_Update(&ctx, seed, seedLength);
         ::SHA512_Update(&ctx, &t, sizeof(t));
         ::SHA512_Update(&ctx, rdata, kRandomSeedSize);
         ::SHA512_Final(hash, &ctx);

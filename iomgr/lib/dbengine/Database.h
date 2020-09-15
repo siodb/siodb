@@ -861,19 +861,29 @@ private:
     /** Checks data consistency */
     void checkDataConsistency();
 
+    /** Reads cipher key from the encrypted file. */
+    BinaryValue loadCipherKey() const;
+
+    /** Writes cipher key to the encrypted file. */
+    void saveCurrentCipherKey() const;
+
+    /**
+     * Constructs cipher key file path.
+     * @return Cipher key file path.
+     */
+    std::string makeCipherKeyFilePath() const;
+
     /**
      * Creates new metadata file.
-     * @param path File path.
      * @return Metadata file object.
      */
-    std::unique_ptr<MemoryMappedFile> createMetadataFile(const char* path) const;
+    std::unique_ptr<MemoryMappedFile> createMetadataFile() const;
 
     /**
      * Opens metadata file.
-     * @param path File path.
      * @return Metadata file object.
      */
-    std::unique_ptr<MemoryMappedFile> openMetadataFile(const char* path) const;
+    std::unique_ptr<MemoryMappedFile> openMetadataFile() const;
 
     /**
      * Constructs database metadata file path.
@@ -1047,17 +1057,17 @@ protected:
     /** Database data directory */
     const std::string m_dataDir;
 
-    /** Cipher ID */
-    const crypto::CipherPtr m_cipher;
+    /** Cipher object */
+    crypto::CipherPtr m_cipher;
 
     /** Cipher key */
-    const BinaryValue m_cipherKey;
+    BinaryValue m_cipherKey;
 
     /** Encryption context */
-    const crypto::CipherContextPtr m_encryptionContext;
+    crypto::CipherContextPtr m_encryptionContext;
 
     /** Decryption context */
-    const crypto::CipherContextPtr m_decryptionContext;
+    crypto::CipherContextPtr m_decryptionContext;
 
     /** Database internals access synchronization object */
     mutable std::recursive_mutex m_mutex;
@@ -1154,6 +1164,15 @@ protected:
 
     /** Initialization flag file name */
     static constexpr const char* kInitializationFlagFile = "initialized";
+
+    /** Cipher key file name */
+    static constexpr const char* kCipherKeyFileName = "key";
+
+    /** Cipher key file min size */
+    static constexpr std::size_t kCipherKeyFileMinSize = 32;
+
+    /** Cipher key file max size */
+    static constexpr std::size_t kCipherKeyFileMaxSize = 8192;
 
     /** Metadata file name */
     static constexpr const char* kMetadataFileName = "db_metadata";
