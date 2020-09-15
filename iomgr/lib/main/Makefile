@@ -23,7 +23,6 @@ CXX_SRC:= \
 	IOManagerSqlConnectionHandlerFactory.cpp
 
 CXX_HDR:= \
-	ClientSession.h  \
 	IOManagerConnectionHandler.h  \
 	IOManagerConnectionHandlerFactory.h  \
 	IOManagerConnectionManager.h  \
