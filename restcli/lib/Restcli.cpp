@@ -213,18 +213,98 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineRestRequest, restRequest, connection);
 
+    const utils::DefaultErrorCodeChecker defaultErrorCodeChecker;
+    protobuf::StreamInputStream input(connection, defaultErrorCodeChecker);
+
     // Send payload
+    bool hadRequestPayload = false;
+    std::uint32_t expectedResponseCount = 1;
     if (verb == iomgr_protocol::POST || verb == iomgr_protocol::PATCH) {
+        constexpr std::uint64_t kExpectedResponseId = 0;
+        expectedResponseCount = 2;
+        hadRequestPayload = true;
+
+        // Wait for authentication response
+        iomgr_protocol::DatabaseEngineResponse response;
+        if (params.m_printDebugMessages) {
+            std::cerr << "debug: Receiving response message (DatabaseEngineResponse) [1]..."
+                      << std::endl;
+        }
+        protobuf::readMessage(
+                siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, input);
+        if (params.m_printDebugMessages) {
+            std::cerr << "\ndebug: "
+                         "==================================================================="
+                         "====\n"
+                      << "debug: Expecting response: requestId=" << params.m_requestId
+                      << " responseId=" << kExpectedResponseId
+                      << "\ndebug: Received response: requestId=" << response.request_id()
+                      << " responseId=" << response.response_id()
+                      << "\ndebug: "
+                         "==================================================================="
+                         "====\n"
+                      << std::flush;
+        }
+
+        // Check request ID
+        if (response.request_id() != params.m_requestId) {
+            std::ostringstream err;
+            err << "Wrong request ID in the server response: expecting " << params.m_requestId
+                << ", but received " << response.request_id();
+            throw std::runtime_error(err.str());
+        }
+
+        // Check reponse ID
+        if (response.response_id() != kExpectedResponseId) {
+            std::ostringstream err;
+            err << "Wrong response ID in the server response: expecting " << kExpectedResponseId
+                << ", but received " << response.response_id();
+            throw std::runtime_error(err.str());
+        }
+
+        // Check reponse count
+        if (response.message_size() == 0 && response.response_count() != expectedResponseCount) {
+            std::ostringstream err;
+            err << "Wrong response count in the server response: expecting "
+                << expectedResponseCount << ", but received " << response.response_count();
+            throw std::runtime_error(err.str());
+        }
+
+        // Print "freetext" messages
+        const int freeTextMessageCount = response.freetext_message_size();
+        if (freeTextMessageCount > 0) {
+            os << '\n';
+            for (int i = 0; i < freeTextMessageCount; ++i) {
+                os << "Server: " << response.freetext_message(i) << '\n';
+            }
+            os << std::endl;  // newline + flush stream at this point
+        }
+
+        bool errorOccurred = false;
+        // Print messages
+        const int messageCount = response.message_size();
+        if (messageCount > 0) {
+            os << std::endl;
+            for (int i = 0; i < messageCount; ++i) {
+                const auto& message = response.message(i);
+                os << "Status " << message.status_code() << ": " << message.text() << '\n';
+                errorOccurred |= message.status_code() != 0;
+            }
+            os << std::endl;  // newline + flush stream at this point
+        }
+        if (errorOccurred) return 3;
+
+        // Send payload
         constexpr std::size_t kChunkSize = 65536;
         io::BufferedChunkedOutputStream chunkedOutput(kChunkSize, connection);
         if (!params.m_payload.empty()) {
             if (params.m_printDebugMessages) {
                 std::cerr << "debug: Sending payload:\ndebug: ===== PAYLOAD ("
-                          << params.m_payload.length() << " bytes) ======\n";
+                          << params.m_payload.length() << " bytes) ======";
                 std::istringstream iss(params.m_payload);
                 std::string s;
                 while (std::getline(iss, s)) {
-                    std::cerr << "debug: " << s << '\n';
+                    std::cerr << "\ndebug: " << s;
                 }
                 std::cerr << "\ndebug: ===== END OF PAYLOAD ======" << std::endl;
             }
@@ -264,23 +344,21 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
     }
 
     // Read server response
-    const utils::DefaultErrorCodeChecker defaultErrorCodeChecker;
-    protobuf::StreamInputStream input(connection, defaultErrorCodeChecker);
     iomgr_protocol::DatabaseEngineResponse response;
     if (params.m_printDebugMessages) {
-        std::cerr << "debug: Receiving response message (DatabaseEngineResponse)..." << std::endl;
+        std::cerr << "debug: Receiving response message (DatabaseEngineResponse) [2]..."
+                  << std::endl;
     }
     protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, input);
 
-    constexpr std::uint32_t kExpectedResponseId = 0;
-    constexpr std::uint32_t kExpectedResponseCount = 1;
+    const std::uint32_t expectedResponseId = hadRequestPayload ? 1 : 0;
 
     if (params.m_printDebugMessages) {
         std::cerr << "\ndebug: ==================================================================="
                      "====\n"
                   << "debug: Expecting response: requestId=" << params.m_requestId
-                  << " responseId=" << kExpectedResponseId
+                  << " responseId=" << expectedResponseId
                   << "\ndebug: Received response: requestId=" << response.request_id()
                   << " responseId=" << response.response_id()
                   << "\ndebug: ==================================================================="
@@ -297,24 +375,26 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
     }
 
     // Check reponse ID
-    if (response.response_id() != kExpectedResponseId) {
+    if (response.response_id() != expectedResponseId) {
         std::ostringstream err;
-        err << "Wrong response ID in the server response: expecting " << kExpectedResponseId
+        err << "Wrong response ID in the server response: expecting " << expectedResponseId
             << ", but received " << response.response_id();
         throw std::runtime_error(err.str());
     }
 
     // Capture response count
-    auto responseCount = response.response_count();
-    if (responseCount == 0) responseCount = 1;
-    if (params.m_printDebugMessages) {
-        os << "debug: Number of responses:" << responseCount << std::endl;
-    }
-    if (responseCount != kExpectedResponseCount) {
-        std::ostringstream err;
-        err << "Wrong response count in the server response: expecting " << kExpectedResponseCount
-            << ", but received " << responseCount;
-        throw std::runtime_error(err.str());
+    if (!hadRequestPayload) {
+        auto responseCount = response.response_count();
+        if (responseCount == 0) responseCount = 1;
+        if (params.m_printDebugMessages) {
+            os << "debug: Number of responses:" << responseCount << std::endl;
+        }
+        if (responseCount != expectedResponseCount) {
+            std::ostringstream err;
+            err << "Wrong response count in the server response: expecting "
+                << expectedResponseCount << ", but received " << responseCount;
+            throw std::runtime_error(err.str());
+        }
     }
 
     // Print "freetext" messages

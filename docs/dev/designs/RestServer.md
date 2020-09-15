@@ -213,19 +213,20 @@ NOTE: All values from IOMgr would be converted into UTF-8 JSON.
 
 1. A client sends a query to the server:
 `curl -H "Authorization: Basic xxxx" https://siodb-srv:50443/<path>`
-2. REST Server receives the request headers, creates and sends message `DatabaseEngineRestRequest`
-   to IOMgr.
+2. REST Server receives the request headers, creates and sends message
+   `DatabaseEngineRestRequest` to IOMgr.
 3. IOMgr receives the `DatabaseEngineRestRequest`, evaluates user name and token,
    and sends the `DatabaseEngineResponse`.
 4. REST server receives `DatabaseEngineResponse`.
 5. If `DatabaseEngineResponse` contains error messages, REST Server:
    - Receives and skips request body
-   - Generates JSON with error status (i.e. `Status::CODE_401, "Unauthorized"`) and sends only it.
-6. REST Server receives request body if applicable and forwards it to the IOMgr
-   in the IOMgr chunked format.
+   - Generates JSON with error status (i.e. `Status::CODE_401, "Unauthorized"`)
+     and sends only it.
+6. REST Server receives request body and forwards it to the IOMgr in the IOMgr
+   chunked format.
 7. IOMgr receives JSON data and parses it.
-8. If JSON contains errors, IOMgr creates message `DatabaseEngineResponse` with errors
-   and sends it back.
+8. If JSON contains errors, IOMgr creates message `DatabaseEngineResponse`
+   with errors and sends it back.
 9. IOMgr processes JSON, performs operations and forms reponse payload.
 10. IOMgr creates message `DatabaseEngineResponse` and sends it back.
 11. REST Server receives message `DatabaseEngineResponse`.
@@ -259,8 +260,9 @@ IOMgr chunked data format consists of the following elements:
 - `rest_server.tls_certificate` - path to the TLS certificate file.
 - `rest_server.tls_certificate_chain` - path to the TLS certificate chain file.
 - `rest_server.tls_private_key` - path to the TLS private key file.
-- `rest_server.chunk_size` - HTTP chunk size in bytes. Suffixes `k`, `K`, `m`, `M` change units
-  to kilobytes and megabytes respectively.
+- `rest_server.chunk_size` - HTTP chunk size in bytes.
+   Suffixes `k`, `K`, `m`, `M` change units to kilobytes and megabytes
+   respectively.
 - `iomgr.rest.ipv4_port` - IPv4 REST protocol poort. Defaulr value `50002`.
   `0` means do not listen.
 - `iomgr.rest.ipv6_port` - IPv6 REST protocol poort. Default value `0`.

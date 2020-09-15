@@ -65,13 +65,24 @@ bool IOManagerConnectionHandler::executeIOManagerRequest(const IOManagerRequest&
     return true;
 }
 
-void IOManagerConnectionHandler::sendErrorReponse(int requestId, const char* text, int errorCode)
+void IOManagerConnectionHandler::sendAuthenticatedReponse(std::uint64_t requestId)
 {
     iomgr_protocol::DatabaseEngineResponse response;
     response.set_request_id(requestId);
+    response.set_response_count(2);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, *m_clientConnection);
+}
+
+void IOManagerConnectionHandler::sendErrorReponse(
+        std::uint64_t requestId, int errorCode, const char* errorMessage)
+{
+    iomgr_protocol::DatabaseEngineResponse response;
+    response.set_request_id(requestId);
+    response.set_response_count(1);
     const auto message = response.add_message();
     message->set_status_code(errorCode);
-    message->set_text(text);
+    message->set_text(errorMessage);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, *m_clientConnection);
 }

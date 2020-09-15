@@ -71,12 +71,20 @@ protected:
     /**
      * Responds to server with error code.
      * @param requestId id of request for response.
-     * @param text Text of error.
-     * @param errorCode Error code.
      * @throw std::system_error when I/O error happens.
      * @throw ProtocolError when protocol error happens.
      */
-    void sendErrorReponse(int requestId, const char* text, int errorCode);
+    void sendAuthenticatedReponse(std::uint64_t requestId);
+
+    /**
+     * Responds to server with error code.
+     * @param requestId id of request for response.
+     * @param errorCode Error code.
+     * @param errorMessage Error message.
+     * @throw std::system_error when I/O error happens.
+     * @throw ProtocolError when protocol error happens.
+     */
+    void sendErrorReponse(std::uint64_t requestId, int errorCode, const char* errorMessage);
 
     /** Closes connection. */
     void closeConnection() noexcept;

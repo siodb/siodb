@@ -910,7 +910,10 @@ void Instance::createInitializationFlagFile() const
     }
     ofs.exceptions(std::ios::badbit | std::ios::failbit);
     try {
-        ofs << m_name << '\n' << m_uuid << '\n' << std::time(nullptr) << '\n' << std::flush;
+        ofs << '\"' << m_name << "\"\n"
+            << m_uuid << '\n'
+            << std::time(nullptr) << '\n'
+            << std::flush;
     } catch (std::exception& ex) {
         throwDatabaseError(IOManagerMessageId::kFatalCannotCreateInstanceInitializationFlagFile,
                 initFlagFile, "can't write initialization flag file");
@@ -929,8 +932,10 @@ void Instance::checkInitializationFlagFile() const
     ifs.exceptions(std::ios::badbit | std::ios::failbit);
     std::string instanceName;
     std::getline(ifs, instanceName);
-    if (instanceName != m_name)
+    if (instanceName.size() < 2 || instanceName.front() != '\"' || instanceName.back() != '\"'
+            || instanceName.substr(1, instanceName.length() - 2) != m_name) {
         throwDatabaseError(IOManagerMessageId::kFatalInstanceNameMismatch, instanceName, m_name);
+    }
 }
 
 UserPtr Instance::findUserUnlocked(const std::string& userName)

@@ -73,7 +73,7 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                 parser.parse();
             } catch (std::exception& ex) {
                 LOG_DEBUG << m_logContext << "Sending common parse error: " << ex.what();
-                sendErrorReponse(requestMsg.request_id(), ex.what(), kSqlParseError);
+                sendErrorReponse(requestMsg.request_id(), kSqlParseError, ex.what());
                 LOG_DEBUG << m_logContext << "Sent common parse error.";
                 continue;
             }
@@ -96,7 +96,7 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                             parser.findStatement(i));
                 } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                     LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
-                    sendErrorReponse(requestMsg.request_id(), ex.what(), kSqlParseError);
+                    sendErrorReponse(requestMsg.request_id(), kSqlParseError, ex.what());
                     LOG_DEBUG << m_logContext << "Sent request parse error";
                     // Stop loop  after error response
                     break;

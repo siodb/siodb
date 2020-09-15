@@ -68,7 +68,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 LOG_ERROR << "Authentication error: " << '[' << ex.getErrorCode() << "] "
                           << ex.what();
                 LOG_DEBUG << m_logContext << "Sending authentication error";
-                sendErrorReponse(requestMsg.request_id(), ex.what(), ex.getErrorCode());
+                sendErrorReponse(requestMsg.request_id(), ex.getErrorCode(), ex.what());
                 LOG_DEBUG << m_logContext << "Sent request parse error";
                 continue;
             } catch (dbengine::DatabaseError& ex) {
@@ -78,7 +78,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                           << " (MSG_UUID " << uuid << ')';
                 auto msg = "Internal error, see log for details, message UUID "
                            + boost::uuids::to_string(uuid);
-                sendErrorReponse(requestMsg.request_id(), ex.what(), kRestAuthenticationError);
+                sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError, ex.what());
                 LOG_DEBUG << m_logContext << "Sent authentication error";
                 continue;
             } catch (std::exception& ex) {
@@ -87,9 +87,21 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 LOG_ERROR << m_logContext << ex.what() << " (MSG_UUID " << uuid << ')';
                 auto msg = "Internal error, see log for details, message UUID "
                            + boost::uuids::to_string(uuid);
-                sendErrorReponse(requestMsg.request_id(), ex.what(), kRestAuthenticationError);
+                sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError, ex.what());
                 LOG_DEBUG << m_logContext << "Sent authentication error";
                 continue;
+            }
+
+            // Send intermediate response message to confirm successful authentication
+            std::uint32_t responseId = 0;
+            switch (requestMsg.verb()) {
+                case siodb::iomgr_protocol::POST:
+                case siodb::iomgr_protocol::PATCH: {
+                    sendAuthenticatedReponse(requestMsg.request_id());
+                    ++responseId;
+                    break;
+                }
+                default: break;
             }
 
             // Create request handler
@@ -103,7 +115,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 dbEngineRequest = m_requestFactory.createRestRequest(requestMsg, &input);
             } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                 LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
-                sendErrorReponse(requestMsg.request_id(), ex.what(), kRestParseError);
+                sendErrorReponse(requestMsg.request_id(), kRestParseError, ex.what());
                 LOG_DEBUG << m_logContext << "Sent request parse error";
                 continue;
             }
@@ -111,7 +123,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
             // Create IO Manager request
             LOG_DEBUG << m_logContext << "Scheduling REST request for execution";
             const auto ioManagerRequest =
-                    std::make_shared<IOManagerRequest>(requestMsg.request_id(), 0U, 1U,
+                    std::make_shared<IOManagerRequest>(requestMsg.request_id(), responseId, 1U,
                             shared_from_this(), requestHandler, dbEngineRequest);
 
             // Execute IO Manager request

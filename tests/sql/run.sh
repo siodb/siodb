@@ -156,6 +156,9 @@ if [[ "${SHORT_TEST}" == "1" ]]; then
   _RunSql "SELECT * FROM SYS.SYS_TABLES"
   _CheckLogFileError
 
+  _RunSql "SELECT * FROM SYS.SYS_DATABASES"
+  _CheckLogFileError
+
 else
 
   _RunSqlScript "${SCRIPT_DIR}/query_sys_tables.sql"
