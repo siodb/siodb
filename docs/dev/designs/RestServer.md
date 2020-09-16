@@ -249,6 +249,7 @@ IOMgr chunked data format consists of the following elements:
 
 ## Configuration Parameters
 
+- `enable_rest_server` - enables or disables REST Server service.
 - `rest_server.ipv4_http_port` - IPv4 HTTP port number. Default value `50080`.
   Zero value means do not listen.
 - `rest_server.ipv4_https_port` - IPv4 HTTPS port number. Default value `50443`.

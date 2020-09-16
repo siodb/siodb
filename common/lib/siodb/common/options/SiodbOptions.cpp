@@ -35,19 +35,21 @@ inline auto constructOptionPath(const std::string& str)
 struct BoolTranslator {
     typedef std::string internal_type;
     typedef int external_type;
-
-    boost::optional<bool> get_value(const std::string& option) noexcept
-    {
-        if ((::strcasecmp(option.c_str(), "true") == 0)
-                || (::strcasecmp(option.c_str(), "yes") == 0))
-            return true;
-        else if ((::strcasecmp(option.c_str(), "false") == 0)
-                 || (::strcasecmp(option.c_str(), "no") == 0))
-            return false;
-        else
-            return boost::none;
-    }
+    boost::optional<bool> get_value(const std::string& option) noexcept;
 };
+
+boost::optional<bool> BoolTranslator::get_value(const std::string& option) noexcept
+{
+    const auto opt = option.c_str();
+    if (::strcasecmp(opt, "true") == 0 || ::strcasecmp(opt, "yes") == 0
+            || ::strcasecmp(opt, "1") == 0 || ::strcasecmp(opt, "t") == 0)
+        return true;
+    else if (::strcasecmp(opt, "false") == 0 || ::strcasecmp(opt, "no") == 0
+             || ::strcasecmp(opt, "0") == 0 || ::strcasecmp(opt, "f") == 0)
+        return false;
+    else
+        return boost::none;
+}
 
 }  // namespace
 
@@ -166,10 +168,15 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
         tmpOptions.m_generalOptions.m_deadConnectionCleanupInterval = value;
     }
 
-    // Parse allow group permission of config files
+    // Parse "allow group permission on the config files" flag
     tmpOptions.m_generalOptions.m_allowGroupPermissionsOnConfigFiles =
             config.get<bool>(constructOptionPath(kGeneralOptionAllowGroupPermissionsOnConfigFiles),
-                    kDefaultOptionAllowGroupPermissionsOnConfigFiles);
+                    kDefaultOptionAllowGroupPermissionsOnConfigFiles, BoolTranslator());
+
+    // Parse "enable REST Server" flag
+    tmpOptions.m_generalOptions.m_enableRestServer =
+            config.get<bool>(constructOptionPath(kGeneralOptionEnableRestServer),
+                    kDefaultOptionEnableRestServer, BoolTranslator());
 
     // Log options
 

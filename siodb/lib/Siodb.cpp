@@ -3,10 +3,11 @@
 // in the LICENSE file.
 
 // Project headers
-#include "IOManagerMonitor.h"
+#include "ProcessMonitor.h"
 #include "SiodbConnectionManager.h"
 
 // Common project headers
+#include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/config/SiodbVersion.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/UnixServer.h>
@@ -19,6 +20,7 @@
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/SignalHandlers.h>
 #include <siodb/common/utils/StartupActions.h>
+#include <siodb/iomgr/shared/IOManagerExitCode.h>
 
 // CRT headers
 #include <cerrno>
@@ -76,19 +78,15 @@ extern "C" int siodbMain(int argc, char** argv)
         runAsDaemon = vm.count("daemon") > 0;
 
         const auto instanceName = vm["instance"].as<std::string>();
-        if (instanceName.empty()) {
-            throw std::runtime_error("Instance name not defined");
-        }
+        if (instanceName.empty()) throw std::runtime_error("Instance name not defined");
 
         instanceOptions->load(instanceName);
         instanceOptions->m_logOptions.m_logFileBaseName = "siodb";
 
         std::vector<char> executableFullPath(PATH_MAX);
-        if (::realpath(argv[0], executableFullPath.data()) == nullptr) {
+        if (::realpath(argv[0], executableFullPath.data()) == nullptr)
             throw std::runtime_error("Failed to obtain full path of the current executable.");
-        }
         instanceOptions->m_generalOptions.m_executablePath = executableFullPath.data();
-
     } catch (std::exception& ex) {
         std::cerr << "Error: " << ex.what() << '.' << std::endl;
         return 2;
@@ -99,6 +97,7 @@ extern "C" int siodbMain(int argc, char** argv)
             // stdio/stderr may be closed or /dev/null, so just exit.
             return 3;
         }
+
         // daemon() in glibc does not perform double fork,
         // so now the process is a session leader,
         // and we need to fork() once again to give up session leadership.
@@ -162,13 +161,47 @@ extern "C" int siodbMain(int argc, char** argv)
                 }
             }
 
-            siodb::IOManagerMonitor monitor(instanceOptions);
-            // Wait for IO Manager to initialize database
-            while (!fs::exists(iomgrInitFlagFilePath) && monitor.shouldRun()) {
-                std::this_thread::sleep_for(siodb::kIomgrInitializationCheckPeriod);
+            // Create IO Manager monitor
+            std::unique_ptr<siodb::ProcessMonitor> iomgrMonitor;
+            {
+                std::vector<std::string> args;
+                args.reserve(3);
+                args.push_back(instanceOptions->getExecutableDir() + fs::path::preferred_separator
+                               + siodb::kIOManagerExecutable);
+                args.push_back("--instance");
+                args.push_back(instanceOptions->m_generalOptions.m_name);
+
+                std::vector<int> fatalExitCodes {
+                        siodb::iomgr::kIOManagerExitCode_InvalidConfig,
+                        siodb::iomgr::kIOManagerExitCode_LogInitializationFailed,
+                        siodb::iomgr::kIOManagerExitCode_InitializationFailed,
+                };
+
+                iomgrMonitor = std::make_unique<siodb::ProcessMonitor>(
+                        "IO Manager", std::move(args), std::move(fatalExitCodes), 2000, 10000, 300);
             }
 
-            if (!monitor.shouldRun()) throw std::runtime_error("IO Manager exited unexpectedly");
+            // Wait for IO Manager to initialize database
+            while (!fs::exists(iomgrInitFlagFilePath) && iomgrMonitor->shouldRun())
+                std::this_thread::sleep_for(siodb::kIomgrInitializationCheckPeriod);
+            if (!iomgrMonitor->shouldRun())
+                throw std::runtime_error("IO Manager exited unexpectedly");
+
+            // Create REST Server monitor
+            std::unique_ptr<siodb::ProcessMonitor> restServerMonitor;
+            if (instanceOptions->m_generalOptions.m_enableRestServer) {
+                std::vector<std::string> args;
+                args.reserve(3);
+                args.push_back(instanceOptions->getExecutableDir() + fs::path::preferred_separator
+                               + siodb::kRestServerExecutable);
+                args.push_back("--instance");
+                args.push_back(instanceOptions->m_generalOptions.m_name);
+
+                std::vector<int> fatalExitCodes {1, 2};
+
+                restServerMonitor = std::make_unique<siodb::ProcessMonitor>("REST Server",
+                        std::move(args), std::move(fatalExitCodes), 2000, 10000, 300);
+            }
 
             siodb::SiodbConnectionManager adminConnectionManager(AF_UNIX, true, instanceOptions);
 

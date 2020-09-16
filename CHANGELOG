@@ -1,3 +1,11 @@
+<open date> version 0.8.0
+
+- Build: Standartized locations of the 3rd party libraries
+- User token management
+- User authentication with token
+- REST server
+- Encryption model with master key
+
 2020-06-18 version 0.7.1
 
 - Build: Support custom locations of the 3rd party libraries
