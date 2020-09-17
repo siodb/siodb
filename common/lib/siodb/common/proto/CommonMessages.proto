@@ -11,6 +11,7 @@ import "ColumnDataType.proto";
 package siodb;
 
 option optimize_for=SPEED;
+option go_package = ".;SiodbIomgrProtocol";
 
 /** Single message from server or IO manager. */
 message StatusMessage {

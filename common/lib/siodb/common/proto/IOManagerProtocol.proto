@@ -11,6 +11,7 @@ import "CommonMessages.proto";
 package siodb.iomgr_protocol;
 
 option optimize_for=SPEED;
+option go_package = ".;SiodbIomgrProtocol";
 
 /** Request message. */
 message DatabaseEngineRequest {
@@ -141,10 +142,10 @@ message DatabaseEngineRestRequest {
 
     /** Object type */
     DatabaseObjectType object_type = 3;
-    
+
     /** Numeric object ID */
     uint64 object_id = 4;
-        
+
     /** Object name */
     string object_name = 5;
 
