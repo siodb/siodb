@@ -36,6 +36,7 @@ constexpr const char* kGeneralOptionDeadConnectionCleanupInterval =
         "dead_connection_cleanup_interval";
 constexpr const char* kGeneralOptionAllowGroupPermissionsOnConfigFiles =
         "allow_group_permissions_on_config_files";
+constexpr const char* kGeneralOptionEnableRestServer = "enable_rest_server";
 
 // IO Manager options
 constexpr const char* kIOManagerOptionIpv4SqlPort = "iomgr.ipv4_port";
@@ -97,10 +98,13 @@ constexpr unsigned kMaxMaxUserConnections = 32768;
 // Siodb dead connection cleanup period in seconds
 constexpr unsigned kMinOptionDeadConnectionCleanupInterval = 3;
 constexpr unsigned kMaxOptionDeadConnectionCleanupInterval = 3600;
-constexpr unsigned kDefaultOptionDeadConnectionCleanupInterval = 30;
+constexpr unsigned kDefaultOptionDeadConnectionCleanupInterval = 15;
 
 // Allow group permission of config files
 constexpr bool kDefaultOptionAllowGroupPermissionsOnConfigFiles = true;
+
+// Whether REST Server is enabled by default
+constexpr bool kDefaultOptionEnableRestServer = false;
 
 // Default number of IO Manager worker threads
 constexpr const unsigned kDefaultIOManagerWorkerThreadNumber = 2;
@@ -132,7 +136,7 @@ constexpr std::size_t kDefaultIOManagerBlockCacheCapacity = 103;
 // IO Manager dead connection cleanup period in seconds
 constexpr unsigned kMinIOManagerOptionDeadConnectionCleanupInterval = 3;
 constexpr unsigned kMaxIOManagerOptionDeadConnectionCleanupInterval = 3600;
-constexpr unsigned kDefaultIOManagerOptionDeadConnectionCleanupInterval = 30;
+constexpr unsigned kDefaultIOManagerOptionDeadConnectionCleanupInterval = 15;
 
 // Maximum JSON payload size
 constexpr std::size_t kDefaultIOManagerOptionMaxJsonPayloadSize = 1024 * 1024;
@@ -193,6 +197,9 @@ struct GeneralOptions {
      * Use this one only for unit tests.
      */
     bool m_allowCreatingUserTablesInSystemDatabase = false;
+
+    /** Enables REST Server service */
+    bool m_enableRestServer = kDefaultOptionEnableRestServer;
 };
 
 /** IO Manager options */

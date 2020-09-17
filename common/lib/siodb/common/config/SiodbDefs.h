@@ -40,18 +40,20 @@ constexpr const char* kAdminGroupName = "siodb";
 /** Siodb service user */
 constexpr const char* kServiceUserName = "siodb";
 
-/** Siodb conn_worker executable */
+/** Siodb Connection Worker executable */
 constexpr const char* kUserConnectionWorkerExecutable = "siodb_conn_worker";
 
-/** Siodb iomgr executable */
+/** Siodb IO Manager executable */
 constexpr const char* kIOManagerExecutable = "siodb_iomgr";
 
-/** Siodb internal time intervals */
-constexpr int kUserConnectionWorkerShutdownTimeoutMs = 5 * 1000;
-constexpr auto kIomgrInitializationCheckPeriod = std::chrono::seconds(1);
+/** Siodb REST Server executable */
+constexpr const char* kRestServerExecutable = "siodb_rest_server";
 
-/** Siocli editor history size */
-constexpr const int kClientEditorHistorySize = 100;
+/** User connection worker shutdown interval */
+constexpr int kUserConnectionWorkerShutdownTimeoutMs = 5 * 1000;
+
+/** IO Manager initialization check period */
+constexpr auto kIomgrInitializationCheckPeriod = std::chrono::seconds(1);
 
 /** Maximum instance name size */
 constexpr std::size_t kMaxInstanceNameLength = 63;
@@ -112,5 +114,8 @@ constexpr const std::size_t kMaxChallengeSize = 1024;
 
 /** Maximum user access key size  */
 constexpr const std::size_t kMaxUserAccessKeySize = 8 * 1024;
+
+/** Siocli editor history size */
+constexpr const int kClientEditorHistorySize = 100;
 
 }  // namespace siodb

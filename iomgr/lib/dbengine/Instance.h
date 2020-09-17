@@ -6,6 +6,7 @@
 
 // Project headers
 #include "AuthenticationResult.h"
+#include "ClientSession.h"
 #include "DatabaseCache.h"
 #include "InstancePtr.h"
 #include "UpdateUserAccessKeyParameters.h"
@@ -14,7 +15,6 @@
 #include "UserCache.h"
 #include "reg/DatabaseRegistry.h"
 #include "reg/UserRegistry.h"
-#include "../main/ClientSession.h"
 
 // Common project headers
 #include <siodb/common/utils/FDGuard.h>

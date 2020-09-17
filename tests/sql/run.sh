@@ -60,14 +60,23 @@ function _Prepare {
   cp -f ${SCRIPT_DIR}/../share/public_key /etc/siodb/instances/siodb/initial_access_key
 }
 
+function _ShowSiodbProcesses {
+  echo "===== Siodb Processes ====="
+  ps -aux | grep siodb
+  echo "==========================="
+}
+
 function _StartSiodb {
   _log "INFO" "Starting default Siodb instance"
   ${SIODB_BIN}/siodb --instance siodb --daemon
   sleep ${startup_timeout}
+  _ShowSiodbProcesses
+  sleep 3
 }
 
 function _StopSiodb {
   _log "INFO" "Stopping Siodb process on default instance"
+  _ShowSiodbProcesses
   SIODB_PROCESS_ID=$(ps -ef | grep 'siodb --instance siodb --daemon' | grep -v grep \
     | awk '{print $2}')
   if [[ -z "${SIODB_PROCESS_ID}" ]]; then
@@ -76,18 +85,20 @@ function _StopSiodb {
     kill -SIGINT ${SIODB_PROCESS_ID}
     sleep 10
   fi
+  echo "After stopping:"
+  _ShowSiodbProcesses
 }
 
-function _CheckLogFileError {
+function _CheckLogFiles {
   _log "INFO" "Checking error in the log files"
   ERROR_COUNT=$(cat ${LOGFILE_DIR}/* | grep error | wc -l)
   if [ "${ERROR_COUNT}" == "0" ]; then
-    _log "INFO" "No error detected the log file(s)"
+    _log "INFO" "No error detected the in log files"
   else
     echo "## ================================================="
     echo "`cat ${LOGFILE_DIR}/* | grep error`"
     echo "## ================================================="
-    _log "ERROR" "I found an issue in the log file(s)"
+    _log "ERROR" "I found an issue in the log files"
   fi
 }
 
@@ -147,40 +158,40 @@ fi
 _log "INFO" "Tests start"
 _Prepare
 _StartSiodb
-_CheckLogFileError
+_CheckLogFiles
 
 ##export SIOCLI_DEBUG=--debug
 
 if [[ "${SHORT_TEST}" == "1" ]]; then
 
   _RunSql "SELECT * FROM SYS.SYS_TABLES"
-  _CheckLogFileError
+  _CheckLogFiles
 
   _RunSql "SELECT * FROM SYS.SYS_DATABASES"
-  _CheckLogFileError
+  _CheckLogFiles
 
 else
 
   _RunSqlScript "${SCRIPT_DIR}/query_sys_tables.sql"
-  _CheckLogFileError
+  _CheckLogFiles
 
   _RunSqlScript "${SCRIPT_DIR}/ddl_database.sql"
-  _CheckLogFileError
+  _CheckLogFiles
 
   _RunSqlScript "${SCRIPT_DIR}/ddl_user.sql"
-  _CheckLogFileError
+  _CheckLogFiles
 
   _RunSqlScript "${SCRIPT_DIR}/ddl_general.sql"
-  _CheckLogFileError
+  _CheckLogFiles
 
   _RunSqlScript "${SCRIPT_DIR}/dml_general.sql"
-  _CheckLogFileError
+  _CheckLogFiles
 
   _RunSqlScript "${SCRIPT_DIR}/dml_datetime.sql"
-  _CheckLogFileError
+  _CheckLogFiles
 
 fi
 
 _StopSiodb
-_CheckLogFileError
+_CheckLogFiles
 _log "INFO" "All tests passed"

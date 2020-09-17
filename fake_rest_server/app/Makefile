@@ -2,20 +2,13 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-# siodb library makefile
+# iomgr application makefile
 
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../mk/Prolog.mk
 
-TARGET_LIB:=siodb
+TARGET_EXE:=siodb_rest_server
 
-CXX_SRC:= \
-	ProcessMonitor.cpp \
-	Siodb.cpp \
-	SiodbConnectionManager.cpp
-
-CXX_HDR:= \
-	ProcessMonitor.h  \
-	SiodbConnectionManager.h
+CXX_SRC:=FakeRestServerMain.cpp
 
 include $(MK)/Main.mk

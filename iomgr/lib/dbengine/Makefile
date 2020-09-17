@@ -321,6 +321,7 @@ CXX_HDR:= \
 	\
 	AuthenticationResult.h  \
 	BlockRegistry.h  \
+	ClientSession.h  \
 	Column.h  \
 	ColumnConstraint.h  \
 	ColumnPtr.h  \
