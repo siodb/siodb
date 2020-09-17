@@ -1,9 +1,11 @@
 package main
 
 // specs from https://github.com/siodb/siodb/blob/master/docs/dev/designs/RestServer.md
-// TODO 1) Create the directory with code and give you build instruction so that you can integrate it (even if not 100% compliant yet)
-//      2) Finish the POST and DELETE implementation
-//      3) Integrate the rest of the requirements you mentioned (log format, etc)
+// TODO: Implement "basic" authentication as describe in RestServer spec
+// TODO: Parse parameters into a structures
+// TODO: Protect IOMgrbuff with a limit to which it will start to stream
+// TODO: Finish the POST and DELETE implementation
+// TODO: log format
 // TODO: Put chunked WritePayload in function
 // TODO: Put read chunked payload from IOMgr in function
 // TODO: Once cxxman code step 5 in https://github.com/siodb/siodb/blob/master/docs/dev/designs/RestServer.md#post-patch-requests
@@ -15,9 +17,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 type RestServer struct {
@@ -37,26 +41,39 @@ type RestServer struct {
 type Config map[string]string
 
 var (
-	restServer      RestServer
-	IOMgrCPool      *IOMgrConnPool
-	siodbLoggerPool SiodbLoggerPool
+	SiodbInstanceConfigurationRootPath string = "/etc/siodb/instances"
+	restServer                         RestServer
+	IOMgrCPool                         *IOMgrConnPool
+	siodbLoggerPool                    SiodbLoggerPool
+)
+
+var (
+	DATABASEENGINERESPONSE    uint64 = 4
+	DATABASEENGINERESTREQUEST uint64 = 13
 )
 
 func main() {
 
+	// Parse Args
 	SiodbInstanceName := flag.String("instance", "siodb", "Instance name")
 	flag.Parse()
-	SiodbInstanceConfigurationPath := "/etc/siodb/instances/" + *SiodbInstanceName
+
+	// Signals
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	// Variables
+	SiodbInstanceConfigurationPath := SiodbInstanceConfigurationRootPath + "/" + *SiodbInstanceName
 	var err error
 	var config Config
 
 	// Parse Siodb instance parameters file
-	if config, err = loadInitFile(SiodbInstanceConfigurationPath + "/config"); err != nil {
+	if config, err = parseInitFile(SiodbInstanceConfigurationPath + "/config"); err != nil {
 		log.Fatalln(err)
 	}
 
 	// Validate and load parameters
-	if err = restServer.loadConfig(SiodbInstanceConfigurationPath, config); err != nil {
+	if err = restServer.parseConfiguration(SiodbInstanceConfigurationPath, config); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -79,24 +96,19 @@ func main() {
 	if restServer.Ipv4HTTPPort != 0 {
 		go func() {
 			var restWorker RestWorker
-			if err := restWorker.router.New(restServer.Ipv4HTTPPort); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot create router: %v", err)
-			}
-			if err := restWorker.CreateRouter(); err != nil {
+			if err := restWorker.CreateRouter(restServer.Ipv4HTTPPort); err != nil {
 				siodbLoggerPool.Output(FATAL, "Cannot create route: %v", err)
 			}
 			if err := restWorker.StartHTTPRouter(); err != nil {
 				siodbLoggerPool.Output(FATAL, "Cannot start router: %v", err)
 			}
 		}()
+
 	}
 	if restServer.Ipv4HTTPSPort != 0 {
 		go func() {
 			var restWorker RestWorker
-			if err := restWorker.router.New(restServer.Ipv4HTTPSPort); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot create router: %v", err)
-			}
-			if err := restWorker.CreateRouter(); err != nil {
+			if err := restWorker.CreateRouter(restServer.Ipv4HTTPSPort); err != nil {
 				siodbLoggerPool.Output(FATAL, "Cannot create route: %v", err)
 			}
 			if err := restWorker.StartHTTPSRouter(restServer.TLSCertificate, restServer.TLSPrivateKey); err != nil {
@@ -107,10 +119,7 @@ func main() {
 	if restServer.Ipv6HTTPPort != 0 {
 		go func() {
 			var restWorker RestWorker
-			if err := restWorker.router.New(restServer.Ipv6HTTPPort); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot create router: %v", err)
-			}
-			if err := restWorker.CreateRouter(); err != nil {
+			if err := restWorker.CreateRouter(restServer.Ipv6HTTPPort); err != nil {
 				siodbLoggerPool.Output(FATAL, "Cannot create route: %v", err)
 			}
 			if err := restWorker.StartHTTPRouter(); err != nil {
@@ -121,10 +130,7 @@ func main() {
 	if restServer.Ipv6HTTPSPort != 0 {
 		go func() {
 			var restWorker RestWorker
-			if err := restWorker.router.New(restServer.Ipv6HTTPSPort); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot create router: %v", err)
-			}
-			if err := restWorker.CreateRouter(); err != nil {
+			if err := restWorker.CreateRouter(restServer.Ipv6HTTPSPort); err != nil {
 				siodbLoggerPool.Output(FATAL, "Cannot create route: %v", err)
 			}
 			if err := restWorker.StartHTTPSRouter(restServer.TLSCertificate, restServer.TLSPrivateKey); err != nil {
@@ -133,11 +139,12 @@ func main() {
 		}()
 	}
 
-	<-make(chan int)
+	sig := <-sigs
+	siodbLoggerPool.Output(INFO, "Signal received: %v", sig)
 
 }
 
-func (rs *RestServer) loadConfig(SiodbInstanceConfigurationPath string, config Config) (err error) {
+func (rs *RestServer) parseConfiguration(SiodbInstanceConfigurationPath string, config Config) (err error) {
 
 	// Parse and validate parameters
 	if len(config["log.file.destination"]) == 0 {
@@ -226,7 +233,7 @@ func (rs *RestServer) loadConfig(SiodbInstanceConfigurationPath string, config C
 	return nil
 }
 
-func loadInitFile(filename string) (Config, error) {
+func parseInitFile(filename string) (Config, error) {
 
 	// Source: https://www.socketloop.com/tutorials/golang-read-data-from-config-file-and-assign-to-variables
 

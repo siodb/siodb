@@ -21,14 +21,12 @@ else
   GO_BIN_DIR="${3}"
 fi
 
-export PATH=${PATH}:${GO_BIN_DIR}
-
 case ${MODE} in
   "DEBUG")
-    go build -o ${OUTPUT_DIRECTORY_PATH}/siodb_rest_server -gcflags="all=-N -l -dwarf -dwarflocationlists"
+    /usr/local/go/bin/go build -o ${OUTPUT_DIRECTORY_PATH}/siodb_rest_server -gcflags="all=-N -l -dwarf -dwarflocationlists"
     ;;
   "RELEASE")
-    go build -o ${OUTPUT_DIRECTORY_PATH}/siodb_rest_server -ldflags "-s -w"
+    /usr/local/go/bin/go build -o ${OUTPUT_DIRECTORY_PATH}/siodb_rest_server -ldflags "-s -w"
     ;;
   *)
     echo "Unknown build mode. Please use 'DEBUG' or 'RELEASE'."

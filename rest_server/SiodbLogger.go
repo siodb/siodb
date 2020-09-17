@@ -165,7 +165,7 @@ func (l *SiodbLogger) Output(logLevel int, s string, v ...interface{}) error {
 func FormattedOutput(logLevel int, s string, v ...interface{}) string {
 
 	return fmt.Sprintf("%v %v %v %v %s\n",
-		time.Now().UTC().Format("2006-01-02 15:04:05.999999"), ttos(logLevel), unix.Getppid(), unix.Gettid(),
+		time.Now().UTC().Format("2006-01-02 15:04:05.999999"), ttos(logLevel), unix.Getpid(), unix.Gettid(),
 		fmt.Sprintf(s, v...),
 	)
 }

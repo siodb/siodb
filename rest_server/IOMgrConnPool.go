@@ -11,6 +11,7 @@ import (
 )
 
 type IOMgrConnPool struct {
+	network      string
 	HostName     string
 	Port         uint64
 	lock         sync.Mutex
@@ -23,7 +24,7 @@ type IOMgrConnPool struct {
 func CreateIOMgrConnPool(minConn, maxConn int, config Config) (*IOMgrConnPool, error) {
 
 	if minConn > maxConn || minConn < 0 || maxConn <= 0 {
-		return nil, errors.New("illogical number of connection improbable")
+		return nil, errors.New("illogical number of connection")
 	}
 
 	pool := &IOMgrConnPool{}
@@ -31,7 +32,7 @@ func CreateIOMgrConnPool(minConn, maxConn int, config Config) (*IOMgrConnPool, e
 	pool.maxConnNum = maxConn
 	pool.connections = make(chan net.Conn, maxConn)
 	pool.totalConnNum = 0
-	pool.loadConfig(config)
+	pool.parseConfiguration(config)
 	if err := pool.init(); err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func (pool *IOMgrConnPool) createConn() (net.Conn, error) {
 	if pool.totalConnNum >= pool.maxConnNum {
 		return nil, fmt.Errorf("Connot Create new connection. Now has %d.Max is %d", pool.totalConnNum, pool.maxConnNum)
 	}
-	conn, err := net.Dial("tcp", pool.HostName+":"+fmt.Sprintf("%v", pool.Port))
+	conn, err := net.Dial(pool.network, pool.HostName+":"+fmt.Sprintf("%v", pool.Port))
 	if err != nil {
 		return nil, fmt.Errorf("Cannot create new connection.%s", err)
 	}
@@ -96,8 +97,9 @@ func (pool *IOMgrConnPool) ReturnConn(conn net.Conn) error {
 	}
 }
 
-func (pool *IOMgrConnPool) loadConfig(config Config) (err error) {
+func (pool *IOMgrConnPool) parseConfiguration(config Config) (err error) {
 
+	pool.network = "tcp"
 	if pool.Port, err = strconv.ParseUint(config["iomgr.rest.ipv4_port"], 10, 64); err != nil {
 		return err
 	}
@@ -107,12 +109,12 @@ func (pool *IOMgrConnPool) loadConfig(config Config) (err error) {
 		}
 		if pool.Port == 0 {
 			return errors.New("no port enabled on iomgr for the rest server")
+		} else {
+			pool.network = "tcp6"
 		}
 	}
 
 	pool.HostName = "localhost"
-
-	siodbLoggerPool.Output(DEBUG, "pool: %v", pool)
 
 	return nil
 

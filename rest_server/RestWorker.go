@@ -7,44 +7,46 @@ import (
 )
 
 type RestWorker struct {
-	router    RestServerRouter
+	ginEngine *gin.Engine
+	Port      uint64
 	RequestID uint64
 }
 
-func (restWorker *RestWorker) CreateRouter() (err error) {
+func (restWorker *RestWorker) CreateRouter(Port uint64) (err error) {
 
-	restWorker.router.ginEngine = gin.New()
+	restWorker.Port = Port
+	restWorker.ginEngine = gin.New()
 
 	// Log at router level
 	for _, w := range siodbLoggerPool.siodbLogger {
-		restWorker.router.ginEngine.Use(gin.LoggerWithWriter(w.out))
+		restWorker.ginEngine.Use(gin.LoggerWithWriter(w.out))
 	}
-	restWorker.router.ginEngine.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+	restWorker.ginEngine.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return siodbLoggerPool.GinFormattedOutput(param)
 	}))
 
 	// GET
-	restWorker.router.ginEngine.GET("/databases", restWorker.getDatabases)
-	restWorker.router.ginEngine.GET("/databases/:database_name/tables", restWorker.getTables)
-	restWorker.router.ginEngine.GET("/databases/:database_name/tables/:table_name/rows", restWorker.getRows)
-	restWorker.router.ginEngine.GET("/databases/:database_name/tables/:table_name/rows/:row_id", restWorker.getRow)
+	restWorker.ginEngine.GET("/databases", restWorker.getDatabases)
+	restWorker.ginEngine.GET("/databases/:database_name/tables", restWorker.getTables)
+	restWorker.ginEngine.GET("/databases/:database_name/tables/:table_name/rows", restWorker.getRows)
+	restWorker.ginEngine.GET("/databases/:database_name/tables/:table_name/rows/:row_id", restWorker.getRow)
 
 	// POST
-	restWorker.router.ginEngine.POST("/databases/:database_name/tables/:table_name/rows", restWorker.postRows)
+	restWorker.ginEngine.POST("/databases/:database_name/tables/:table_name/rows", restWorker.postRows)
 
 	return nil
 }
 
 func (restWorker *RestWorker) StartHTTPRouter() (err error) {
 
-	err = restWorker.router.ginEngine.Run(":" + fmt.Sprintf("%v", restWorker.router.Port))
+	err = restWorker.ginEngine.Run(":" + fmt.Sprintf("%v", restWorker.Port))
 	return err
 
 }
 
 func (restWorker *RestWorker) StartHTTPSRouter(TLSCertificate string, TLSPrivateKey string) (err error) {
 
-	err = restWorker.router.ginEngine.RunTLS(":"+fmt.Sprintf("%v", restWorker.router.Port), TLSCertificate, TLSPrivateKey)
+	err = restWorker.ginEngine.RunTLS(":"+fmt.Sprintf("%v", restWorker.Port), TLSCertificate, TLSPrivateKey)
 	return err
 
 }

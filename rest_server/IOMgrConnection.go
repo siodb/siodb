@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
@@ -20,23 +21,23 @@ type IOMgrConnection struct {
 
 func (IOMgrConn IOMgrConnection) cleanupTCPConn() (err error) {
 
-	var IOMgrChunkSize uint64
-	var cpt int16
+	var IOMgrChunkSize uint32
+	var counter int16
 
 	for {
 		// Get Current Row Size
-		if _, IOMgrChunkSize, err = IOMgrConn.readVarint(); err != nil {
+		if _, IOMgrChunkSize, err = IOMgrConn.readVarint32(); err != nil {
 			return errors.New("cleanupTCPConn: unable to read chunk size")
 		}
 		if IOMgrChunkSize == 0 {
-			siodbLoggerPool.Output(DEBUG, "cleanupTCPConn: %d chunks dropped.", cpt)
+			siodbLoggerPool.Output(DEBUG, "cleanupTCPConn: %d chunks dropped.", counter)
 			return err
 		}
 		siodbLoggerPool.Output(DEBUG, "cleanupTCPConn: Chunk size to drop: %d.", IOMgrChunkSize)
 		buff := make([]byte, IOMgrChunkSize)
 		_, err = io.ReadFull(IOMgrConn.Conn, buff)
 
-		cpt++
+		counter++
 	}
 
 }
@@ -58,7 +59,7 @@ func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 	}
 
 	rawData, err = ioutil.ReadAll(c.Request.Body)
-	siodbLoggerPool.Output(DEBUG, "rawData: %v, %v", rawData, err)
+	siodbLoggerPool.Output(TRACE, "rawData: %v, %v", rawData, err)
 
 	// Write Payload length
 	var buf [binary.MaxVarintLen32]byte
@@ -71,7 +72,7 @@ func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 
 	// Write raw payload
 	if _, err = IOMgrConn.Write(rawData); err != nil {
-		c.JSON(500, gin.H{"Error:": fmt.Sprintf("Not able to write payload to IOMgr: %v", err)})
+		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to write payload to IOMgr: %v", err)})
 	}
 
 	// Write 0 to indicate EOF
@@ -85,20 +86,20 @@ func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 
 }
 
-func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context, statusCode uint32) (err error) {
+func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 	// Stream through HTTP > 1.1
 	// https://stackoverflow.com/questions/29486086/how-http2-http1-1-proxy-handle-the-transfer-encoding
 
-	var IOMgrChunkSize uint64
+	var IOMgrChunkSize uint32
 	var JSONChunk string
 	var JSONChunkBuff string
 
 	for {
 
 		// Get Current IOMgr chunk Size
-		if _, IOMgrChunkSize, err = IOMgrConn.readVarint(); err != nil {
-			c.JSON(500, gin.H{"Error:": fmt.Sprintf("Not able to read chunk size from IOMgr: %v", err)})
+		if _, IOMgrChunkSize, err = IOMgrConn.readVarint32(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to read chunk size from IOMgr: %v", err)})
 		}
 		siodbLoggerPool.Output(DEBUG, "IOMgrChunkSize: %v", IOMgrChunkSize)
 		if IOMgrChunkSize == 0 {
@@ -127,7 +128,7 @@ func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context, statusCode uint
 			for i := 0; i <= (int(len(JSONChunkBuff)) - int(uint64(len(JSONChunkBuff))%restServer.HTTPChunkSize) - int(restServer.HTTPChunkSize)); i = i + int(restServer.HTTPChunkSize) {
 				siodbLoggerPool.Output(DEBUG, "Steaming buffer from position %v to %v.", i, i+int(restServer.HTTPChunkSize))
 				siodbLoggerPool.Output(TRACE, "JSONChunked: %v", JSONChunkBuff[i:i+int(restServer.HTTPChunkSize)])
-				c.String(int(statusCode), JSONChunkBuff[i:i+int(restServer.HTTPChunkSize)])
+				c.String(http.StatusOK, JSONChunkBuff[i:i+int(restServer.HTTPChunkSize)])
 				pos = i
 			}
 			siodbLoggerPool.Output(DEBUG, "pos: %v", pos)
@@ -138,10 +139,22 @@ func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context, statusCode uint
 
 	siodbLoggerPool.Output(DEBUG, "JSONChunkBuff leftovers size: %v", len(JSONChunkBuff))
 	siodbLoggerPool.Output(TRACE, "JSONChunkBuff leftovers: %v", JSONChunkBuff)
-	c.String(int(statusCode), JSONChunkBuff)
+	c.String(http.StatusOK, JSONChunkBuff)
 
 	return nil
 
+}
+
+func (IOMgrConn IOMgrConnection) readVarint32() (bytesRead int, ruint32 uint32, err error) {
+	var ruint64 uint64
+	if bytesRead, ruint64, err = IOMgrConn.readVarint(); err != nil {
+		return bytesRead, uint32(ruint64), err
+	}
+	return bytesRead, uint32(ruint64), err
+}
+
+func (IOMgrConn IOMgrConnection) readVarint64() (bytesRead int, ruint64 uint64, err error) {
+	return IOMgrConn.readVarint()
 }
 
 func (IOMgrConn IOMgrConnection) readVarint() (bytesRead int, n uint64, err error) {
@@ -301,11 +314,11 @@ func (IOMgrConn IOMgrConnection) readMessage(messageTypeID uint64, m proto.Messa
 
 func (IOMgrConn IOMgrConnection) readPayload() (json string, err error) {
 
-	var chunkSize uint64
+	var chunkSize uint32
 
 	for {
 		// Get Current Row Size
-		if _, chunkSize, err = IOMgrConn.readVarint(); err != nil {
+		if _, chunkSize, err = IOMgrConn.readVarint32(); err != nil {
 			return json, err
 		}
 		siodbLoggerPool.Output(DEBUG, "chunkSize: %v", chunkSize)
