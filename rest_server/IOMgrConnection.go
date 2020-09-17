@@ -1,0 +1,329 @@
+package main
+
+import (
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net"
+	"unicode/utf8"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang/protobuf/proto"
+)
+
+type IOMgrConnection struct {
+	net.Conn
+	pool *IOMgrConnPool
+}
+
+func (IOMgrConn IOMgrConnection) cleanupTCPConn() (err error) {
+
+	var IOMgrChunkSize uint64
+	var cpt int16
+
+	for {
+		// Get Current Row Size
+		if _, IOMgrChunkSize, err = IOMgrConn.readVarint(); err != nil {
+			return errors.New("cleanupTCPConn: unable to read chunk size")
+		}
+		if IOMgrChunkSize == 0 {
+			siodbLoggerPool.Output(DEBUG, "cleanupTCPConn: %d chunks dropped.", cpt)
+			return err
+		}
+		siodbLoggerPool.Output(DEBUG, "cleanupTCPConn: Chunk size to drop: %d.", IOMgrChunkSize)
+		buff := make([]byte, IOMgrChunkSize)
+		_, err = io.ReadFull(IOMgrConn.Conn, buff)
+
+		cpt++
+	}
+
+}
+
+func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
+
+	var rawData []byte
+
+	//
+	// Read until EOF and write by chunk as defined in HTTPChunkSize
+	//
+
+	// Read raw payload
+	if len(c.Request.Header.Get("Content-Length")) > 0 { // "Transfer-Encoding: chunked" not set
+		// send full size
+		siodbLoggerPool.Output(DEBUG, "Content-Length: %v", c.Request.Header.Get("Content-Length"))
+	} else { // "Transfer-Encoding: chunked" set
+
+	}
+
+	rawData, err = ioutil.ReadAll(c.Request.Body)
+	siodbLoggerPool.Output(DEBUG, "rawData: %v, %v", rawData, err)
+
+	// Write Payload length
+	var buf [binary.MaxVarintLen32]byte
+	encodedLength := binary.PutUvarint(buf[:], uint64(len(rawData)))
+	siodbLoggerPool.Output(DEBUG, "uint64(len(rawData)): %v", uint64(len(rawData)))
+	_, err = IOMgrConn.Conn.Write(buf[:encodedLength])
+	if nil != err {
+		siodbLoggerPool.Output(ERROR, "err: %v", err)
+	}
+
+	// Write raw payload
+	if _, err = IOMgrConn.Write(rawData); err != nil {
+		c.JSON(500, gin.H{"Error:": fmt.Sprintf("Not able to write payload to IOMgr: %v", err)})
+	}
+
+	// Write 0 to indicate EOF
+	encodedLength = binary.PutUvarint(buf[:], uint64(0))
+	_, err = IOMgrConn.Conn.Write(buf[:encodedLength])
+	if nil != err {
+		siodbLoggerPool.Output(ERROR, "err: %v", err)
+	}
+
+	return nil
+
+}
+
+func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context, statusCode uint32) (err error) {
+
+	// Stream through HTTP > 1.1
+	// https://stackoverflow.com/questions/29486086/how-http2-http1-1-proxy-handle-the-transfer-encoding
+
+	var IOMgrChunkSize uint64
+	var JSONChunk string
+	var JSONChunkBuff string
+
+	for {
+
+		// Get Current IOMgr chunk Size
+		if _, IOMgrChunkSize, err = IOMgrConn.readVarint(); err != nil {
+			c.JSON(500, gin.H{"Error:": fmt.Sprintf("Not able to read chunk size from IOMgr: %v", err)})
+		}
+		siodbLoggerPool.Output(DEBUG, "IOMgrChunkSize: %v", IOMgrChunkSize)
+		if IOMgrChunkSize == 0 {
+			break
+		}
+
+		// Form JSONChunk
+		IOMgrbuff := make([]byte, IOMgrChunkSize)
+		_, err = io.ReadFull(IOMgrConn.Conn, IOMgrbuff)
+		for len(IOMgrbuff) > 0 {
+			r, size := utf8.DecodeRune(IOMgrbuff)
+			JSONChunk = JSONChunk + fmt.Sprintf("%c", r)
+
+			IOMgrbuff = IOMgrbuff[size:]
+		}
+
+		// Bufferizing JSONChunk
+		JSONChunkBuff = JSONChunkBuff + JSONChunk
+		JSONChunk = ""
+
+		siodbLoggerPool.Output(DEBUG, "len(JSONChunkBuff): %v", len(JSONChunkBuff))
+		siodbLoggerPool.Output(DEBUG, "int(restServer.HTTPChunkSize): %v", int(restServer.HTTPChunkSize))
+		if len(JSONChunkBuff) >= int(restServer.HTTPChunkSize) {
+			siodbLoggerPool.Output(DEBUG, "# len(JSONChunkBuff) > restServer.HTTPChunkSize")
+			pos := int(0)
+			for i := 0; i <= (int(len(JSONChunkBuff)) - int(uint64(len(JSONChunkBuff))%restServer.HTTPChunkSize) - int(restServer.HTTPChunkSize)); i = i + int(restServer.HTTPChunkSize) {
+				siodbLoggerPool.Output(DEBUG, "Steaming buffer from position %v to %v.", i, i+int(restServer.HTTPChunkSize))
+				siodbLoggerPool.Output(TRACE, "JSONChunked: %v", JSONChunkBuff[i:i+int(restServer.HTTPChunkSize)])
+				c.String(int(statusCode), JSONChunkBuff[i:i+int(restServer.HTTPChunkSize)])
+				pos = i
+			}
+			siodbLoggerPool.Output(DEBUG, "pos: %v", pos)
+			JSONChunkBuff = JSONChunkBuff[pos+int(restServer.HTTPChunkSize):]
+		}
+
+	}
+
+	siodbLoggerPool.Output(DEBUG, "JSONChunkBuff leftovers size: %v", len(JSONChunkBuff))
+	siodbLoggerPool.Output(TRACE, "JSONChunkBuff leftovers: %v", JSONChunkBuff)
+	c.String(int(statusCode), JSONChunkBuff)
+
+	return nil
+
+}
+
+func (IOMgrConn IOMgrConnection) readVarint() (bytesRead int, n uint64, err error) {
+
+	// Function readVarint()
+	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
+	//
+	// Copyright 2013 Matt T. Proud
+	//
+	// Licensed under the Apache License, Version 2.0 (the "License");
+	// you may not use this file except in compliance with the License.
+	// You may obtain a copy of the License at
+	//
+	//     http://www.apache.org/licenses/LICENSE-2.0
+	//
+	// Unless required by applicable law or agreed to in writing, software
+	// distributed under the License is distributed on an "AS IS" BASIS,
+	// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	// See the License for the specific language governing permissions and
+	// limitations under the License.
+
+	var prefixBuf [binary.MaxVarintLen64]byte
+	var varIntBytes int
+	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
+		if bytesRead >= len(prefixBuf) {
+			return bytesRead, n, fmt.Errorf("invalid varint64 encountered")
+		}
+		// We have to read byte by byte here to avoid reading more bytes
+		// than required. Each read byte is appended to what we have
+		// read before.
+		newBytesRead, err := IOMgrConn.Conn.Read(prefixBuf[bytesRead : bytesRead+1])
+		if newBytesRead == 0 {
+			if io.EOF == err {
+				return bytesRead, n, nil
+			} else if err != nil {
+				return bytesRead, n, err
+			}
+			// A Reader should not return (0, nil), but if it does,
+			// it should be treated as no-op (according to the
+			// Reader contract). So let's go on...
+			continue
+		}
+		bytesRead += newBytesRead
+		// Now present everything read so far to the varint decoder and
+		// see if a varint can be decoded already.
+		n, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
+	}
+
+	return bytesRead, n, err
+}
+
+func (IOMgrConn IOMgrConnection) writeMessage(messageTypeID uint64, m proto.Message) (int, error) {
+
+	// Function writeMessage()
+	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/encode.go
+	//
+	// Copyright 2013 Matt T. Proud
+	//
+	// Licensed under the Apache License, Version 2.0 (the "License");
+	// you may not use this file except in compliance with the License.
+	// You may obtain a copy of the License at
+	//
+	//     http://www.apache.org/licenses/LICENSE-2.0
+	//
+	// Unless required by applicable law or agreed to in writing, software
+	// distributed under the License is distributed on an "AS IS" BASIS,
+	// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	// See the License for the specific language governing permissions and
+	// limitations under the License.
+
+	var buf [binary.MaxVarintLen32]byte
+	encodedLength := binary.PutUvarint(buf[:], messageTypeID)
+	IOMgrConn.Conn.Write(buf[:encodedLength])
+
+	em, err := proto.Marshal(m)
+	if nil != err {
+		return 0, err
+	}
+
+	encodedLength = binary.PutUvarint(buf[:], uint64(proto.Size(m)))
+
+	vib, err := IOMgrConn.Conn.Write(buf[:encodedLength])
+	if nil != err {
+		return vib, err
+	}
+
+	pbmmb, err := IOMgrConn.Conn.Write(em)
+
+	return vib + pbmmb, err
+}
+
+func (IOMgrConn IOMgrConnection) readMessage(messageTypeID uint64, m proto.Message) (n int, err error) {
+
+	// Function readMessage()
+	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
+	//
+	// Copyright 2013 Matt T. Proud
+	//
+	// Licensed under the Apache License, Version 2.0 (the "License");
+	// you may not use this file except in compliance with the License.
+	// You may obtain a copy of the License at
+	//
+	//     http://www.apache.org/licenses/LICENSE-2.0
+	//
+	// Unless required by applicable law or agreed to in writing, software
+	// distributed under the License is distributed on an "AS IS" BASIS,
+	// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	// See the License for the specific language governing permissions and
+	// limitations under the License.
+
+	var prefixBuf [binary.MaxVarintLen64]byte
+	var bytesRead, varIntBytes int
+	var messageLength uint64
+	var readMessageTypeID uint64
+
+	// Read and check Message Type Id
+	_, readMessageTypeID, err = IOMgrConn.readVarint()
+	if messageTypeID != readMessageTypeID {
+		return 0, err
+	}
+
+	// Read Message
+	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
+		if bytesRead >= len(prefixBuf) {
+			return 0, fmt.Errorf("invalid varint64 encountered")
+		}
+		// We have to read byte by byte here to avoid reading more bytes
+		// than required. Each read byte is appended to what we have
+		// read before.
+		newBytesRead, err := IOMgrConn.Conn.Read(prefixBuf[bytesRead : bytesRead+1])
+		if newBytesRead == 0 {
+			if io.EOF == err {
+				return 0, nil
+			} else if err != nil {
+				return 0, err
+			}
+			// A Reader should not return (0, nil), but if it does,
+			// it should be treated as no-op (according to the
+			// Reader contract). So let's go on...
+			continue
+		}
+		bytesRead += newBytesRead
+		// Now present everything read so far to the varint decoder and
+		// see if a varint can be decoded already.
+		messageLength, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
+	}
+
+	messageBuf := make([]byte, messageLength)
+	newBytesRead, err := io.ReadFull(IOMgrConn.Conn, messageBuf)
+	bytesRead += newBytesRead
+	if err != nil {
+		return 0, err
+	}
+
+	return bytesRead, proto.Unmarshal(messageBuf, m)
+}
+
+func (IOMgrConn IOMgrConnection) readPayload() (json string, err error) {
+
+	var chunkSize uint64
+
+	for {
+		// Get Current Row Size
+		if _, chunkSize, err = IOMgrConn.readVarint(); err != nil {
+			return json, err
+		}
+		siodbLoggerPool.Output(DEBUG, "chunkSize: %v", chunkSize)
+		if chunkSize == 0 {
+			return json, nil
+		}
+		buff := make([]byte, chunkSize)
+		_, err = io.ReadFull(IOMgrConn.Conn, buff)
+
+		for len(buff) > 0 {
+			r, size := utf8.DecodeRune(buff)
+			json = json + fmt.Sprintf("%c", r)
+
+			buff = buff[size:]
+		}
+
+		siodbLoggerPool.Output(TRACE, "payload: %v", json)
+
+	}
+
+}

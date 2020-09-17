@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Build Instruction for the REST server</title>
+        <style>
+</style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+
+</style>
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="build-instruction-for-the-rest-server">Build Instruction for the REST server</h1>
+<h2 id="install-go--dependencies">Install Go + dependencies</h2>
+<pre><code class="language-bash"><div>wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
+sudo tar -C /usr/<span class="hljs-built_in">local</span> -xzf go1.15.2.linux-amd64.tar.gz
+</div></code></pre>
+<p>Official Golang instructions <a href="https://golang.org/doc/install">here</a>.</p>
+<h2 id="install-dependencies">Install dependencies</h2>
+<pre><code class="language-bash"><div><span class="hljs-built_in">export</span> PATH=<span class="hljs-variable">$PATH</span>:/usr/<span class="hljs-built_in">local</span>/go/bin
+go get -u github.com/golang/protobuf/protoc-gen-go
+go get -u github.com/gin-gonic/gin
+</div></code></pre>
+<h2 id="compile-iomgr-protobuf-message-for-go">Compile IOMgr protobuf message for Go</h2>
+<pre><code class="language-bash"><div><span class="hljs-built_in">export</span> GOPATH=~/go
+mkdir -p <span class="hljs-variable">$GOPATH</span>/src/SiodbIomgrProtocol
+<span class="hljs-built_in">cd</span> siodb
+protoc --proto_path=common/lib/siodb/common/proto --go_out=<span class="hljs-variable">$GOPATH</span>/src/SiodbIomgrProtocol common/lib/siodb/common/proto/CommonMessages.proto
+protoc --proto_path=common/lib/siodb/common/proto --go_out=<span class="hljs-variable">$GOPATH</span>/src/SiodbIomgrProtocol common/lib/siodb/common/proto/ColumnDataType.proto
+protoc --proto_path=common/lib/siodb/common/proto --go_out=<span class="hljs-variable">$GOPATH</span>/src/SiodbIomgrProtocol common/lib/siodb/common/proto/IOManagerProtocol.proto
+</div></code></pre>
+<h2 id="build">Build</h2>
+<pre><code class="language-bash"><div><span class="hljs-built_in">cd</span> siodb
+<span class="hljs-built_in">export</span> PATH=<span class="hljs-variable">$PATH</span>:/usr/<span class="hljs-built_in">local</span>/go/bin
+</div></code></pre>
+<h3 id="release">Release</h3>
+<pre><code class="language-bash"><div>go build -o /tmp/siodb_rest_server -ldflags <span class="hljs-string">"-s -w"</span> ./rest_server
+</div></code></pre>
+<h3 id="debug">Debug</h3>
+<pre><code class="language-bash"><div>go build -o /tmp/siodb_rest_server -gcflags=<span class="hljs-string">"all=-N -l -dwarf -dwarflocationlists"</span> ./rest_server
+</div></code></pre>
+
+    </body>
+    </html>
