@@ -121,18 +121,18 @@ func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 		JSONChunk = ""
 
 		siodbLoggerPool.Output(DEBUG, "len(JSONChunkBuff): %v", len(JSONChunkBuff))
-		siodbLoggerPool.Output(DEBUG, "int(restServer.HTTPChunkSize): %v", int(restServer.HTTPChunkSize))
-		if len(JSONChunkBuff) >= int(restServer.HTTPChunkSize) {
-			siodbLoggerPool.Output(DEBUG, "# len(JSONChunkBuff) > restServer.HTTPChunkSize")
+		siodbLoggerPool.Output(DEBUG, "int(restServerConfig.HTTPChunkSize): %v", int(restServerConfig.HTTPChunkSize))
+		if len(JSONChunkBuff) >= int(restServerConfig.HTTPChunkSize) {
+			siodbLoggerPool.Output(DEBUG, "# len(JSONChunkBuff) > restServerConfig.HTTPChunkSize")
 			pos := int(0)
-			for i := 0; i <= (int(len(JSONChunkBuff)) - int(uint64(len(JSONChunkBuff))%restServer.HTTPChunkSize) - int(restServer.HTTPChunkSize)); i = i + int(restServer.HTTPChunkSize) {
-				siodbLoggerPool.Output(DEBUG, "Steaming buffer from position %v to %v.", i, i+int(restServer.HTTPChunkSize))
-				siodbLoggerPool.Output(TRACE, "JSONChunked: %v", JSONChunkBuff[i:i+int(restServer.HTTPChunkSize)])
-				c.String(http.StatusOK, JSONChunkBuff[i:i+int(restServer.HTTPChunkSize)])
+			for i := 0; i <= (int(len(JSONChunkBuff)) - int(uint64(len(JSONChunkBuff))%restServerConfig.HTTPChunkSize) - int(restServerConfig.HTTPChunkSize)); i = i + int(restServerConfig.HTTPChunkSize) {
+				siodbLoggerPool.Output(DEBUG, "Steaming buffer from position %v to %v.", i, i+int(restServerConfig.HTTPChunkSize))
+				siodbLoggerPool.Output(TRACE, "JSONChunked: %v", JSONChunkBuff[i:i+int(restServerConfig.HTTPChunkSize)])
+				c.String(http.StatusOK, JSONChunkBuff[i:i+int(restServerConfig.HTTPChunkSize)])
 				pos = i
 			}
 			siodbLoggerPool.Output(DEBUG, "pos: %v", pos)
-			JSONChunkBuff = JSONChunkBuff[pos+int(restServer.HTTPChunkSize):]
+			JSONChunkBuff = JSONChunkBuff[pos+int(restServerConfig.HTTPChunkSize):]
 		}
 
 	}
