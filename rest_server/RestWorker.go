@@ -8,11 +8,11 @@ import (
 
 type RestWorker struct {
 	ginEngine *gin.Engine
-	Port      uint64
+	Port      uint32
 	RequestID uint64
 }
 
-func (restWorker *RestWorker) CreateRouter(Port uint64) (err error) {
+func (restWorker *RestWorker) CreateRouter(Port uint32) (err error) {
 
 	restWorker.Port = Port
 	restWorker.ginEngine = gin.New()

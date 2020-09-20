@@ -19,24 +19,12 @@ import (
 	"syscall"
 )
 
-type RestServerConfig struct {
-	Ipv4HTTPPort          uint64
-	Ipv4HTTPSPort         uint64
-	Ipv6HTTPPort          uint64
-	Ipv6HTTPSPort         uint64
-	TLSCertificate        string
-	TLSPrivateKey         string
-	HTTPChunkSize         uint64
-	logFileDestination    string
-	logFileSeverity       string
-	logConsoleDestination string
-	logConsoleSeverity    string
-}
-
 var (
 	SiodbInstanceConfigurationRootPath string = "/etc/siodb/instances"
 	restServerConfig                   RestServerConfig
 	IOMgrCPool                         *IOMgrConnPool
+	IOMgrCPoolMinConn                  = 4
+	IOMgrCPoolMaxConn                  = 8
 	siodbLoggerPool                    SiodbLoggerPool
 )
 
@@ -58,32 +46,33 @@ func main() {
 	// Variables
 	SiodbInstanceConfigurationPath := SiodbInstanceConfigurationRootPath + "/" + *SiodbInstanceName
 	var err error
-	var config Config
 
 	// Parse Siodb instance parameters file
-	if config, err = parseInitFile(SiodbInstanceConfigurationPath + "/config"); err != nil {
-		log.Fatalln(err)
-	}
-
-	// Validate and load parameters
-	if err = restServerConfig.parseConfiguration(SiodbInstanceConfigurationPath, config); err != nil {
+	siodbConfigFile := &SiodbConfigFile{}
+	siodbConfigFile.path = SiodbInstanceConfigurationPath + "/config"
+	if err := siodbConfigFile.ParseParameters(); err != nil {
 		log.Fatalln(err)
 	}
 
 	// Logging setup
-	siodbLoggerPool.AddSiodbLogger(restServerConfig.logConsoleSeverity, restServerConfig.logConsoleDestination)
-	siodbLoggerPool.AddSiodbLogger(restServerConfig.logFileSeverity, restServerConfig.logFileDestination)
-
-	siodbLoggerPool.Output(INFO, "Starting REST server with config: %v", restServerConfig)
-
-	// Gin Log at global level
+	if siodbLoggerPool, err = CreateSiodbLoggerPool(siodbConfigFile); err != nil {
+		log.Fatalln(err)
+	}
 	siodbLoggerPool.ConfigGinLogger()
+	siodbLoggerPool.Output(INFO, "Logger Pool initialized successfully")
+
+	// Create REST Server config
+	if err = restServerConfig.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
+		log.Fatalln(err)
+	}
+	siodbLoggerPool.Output(INFO, "REST server config initialized successfully")
 
 	// Connection pool to IOMgr
-	IOMgrCPool, err = CreateIOMgrConnPool(4, 8, config)
+	IOMgrCPool, err = CreateIOMgrConnPool(siodbConfigFile, IOMgrCPoolMinConn, IOMgrCPoolMaxConn)
 	if err != nil {
 		siodbLoggerPool.Output(FATAL, "Cannot create connection pool: %v", err)
 	}
+	siodbLoggerPool.Output(INFO, "IOMgr connection pool initialized successfully")
 
 	// Start routers
 	if restServerConfig.Ipv4HTTPPort != 0 {
@@ -96,7 +85,6 @@ func main() {
 				siodbLoggerPool.Output(FATAL, "Cannot start router: %v", err)
 			}
 		}()
-
 	}
 	if restServerConfig.Ipv4HTTPSPort != 0 {
 		go func() {

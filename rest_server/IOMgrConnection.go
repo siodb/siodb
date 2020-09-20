@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -27,7 +26,7 @@ func (IOMgrConn IOMgrConnection) cleanupTCPConn() (err error) {
 	for {
 		// Get Current Row Size
 		if _, IOMgrChunkSize, err = IOMgrConn.readVarint32(); err != nil {
-			return errors.New("cleanupTCPConn: unable to read chunk size")
+			return fmt.Errorf("cleanupTCPConn: unable to read chunk size")
 		}
 		if IOMgrChunkSize == 0 {
 			siodbLoggerPool.Output(DEBUG, "cleanupTCPConn: %d chunks dropped.", counter)

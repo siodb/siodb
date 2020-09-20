@@ -1,19 +1,15 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"log"
 	"net"
-	"strconv"
 	"sync"
-	"testing"
 )
 
 type IOMgrConnPool struct {
 	network      string
 	HostName     string
-	Port         uint64
+	Port         uint32
 	lock         sync.Mutex
 	connections  chan net.Conn
 	minConnNum   int
@@ -21,10 +17,10 @@ type IOMgrConnPool struct {
 	totalConnNum int
 }
 
-func CreateIOMgrConnPool(minConn, maxConn int, config Config) (*IOMgrConnPool, error) {
+func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrConnPool, error) {
 
 	if minConn > maxConn || minConn < 0 || maxConn <= 0 {
-		return nil, errors.New("illogical number of connection")
+		return nil, fmt.Errorf("illogical number of connection")
 	}
 
 	pool := &IOMgrConnPool{}
@@ -86,7 +82,7 @@ func (pool *IOMgrConnPool) ReturnConn(conn net.Conn) error {
 		pool.lock.Lock()
 		pool.totalConnNum = pool.totalConnNum - 1
 		pool.lock.Unlock()
-		return errors.New("Cannot put nil to connection pool.")
+		return fmt.Errorf("cannot put nil to connection pool")
 	}
 
 	select {
@@ -97,46 +93,34 @@ func (pool *IOMgrConnPool) ReturnConn(conn net.Conn) error {
 	}
 }
 
-func (pool *IOMgrConnPool) parseConfiguration(config Config) (err error) {
+func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) (err error) {
 
-	pool.network = "tcp"
-	if pool.Port, err = strconv.ParseUint(config["iomgr.rest.ipv4_port"], 10, 64); err != nil {
-		return err
-	}
-	if pool.Port == 0 {
-		if pool.Port, err = strconv.ParseUint(config["iomgr.rest.ipv6_port"], 10, 64); err != nil {
-			return err
-		}
-		if pool.Port == 0 {
-			return errors.New("no port enabled on iomgr for the rest server")
-		} else {
-			pool.network = "tcp6"
-		}
-	}
-
+	var value string
 	pool.HostName = "localhost"
+	pool.network = "tcp"
+
+	if value, err = siodbConfigFile.GetParameterValue("iomgr.rest.ipv4_port"); err != nil {
+		return fmt.Errorf("error for parameter 'iomgr.rest.ipv4_port': %v", err)
+	}
+	if pool.Port, err = StringToPortNumber(value); err != nil {
+		return fmt.Errorf("error for parameter 'iomgr.rest.ipv4_port': %v", err)
+	}
+
+	if pool.Port == 0 {
+
+		if value, err = siodbConfigFile.GetParameterValue("iomgr.rest.ipv6_port"); err != nil {
+			return fmt.Errorf("error for parameter 'iomgr.rest.ipv6_port': %v", err)
+		}
+		if pool.Port, err = StringToPortNumber(value); err != nil {
+			return fmt.Errorf("error for parameter 'iomgr.rest.ipv6_port': %v", err)
+		}
+
+		if pool.Port == 0 {
+			return fmt.Errorf("no port enabled on iomgr for the rest server")
+		}
+		pool.network = "tcp6"
+	}
 
 	return nil
 
-}
-func TestIOMgrConnPool(*testing.T) {
-	pool, err := CreateIOMgrConnPool(0, 3, Config{"iomgr.rest.ipv4_port": "8080", "iomgr.rest.ipv6_port": "0"})
-	if err != nil {
-		log.Fatalf("Cannot create connection pool: %v", err)
-
-		siodbLoggerPool.Output(FATAL, "Cannot create connection pool: %v", err)
-	}
-	conn1, _ := pool.GetConn()
-	log.Printf("%v", conn1)
-	conn2, _ := pool.GetConn()
-	log.Printf("%v", conn2)
-	conn3, _ := pool.GetConn()
-	log.Printf("%v", conn3)
-	go func() { err = pool.ReturnConn(conn2) }()
-	err = pool.ReturnConn(conn1)
-	log.Printf("%v", err)
-	conn1, _ = pool.GetConn()
-	log.Printf("%v", conn1)
-	conn4, _ := pool.GetConn()
-	log.Printf("%v", conn4)
 }
