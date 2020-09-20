@@ -11,10 +11,13 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 var (
@@ -24,11 +27,6 @@ var (
 	IOMgrCPoolMinConn                  = 4
 	IOMgrCPoolMaxConn                  = 8
 	siodbLoggerPool                    SiodbLoggerPool
-)
-
-var (
-	DATABASEENGINERESPONSE    uint64 = 4
-	DATABASEENGINERESTREQUEST uint64 = 13
 )
 
 func main() {
@@ -49,19 +47,25 @@ func main() {
 	siodbConfigFile := &SiodbConfigFile{}
 	siodbConfigFile.path = SiodbInstanceConfigurationPath + "/config"
 	if err := siodbConfigFile.ParseParameters(); err != nil {
-		log.Fatalln(err)
+		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
+			ttos(FATAL), unix.Getpid(), unix.Gettid(), err)
+		os.Exit(2)
 	}
 
 	// Logging setup
 	if siodbLoggerPool, err = CreateSiodbLoggerPool(siodbConfigFile); err != nil {
-		log.Fatalln(err)
+		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
+			ttos(FATAL), unix.Getpid(), unix.Gettid(), err)
+		os.Exit(2)
 	}
 	siodbLoggerPool.ConfigGinLogger()
 	siodbLoggerPool.Info("Logger Pool initialized successfully")
 
 	// Create REST Server config
 	if err = restServerConfig.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
-		log.Fatalln(err)
+		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
+			ttos(FATAL), unix.Getpid(), unix.Gettid(), err)
+		os.Exit(2)
 	}
 	siodbLoggerPool.Info("REST server config initialized successfully")
 

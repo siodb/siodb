@@ -13,6 +13,11 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+var (
+	DATABASEENGINERESPONSE    uint64 = 4
+	DATABASEENGINERESTREQUEST uint64 = 13
+)
+
 type IOMgrConnection struct {
 	net.Conn
 	pool *IOMgrConnPool

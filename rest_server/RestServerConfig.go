@@ -6,6 +6,11 @@ import (
 	"strconv"
 )
 
+var (
+	HTTPChunkSizeMinSize uint64 = 1024
+	HTTPChunkSizeMaxSize uint64 = 1 * 1024 * 1024
+)
+
 type RestServerConfig struct {
 	Ipv4HTTPPort   uint32
 	Ipv4HTTPSPort  uint32
@@ -94,6 +99,10 @@ func (rsc *RestServerConfig) ParseAndValidateConfiguration(siodbConfigFile *Siod
 		if rsc.HTTPChunkSize, err = strconv.ParseUint(value, 10, 64); err != nil {
 			return fmt.Errorf("error for parameter 'rest_server.chunk_size': %v", err)
 		}
+	}
+
+	if rsc.HTTPChunkSize < HTTPChunkSizeMinSize || rsc.HTTPChunkSize > HTTPChunkSizeMaxSize {
+		return fmt.Errorf("parameter 'rest_server.chunk_size' is out of range (%v-%v)", HTTPChunkSizeMinSize, HTTPChunkSizeMaxSize)
 	}
 
 	return nil
