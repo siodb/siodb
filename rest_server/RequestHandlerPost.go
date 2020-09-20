@@ -10,7 +10,7 @@ import (
 
 func (restWorker RestWorker) postRows(c *gin.Context) {
 
-	siodbLoggerPool.Output(DEBUG, "postRows")
+	siodbLoggerPool.Debug("postRows")
 	restWorker.post(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
 }
 
@@ -19,14 +19,14 @@ func (restWorker RestWorker) post(c *gin.Context, ObjectType SiodbIomgrProtocol.
 	IOMgrConn := &IOMgrConnection{pool: IOMgrCPool}
 	IOMgrConn.Conn, _ = IOMgrCPool.GetConn()
 	defer IOMgrCPool.ReturnConn(IOMgrConn)
-	siodbLoggerPool.Output(DEBUG, "IOMgrConn: %v", IOMgrConn)
+	siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
 
 	// Use to trap interuption from client
 	defer func() {
 		if r := recover(); r != nil {
-			siodbLoggerPool.Output(DEBUG, "Recovered from: %v", r)
+			siodbLoggerPool.Debug("Recovered from: %v", r)
 			if err := IOMgrConn.cleanupTCPConn(); err != nil {
-				siodbLoggerPool.Output(FATAL, "unable to cleanup TCP buffer after broken pipe from client: %v", err)
+				siodbLoggerPool.Fatal(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER, "unable to cleanup TCP buffer after broken pipe from client: %v", err)
 			}
 		}
 	}()
@@ -37,7 +37,7 @@ func (restWorker RestWorker) post(c *gin.Context, ObjectType SiodbIomgrProtocol.
 	databaseEngineRestRequest.ObjectType = ObjectType
 
 	UserName, Token, _ := loadAuthenticationData(c)
-	siodbLoggerPool.Output(DEBUG, "user: %v", UserName)
+	siodbLoggerPool.Debug("user: %v", UserName)
 	databaseEngineRestRequest.UserName = UserName
 	databaseEngineRestRequest.Token = Token
 
@@ -47,7 +47,7 @@ func (restWorker RestWorker) post(c *gin.Context, ObjectType SiodbIomgrProtocol.
 	if ObjectId > 0 {
 		databaseEngineRestRequest.ObjectId = ObjectId
 	}
-	siodbLoggerPool.Output(DEBUG, "databaseEngineRestRequest: %v", databaseEngineRestRequest)
+	siodbLoggerPool.Debug("databaseEngineRestRequest: %v", databaseEngineRestRequest)
 
 	// Send DatabaseEngineRestRequest here
 	if _, err := IOMgrConn.writeMessage(DATABASEENGINERESTREQUEST, &databaseEngineRestRequest); err != nil {
@@ -63,7 +63,7 @@ func (restWorker RestWorker) post(c *gin.Context, ObjectType SiodbIomgrProtocol.
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to read response from IOMgr: %v", err)})
 	}
 
-	siodbLoggerPool.Output(DEBUG, "DatabaseEngineResponse: %v", databaseEngineResponse)
+	siodbLoggerPool.Debug("DatabaseEngineResponse: %v", databaseEngineResponse)
 	if restWorker.RequestID != databaseEngineResponse.RequestId {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "request IDs mismatch."})
 	}

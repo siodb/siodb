@@ -11,6 +11,11 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+var (
+	FATAL_INIT_ERROR                   = 2
+	FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER = 2
+)
+
 type SiodbLoggerPool struct {
 	siodbLogger []*SiodbLogger
 }
@@ -41,20 +46,6 @@ func (l *SiodbLoggerPool) GinFormattedOutput(param gin.LogFormatterParams) strin
 		param.Request.UserAgent(),
 		param.ErrorMessage,
 	)
-}
-
-func (l *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error {
-
-	for _, siodbLogger := range l.siodbLogger {
-		siodbLogger.Output(logLevel, s, v...)
-	}
-
-	if logLevel == FATAL {
-		os.Exit(2)
-	}
-
-	return nil
-
 }
 
 func FormattedOutput(logLevel int, s string, v ...interface{}) string {
@@ -120,4 +111,39 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool Si
 
 	return siodbLoggerPool, nil
 
+}
+
+func (l *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error {
+
+	for _, siodbLogger := range l.siodbLogger {
+		siodbLogger.Output(logLevel, s, v...)
+	}
+
+	return nil
+
+}
+
+func (l *SiodbLoggerPool) Trace(s string, v ...interface{}) {
+	l.Output(TRACE, s, v...)
+}
+
+func (l *SiodbLoggerPool) Debug(s string, v ...interface{}) {
+	l.Output(DEBUG, s, v...)
+}
+
+func (l *SiodbLoggerPool) Info(s string, v ...interface{}) {
+	l.Output(INFO, s, v...)
+}
+
+func (l *SiodbLoggerPool) Warning(s string, v ...interface{}) {
+	l.Output(WARNING, s, v...)
+}
+
+func (l *SiodbLoggerPool) Error(s string, v ...interface{}) {
+	l.Output(ERROR, s, v...)
+}
+
+func (l *SiodbLoggerPool) Fatal(code int, s string, v ...interface{}) {
+	l.Output(FATAL, s, v...)
+	os.Exit(code)
 }

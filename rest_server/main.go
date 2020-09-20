@@ -2,9 +2,7 @@ package main
 
 // specs from https://github.com/siodb/siodb/blob/master/docs/dev/designs/RestServer.md
 // TODO: Implement "basic" authentication as describe in RestServer spec
-// TODO: Parse parameters into a structures
 // TODO: Protect IOMgrbuff with a limit to which it will start to stream
-// TODO: log exit FATAL with code
 // TODO: Finish the POST and DELETE implementation
 // TODO: Put chunked WritePayload in function
 // TODO: Put read chunked payload from IOMgr in function
@@ -59,30 +57,30 @@ func main() {
 		log.Fatalln(err)
 	}
 	siodbLoggerPool.ConfigGinLogger()
-	siodbLoggerPool.Output(INFO, "Logger Pool initialized successfully")
+	siodbLoggerPool.Info("Logger Pool initialized successfully")
 
 	// Create REST Server config
 	if err = restServerConfig.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
 		log.Fatalln(err)
 	}
-	siodbLoggerPool.Output(INFO, "REST server config initialized successfully")
+	siodbLoggerPool.Info("REST server config initialized successfully")
 
 	// Connection pool to IOMgr
 	IOMgrCPool, err = CreateIOMgrConnPool(siodbConfigFile, IOMgrCPoolMinConn, IOMgrCPoolMaxConn)
 	if err != nil {
-		siodbLoggerPool.Output(FATAL, "Cannot create connection pool: %v", err)
+		siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot create connection pool: %v", err)
 	}
-	siodbLoggerPool.Output(INFO, "IOMgr connection pool initialized successfully")
+	siodbLoggerPool.Info("IOMgr connection pool initialized successfully")
 
 	// Start routers
 	if restServerConfig.Ipv4HTTPPort != 0 {
 		go func() {
 			var restWorker RestWorker
 			if err := restWorker.CreateRouter(restServerConfig.Ipv4HTTPPort); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot create route: %v", err)
+				siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot create route: %v", err)
 			}
 			if err := restWorker.StartHTTPRouter(); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot start router: %v", err)
+				siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot start router: %v", err)
 			}
 		}()
 	}
@@ -90,10 +88,10 @@ func main() {
 		go func() {
 			var restWorker RestWorker
 			if err := restWorker.CreateRouter(restServerConfig.Ipv4HTTPSPort); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot create route: %v", err)
+				siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot create route: %v", err)
 			}
 			if err := restWorker.StartHTTPSRouter(restServerConfig.TLSCertificate, restServerConfig.TLSPrivateKey); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot start router: %v", err)
+				siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot start router: %v", err)
 			}
 		}()
 	}
@@ -101,10 +99,10 @@ func main() {
 		go func() {
 			var restWorker RestWorker
 			if err := restWorker.CreateRouter(restServerConfig.Ipv6HTTPPort); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot create route: %v", err)
+				siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot create route: %v", err)
 			}
 			if err := restWorker.StartHTTPRouter(); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot start router: %v", err)
+				siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot start router: %v", err)
 			}
 		}()
 	}
@@ -112,15 +110,15 @@ func main() {
 		go func() {
 			var restWorker RestWorker
 			if err := restWorker.CreateRouter(restServerConfig.Ipv6HTTPSPort); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot create route: %v", err)
+				siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot create route: %v", err)
 			}
 			if err := restWorker.StartHTTPSRouter(restServerConfig.TLSCertificate, restServerConfig.TLSPrivateKey); err != nil {
-				siodbLoggerPool.Output(FATAL, "Cannot start router: %v", err)
+				siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "Cannot start router: %v", err)
 			}
 		}()
 	}
 
 	sig := <-sigs
-	siodbLoggerPool.Output(INFO, "Signal received: %v", sig)
+	siodbLoggerPool.Info("Signal received: %v", sig)
 
 }
