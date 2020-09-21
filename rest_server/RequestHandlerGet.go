@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,6 +43,7 @@ func (restWorker RestWorker) getRow(c *gin.Context) {
 
 func (restWorker RestWorker) get(c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) {
 
+	start := time.Now()
 	IOMgrConn := &IOMgrConnection{pool: IOMgrCPool}
 	IOMgrConn.Conn, _ = IOMgrCPool.GetConn()
 	defer IOMgrCPool.ReturnConn(IOMgrConn)
@@ -55,6 +57,7 @@ func (restWorker RestWorker) get(c *gin.Context, ObjectType SiodbIomgrProtocol.D
 				siodbLoggerPool.Fatal(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER, "Recovered from: %v", "unable to cleanup TCP buffer after broken pipe from client: %v", err)
 			}
 		}
+		siodbLoggerPool.LogRequest(c, time.Now().Sub(start))
 	}()
 
 	var databaseEngineRestRequest SiodbIomgrProtocol.DatabaseEngineRestRequest

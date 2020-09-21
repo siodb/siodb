@@ -63,9 +63,7 @@ func main() {
 
 	// Create REST Server config
 	if err = restServerConfig.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
-		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
-			ttos(FATAL), unix.Getpid(), unix.Gettid(), err)
-		os.Exit(2)
+		siodbLoggerPool.Fatal(FATAL_INIT_ERROR, "cannot parse the rest configuration properly", err)
 	}
 	siodbLoggerPool.Info("REST server config initialized successfully")
 

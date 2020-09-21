@@ -4,6 +4,7 @@ import (
 	"SiodbIomgrProtocol"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,7 @@ func (restWorker RestWorker) postRows(c *gin.Context) {
 
 func (restWorker RestWorker) post(c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) {
 
+	start := time.Now()
 	IOMgrConn := &IOMgrConnection{pool: IOMgrCPool}
 	IOMgrConn.Conn, _ = IOMgrCPool.GetConn()
 	defer IOMgrCPool.ReturnConn(IOMgrConn)
@@ -29,6 +31,7 @@ func (restWorker RestWorker) post(c *gin.Context, ObjectType SiodbIomgrProtocol.
 				siodbLoggerPool.Fatal(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER, "unable to cleanup TCP buffer after broken pipe from client: %v", err)
 			}
 		}
+		siodbLoggerPool.LogRequest(c, time.Now().Sub(start))
 	}()
 
 	var databaseEngineRestRequest SiodbIomgrProtocol.DatabaseEngineRestRequest

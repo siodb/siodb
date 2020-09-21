@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -20,32 +20,65 @@ type SiodbLoggerPool struct {
 	siodbLogger []*SiodbLogger
 }
 
-func (l *SiodbLoggerPool) ConfigGinLogger() error {
+func (l *SiodbLoggerPool) ConfigGinLogger() {
 
-	file, err := os.Open("/dev/null")
-	if err != nil {
-		log.Fatal(err)
-	}
-	gin.DefaultWriter = file
 	gin.DisableConsoleColor()
-	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultWriter = ioutil.Discard
+
+}
+
+func (l *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Duration) {
+
+	path := c.Request.URL.Path
+	raw := c.Request.URL.RawQuery
+	if raw != "" {
+		path = path + "?" + raw
+	}
+
+	l.Output(INFO, "Request | %3d | %13v | %15s %15v | %s %-7s %s",
+		c.Writer.Status(),
+		latency,
+		c.ClientIP(),
+		c.Request.UserAgent(),
+		c.Request.Method,
+		c.Request.Proto,
+		path,
+	)
+}
+
+func (l *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error {
+
+	for _, siodbLogger := range l.siodbLogger {
+		siodbLogger.Output(logLevel, s, v...)
+	}
 
 	return nil
 
 }
 
-func (l *SiodbLoggerPool) GinFormattedOutput(param gin.LogFormatterParams) string {
+func (l *SiodbLoggerPool) Trace(s string, v ...interface{}) {
+	l.Output(TRACE, s, v...)
+}
 
-	return FormattedOutput(INFO, "%s %s %s %s %d %s %s %s",
-		param.ClientIP,
-		param.Method,
-		param.Path,
-		param.Request.Proto,
-		param.StatusCode,
-		param.Latency,
-		param.Request.UserAgent(),
-		param.ErrorMessage,
-	)
+func (l *SiodbLoggerPool) Debug(s string, v ...interface{}) {
+	l.Output(DEBUG, s, v...)
+}
+
+func (l *SiodbLoggerPool) Info(s string, v ...interface{}) {
+	l.Output(INFO, s, v...)
+}
+
+func (l *SiodbLoggerPool) Warning(s string, v ...interface{}) {
+	l.Output(WARNING, s, v...)
+}
+
+func (l *SiodbLoggerPool) Error(s string, v ...interface{}) {
+	l.Output(ERROR, s, v...)
+}
+
+func (l *SiodbLoggerPool) Fatal(code int, s string, v ...interface{}) {
+	l.Output(FATAL, s, v...)
+	os.Exit(code)
 }
 
 func FormattedOutput(logLevel int, s string, v ...interface{}) string {
@@ -111,39 +144,4 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool Si
 
 	return siodbLoggerPool, nil
 
-}
-
-func (l *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error {
-
-	for _, siodbLogger := range l.siodbLogger {
-		siodbLogger.Output(logLevel, s, v...)
-	}
-
-	return nil
-
-}
-
-func (l *SiodbLoggerPool) Trace(s string, v ...interface{}) {
-	l.Output(TRACE, s, v...)
-}
-
-func (l *SiodbLoggerPool) Debug(s string, v ...interface{}) {
-	l.Output(DEBUG, s, v...)
-}
-
-func (l *SiodbLoggerPool) Info(s string, v ...interface{}) {
-	l.Output(INFO, s, v...)
-}
-
-func (l *SiodbLoggerPool) Warning(s string, v ...interface{}) {
-	l.Output(WARNING, s, v...)
-}
-
-func (l *SiodbLoggerPool) Error(s string, v ...interface{}) {
-	l.Output(ERROR, s, v...)
-}
-
-func (l *SiodbLoggerPool) Fatal(code int, s string, v ...interface{}) {
-	l.Output(FATAL, s, v...)
-	os.Exit(code)
 }

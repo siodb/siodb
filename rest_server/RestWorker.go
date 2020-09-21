@@ -17,14 +17,6 @@ func (restWorker *RestWorker) CreateRouter(Port uint32) (err error) {
 	restWorker.Port = Port
 	restWorker.ginEngine = gin.New()
 
-	// Log at router level
-	for _, w := range siodbLoggerPool.siodbLogger {
-		restWorker.ginEngine.Use(gin.LoggerWithWriter(w.out))
-	}
-	restWorker.ginEngine.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		return siodbLoggerPool.GinFormattedOutput(param)
-	}))
-
 	// GET
 	restWorker.ginEngine.GET("/databases", restWorker.getDatabases)
 	restWorker.ginEngine.GET("/databases/:database_name/tables", restWorker.getTables)
