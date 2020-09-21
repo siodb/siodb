@@ -47,14 +47,12 @@ func (IOMgrConn IOMgrConnection) cleanupTCPConn() (err error) {
 
 func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 
+	// Read Payload up to max json payload size
 	body := make([]byte, 0)
 	buffer := make([]byte, 1)
 	var bytesRead uint64 = 0
 	for true {
 		if bytesRead >= IOMgrConn.pool.maxJsonPayloadSize {
-			if err == IOMgrConn.cleanupTCPConn() {
-				return err
-			}
 			return fmt.Errorf("the request body exceeds the maximum allowed limit (%v)",
 				IOMgrConn.pool.maxJsonPayloadSize)
 		}
@@ -68,6 +66,7 @@ func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 		}
 		body = append(body, buffer[0])
 		bytesRead = bytesRead + uint64(newBytesRead)
+		fmt.Printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> %v", bytesRead)
 	}
 	siodbLoggerPool.Trace("Request.body: %s", body)
 	siodbLoggerPool.Debug("bytes read: %v", bytesRead)
