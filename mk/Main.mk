@@ -67,6 +67,11 @@ DEFAULT_CXXFLAGS:=-pthread -g3 \
 
 DEFAULT_LDFLAGS:=-pthread -g3 -rdynamic -Wl,--gc-sections
 
+
+DEFAULT_GOFLAGS:=-buildmode=pie
+DEFAULT_GOGCFLAGS=-L -dwarflocationlists -dwarf
+DEFAULT_GOLDFLAGS:=
+
 CHECK_HEADERS_CFLAGS:=-Wno-unused-function
 CHECK_HEADERS_CXXFLAGS:=-Wno-unused-function
 
@@ -125,6 +130,9 @@ CPPFLAGS+=$(DEFAULT_CPPFLAGS)
 CFLAGS+=$(DEFAULT_CFLAGS) $(RH_CFLAGS)
 CXXFLAGS+=$(DEFAULT_CXXFLAGS) $(RH_CXXFLAGS)
 LDFLAGS+=$(DEFAULT_LDFLAGS) $(RH_LDFLAGS)
+GOFLAGS+=$(DEFAULT_GOFLAGS)
+GOGCFLAGS+=$(DEFAULT_GOGCFLAGS)
+GOLDFLAGS+=$(DEFAULT_GOLDFLAGS)
 
 SYSTEM_LIBS:=-ldl -lrt
 OWN_LIBS:=-L$(LIB_DIR) $(addprefix -l,$(TARGET_OWN_LIBS))
@@ -138,13 +146,16 @@ COMMON_LIBS_DEP:=$(addprefix $(LIB_DIR)/libsiodb_common_, $(addsuffix .a, $(TARG
 ifeq ($(DEBUG),1)
 CFLAGS+=-DDEBUG -D_DEBUG -O0
 CXXFLAGS+=-DDEBUG -D_DEBUG -O0
+GOGCFLAGS+=-N -l
 else
+# Release build
 CFLAGS+=-O2 -fno-omit-frame-pointer
 CXXFLAGS+=-O2 -fno-omit-frame-pointer
 ifeq ($(ENABLE_LTO),1)
 CFLAGS+=-flto
 CXXFLAGS+=-flto
 LDFLAGS+=-flto
+GOGCFLAGS+=-spectre all
 endif
 endif
 
@@ -172,6 +183,10 @@ TARGET_LIB_FILES:=$(addprefix $(LIB_DIR)/,$(notdir $(LIB_FILES)))
 
 ifdef TARGET_EXE
 MAIN_TARGET:=$(BIN_DIR)/$(TARGET_EXE)
+endif
+
+ifdef TARGET_GO_EXE
+MAIN_TARGET:=$(BIN_DIR)/$(TARGET_GO_EXE)
 endif
 
 ifdef TARGET_SO
@@ -382,6 +397,23 @@ $(MAIN_TARGET): $(OBJ) $(OWN_LIBS_DEP) $(COMMON_LIBS_DEP) | $(BIN_DIR)
 	@echo DONE $@
 
 endif # TARGET_EXE
+
+
+ifdef TARGET_GO_EXE
+
+$(MAIN_TARGET): $(GO_SRC) | $(BIN_DIR)
+	@echo GO $@
+	$(NOECHO)$(GO) build -o $@.tmp1 $(GOFLAGS) -gcflags="$(GOGCFLAGS)" -ldflags="$(GOLDFLAGS)"
+	$(NOECHO)objcopy --only-keep-debug $@.tmp1 $@.tmp2
+	$(NOECHO)chmod -x $@.tmp2
+	$(NOECHO)mv -f $@.tmp2 $@.debug
+	-$(NOECHO)rm -f $@
+	$(NOECHO)strip --strip-debug --strip-unneeded $@.tmp1
+	$(NOECHO)objcopy --add-gnu-debuglink=$@.debug $@.tmp1
+	$(NOECHO)mv -f $@.tmp1 $@
+	@echo DONE $@
+
+endif # TAGET_GO_EXE
 
 
 ifdef TARGET_SO

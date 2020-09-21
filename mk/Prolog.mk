@@ -13,9 +13,6 @@ BUILD_UNIT_TESTS:=1
 # Message compiler version
 SIODBMC_VERSION:=0.1.4
 
-# Oat++ library version
-OATPP_VERSION:=1.1.0
-
 # Makefile dir
 MK:=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
