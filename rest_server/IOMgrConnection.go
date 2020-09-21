@@ -66,7 +66,6 @@ func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 		}
 		body = append(body, buffer[0])
 		bytesRead = bytesRead + uint64(newBytesRead)
-		fmt.Printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> %v", bytesRead)
 	}
 	siodbLoggerPool.Trace("Request.body: %s", body)
 	siodbLoggerPool.Debug("bytes read: %v", bytesRead)

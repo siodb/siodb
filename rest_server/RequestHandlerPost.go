@@ -56,7 +56,7 @@ func (restWorker RestWorker) post(
 	// Send DatabaseEngineRestRequest here
 	if _, err := IOMgrConn.writeMessage(DATABASEENGINERESTREQUEST, &databaseEngineRestRequest); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Unable to write message to IOMgr: %v", err)})
-		return nil
+		return err
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,11 +66,13 @@ func (restWorker RestWorker) post(
 	// Get Returned message
 	if _, err := IOMgrConn.readMessage(DATABASEENGINERESPONSE, &databaseEngineResponse); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Unable to read response from IOMgr: %v", err)})
-		return nil
+		return err
 	}
 
+	fmt.Printf(">>>>>>>>>>>>>>>>>>>>>")
 	siodbLoggerPool.Debug("DatabaseEngineResponse: %v", databaseEngineResponse)
 	if restWorker.RequestID != databaseEngineResponse.RequestId {
+		fmt.Printf(">>>>>>>>>>>>>>>>>>>>>  %v | %v", restWorker.RequestID, databaseEngineResponse.RequestId)
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "request IDs mismatch."})
 		return nil
 	}
@@ -86,7 +88,7 @@ func (restWorker RestWorker) post(
 	// Write Payload
 	if err := IOMgrConn.streamJSONPayload(c); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Unable to write payload to IOMgr: %v", err)})
-		return nil
+		return err
 	}
 
 	// Get response + check RequestID
@@ -95,11 +97,12 @@ func (restWorker RestWorker) post(
 	// Get Returned message
 	if _, err := IOMgrConn.readMessage(DATABASEENGINERESPONSE, &databaseEngineResponse); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Unable to read response from IOMgr: %v", err)})
-		return nil
+		return err
 	}
 
 	siodbLoggerPool.Debug("DatabaseEngineResponse: %v", databaseEngineResponse)
 	if restWorker.RequestID != databaseEngineResponse.RequestId {
+		fmt.Printf(">>>>>>>>>>>>>>>>>>>>>  %v | %v", restWorker.RequestID, databaseEngineResponse.RequestId)
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "request IDs mismatch."})
 		return nil
 	}

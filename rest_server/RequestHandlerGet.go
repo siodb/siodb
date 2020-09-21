@@ -41,7 +41,8 @@ func (restWorker RestWorker) getRow(c *gin.Context) {
 	}
 }
 
-func (restWorker RestWorker) get(c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) {
+func (restWorker RestWorker) get(
+	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) error {
 
 	start := time.Now()
 	IOMgrConn := &IOMgrConnection{pool: IOMgrCPool}
@@ -81,6 +82,7 @@ func (restWorker RestWorker) get(c *gin.Context, ObjectType SiodbIomgrProtocol.D
 	// Send DatabaseEngineRestRequest here
 	if _, err := IOMgrConn.writeMessage(DATABASEENGINERESTREQUEST, &databaseEngineRestRequest); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to write message to IOMgr: %v", err)})
+		return err
 	}
 
 	// Get response + check RequestID
@@ -88,19 +90,24 @@ func (restWorker RestWorker) get(c *gin.Context, ObjectType SiodbIomgrProtocol.D
 
 	if _, err := IOMgrConn.readMessage(DATABASEENGINERESPONSE, &databaseEngineResponse); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to read response from IOMgr: %v", err)})
+		return err
 	}
 
 	siodbLoggerPool.Debug("databaseEngineResponse: %v", databaseEngineResponse)
 	if restWorker.RequestID != databaseEngineResponse.RequestId {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "request IDs mismatch."})
+		return nil
 	}
 	restWorker.RequestID++
 
 	// Return error or read and stream chunked JSON
 	if len(databaseEngineResponse.Message) > 0 {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": databaseEngineResponse.Message[0].GetStatusCode(), "message": databaseEngineResponse.Message[0].GetText()})
+		return nil
 	} else {
 		IOMgrConn.readChunkedJSON(c)
 	}
+
+	return nil
 
 }
