@@ -4,10 +4,37 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
+func StringToByteSize(str string) (bytes uint64, err error) {
+
+	var Unit string = str[len(str)-1:]
+
+	if regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(Unit) {
+		if bytes, err = strconv.ParseUint(str[:len(str)-1], 10, 64); err != nil {
+			return bytes, err
+		}
+		switch Unit {
+		case "k", "K":
+			bytes = bytes * 1024
+		case "m", "M":
+			bytes = bytes * 1024 * 1024
+		case "g", "G":
+			bytes = bytes * 1024 * 1024 * 1024
+		default:
+			return bytes, fmt.Errorf("unknown unit '%v' for parameter '"+str+"'", Unit)
+		}
+	} else {
+		if bytes, err = strconv.ParseUint(str, 10, 64); err != nil {
+			return bytes, fmt.Errorf("error for parameter '"+str+"': %v", err)
+		}
+	}
+
+	return bytes, nil
+}
 func StringToPortNumber(str string) (port uint32, err error) {
 	var ui64 uint64
 	if ui64, err = strconv.ParseUint(str, 10, 32); err != nil {

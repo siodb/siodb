@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
 )
 
 var (
@@ -80,29 +78,12 @@ func (rsc *RestServerConfig) ParseAndValidateConfiguration(siodbConfigFile *Siod
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.chunk_size"); err != nil {
 		return err
 	}
-
-	var Unit string = value[len(value)-1:]
-
-	if regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(Unit) {
-		if rsc.HTTPChunkSize, err = strconv.ParseUint(value[:len(value)-1], 10, 64); err != nil {
-			return err
-		}
-		switch Unit {
-		case "k", "K":
-			rsc.HTTPChunkSize = rsc.HTTPChunkSize * 1024
-		case "m", "M":
-			rsc.HTTPChunkSize = rsc.HTTPChunkSize * 1024 * 1024
-		default:
-			return fmt.Errorf("unknown unit '%v' for parameter 'rest_server.chunk_size'", Unit)
-		}
-	} else {
-		if rsc.HTTPChunkSize, err = strconv.ParseUint(value, 10, 64); err != nil {
-			return fmt.Errorf("error for parameter 'rest_server.chunk_size': %v", err)
-		}
+	if rsc.HTTPChunkSize, err = StringToByteSize(value); err != nil {
+		return fmt.Errorf("error for parameter 'rest_server.chunk_size': %v", err)
 	}
-
 	if rsc.HTTPChunkSize < HTTPChunkSizeMinSize || rsc.HTTPChunkSize > HTTPChunkSizeMaxSize {
-		return fmt.Errorf("parameter 'rest_server.chunk_size' is out of range (%v-%v)", HTTPChunkSizeMinSize, HTTPChunkSizeMaxSize)
+		return fmt.Errorf("parameter 'rest_server.chunk_size' (%v) is out of range (%v-%v)",
+			value, HTTPChunkSizeMinSize, HTTPChunkSizeMaxSize)
 	}
 
 	return nil

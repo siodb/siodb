@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"unicode/utf8"
@@ -48,34 +47,42 @@ func (IOMgrConn IOMgrConnection) cleanupTCPConn() (err error) {
 
 func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 
-	var rawData []byte
-
-	//
-	// Read until EOF and write by chunk as defined in HTTPChunkSize
-	//
-
-	// Read raw payload
-	if len(c.Request.Header.Get("Content-Length")) > 0 { // "Transfer-Encoding: chunked" not set
-		// send full size
-		siodbLoggerPool.Debug("Content-Length: %v", c.Request.Header.Get("Content-Length"))
-	} else { // "Transfer-Encoding: chunked" set
-
+	body := make([]byte, 0)
+	buffer := make([]byte, 1)
+	var bytesRead uint64 = 0
+	for true {
+		if bytesRead >= IOMgrConn.pool.maxJsonPayloadSize {
+			if err == IOMgrConn.cleanupTCPConn() {
+				return err
+			}
+			return fmt.Errorf("the request body exceeds the maximum allowed limit (%v)",
+				IOMgrConn.pool.maxJsonPayloadSize)
+		}
+		newBytesRead, err := c.Request.Body.Read(buffer)
+		if newBytesRead == 0 {
+			if io.EOF == err {
+				break
+			} else if err != nil {
+				return err
+			}
+		}
+		body = append(body, buffer[0])
+		bytesRead = bytesRead + uint64(newBytesRead)
 	}
-
-	rawData, err = ioutil.ReadAll(c.Request.Body)
-	siodbLoggerPool.Output(TRACE, "rawData: %v, %v", rawData, err)
+	siodbLoggerPool.Trace("Request.body: %s", body)
+	siodbLoggerPool.Debug("bytes read: %v", bytesRead)
+	siodbLoggerPool.Debug("len(Request.body): %v", len(body))
 
 	// Write Payload length
 	var buf [binary.MaxVarintLen32]byte
-	encodedLength := binary.PutUvarint(buf[:], uint64(len(rawData)))
-	siodbLoggerPool.Debug("uint64(len(rawData)): %v", uint64(len(rawData)))
+	encodedLength := binary.PutUvarint(buf[:], uint64(len(body)))
 	_, err = IOMgrConn.Conn.Write(buf[:encodedLength])
 	if nil != err {
 		siodbLoggerPool.Error("err: %v", err)
 	}
 
 	// Write raw payload
-	if _, err = IOMgrConn.Write(rawData); err != nil {
+	if _, err = IOMgrConn.Write(body); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to write payload to IOMgr: %v", err)})
 	}
 

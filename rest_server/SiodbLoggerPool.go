@@ -35,7 +35,7 @@ func (l *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Duration) {
 		path = path + "?" + raw
 	}
 
-	l.Output(INFO, "Request | %3d | %13v | %15s %15v | %s %-7s %s",
+	l.Output(INFO, "Request | %3d | %13v | %15s | %15v | %s | %-7s | %s",
 		c.Writer.Status(),
 		latency,
 		c.ClientIP(),

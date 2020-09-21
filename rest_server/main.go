@@ -1,13 +1,12 @@
 package main
 
 // specs from https://github.com/siodb/siodb/blob/master/docs/dev/designs/RestServer.md
-// TODO: Implement "basic" authentication as describe in RestServer spec
 // TODO: Protect IOMgrbuff with a limit to which it will start to stream
 // TODO: Finish the POST and DELETE implementation
 // TODO: Put chunked WritePayload in function
 // TODO: Put read chunked payload from IOMgr in function
-// TODO: log format
 // TODO: Once cxxman code step 5 in https://github.com/siodb/siodb/blob/master/docs/dev/designs/RestServer.md#post-patch-requests
+// TODO: Implement "basic" authentication as describe in RestServer spec
 
 import (
 	"flag"

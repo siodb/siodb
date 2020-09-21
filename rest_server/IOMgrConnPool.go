@@ -6,15 +6,21 @@ import (
 	"sync"
 )
 
+var (
+	JsonPayloadMinSize uint64 = 1024
+	JsonPayloadMaxSize uint64 = 10 * 1024 * 1024
+)
+
 type IOMgrConnPool struct {
-	network      string
-	HostName     string
-	Port         uint32
-	lock         sync.Mutex
-	connections  chan net.Conn
-	minConnNum   int
-	maxConnNum   int
-	totalConnNum int
+	network            string
+	HostName           string
+	Port               uint32
+	lock               sync.Mutex
+	connections        chan net.Conn
+	minConnNum         int
+	maxConnNum         int
+	totalConnNum       int
+	maxJsonPayloadSize uint64
 }
 
 func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrConnPool, error) {
@@ -28,7 +34,9 @@ func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrC
 	pool.maxConnNum = maxConn
 	pool.connections = make(chan net.Conn, maxConn)
 	pool.totalConnNum = 0
-	pool.parseConfiguration(config)
+	if err := pool.parseConfiguration(config); err != nil {
+		return pool, err
+	}
 	if err := pool.init(); err != nil {
 		return nil, err
 	}
@@ -119,6 +127,17 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 			return fmt.Errorf("no port enabled on iomgr for the rest server")
 		}
 		pool.network = "tcp6"
+	}
+
+	if value, err = siodbConfigFile.GetParameterValue("iomgr.max_json_payload_size"); err != nil {
+		return err
+	}
+	if pool.maxJsonPayloadSize, err = StringToByteSize(value); err != nil {
+		return fmt.Errorf("error for parameter 'iomgr.max_json_payload_size': %v", err)
+	}
+	if pool.maxJsonPayloadSize < JsonPayloadMinSize || pool.maxJsonPayloadSize > JsonPayloadMaxSize {
+		return fmt.Errorf("parameter 'iomgr.max_json_payload_size' (%v) is out of range (%v-%v)",
+			value, JsonPayloadMinSize, JsonPayloadMaxSize)
 	}
 
 	return nil
