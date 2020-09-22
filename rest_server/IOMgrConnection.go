@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SiodbIomgrProtocol"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -21,7 +22,7 @@ type IOMgrConnection struct {
 	pool *IOMgrConnPool
 }
 
-func (IOMgrConn IOMgrConnection) cleanupTCPConn() (err error) {
+func (IOMgrConn *IOMgrConnection) cleanupTCPConn() (err error) {
 
 	var IOMgrChunkSize uint32
 	var counter int16
@@ -44,7 +45,7 @@ func (IOMgrConn IOMgrConnection) cleanupTCPConn() (err error) {
 
 }
 
-func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
+func (IOMgrConn *IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 
 	// Read Payload up to max json payload size
 	body := make([]byte, 0)
@@ -89,18 +90,45 @@ func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 	_, err = IOMgrConn.Write(buf[:encodedLength])
 	if nil != err {
 		siodbLoggerPool.Error("err: %v", err)
-		return err
 	}
 
-	if bytesRead > IOMgrConn.pool.maxJsonPayloadSize {
-		return fmt.Errorf("payload size exceeds limit (%v)", IOMgrConn.pool.maxJsonPayloadSize)
+	// Get Returned message
+	if err = IOMgrConn.readIOMgrResponse(true); err != nil {
+		return err
 	}
 
 	return nil
 
 }
 
-func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
+func (IOMgrConn *IOMgrConnection) readIOMgrResponse(incrementRequestID bool) (err error) {
+
+	var databaseEngineResponse SiodbIomgrProtocol.DatabaseEngineResponse
+
+	if _, err := IOMgrConn.readMessage(DATABASEENGINERESPONSE, &databaseEngineResponse); err != nil {
+		return fmt.Errorf("Unable to read response from IOMgr: %v", err)
+	}
+	siodbLoggerPool.Debug("databaseEngineResponse: %v", databaseEngineResponse)
+	siodbLoggerPool.Debug("databaseEngineResponse.RequestId: %v", databaseEngineResponse.RequestId)
+	siodbLoggerPool.Debug("IOMgrConn.RequestID: %v", IOMgrConn.RequestID)
+
+	if IOMgrConn.RequestID != databaseEngineResponse.RequestId {
+		return fmt.Errorf("request IDs mismatch")
+	}
+
+	if incrementRequestID {
+		IOMgrConn.RequestID++
+	}
+	siodbLoggerPool.Debug("IOMgrConn.RequestID++: %v", IOMgrConn.RequestID)
+
+	if len(databaseEngineResponse.Message) > 0 {
+		return fmt.Errorf("code: %v, message: %v", databaseEngineResponse.Message[0].GetStatusCode(), databaseEngineResponse.Message[0].GetText())
+	}
+
+	return nil
+}
+
+func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 	// Stream through HTTP > 1.1
 	// https://stackoverflow.com/questions/29486086/how-http2-http1-1-proxy-handle-the-transfer-encoding
@@ -159,7 +187,7 @@ func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 }
 
-func (IOMgrConn IOMgrConnection) readVarint32() (bytesRead int, ruint32 uint32, err error) {
+func (IOMgrConn *IOMgrConnection) readVarint32() (bytesRead int, ruint32 uint32, err error) {
 	var ruint64 uint64
 	if bytesRead, ruint64, err = IOMgrConn.readVarint(); err != nil {
 		return bytesRead, uint32(ruint64), err
@@ -167,11 +195,11 @@ func (IOMgrConn IOMgrConnection) readVarint32() (bytesRead int, ruint32 uint32, 
 	return bytesRead, uint32(ruint64), err
 }
 
-func (IOMgrConn IOMgrConnection) readVarint64() (bytesRead int, ruint64 uint64, err error) {
+func (IOMgrConn *IOMgrConnection) readVarint64() (bytesRead int, ruint64 uint64, err error) {
 	return IOMgrConn.readVarint()
 }
 
-func (IOMgrConn IOMgrConnection) readVarint() (bytesRead int, n uint64, err error) {
+func (IOMgrConn *IOMgrConnection) readVarint() (bytesRead int, n uint64, err error) {
 
 	// Function readVarint()
 	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
@@ -220,7 +248,7 @@ func (IOMgrConn IOMgrConnection) readVarint() (bytesRead int, n uint64, err erro
 	return bytesRead, n, err
 }
 
-func (IOMgrConn IOMgrConnection) writeMessage(messageTypeID uint64, m proto.Message) (int, error) {
+func (IOMgrConn *IOMgrConnection) writeMessage(messageTypeID uint64, m proto.Message) (int, error) {
 
 	// Function writeMessage()
 	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/encode.go
@@ -260,7 +288,7 @@ func (IOMgrConn IOMgrConnection) writeMessage(messageTypeID uint64, m proto.Mess
 	return vib + pbmmb, err
 }
 
-func (IOMgrConn IOMgrConnection) readMessage(messageTypeID uint64, m proto.Message) (n int, err error) {
+func (IOMgrConn *IOMgrConnection) readMessage(messageTypeID uint64, m proto.Message) (n int, err error) {
 
 	// Function readMessage()
 	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
@@ -326,7 +354,7 @@ func (IOMgrConn IOMgrConnection) readMessage(messageTypeID uint64, m proto.Messa
 	return bytesRead, proto.Unmarshal(messageBuf, m)
 }
 
-func (IOMgrConn IOMgrConnection) readPayload() (json string, err error) {
+func (IOMgrConn *IOMgrConnection) readPayload() (json string, err error) {
 
 	var chunkSize uint32
 
