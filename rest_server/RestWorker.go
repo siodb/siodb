@@ -25,6 +25,9 @@ func (restWorker *RestWorker) CreateRouter(Port uint32) (err error) {
 	// POST
 	restWorker.ginEngine.POST("/databases/:database_name/tables/:table_name/rows", restWorker.postRows)
 
+	// DELETE
+	restWorker.ginEngine.DELETE("/databases/:database_name/tables/:table_name/rows/:row_id", restWorker.deleteRow)
+
 	return nil
 }
 

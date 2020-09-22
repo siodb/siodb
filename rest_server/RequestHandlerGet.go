@@ -30,7 +30,7 @@ func (restWorker RestWorker) getRows(c *gin.Context) {
 
 func (restWorker RestWorker) getRow(c *gin.Context) {
 
-	siodbLoggerPool.Debug("getRow")
+	siodbLoggerPool.Debug("handler: getRow")
 	var rowID uint64
 	var err error
 	if rowID, err = strconv.ParseUint(c.Param("row_id"), 10, 64); err != nil {
@@ -42,7 +42,7 @@ func (restWorker RestWorker) getRow(c *gin.Context) {
 }
 
 func (restWorker RestWorker) get(
-	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) error {
+	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) (err error) {
 
 	start := time.Now()
 	IOMgrConn, _ := IOMgrCPool.GetTrackedNetConn()
@@ -61,27 +61,14 @@ func (restWorker RestWorker) get(
 		siodbLoggerPool.LogRequest(c, time.Now().Sub(start))
 	}()
 
-	var databaseEngineRestRequest SiodbIomgrProtocol.DatabaseEngineRestRequest
-	databaseEngineRestRequest.RequestId = IOMgrConn.RequestID
-	databaseEngineRestRequest.Verb = SiodbIomgrProtocol.RestVerb_GET
-	databaseEngineRestRequest.ObjectType = ObjectType
-
-	UserName, Token, _ := loadAuthenticationData(c)
-	siodbLoggerPool.Debug("user: %v", UserName)
-	databaseEngineRestRequest.UserName = UserName
-	databaseEngineRestRequest.Token = Token
-
-	if len(ObjectName) > 0 {
-		databaseEngineRestRequest.ObjectName = ObjectName
+	var UserName, Token string
+	if UserName, Token, err = loadAuthenticationData(c); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		return err
 	}
-	if ObjectId > 0 {
-		databaseEngineRestRequest.ObjectId = ObjectId
-	}
-	siodbLoggerPool.Debug("databaseEngineRestRequest: %v", databaseEngineRestRequest)
 
-	// Send DatabaseEngineRestRequest here
-	if _, err := IOMgrConn.writeMessage(DATABASEENGINERESTREQUEST, &databaseEngineRestRequest); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to write message to IOMgr: %v", err)})
+	if err := IOMgrConn.writeIOMgrRequest(SiodbIomgrProtocol.RestVerb_GET, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
@@ -89,7 +76,13 @@ func (restWorker RestWorker) get(
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	} else {
-		IOMgrConn.readChunkedJSON(c)
+
+		// Read and stream chunked JSON
+		if err := IOMgrConn.readChunkedJSON(c); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+			return err
+		}
+
 	}
 
 	return nil

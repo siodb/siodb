@@ -31,7 +31,7 @@ type IOMgrConnPool struct {
 func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrConnPool, error) {
 
 	if minConn > maxConn || minConn < 0 || maxConn <= 0 {
-		return nil, fmt.Errorf("illogical number of connection")
+		return nil, fmt.Errorf("illogical number of connections")
 	}
 
 	pool := &IOMgrConnPool{}

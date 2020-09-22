@@ -51,7 +51,9 @@ func (IOMgrConn *IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) 
 	body := make([]byte, 0)
 	buffer := make([]byte, 1)
 	var bytesRead uint64 = 0
+
 	siodbLoggerPool.Debug("IOMgrConn.pool.maxJsonPayloadSize: %v", IOMgrConn.pool.maxJsonPayloadSize)
+
 	for true {
 		if bytesRead > IOMgrConn.pool.maxJsonPayloadSize {
 			break
@@ -94,7 +96,44 @@ func (IOMgrConn *IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) 
 
 	// Get Returned message
 	if err = IOMgrConn.readIOMgrResponse(true); err != nil {
+		if bytesRead > IOMgrConn.pool.maxJsonPayloadSize {
+			return fmt.Errorf("JSON payload truncated because it has bigger size than authoried (%v). IOMgr: %v",
+				IOMgrConn.pool.maxJsonPayloadSize, err)
+		}
 		return err
+	}
+
+	return nil
+
+}
+
+func (IOMgrConn *IOMgrConnection) writeIOMgrRequest(
+	restVerb SiodbIomgrProtocol.RestVerb,
+	objectType SiodbIomgrProtocol.DatabaseObjectType,
+	userName string,
+	token string,
+	objectName string,
+	objectId uint64) (err error) {
+
+	var databaseEngineRestRequest SiodbIomgrProtocol.DatabaseEngineRestRequest
+	databaseEngineRestRequest.RequestId = IOMgrConn.RequestID
+	databaseEngineRestRequest.Verb = restVerb
+	databaseEngineRestRequest.ObjectType = objectType
+
+	siodbLoggerPool.Debug("user: %v", userName)
+	databaseEngineRestRequest.UserName = userName
+	databaseEngineRestRequest.Token = token
+
+	if len(objectName) > 0 {
+		databaseEngineRestRequest.ObjectName = objectName
+	}
+	if objectId > 0 {
+		databaseEngineRestRequest.ObjectId = objectId
+	}
+	siodbLoggerPool.Debug("databaseEngineRestRequest: %v", databaseEngineRestRequest)
+
+	if _, err := IOMgrConn.writeMessage(DATABASEENGINERESTREQUEST, &databaseEngineRestRequest); err != nil {
+		return fmt.Errorf("Unable to write message to IOMgr: %v", err)
 	}
 
 	return nil
@@ -141,7 +180,7 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 		// Get Current IOMgr chunk Size
 		if _, IOMgrChunkSize, err = IOMgrConn.readVarint32(); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to read chunk size from IOMgr: %v", err)})
+			return fmt.Errorf("Not able to read chunk size from IOMgr: %v", err)
 		}
 		siodbLoggerPool.Debug("IOMgrChunkSize: %v", IOMgrChunkSize)
 		if IOMgrChunkSize == 0 {
@@ -352,33 +391,4 @@ func (IOMgrConn *IOMgrConnection) readMessage(messageTypeID uint64, m proto.Mess
 	}
 
 	return bytesRead, proto.Unmarshal(messageBuf, m)
-}
-
-func (IOMgrConn *IOMgrConnection) readPayload() (json string, err error) {
-
-	var chunkSize uint32
-
-	for {
-		// Get Current Row Size
-		if _, chunkSize, err = IOMgrConn.readVarint32(); err != nil {
-			return json, err
-		}
-		siodbLoggerPool.Debug("chunkSize: %v", chunkSize)
-		if chunkSize == 0 {
-			return json, nil
-		}
-		buff := make([]byte, chunkSize)
-		_, err = io.ReadFull(IOMgrConn, buff)
-
-		for len(buff) > 0 {
-			r, size := utf8.DecodeRune(buff)
-			json = json + fmt.Sprintf("%c", r)
-
-			buff = buff[size:]
-		}
-
-		siodbLoggerPool.Output(TRACE, "payload: %v", json)
-
-	}
-
 }
