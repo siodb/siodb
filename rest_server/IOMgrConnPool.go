@@ -11,12 +11,17 @@ var (
 	JsonPayloadMaxSize uint64 = 10 * 1024 * 1024
 )
 
+type TrackedNetConn struct {
+	net.Conn
+	RequestID uint64
+}
+
 type IOMgrConnPool struct {
 	network            string
 	HostName           string
 	Port               uint32
 	lock               sync.Mutex
-	connections        chan net.Conn
+	connections        chan TrackedNetConn
 	minConnNum         int
 	maxConnNum         int
 	totalConnNum       int
@@ -32,7 +37,7 @@ func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrC
 	pool := &IOMgrConnPool{}
 	pool.minConnNum = minConn
 	pool.maxConnNum = maxConn
-	pool.connections = make(chan net.Conn, maxConn)
+	pool.connections = make(chan TrackedNetConn, maxConn)
 	pool.totalConnNum = 0
 	if err := pool.parseConfiguration(config); err != nil {
 		return pool, err
@@ -55,21 +60,24 @@ func (pool *IOMgrConnPool) init() error {
 	return nil
 }
 
-func (pool *IOMgrConnPool) createConn() (net.Conn, error) {
+func (pool *IOMgrConnPool) createConn() (TrackedNetConn, error) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
+	trackedNetConn := TrackedNetConn{}
 	if pool.totalConnNum >= pool.maxConnNum {
-		return nil, fmt.Errorf("Connot Create new connection. Now has %d.Max is %d", pool.totalConnNum, pool.maxConnNum)
+		return trackedNetConn, fmt.Errorf("Connot Create new connection. Now has %d.Max is %d", pool.totalConnNum, pool.maxConnNum)
 	}
 	conn, err := net.Dial(pool.network, pool.HostName+":"+fmt.Sprintf("%v", pool.Port))
 	if err != nil {
-		return nil, fmt.Errorf("Cannot create new connection.%s", err)
+		return trackedNetConn, fmt.Errorf("Cannot create new connection.%s", err)
 	}
 	pool.totalConnNum = pool.totalConnNum + 1
-	return conn, nil
+	trackedNetConn.Conn = conn
+	trackedNetConn.RequestID = uint64(1)
+	return trackedNetConn, nil
 }
 
-func (pool *IOMgrConnPool) GetConn() (net.Conn, error) {
+func (pool *IOMgrConnPool) GetTrackedNetConn() (*IOMgrConnection, error) {
 
 	go func() {
 		conn, err := pool.createConn()
@@ -80,13 +88,15 @@ func (pool *IOMgrConnPool) GetConn() (net.Conn, error) {
 	}()
 	select {
 	case conn := <-pool.connections:
-		return conn, nil
+		return pool.packConn(conn), nil
 	}
 }
 
-func (pool *IOMgrConnPool) ReturnConn(conn net.Conn) error {
+func (pool *IOMgrConnPool) ReturnTrackedNetConn(IOMgrConn *IOMgrConnection) error {
 
-	if conn == nil {
+	siodbLoggerPool.Debug("ReturnTrackedNetConn trackedNetConn : %v", IOMgrConn)
+
+	if IOMgrConn.TrackedNetConn.Conn == nil {
 		pool.lock.Lock()
 		pool.totalConnNum = pool.totalConnNum - 1
 		pool.lock.Unlock()
@@ -94,11 +104,18 @@ func (pool *IOMgrConnPool) ReturnConn(conn net.Conn) error {
 	}
 
 	select {
-	case pool.connections <- conn:
+	case pool.connections <- IOMgrConn.TrackedNetConn:
 		return nil
 	default:
-		return conn.Close()
+		return IOMgrConn.Close()
 	}
+
+}
+
+func (pool *IOMgrConnPool) packConn(trackedNetConn TrackedNetConn) *IOMgrConnection {
+	ret := &IOMgrConnection{pool: pool}
+	ret.TrackedNetConn = trackedNetConn
+	return ret
 }
 
 func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) (err error) {

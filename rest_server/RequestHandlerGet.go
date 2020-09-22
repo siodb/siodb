@@ -45,9 +45,8 @@ func (restWorker RestWorker) get(
 	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) error {
 
 	start := time.Now()
-	IOMgrConn := &IOMgrConnection{pool: IOMgrCPool}
-	IOMgrConn.Conn, _ = IOMgrCPool.GetConn()
-	defer IOMgrCPool.ReturnConn(IOMgrConn)
+	IOMgrConn, _ := IOMgrCPool.GetTrackedNetConn()
+	defer IOMgrCPool.ReturnTrackedNetConn(IOMgrConn)
 	siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
 
 	// Use to trap interuption from client
@@ -58,11 +57,12 @@ func (restWorker RestWorker) get(
 				siodbLoggerPool.Fatal(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER, "Recovered from: %v", "unable to cleanup TCP buffer after broken pipe from client: %v", err)
 			}
 		}
+		siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
 		siodbLoggerPool.LogRequest(c, time.Now().Sub(start))
 	}()
 
 	var databaseEngineRestRequest SiodbIomgrProtocol.DatabaseEngineRestRequest
-	databaseEngineRestRequest.RequestId = restWorker.RequestID
+	databaseEngineRestRequest.RequestId = IOMgrConn.RequestID
 	databaseEngineRestRequest.Verb = SiodbIomgrProtocol.RestVerb_GET
 	databaseEngineRestRequest.ObjectType = ObjectType
 
@@ -92,13 +92,16 @@ func (restWorker RestWorker) get(
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to read response from IOMgr: %v", err)})
 		return err
 	}
-
 	siodbLoggerPool.Debug("databaseEngineResponse: %v", databaseEngineResponse)
-	if restWorker.RequestID != databaseEngineResponse.RequestId {
+	siodbLoggerPool.Debug("databaseEngineResponse.RequestId: %v", databaseEngineResponse.RequestId)
+	siodbLoggerPool.Debug("IOMgrConn.RequestID: %v", IOMgrConn.RequestID)
+
+	if IOMgrConn.RequestID != databaseEngineResponse.RequestId {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "request IDs mismatch."})
 		return nil
 	}
-	restWorker.RequestID++
+	IOMgrConn.RequestID++
+	siodbLoggerPool.Debug("IOMgrConn.RequestID++: %v", IOMgrConn.RequestID)
 
 	// Return error or read and stream chunked JSON
 	if len(databaseEngineResponse.Message) > 0 {

@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"unicode/utf8"
 
@@ -18,7 +17,7 @@ var (
 )
 
 type IOMgrConnection struct {
-	net.Conn
+	TrackedNetConn
 	pool *IOMgrConnPool
 }
 
@@ -38,7 +37,7 @@ func (IOMgrConn IOMgrConnection) cleanupTCPConn() (err error) {
 		}
 		siodbLoggerPool.Debug("cleanupTCPConn: Chunk size to drop: %d.", IOMgrChunkSize)
 		buff := make([]byte, IOMgrChunkSize)
-		_, err = io.ReadFull(IOMgrConn.Conn, buff)
+		_, err = io.ReadFull(IOMgrConn, buff)
 
 		counter++
 	}
@@ -51,10 +50,10 @@ func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 	body := make([]byte, 0)
 	buffer := make([]byte, 1)
 	var bytesRead uint64 = 0
+	siodbLoggerPool.Debug("IOMgrConn.pool.maxJsonPayloadSize: %v", IOMgrConn.pool.maxJsonPayloadSize)
 	for true {
-		if bytesRead >= IOMgrConn.pool.maxJsonPayloadSize {
-			return fmt.Errorf("the request body exceeds the maximum allowed limit (%v)",
-				IOMgrConn.pool.maxJsonPayloadSize)
+		if bytesRead > IOMgrConn.pool.maxJsonPayloadSize {
+			break
 		}
 		newBytesRead, err := c.Request.Body.Read(buffer)
 		if newBytesRead == 0 {
@@ -67,28 +66,34 @@ func (IOMgrConn IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
 		body = append(body, buffer[0])
 		bytesRead = bytesRead + uint64(newBytesRead)
 	}
-	siodbLoggerPool.Trace("Request.body: %s", body)
+	siodbLoggerPool.Debug("Request.body: %s", body)
 	siodbLoggerPool.Debug("bytes read: %v", bytesRead)
 	siodbLoggerPool.Debug("len(Request.body): %v", len(body))
 
-	// Write Payload length
 	var buf [binary.MaxVarintLen32]byte
+	// Write Payload length
 	encodedLength := binary.PutUvarint(buf[:], uint64(len(body)))
-	_, err = IOMgrConn.Conn.Write(buf[:encodedLength])
+	_, err = IOMgrConn.Write(buf[:encodedLength])
 	if nil != err {
-		siodbLoggerPool.Error("err: %v", err)
+		return err
 	}
 
 	// Write raw payload
 	if _, err = IOMgrConn.Write(body); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error:": fmt.Sprintf("Not able to write payload to IOMgr: %v", err)})
+		siodbLoggerPool.Error("err: %v", err)
+		return fmt.Errorf("not able to write payload to IOMgr: %v", err)
 	}
 
 	// Write 0 to indicate EOF
 	encodedLength = binary.PutUvarint(buf[:], uint64(0))
-	_, err = IOMgrConn.Conn.Write(buf[:encodedLength])
+	_, err = IOMgrConn.Write(buf[:encodedLength])
 	if nil != err {
 		siodbLoggerPool.Error("err: %v", err)
+		return err
+	}
+
+	if bytesRead > IOMgrConn.pool.maxJsonPayloadSize {
+		return fmt.Errorf("payload size exceeds limit (%v)", IOMgrConn.pool.maxJsonPayloadSize)
 	}
 
 	return nil
@@ -117,7 +122,7 @@ func (IOMgrConn IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 		// Form JSONChunk
 		IOMgrbuff := make([]byte, IOMgrChunkSize)
-		_, err = io.ReadFull(IOMgrConn.Conn, IOMgrbuff)
+		_, err = io.ReadFull(IOMgrConn, IOMgrbuff)
 		for len(IOMgrbuff) > 0 {
 			r, size := utf8.DecodeRune(IOMgrbuff)
 			JSONChunk = JSONChunk + fmt.Sprintf("%c", r)
@@ -194,7 +199,7 @@ func (IOMgrConn IOMgrConnection) readVarint() (bytesRead int, n uint64, err erro
 		// We have to read byte by byte here to avoid reading more bytes
 		// than required. Each read byte is appended to what we have
 		// read before.
-		newBytesRead, err := IOMgrConn.Conn.Read(prefixBuf[bytesRead : bytesRead+1])
+		newBytesRead, err := IOMgrConn.Read(prefixBuf[bytesRead : bytesRead+1])
 		if newBytesRead == 0 {
 			if io.EOF == err {
 				return bytesRead, n, nil
@@ -236,7 +241,7 @@ func (IOMgrConn IOMgrConnection) writeMessage(messageTypeID uint64, m proto.Mess
 
 	var buf [binary.MaxVarintLen32]byte
 	encodedLength := binary.PutUvarint(buf[:], messageTypeID)
-	IOMgrConn.Conn.Write(buf[:encodedLength])
+	IOMgrConn.Write(buf[:encodedLength])
 
 	em, err := proto.Marshal(m)
 	if nil != err {
@@ -245,12 +250,12 @@ func (IOMgrConn IOMgrConnection) writeMessage(messageTypeID uint64, m proto.Mess
 
 	encodedLength = binary.PutUvarint(buf[:], uint64(proto.Size(m)))
 
-	vib, err := IOMgrConn.Conn.Write(buf[:encodedLength])
+	vib, err := IOMgrConn.Write(buf[:encodedLength])
 	if nil != err {
 		return vib, err
 	}
 
-	pbmmb, err := IOMgrConn.Conn.Write(em)
+	pbmmb, err := IOMgrConn.Write(em)
 
 	return vib + pbmmb, err
 }
@@ -293,7 +298,7 @@ func (IOMgrConn IOMgrConnection) readMessage(messageTypeID uint64, m proto.Messa
 		// We have to read byte by byte here to avoid reading more bytes
 		// than required. Each read byte is appended to what we have
 		// read before.
-		newBytesRead, err := IOMgrConn.Conn.Read(prefixBuf[bytesRead : bytesRead+1])
+		newBytesRead, err := IOMgrConn.Read(prefixBuf[bytesRead : bytesRead+1])
 		if newBytesRead == 0 {
 			if io.EOF == err {
 				return 0, nil
@@ -312,7 +317,7 @@ func (IOMgrConn IOMgrConnection) readMessage(messageTypeID uint64, m proto.Messa
 	}
 
 	messageBuf := make([]byte, messageLength)
-	newBytesRead, err := io.ReadFull(IOMgrConn.Conn, messageBuf)
+	newBytesRead, err := io.ReadFull(IOMgrConn, messageBuf)
 	bytesRead += newBytesRead
 	if err != nil {
 		return 0, err
@@ -335,7 +340,7 @@ func (IOMgrConn IOMgrConnection) readPayload() (json string, err error) {
 			return json, nil
 		}
 		buff := make([]byte, chunkSize)
-		_, err = io.ReadFull(IOMgrConn.Conn, buff)
+		_, err = io.ReadFull(IOMgrConn, buff)
 
 		for len(buff) > 0 {
 			r, size := utf8.DecodeRune(buff)

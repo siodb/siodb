@@ -9,7 +9,6 @@ import (
 type RestWorker struct {
 	ginEngine *gin.Engine
 	Port      uint32
-	RequestID uint64
 }
 
 func (restWorker *RestWorker) CreateRouter(Port uint32) (err error) {
