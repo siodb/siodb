@@ -1,7 +1,6 @@
 package main
 
 // specs from https://github.com/siodb/siodb/blob/master/docs/dev/designs/RestServer.md
-// TODO: Protect IOMgrbuff with a limit to which it will start to stream
 // TODO: Implement "basic" authentication as described in RestServer spec
 
 import (

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"net/http"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,12 +17,12 @@ func loadAuthenticationData(c *gin.Context) (UserName string, Token string, err 
 
 	// Get Token
 	if len(c.Request.Header.Get("Authorization")) > 0 {
-		if c.Request.Header.Get("Authorization")[0:6] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"scheme_error:": c.Request.Header.Get("Authorization")[0:6]})
+		if c.Request.Header.Get("Authorization")[0:5] != "Basic" {
+			return UserName, Token, fmt.Errorf("only basic authorization scheme allowed")
 		}
-		Token = c.Request.Header.Get("Authorization")[7:]
+		Token = c.Request.Header.Get("Authorization")[6:]
 	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"Authentication_error:": "No Authorization token provided"})
+		return UserName, Token, fmt.Errorf("no Authorization token provided")
 	}
 
 	return UserName, Token, nil
