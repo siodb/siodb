@@ -16,7 +16,7 @@ std::uint8_t* IndexFileHeaderBase::serialize(std::uint8_t* buffer) const noexcep
     buffer = ::pbeEncodeBinary(
             m_fullIndexId.m_databaseUuid.data, m_fullIndexId.m_databaseUuid.size(), buffer);
     buffer = ::pbeEncodeUInt32(m_fullIndexId.m_tableId, buffer);
-    buffer = ::pbeEncodeUInt32(m_fullIndexId.m_indexId, buffer);
+    buffer = ::pbeEncodeUInt64(m_fullIndexId.m_indexId, buffer);
     return buffer;
 }
 
@@ -29,7 +29,7 @@ const std::uint8_t* IndexFileHeaderBase::deserialize(const std::uint8_t* buffer)
     buffer = ::pbeDecodeBinary(
             buffer, &m_fullIndexId.m_databaseUuid.data, m_fullIndexId.m_databaseUuid.size());
     buffer = ::pbeDecodeUInt32(buffer, &m_fullIndexId.m_tableId);
-    buffer = ::pbeDecodeUInt32(buffer, &m_fullIndexId.m_indexId);
+    buffer = ::pbeDecodeUInt64(buffer, &m_fullIndexId.m_indexId);
     return buffer;
 }
 

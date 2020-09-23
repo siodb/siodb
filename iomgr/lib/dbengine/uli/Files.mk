@@ -9,7 +9,6 @@ CXX_SRC+= \
 	uli/Int32UniqueLinearIndex.cpp  \
 	uli/Int64UniqueLinearIndex.cpp  \
 	uli/Int8UniqueLinearIndex.cpp  \
-	uli/NodeCache.cpp  \
 	uli/UInt16UniqueLinearIndex.cpp  \
 	uli/UInt32UniqueLinearIndex.cpp  \
 	uli/UInt64UniqueLinearIndex.cpp  \
@@ -24,9 +23,6 @@ CXX_HDR+= \
 	uli/Int32UniqueLinearIndex.h  \
 	uli/Int64UniqueLinearIndex.h  \
 	uli/Int8UniqueLinearIndex.h  \
-	uli/Node.h  \
-	uli/NodeCache.h  \
-	uli/NodePtr.h  \
 	uli/UInt16UniqueLinearIndex.h  \
 	uli/UInt32UniqueLinearIndex.h  \
 	uli/UInt64UniqueLinearIndex.h  \

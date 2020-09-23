@@ -16,7 +16,7 @@ class IndexColumn;
 
 /** Index column registry record */
 struct IndexColumnRecord {
-    /** Initilizes object of class IndexColumnRecord */
+    /** Initializes object of class IndexColumnRecord */
     IndexColumnRecord() noexcept
         : m_id(0)
         , m_indexId(0)
@@ -26,7 +26,7 @@ struct IndexColumnRecord {
     }
 
     /**
-     * Initilizes object of class IndexColumnRecord.
+     * Initializes object of class IndexColumnRecord.
      * @param id Index column record ID.
      * @param indexId Index ID.
      * @param columnDefinitionId Column definition ID.
@@ -72,8 +72,8 @@ struct IndexColumnRecord {
      * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
-            noexcept;
+    std::uint8_t* serializeUnchecked(
+            std::uint8_t* buffer, unsigned version = kClassVersion) const noexcept;
 
     /**
      * Deserializes object from buffer.

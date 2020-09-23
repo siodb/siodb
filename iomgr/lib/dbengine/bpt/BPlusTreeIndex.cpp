@@ -77,7 +77,7 @@ std::uint32_t BPlusTreeIndex::getDataFileSize() const noexcept
     return m_dataFileSize;
 }
 
-bool BPlusTreeIndex::insert(const void* key, const void* value, bool replaceExisting)
+bool BPlusTreeIndex::insert(const void* key, const void* value)
 {
     // Find a node which should contain the key
     auto node = findNode(key);
@@ -91,7 +91,6 @@ bool BPlusTreeIndex::insert(const void* key, const void* value, bool replaceExis
         const auto newEntry = (*it).m_data;
         if (std::memcmp(newEntry, key, m_keySize) == 0) {
             // Key exists
-            if (replaceExisting) std::memcpy(newEntry + m_keySize, value, m_valueSize);
             return false;
         }
         insertPos = (newEntry - node->m_data - LeafNodeHeader::kSerializedSize) / m_kvPairSize;
@@ -120,14 +119,6 @@ std::uint64_t BPlusTreeIndex::update(const void* key, const void* value)
     return 0;
 }
 
-bool BPlusTreeIndex::markAsDeleted(const void* key, const void* value)
-{
-    // TODO: Implement BPlusTreeIndex::markAsDeleted()
-    TEMPORARY_UNUSED(key);
-    TEMPORARY_UNUSED(value);
-    return false;
-}
-
 void BPlusTreeIndex::flush()
 {
     try {
@@ -139,7 +130,7 @@ void BPlusTreeIndex::flush()
     }
 }
 
-std::uint64_t BPlusTreeIndex::findValue(const void* key, void* value, std::size_t count)
+std::uint64_t BPlusTreeIndex::find(const void* key, void* value, std::size_t count)
 {
     // Check that buffer has some capacity,
     // otherwise there is no sense to continue
@@ -223,7 +214,7 @@ io::FilePtr BPlusTreeIndex::createIndexFile() const
                     kDataFileCreationMode, m_dataFileSize);
         } catch (std::system_error& ex) {
             if (ex.code().value() != ENOTSUP) throw;
-            // O_TMPFILE not supported, fallback to named temporary file
+            // O_TMPFILE not supported, fallback to the named temporary file
             tmpFilePath = m_indexFilePath + kTempFileExtension;
             file = m_table.getDatabase().createFile(
                     tmpFilePath, kBaseExtraOpenFlags, kDataFileCreationMode, m_dataFileSize);

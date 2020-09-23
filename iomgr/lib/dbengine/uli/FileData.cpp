@@ -6,68 +6,50 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
-#include "Node.h"
-#include "UniqueLinearIndex.h"
-#include "../Debug.h"
 #include "../ThrowDatabaseError.h"
+
+// Common project headers
+#include <siodb/common/crt_ext/compiler_defs.h>
 
 namespace siodb::iomgr::dbengine::uli {
 
-FileData::FileData(UniqueLinearIndex& index, io::FilePtr&& file, std::uint64_t fileId)
+FileData::FileData(UniqueLinearIndex& index, std::uint64_t fileId, io::FilePtr&& file)
     : m_index(index)
-    , m_lastNodeTag(0)
+    , m_fileId(fileId)
     , m_file(std::move(file))
-    , m_nodeCount(countNodesInFile())
-    , m_nodeCache(*this, fileId, kNodeCacheCapacity)
+    , m_data(m_index.getDataFileSize() - UniqueLinearIndex::kDataFileHeaderSize)
 {
-}
-
-std::size_t FileData::countNodesInFile() const
-{
-    // Validate index file size
-    struct stat st;
-    if (!m_file->stat(st)) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotStatIndexFile, m_index.getDatabaseName(),
-                m_index.getTableName(), m_index.getName(), m_file->getLastError(),
-                std::strerror(m_file->getLastError()));
-    }
-
-    const auto nodeCount = st.st_size / Node::kSize;
-    if (st.st_size % Node::kSize > 0 || nodeCount < 2) {
-        std::ostringstream str;
-        str << "invalid file size " << st.st_size;
-        throwDatabaseError(IOManagerMessageId::kErrorIndexFileCorrupted, m_index.getDatabaseName(),
-                m_index.getTableName(), m_index.getName(), m_index.getDatabaseUuid(),
-                m_index.getTableId(), m_index.getId(), str.str());
-    }
-
-    return nodeCount;
-}
-
-NodePtr FileData::findNode(std::uint64_t nodeId)
-{
-    auto cachedNode = m_nodeCache.get(nodeId);
-    return cachedNode ? *cachedNode : readNode(nodeId);
-}
-
-NodePtr FileData::readNode(std::uint64_t nodeId)
-{
-    auto node = std::make_shared<Node>(nodeId, ++m_lastNodeTag);
-    const auto nodeOffset = getNodeOffset(nodeId);
-    if (m_file->read(node->m_data, Node::kSize, nodeOffset) != Node::kSize) {
+    if (m_file->read(m_data.data(), m_data.size(), UniqueLinearIndex::kDataFileHeaderSize)
+            != m_data.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadIndexFile,
-                m_index.makeIndexFilePath(getFileId()), m_index.getDatabaseName(),
+                m_index.makeIndexFilePath(m_fileId), m_index.getDatabaseName(),
                 m_index.getTableName(), m_index.getName(), m_index.getDatabaseUuid(),
-                m_index.getTableId(), m_index.getId(), nodeOffset, Node::kSize,
-                m_file->getLastError(), std::strerror(m_file->getLastError()));
+                m_index.getTableId(), m_index.getId(), UniqueLinearIndex::kDataFileHeaderSize,
+                m_data.size(), m_file->getLastError(), std::strerror(m_file->getLastError()));
     }
-    m_nodeCache.emplace(node->m_nodeId, node);
-    return node;
 }
 
-off_t FileData::getNodeOffset(std::uint64_t nodeId) const noexcept
+void FileData::update(std::size_t pos, const void* src, std::size_t size)
 {
-    return (((nodeId - 1) % m_index.getNumberOfNodesPerFile()) + 1) * Node::kSize;
+    const auto addr = &m_data.at(pos);
+    if (SIODB_LIKELY(size > 0)) {
+        const auto dataSize = m_data.size();
+        if (size > dataSize || dataSize - size < pos) {
+            std::ostringstream err;
+            err << "ULI: File #" << m_fileId << ": Invalid update: dataSize=" << dataSize
+                << ", position=" << pos << ", size=" << size;
+            throw std::out_of_range(err.str());
+        }
+        std::memcpy(addr, src, size);
+        const auto offsetInFile = pos + UniqueLinearIndex::kDataFileHeaderSize;
+        if (m_file->write(addr, size, offsetInFile) != size) {
+            throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile,
+                    m_index.makeIndexFilePath(m_fileId), m_index.getDatabaseName(),
+                    m_index.getTableName(), m_index.getName(), m_index.getDatabaseUuid(),
+                    m_index.getTableId(), m_index.getId(), offsetInFile, size,
+                    m_file->getLastError(), std::strerror(m_file->getLastError()));
+        }
+    }
 }
 
 }  // namespace siodb::iomgr::dbengine::uli

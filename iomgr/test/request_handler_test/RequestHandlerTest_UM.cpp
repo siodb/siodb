@@ -11,6 +11,7 @@
 // Common project headers
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
+#include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/utils/Debug.h>
 
 // CRT headers
@@ -77,12 +78,13 @@ constexpr const char* kTestPublicKey =
 void TestUser::create(bool newUser) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    const std::string stateActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    std::ostringstream ss;
-    ss << "CREATE USER " << m_name << " WITH STATE = " << stateActiveStr << ", REAL_NAME = '"
-       << m_realName << '\'';
 
-    parser_ns::SqlParser parser(ss.str());
+    const std::string stateActiveStr = m_active ? "ACTIVE" : "INACTIVE";
+    const std::string statement = stdext::string_builder()
+                                  << "CREATE USER " << m_name << " WITH STATE = " << stateActiveStr
+                                  << ", REAL_NAME = '" << m_realName << '\'';
+
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto createUserRequest =
@@ -142,12 +144,13 @@ void TestUser::drop(bool userExists) const
 void TestUser::alter(bool userExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    const std::string stateActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    std::ostringstream ss;
-    ss << "ALTER USER " << m_name << " SET STATE = " << stateActiveStr << ", REAL_NAME = '"
-       << m_realName << '\'';
 
-    parser_ns::SqlParser parser(ss.str());
+    const std::string stateActiveStr = m_active ? "ACTIVE" : "INACTIVE";
+    const std::string statement = stdext::string_builder()
+                                  << "ALTER USER " << m_name << " SET STATE = " << stateActiveStr
+                                  << ", REAL_NAME = '" << m_realName << '\'';
+
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto alterUserRequest =
@@ -225,13 +228,13 @@ void TestUser::checkExists(bool mustExist) const
 void TestUserAccessKey::create(bool newKey) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    const std::string keyActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    std::ostringstream ss;
 
-    ss << "ALTER USER " << m_userName << " ADD ACCESS KEY " << m_keyName << " '" << m_keyText
-       << "' WITH STATE = " << keyActiveStr;
+    const auto keyActiveStr = m_active ? "ACTIVE" : "INACTIVE";
+    const std::string statement = stdext::string_builder()
+                                  << "ALTER USER " << m_userName << " ADD ACCESS KEY " << m_keyName
+                                  << " '" << m_keyText << "' WITH STATE = " << keyActiveStr;
 
-    parser_ns::SqlParser parser(ss.str());
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =
@@ -258,9 +261,11 @@ void TestUserAccessKey::create(bool newKey) const
 void TestUserAccessKey::drop(bool keyExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::ostringstream ss;
-    ss << "ALTER USER " << m_userName << " DROP ACCESS KEY " << m_keyName;
-    parser_ns::SqlParser parser(ss.str());
+
+    const std::string statement = stdext::string_builder() << "ALTER USER " << m_userName
+                                                           << " DROP ACCESS KEY " << m_keyName;
+
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =
@@ -286,12 +291,13 @@ void TestUserAccessKey::drop(bool keyExists) const
 void TestUserAccessKey::alter(bool keyExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::ostringstream ss;
-    const std::string keyActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    ss << "ALTER USER " << m_userName << " ALTER ACCESS KEY " << m_keyName
-       << " SET STATE = " << keyActiveStr;
 
-    parser_ns::SqlParser parser(ss.str());
+    const auto keyActiveStr = m_active ? "ACTIVE" : "INACTIVE";
+    const std::string statement = stdext::string_builder()
+                                  << "ALTER USER " << m_userName << " ALTER ACCESS KEY "
+                                  << m_keyName << " SET STATE = " << keyActiveStr;
+
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =
@@ -317,11 +323,13 @@ void TestUserAccessKey::alter(bool keyExists) const
 void TestUserAccessKey::checkExists(bool mustExist) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::ostringstream ss;
-    ss << "SELECT * FROM SYS.SYS_USER_ACCESS_KEYS WHERE NAME = '" << boost::to_upper_copy(m_keyName)
-       << "' AND TEXT = '" << m_keyText << "' AND STATE = " << (m_active ? '1' : '0');
 
-    parser_ns::SqlParser parser(ss.str());
+    const std::string statement = stdext::string_builder()
+                                  << "SELECT * FROM SYS.SYS_USER_ACCESS_KEYS WHERE NAME = '"
+                                  << boost::to_upper_copy(m_keyName) << "' AND TEXT = '"
+                                  << m_keyText << "' AND STATE = " << (m_active ? '1' : '0');
+
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =
@@ -381,7 +389,8 @@ void TestUserToken::create(bool newToken)
     }
     ss << ';';
 
-    parser_ns::SqlParser parser(ss.str());
+    const auto statement = ss.str();
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =
@@ -427,9 +436,11 @@ void TestUserToken::create(bool newToken)
 void TestUserToken::drop(bool tokenExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::ostringstream ss;
-    ss << "ALTER USER " << m_userName << " DROP TOKEN " << m_tokenName;
-    parser_ns::SqlParser parser(ss.str());
+
+    const std::string statement = stdext::string_builder()
+                                  << "ALTER USER " << m_userName << " DROP TOKEN " << m_tokenName;
+
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =
@@ -467,8 +478,9 @@ void TestUserToken::alter(bool tokenExists) const
     } else {
         ss << " NULL";
     }
+    const auto statement = ss.str();
 
-    parser_ns::SqlParser parser(ss.str());
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =
@@ -505,8 +517,9 @@ void TestUserToken::checkExists(bool mustExist) const
         ss << " = '" << buffer << "'";
     } else
         ss << " IS NULL";
+    const auto statement = ss.str();
 
-    parser_ns::SqlParser parser(ss.str());
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =
@@ -556,7 +569,9 @@ void TestUserToken::check(bool mustBeValid) const
         ss << tokenStr;
     }
     ss << '\'';
-    parser_ns::SqlParser parser(ss.str());
+    const auto statement = ss.str();
+
+    parser_ns::SqlParser parser(statement);
     parser.parse();
 
     const auto dbeRequest =

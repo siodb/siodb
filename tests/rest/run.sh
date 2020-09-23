@@ -22,9 +22,9 @@ function _killSiodb {
 
 
 ## Parameters
-DATAFILE_DIR=$(cat /etc/siodb/instances/siodb/config | egrep '^data_dir' \
+DATA_DIR=$(cat /etc/siodb/instances/siodb/config | egrep '^data_dir' \
     | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
-LOGFILE_DIR=$(cat /etc/siodb/instances/siodb/config  | egrep '^log.file.destination' \
+LOG_DIR=$(cat /etc/siodb/instances/siodb/config  | egrep '^log.file.destination' \
     | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
 SCRIPT=$(realpath $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
@@ -39,18 +39,23 @@ function _Prepare {
 
   _killSiodb
 
-  if [ -d "${DATAFILE_DIR}" ]; then
-    _log "INFO"  "Purging directory '${DATAFILE_DIR}'"
-    rm -rf ${DATAFILE_DIR}/*
+  if [ -d "${DATA_DIR}" ]; then
+    _log "INFO"  "Purging directory '${DATA_DIR}'"
+    rm -rf ${DATA_DIR}/*
+    rm -rf ${DATA_DIR}/.initialized
+    echo "Contents of the ${DATA_DIR}  after cleanup"
+    ls -la ${DATA_DIR}
   else
-    _log "INFO" "Directory '${DATAFILE_DIR}' must exist."
+    _log "INFO" "Directory '${DATA_DIR}' must exist."
   fi
 
-  if [ -d "${LOGFILE_DIR}" ]; then
-    _log "INFO" "Purging directory '${LOGFILE_DIR}'"
-    rm -rf ${LOGFILE_DIR}/*
+  if [ -d "${LOG_DIR}" ]; then
+    _log "INFO" "Purging directory '${LOG_DIR}'"
+    rm -rf ${LOG_DIR}/*
+    echo "Contents of the ${LOG_DIR}  after cleanup"
+    ls -la ${LOG_DIR}
   else
-    _log "INFO" "Directory '${LOGFILE_DIR}' must exist."
+    _log "INFO" "Directory '${LOG_DIR}' must exist."
   fi
 
   sleep 5
@@ -90,13 +95,13 @@ function _StopSiodb {
 }
 
 function _CheckLogFiles {
-  _log "INFO" "Checking error in the log files"
-  ERROR_COUNT=$(cat ${LOGFILE_DIR}/* | grep error | wc -l)
+  _log "INFO" "Checking for errors in the log files"
+  ERROR_COUNT=$(cat ${LOG_DIR}/* | grep error | wc -l)
   if [ "${ERROR_COUNT}" == "0" ]; then
     _log "INFO" "No error detected in the log files"
   else
     echo "## ================================================="
-    echo "`cat ${LOGFILE_DIR}/* | grep error`"
+    echo "`cat ${LOG_DIR}/* | grep -n error`"
     echo "## ================================================="
     _log "ERROR" "I found an issue in the log files"
   fi

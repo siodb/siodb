@@ -151,7 +151,7 @@ void TableDataSet::readMasterColumnRecord()
     IndexValue indexValue;
 
     // Obtain master column record address
-    if (m_masterColumnIndex->findValue(m_currentKey, indexValue.m_data, 1) != 1) {
+    if (m_masterColumnIndex->find(m_currentKey, indexValue.m_data, 1) != 1) {
         throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                 m_table->getDatabaseName(), m_table->getName(), m_table->getDatabaseUuid(),
                 m_table->getId(), 2);

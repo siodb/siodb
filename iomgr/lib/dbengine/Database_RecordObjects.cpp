@@ -17,7 +17,7 @@ namespace siodb::iomgr::dbengine {
 void Database::recordTable(const Table& table, const TransactionParameters& tp)
 {
     LOG_DEBUG << "Database " << m_name << ": Recording table #" << table.getId() << ' '
-              << table.getName();
+              << table.getName() << " @" << static_cast<const void*>(&table);
     std::vector<Variant> values(m_sysTablesTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = static_cast<std::int8_t>(table.getType());
@@ -34,7 +34,8 @@ void Database::recordConstraintDefinition(
         const ConstraintDefinition& constraintDefinition, const TransactionParameters& tp)
 {
     LOG_DEBUG << "Database " << m_name << ": Recording constraint definition #"
-              << constraintDefinition.getId();
+              << constraintDefinition.getId() << " @"
+              << static_cast<const void*>(&constraintDefinition);
     std::vector<Variant> values(m_sysConstraintDefsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = static_cast<std::int8_t>(constraintDefinition.getType());
@@ -53,7 +54,7 @@ void Database::recordConstraintDefinition(
 void Database::recordConstraint(const Constraint& constraint, const TransactionParameters& tp)
 {
     LOG_DEBUG << "Database " << m_name << ": Recording constraint #" << constraint.getId() << ' '
-              << constraint.getName();
+              << constraint.getName() << " @" << static_cast<const void*>(&constraint);
     std::vector<Variant> values(m_sysConstraintsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = constraint.getName();
@@ -69,7 +70,8 @@ void Database::recordConstraint(const Constraint& constraint, const TransactionP
 
 void Database::recordColumnSet(const ColumnSet& columnSet, const TransactionParameters& tp)
 {
-    LOG_DEBUG << "Database " << m_name << ": Recording column set #" << columnSet.getId();
+    LOG_DEBUG << "Database " << m_name << ": Recording column set #" << columnSet.getId() << " @"
+              << static_cast<const void*>(&columnSet);
     std::vector<Variant> values(m_sysColumnSetsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = static_cast<std::uint32_t>(columnSet.getTableId());
@@ -83,7 +85,7 @@ void Database::recordColumnSetColumn(
         const ColumnSetColumn& columnSetColumn, const TransactionParameters& tp)
 {
     LOG_DEBUG << "Database " << m_name << ": Recording column set column #"
-              << columnSetColumn.getId();
+              << columnSetColumn.getId() << " @" << static_cast<const void*>(&columnSetColumn);
     std::vector<Variant> values(m_sysColumnSetColumnsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = columnSetColumn.getColumnSet().getId();
@@ -97,7 +99,8 @@ void Database::recordColumnSetColumn(
 void Database::recordColumn(const Column& column, const TransactionParameters& tp)
 {
     LOG_DEBUG << "Database " << m_name << ": Recording column #" << column.getId() << ' '
-              << column.getTableName() << '.' << column.getName();
+              << column.getTableName() << '.' << column.getName() << " @"
+              << static_cast<const void*>(&column);
     std::vector<Variant> values(m_sysColumnsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = static_cast<std::int32_t>(column.getTableId());
@@ -116,11 +119,12 @@ void Database::recordColumnDefinition(
 {
     LOG_DEBUG << "Database " << m_name << ": Recording column definition #"
               << columnDefinition.getId() << ' ' << columnDefinition.getTableName() << '.'
-              << columnDefinition.getColumnName();
+              << columnDefinition.getColumnName() << " @"
+              << static_cast<const void*>(&columnDefinition);
     std::vector<Variant> values(m_sysColumnDefsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = columnDefinition.getColumnId();
-    values.at(i++) = columnDefinition.getConstraintCount();
+    values.at(i++) = columnDefinition.getConstraints().size();
     m_sysColumnDefsTable->insertRow(std::move(values), tp, columnDefinition.getId());
     m_sysColumnDefsTable->flushIndices();
     LOG_DEBUG << "Database " << m_name << ": Recorded column definition #"
@@ -133,7 +137,8 @@ void Database::recordColumnDefinitionConstraint(
 {
     LOG_DEBUG << "Database " << m_name << ": Recording column definition constraint #"
               << columnDefinitionConstraint.getId() << ' '
-              << columnDefinitionConstraint.getConstraint().getName();
+              << columnDefinitionConstraint.getConstraint().getName() << " @"
+              << static_cast<const void*>(&columnDefinitionConstraint);
     std::vector<Variant> values(m_sysColumnDefConstraintsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = columnDefinitionConstraint.getColumnDefinition().getId();
@@ -166,7 +171,7 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Database::recordInd
         const Index& index, const TransactionParameters& tp)
 {
     LOG_DEBUG << "Database " << m_name << ": Recording index #" << index.getId() << ' '
-              << index.getName();
+              << index.getName() << " @" << static_cast<const void*>(&index);
     std::vector<Variant> values(m_sysIndicesTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = static_cast<std::int16_t>(index.getType());
@@ -207,7 +212,7 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Database::recordInd
     const auto& indexColumn = *index.getColumns().at(columnIndex);
     LOG_DEBUG << "Database " << m_name << ": Recording index column [" << columnIndex << "] #"
               << indexColumn.getId() << " for the index #" << index.getId() << ' '
-              << index.getName();
+              << index.getName() << " @" << static_cast<const void*>(&indexColumn);
     std::vector<Variant> values(m_sysIndexColumnsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = index.getId();
@@ -245,7 +250,6 @@ void Database::recordTableDefinition(const Table& table, const TransactionParame
     // Record constraint definitions, constraints and column constraint definitions
     for (const auto& column : columns) {
         const auto columnDefinition = column->getCurrentColumnDefinition();
-        if (!columnDefinition->hasConstraints()) continue;
         const auto& constraintsIndex = columnDefinition->getConstraints().byConstraintId();
         for (const auto& columnDefinitionConstraint : constraintsIndex) {
             const auto& constraint = columnDefinitionConstraint->getConstraint();

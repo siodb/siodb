@@ -414,14 +414,16 @@ int exportSqlDump(const ClientParameters& params)
 std::string loadUserIdentityKey(const char* path)
 {
     siodb::FDGuard fd(::open(path, O_RDONLY));
-    if (!fd.isValidFd()) stdext::throw_system_error("Can't open user identity key");
+    if (!fd.isValidFd())
+        stdext::throw_system_error("Can't open user identity key file " + std::string(path));
 
     struct stat st;
-    if (::fstat(fd.getFD(), &st) < 0) stdext::throw_system_error("Can't stat user identity key");
+    if (::fstat(fd.getFD(), &st) < 0)
+        stdext::throw_system_error("Can't stat user identity key file " + std::string(path));
 
     if (static_cast<std::size_t>(st.st_size) > siodb::kMaxUserAccessKeySize) {
         throw std::runtime_error(stdext::string_builder()
-                                 << "User identity key of size " << st.st_size
+                                 << "User identity key file " << path << " of size " << st.st_size
                                  << " bytes is longer than allowed maximum size "
                                  << siodb::kMaxUserAccessKeySize << " bytes");
     }
@@ -429,7 +431,7 @@ std::string loadUserIdentityKey(const char* path)
     std::string key;
     key.resize(st.st_size);
     if (::readExact(fd.getFD(), key.data(), key.size(), kIgnoreSignals) != key.size())
-        stdext::throw_system_error("Can't read user identity key");
+        stdext::throw_system_error("Can't read user identity key file " + std::string(path));
 
     return key;
 }

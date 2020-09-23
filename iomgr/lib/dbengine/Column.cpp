@@ -664,11 +664,14 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
 
     switch (record.getOperationType()) {
         case DmlOperationType::kInsert: {
-            m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data, true);
+            if (!m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data)) {
+                throwDatabaseError(IOManagerMessageId::kErrorCannotInsertDuplicateTrid,
+                        getDatabaseName(), getTableName(), m_name, record.getTableRowId());
+            }
             break;
         }
         case DmlOperationType::kDelete: {
-            m_masterColumnData->m_mainIndex->markAsDeleted(indexKey, indexValue.m_data);
+            m_masterColumnData->m_mainIndex->erase(indexKey);
             break;
         }
         case DmlOperationType::kUpdate: {
@@ -1453,10 +1456,10 @@ std::uint32_t Column::loadLobChunkHeaderUnlocked(
 
 void Column::createMasterColumnMainIndex()
 {
-    // Create index
+    LOG_DEBUG << "Creating master column index for the table " << getDatabaseName() << '.'
+              << getTableName();
+
     auto indexName = composeMasterColumnMainIndexName();
-    // NOTE: We specify here index ID = 0, and this will be replaced by actual index ID,
-    // when index object is created.
     const IndexColumnSpecification indexColumnSpec(m_currentColumnDefinition, false);
     m_masterColumnData->m_mainIndex = std::make_shared<UInt64UniqueLinearIndex>(m_table,
             std::move(indexName), kMasterColumnNameMainIndexValueSize, indexColumnSpec,
@@ -1464,7 +1467,7 @@ void Column::createMasterColumnMainIndex()
                                     : kDefaultDataFileDataAreaSize,
             kMasterColumnMainIndexDescription);
 
-    // Prepare index ID file content
+    // Prepare main index ID file content
     std::uint64_t indexId = 0;
     ::pbeEncodeUInt64(
             m_masterColumnData->m_mainIndex->getId(), reinterpret_cast<std::uint8_t*>(&indexId));
@@ -1568,14 +1571,6 @@ void Column::createInitializationFlagFile() const
                 initFlagFile, getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(),
                 m_table.getId(), m_id, "write failed");
     }
-}
-
-int Column::compareEncodedTableRowId(const void* left, const void* right) noexcept
-{
-    std::uint64_t l = 0, r = 0;
-    ::pbeDecodeUInt64(reinterpret_cast<const uint8_t*>(left), &l);
-    ::pbeDecodeUInt64(reinterpret_cast<const uint8_t*>(right), &r);
-    return (l == r) ? 0 : ((l < r) ? -1 : 1);
 }
 
 std::unique_ptr<Column::MasterColumnData> Column::maybeCreateMasterColumnData(

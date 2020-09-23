@@ -169,7 +169,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
     std::uint8_t key[8];
     ::pbeEncodeUInt64(request.m_trid, key);
     IndexValue indexValue;
-    const auto valueCount = index->findValue(key, indexValue.m_data, 1);
+    const auto valueCount = index->find(key, indexValue.m_data, 1);
     if (valueCount > 1) {
         throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                 database->getName(), table->getName(), database->getUuid(), table->getId(), 2);

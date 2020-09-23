@@ -707,7 +707,7 @@ private:
     const std::uint64_t m_firstUserTrid;
 
     /** Initialization flag file name */
-    static constexpr const char* kInitializationFlagFile = "initialized";
+    static constexpr const char* kInitializationFlagFile = ".initialized";
 
     /** Table directory prefix */
     static constexpr const char* kTableDataDirPrefix = "t";

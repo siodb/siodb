@@ -311,6 +311,7 @@ void Database::createSystemTables()
             createTableUnlocked(kSysColumnSetColumnsTableName, TableType::kDisk,
                     kFirstUserTableColumnSetColumnId, kSysColumnSetColumnsTableDescription);
     allTables.push_back(m_sysColumnSetColumnsTable);
+    m_sysColumnSetColumnsTable->setLastSystemTrid(m_tmpTridCounters.m_lastColumnSetColumnId);
 
     // Create table SYS_CONSTRAINT_DEFS
     m_sysConstraintDefsTable = createTableUnlocked(kSysConstraintDefsTableName, TableType::kDisk,
@@ -329,7 +330,8 @@ void Database::createSystemTables()
             TableType::kDisk, kFirstUserTableColumnDefinitionConstraintId,
             kSysColumnDefConstraintsTableDescription);
     allTables.push_back(m_sysColumnDefConstraintsTable);
-    m_sysConstraintsTable->setLastSystemTrid(m_tmpTridCounters.m_lastColumnDefinitionConstraintId);
+    m_sysColumnDefConstraintsTable->setLastSystemTrid(
+            m_tmpTridCounters.m_lastColumnDefinitionConstraintId);
 
     // Create table SYS_INDICES
     m_sysIndicesTable = createTableUnlocked(kSysIndicesTableName, TableType::kDisk,

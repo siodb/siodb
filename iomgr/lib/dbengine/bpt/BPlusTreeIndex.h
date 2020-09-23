@@ -67,10 +67,9 @@ public:
      * Inserts data into the index.
      * @param key A key buffer.
      * @param value A value buffer.
-     * @param replaceExisting flag that indicated if existing value to be replaced.
      * @return true if key was a new one, false if key already existed.
      */
-    bool insert(const void* key, const void* value, bool replaceExisting = false) override;
+    bool insert(const void* key, const void* value) override;
 
     /**
      * Deletes data the index.
@@ -83,30 +82,21 @@ public:
      * Updates data in the index.
      * @param key A key buffer.
      * @param value A value buffer.
-     * @param replaceExisting flag that indicated if existing value to be replaced.
      * @return true if key found, false if key not found.
      */
     std::uint64_t update(const void* key, const void* value) override;
-
-    /**
-     * Marks existing key as deleted and updates value.
-     * @param key A key buffer.
-     * @param value A value buffer.
-     * @return true if key existed and changed, false otherwise.
-     */
-    bool markAsDeleted(const void* key, const void* value) override;
 
     /** Writes cached changes to disk. */
     void flush() override;
 
     /**
-     * Gets data from the index.
+     * Finds key and reads corresponding value.
      * @param key A key buffer.
      * @param value An output buffer.
      * @param count Number of values that can fit in the outout buffer.
      * @return Number of values actually copied.
      */
-    std::uint64_t findValue(const void* key, void* value, std::size_t count) override;
+    std::uint64_t find(const void* key, void* value, std::size_t count) override;
 
     /**
      * Counts how much values available for this key.

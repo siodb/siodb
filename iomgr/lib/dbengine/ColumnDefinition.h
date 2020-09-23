@@ -121,21 +121,9 @@ public:
     }
 
     /**
-     * Returns indication that at least one constraint is associated with this
-     * column definition.
-     * @return true if there is at least one constraint, false otherwise.
-     */
-    bool hasConstraints() const noexcept;
-
-    /**
-     * Returns number of constraints associated with this column definition.
-     * @return Number of constraints.
-     */
-    std::size_t getConstraintCount() const noexcept;
-
-    /**
-     * Returns list of attached constraints. Return valid list only if at least one constraint
-     * is specified. Use @ref hasConstraints() to check that.
+     * Returns list of attached constraints.
+     * Returns valid list only if at least one constraint is specified.
+     * Use hasConstraints() to check that.
      * @return List of constraints.
      */
     const auto& getConstraints() const noexcept

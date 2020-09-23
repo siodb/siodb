@@ -142,6 +142,15 @@ public:
     }
 
     /**
+     * Releases file descriptor.
+     * @return File descriptor.
+     */
+    int releaseFD() noexcept
+    {
+        return m_fd.release();
+    }
+
+    /**
      * Returns last error code due to which last operation has failed.
      * @return Error code.
      */
