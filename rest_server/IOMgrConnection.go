@@ -257,7 +257,7 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 	}
 
 	siodbLoggerPool.Debug("JSONChunkBuff final leftovers size: %v", len(JSONChunkBuff))
-	//siodbLoggerPool.Trace("JSONChunkBuff final leftovers: %v", JSONChunkBuff)
+	siodbLoggerPool.Trace("JSONChunkBuff final leftovers: %v", JSONChunkBuff)
 	c.String(http.StatusOK, JSONChunkBuff)
 
 	return nil
