@@ -36,7 +36,8 @@ func (restWorker RestWorker) delete(
 		if r := recover(); r != nil {
 			siodbLoggerPool.Debug("Recovered from: %v", r)
 			if err := IOMgrConn.cleanupTCPConn(); err != nil {
-				siodbLoggerPool.Fatal(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER, "Recovered from: %v", "unable to cleanup TCP buffer after broken pipe from client: %v", err)
+				siodbLoggerPool.Fatal(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER,
+					"Recovered from: %v", "unable to cleanup TCP buffer after broken pipe from client: %v", err)
 			}
 		}
 		siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
@@ -49,7 +50,8 @@ func (restWorker RestWorker) delete(
 		return err
 	}
 
-	if err := IOMgrConn.writeIOMgrRequest(SiodbIomgrProtocol.RestVerb_DELETE, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
+	if err := IOMgrConn.writeIOMgrRequest(
+		SiodbIomgrProtocol.RestVerb_DELETE, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}

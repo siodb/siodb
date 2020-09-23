@@ -10,38 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (restWorker RestWorker) getDatabases(c *gin.Context) {
-
-	siodbLoggerPool.Debug("getDatabases")
-	restWorker.get(c, SiodbIomgrProtocol.DatabaseObjectType_DATABASE, "", 0)
-}
-
-func (restWorker RestWorker) getTables(c *gin.Context) {
-
-	siodbLoggerPool.Debug("getTables")
-	restWorker.get(c, SiodbIomgrProtocol.DatabaseObjectType_TABLE, c.Param("database_name"), 0)
-}
-
-func (restWorker RestWorker) getRows(c *gin.Context) {
-
-	siodbLoggerPool.Debug("getRows")
-	restWorker.get(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
-}
-
-func (restWorker RestWorker) getRow(c *gin.Context) {
-
-	siodbLoggerPool.Debug("handler: getRow")
+func (restWorker RestWorker) patchRow(c *gin.Context) {
+	siodbLoggerPool.Debug("handler: patchRow")
 	var rowID uint64
 	var err error
 	if rowID, err = strconv.ParseUint(c.Param("row_id"), 10, 64); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "unable to parse row_id."})
 		siodbLoggerPool.Error("%v", err)
 	} else {
-		restWorker.get(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
+		restWorker.patch(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
 	}
 }
 
-func (restWorker RestWorker) get(
+func (restWorker RestWorker) patch(
 	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) (err error) {
 
 	start := time.Now()
@@ -55,7 +36,7 @@ func (restWorker RestWorker) get(
 			siodbLoggerPool.Debug("Recovered from: %v", r)
 			if err := IOMgrConn.cleanupTCPConn(); err != nil {
 				siodbLoggerPool.Fatal(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER,
-					"Recovered from: %v", "unable to cleanup TCP buffer after broken pipe from client: %v", err)
+					"unable to cleanup TCP buffer after broken pipe from client: %v", err)
 			}
 		}
 		siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
@@ -69,22 +50,26 @@ func (restWorker RestWorker) get(
 	}
 
 	if err := IOMgrConn.writeIOMgrRequest(
-		SiodbIomgrProtocol.RestVerb_GET, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
+		SiodbIomgrProtocol.RestVerb_PATCH, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
-	if err := IOMgrConn.readIOMgrResponse(true); err != nil {
+	if err := IOMgrConn.readIOMgrResponse(false); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
-	} else {
+	}
 
-		// Read and stream chunked JSON
-		if err := IOMgrConn.readChunkedJSON(c); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
-			return err
-		}
+	// Write Payload
+	if err := IOMgrConn.streamJSONPayload(c); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		return err
+	}
 
+	// Read and stream chunked JSON
+	if err := IOMgrConn.readChunkedJSON(c); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		return err
 	}
 
 	return nil

@@ -22,6 +22,7 @@ type SiodbLoggerPool struct {
 
 func (l *SiodbLoggerPool) ConfigGinLogger() {
 
+	gin.SetMode(gin.ReleaseMode)
 	gin.DisableConsoleColor()
 	gin.DefaultWriter = ioutil.Discard
 
