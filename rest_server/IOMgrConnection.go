@@ -13,6 +13,10 @@ import (
 )
 
 var (
+	IOMgrChunkMaxBufferedSize uint32 = 1024
+)
+
+var (
 	DATABASEENGINERESPONSE    uint64 = 4
 	DATABASEENGINERESTREQUEST uint64 = 13
 )
@@ -173,6 +177,9 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 	// https://stackoverflow.com/questions/29486086/how-http2-http1-1-proxy-handle-the-transfer-encoding
 
 	var IOMgrChunkSize uint32
+	var IOMgrbuffSize uint32
+	var IOMgrBytesRead int
+	var IOMgrbuffRemain []byte
 	var JSONChunk string
 	var JSONChunkBuff string
 
@@ -183,43 +190,74 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 			return fmt.Errorf("Not able to read chunk size from IOMgr: %v", err)
 		}
 		siodbLoggerPool.Debug("IOMgrChunkSize: %v", IOMgrChunkSize)
+
 		if IOMgrChunkSize == 0 {
 			break
 		}
 
-		// Form JSONChunk
-		IOMgrbuff := make([]byte, IOMgrChunkSize)
-		_, err = io.ReadFull(IOMgrConn, IOMgrbuff)
-		for len(IOMgrbuff) > 0 {
-			r, size := utf8.DecodeRune(IOMgrbuff)
-			JSONChunk = JSONChunk + fmt.Sprintf("%c", r)
-
-			IOMgrbuff = IOMgrbuff[size:]
-		}
-
-		// Bufferizing JSONChunk
-		JSONChunkBuff = JSONChunkBuff + JSONChunk
-		JSONChunk = ""
-
-		siodbLoggerPool.Debug("len(JSONChunkBuff): %v", len(JSONChunkBuff))
-		siodbLoggerPool.Debug("int(restServerConfig.HTTPChunkSize): %v", int(restServerConfig.HTTPChunkSize))
-		if len(JSONChunkBuff) >= int(restServerConfig.HTTPChunkSize) {
-			siodbLoggerPool.Debug("# len(JSONChunkBuff) > restServerConfig.HTTPChunkSize")
-			pos := int(0)
-			for i := 0; i <= (int(len(JSONChunkBuff)) - int(uint64(len(JSONChunkBuff))%restServerConfig.HTTPChunkSize) - int(restServerConfig.HTTPChunkSize)); i = i + int(restServerConfig.HTTPChunkSize) {
-				siodbLoggerPool.Debug("Steaming buffer from position %v to %v.", i, i+int(restServerConfig.HTTPChunkSize))
-				siodbLoggerPool.Output(TRACE, "JSONChunked: %v", JSONChunkBuff[i:i+int(restServerConfig.HTTPChunkSize)])
-				c.String(http.StatusOK, JSONChunkBuff[i:i+int(restServerConfig.HTTPChunkSize)])
-				pos = i
+		for IOMgrChunkSize != 0 {
+			if IOMgrChunkSize < IOMgrChunkMaxBufferedSize {
+				IOMgrbuffSize = IOMgrChunkSize
+				IOMgrChunkSize = 0
+			} else if IOMgrChunkSize >= IOMgrChunkMaxBufferedSize {
+				IOMgrbuffSize = IOMgrChunkMaxBufferedSize
+				IOMgrChunkSize = IOMgrChunkSize - IOMgrChunkMaxBufferedSize
 			}
-			siodbLoggerPool.Debug("pos: %v", pos)
-			JSONChunkBuff = JSONChunkBuff[pos+int(restServerConfig.HTTPChunkSize):]
+			siodbLoggerPool.Debug("IOMgrbuffSize: %v", IOMgrbuffSize)
+
+			IOMgrbuff := make([]byte, uint32(len(IOMgrbuffRemain))+IOMgrbuffSize)
+
+			// Form JSONChunk
+			IOMgrBytesRead, err = io.ReadFull(IOMgrConn, IOMgrbuff[len(IOMgrbuffRemain):])
+			siodbLoggerPool.Debug("Bytes read from IOMgr: %v", IOMgrBytesRead)
+			if len(IOMgrbuffRemain) > 0 {
+				bc := copy(IOMgrbuff, IOMgrbuffRemain)
+				siodbLoggerPool.Debug("Bytes copied from IOMgrbuffRemain into IOMgrbuff : %v", bc)
+				IOMgrbuffRemain = nil
+			}
+
+			for len(IOMgrbuff) > 0 {
+				UTF8rune, size := utf8.DecodeRune(IOMgrbuff)
+				if UTF8rune == utf8.RuneError { // Truncated UTF8 read from IOMgr: keeps for next loop
+					IOMgrbuffRemain = make([]byte, len(IOMgrbuff))
+					IOMgrbuffRemain = IOMgrbuff
+					break
+				} else {
+					JSONChunk = JSONChunk + fmt.Sprintf("%c", UTF8rune)
+					IOMgrbuff = IOMgrbuff[size:]
+				}
+			}
+
+			// Bufferizing JSONChunk
+			JSONChunkBuff = JSONChunkBuff + JSONChunk
+			siodbLoggerPool.Debug("len(IOMgrbuffRemain): %v", len(IOMgrbuffRemain))
+			siodbLoggerPool.Debug("len(JSONChunk): %v", len(JSONChunk))
+			siodbLoggerPool.Debug("len(JSONChunkBuff): %v", len(JSONChunkBuff))
+			JSONChunk = ""
+
+			siodbLoggerPool.Debug("int(restServerConfig.HTTPChunkSize): %v", int(restServerConfig.HTTPChunkSize))
+			siodbLoggerPool.Trace("JSONChunkBuff: %s", JSONChunkBuff)
+			if len(JSONChunkBuff) >= int(restServerConfig.HTTPChunkSize) {
+				siodbLoggerPool.Debug("# len(JSONChunkBuff) > restServerConfig.HTTPChunkSize: sending to client...")
+				pos := int(0)
+				for i := 0; i <= (int(len(JSONChunkBuff)) - int(uint64(len(JSONChunkBuff))%restServerConfig.HTTPChunkSize) - int(restServerConfig.HTTPChunkSize)); i = i + int(restServerConfig.HTTPChunkSize) {
+					siodbLoggerPool.Debug("Steaming buffer from position %v to %v.", i, i+int(restServerConfig.HTTPChunkSize))
+					siodbLoggerPool.Trace("JSONChunkBuff Steamed: %s", JSONChunkBuff[i:i+int(restServerConfig.HTTPChunkSize)])
+					c.String(http.StatusOK, JSONChunkBuff[i:i+int(restServerConfig.HTTPChunkSize)])
+					pos = i
+				}
+				siodbLoggerPool.Debug("pos: %v", pos)
+				JSONChunkBuff = JSONChunkBuff[pos+int(restServerConfig.HTTPChunkSize):]
+				siodbLoggerPool.Debug("JSONChunkBuff leftovers size: %v", len(JSONChunkBuff))
+				siodbLoggerPool.Trace("JSONChunkBuff final leftovers: %s", JSONChunkBuff)
+			}
+
 		}
 
 	}
 
-	siodbLoggerPool.Debug("JSONChunkBuff leftovers size: %v", len(JSONChunkBuff))
-	siodbLoggerPool.Output(TRACE, "JSONChunkBuff leftovers: %v", JSONChunkBuff)
+	siodbLoggerPool.Debug("JSONChunkBuff final leftovers size: %v", len(JSONChunkBuff))
+	//siodbLoggerPool.Trace("JSONChunkBuff final leftovers: %v", JSONChunkBuff)
 	c.String(http.StatusOK, JSONChunkBuff)
 
 	return nil

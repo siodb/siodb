@@ -42,14 +42,14 @@ func main() {
 	siodbConfigFile := &SiodbConfigFile{}
 	siodbConfigFile.path = SiodbInstanceConfigurationPath + "/config"
 	if err := siodbConfigFile.ParseParameters(); err != nil {
-		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
+		fmt.Printf("%v %v %v %v REST Server | %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
 			ttos(FATAL), unix.Getpid(), unix.Gettid(), err)
 		os.Exit(2)
 	}
 
 	// Logging setup
 	if siodbLoggerPool, err = CreateSiodbLoggerPool(siodbConfigFile); err != nil {
-		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
+		fmt.Printf("%v %v %v %v REST Server | %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
 			ttos(FATAL), unix.Getpid(), unix.Gettid(), err)
 		os.Exit(2)
 	}
