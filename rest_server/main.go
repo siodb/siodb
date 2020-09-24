@@ -25,8 +25,13 @@ var (
 func main() {
 
 	// Parse Args
-	SiodbInstanceName := flag.String("instance", "siodb", "Instance name")
+	SiodbInstanceName := flag.String("instance", "", "Instance name")
 	flag.Parse()
+	if len(*SiodbInstanceName) == 0 {
+		fmt.Printf("%v %v %v %v REST Server | %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
+			ttos(FATAL), unix.Getpid(), unix.Gettid(), "Invalid instance name in argument '--instance'")
+		os.Exit(1)
+	}
 
 	// Signals
 	sigs := make(chan os.Signal, 1)
