@@ -1,29 +1,37 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 func loadAuthenticationData(c *gin.Context) (UserName string, Token string, err error) {
 
-	// Get Username
-	if len(c.Request.Header.Get("Username")) > 0 {
-		UserName = c.Request.Header.Get("Username")
-	} else {
-		UserName = "root"
-	}
+	var userPassBase64 string
 
 	// Get Token
 	if len(c.Request.Header.Get("Authorization")) > 0 {
 		if c.Request.Header.Get("Authorization")[0:5] != "Basic" {
-			return UserName, Token, fmt.Errorf("only basic authorization scheme allowed")
+			return UserName, Token, fmt.Errorf("Invalid authorization scheme, expecting basic authorization scheme")
 		}
-		Token = c.Request.Header.Get("Authorization")[6:]
+		userPassBase64 = c.Request.Header.Get("Authorization")[6:]
 	} else {
-		return UserName, Token, fmt.Errorf("no Authorization token provided")
+		return UserName, Token, fmt.Errorf("Invalid authorization information provided")
 	}
+
+	userPass, err := base64.StdEncoding.DecodeString(userPassBase64)
+	if err != nil {
+		return UserName, Token, fmt.Errorf("Invalid authorization information provided")
+	}
+
+	if strings.Count(string(userPass), ":") != 1 {
+		return UserName, Token, fmt.Errorf("Invalid authorization information provided")
+	}
+	UserName = strings.Split(string(userPass), ":")[0]
+	Token = strings.Split(string(userPass), ":")[1]
 
 	return UserName, Token, nil
 }

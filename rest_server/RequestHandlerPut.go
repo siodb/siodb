@@ -4,17 +4,25 @@ import (
 	"SiodbIomgrProtocol"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func (restWorker RestWorker) postRows(c *gin.Context) {
-	siodbLoggerPool.Debug("handler: postRows")
-	restWorker.post(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
+func (restWorker RestWorker) putRow(c *gin.Context) {
+	siodbLoggerPool.Debug("handler: putRow")
+	var rowID uint64
+	var err error
+	if rowID, err = strconv.ParseUint(c.Param("row_id"), 10, 64); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "unable to parse row_id."})
+		siodbLoggerPool.Error("%v", err)
+	} else {
+		restWorker.put(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
+	}
 }
 
-func (restWorker RestWorker) post(
+func (restWorker RestWorker) put(
 	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) (err error) {
 
 	start := time.Now()
@@ -42,7 +50,7 @@ func (restWorker RestWorker) post(
 	}
 
 	if err := IOMgrConn.writeIOMgrRequest(
-		SiodbIomgrProtocol.RestVerb_POST, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
+		SiodbIomgrProtocol.RestVerb_PUT, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}

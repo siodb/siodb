@@ -39,7 +39,7 @@ func (scf *SiodbConfigFile) GetParameterValue(parameter string) (string, error) 
 		}
 	}
 
-	return "", fmt.Errorf("the parameter '%v' doesn't exist in the parameter file", parameter)
+	return "", fmt.Errorf("parameter '%v' doesn't exist in the parameter file", parameter)
 
 }
 

@@ -25,23 +25,24 @@ func StringToByteSize(str string) (bytes uint64, err error) {
 		case "g", "G":
 			bytes = bytes * 1024 * 1024 * 1024
 		default:
-			return bytes, fmt.Errorf("unknown unit '%v' for parameter '"+str+"'", Unit)
+			return bytes, fmt.Errorf("Invalid unit for parameter '%v'", str)
 		}
 	} else {
 		if bytes, err = strconv.ParseUint(str, 10, 64); err != nil {
-			return bytes, fmt.Errorf("error for parameter '"+str+"': %v", err)
+			return bytes, fmt.Errorf("Invalid parameter '%v'", str)
 		}
 	}
 
 	return bytes, nil
 }
+
 func StringToPortNumber(str string) (port uint32, err error) {
 	var ui64 uint64
 	if ui64, err = strconv.ParseUint(str, 10, 32); err != nil {
-		return port, fmt.Errorf("cannot convert port string to port uint32: %v", str)
+		return 0, fmt.Errorf("Invalid port number '%v'", str)
 	}
 	if ui64 < 0 || port > 65535 {
-		return port, fmt.Errorf("port number out of standard port range", str)
+		return 0, fmt.Errorf("Invalid port number '%v'", str)
 	}
 	return uint32(ui64), nil
 }
@@ -61,7 +62,7 @@ func StringToSeverityLevel(str string) (level uint, err error) {
 	case "fatal":
 		return 6, nil
 	default:
-		return 0, fmt.Errorf("severity level out of authorized range (1-6)", str)
+		return 0, fmt.Errorf("Invalid severity level", str)
 	}
 	return level, nil
 }
@@ -89,7 +90,7 @@ func verifyPath(SiodbInstanceConfigurationPath string, fileName string) (string,
 
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		if _, err := os.Stat(filepath.Dir(SiodbInstanceConfigurationPath) + `/` + fileName); os.IsNotExist(err) {
-			return "", fmt.Errorf("unable to verify file path for value '%v'", fileName)
+			return "", fmt.Errorf("can't stat file %v", fileName)
 		} else {
 			return filepath.Dir(SiodbInstanceConfigurationPath) + `/` + fileName, nil
 		}

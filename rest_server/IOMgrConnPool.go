@@ -21,7 +21,7 @@ type IOMgrConnPool struct {
 	HostName           string
 	Port               uint32
 	lock               sync.Mutex
-	connections        chan TrackedNetConn
+	connections        chan *TrackedNetConn
 	minConnNum         int
 	maxConnNum         int
 	totalConnNum       int
@@ -31,13 +31,13 @@ type IOMgrConnPool struct {
 func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrConnPool, error) {
 
 	if minConn > maxConn || minConn < 0 || maxConn <= 0 {
-		return nil, fmt.Errorf("illogical number of connections")
+		return nil, fmt.Errorf("Invalid number of connections for the IOMgr connection pool")
 	}
 
 	pool := &IOMgrConnPool{}
 	pool.minConnNum = minConn
 	pool.maxConnNum = maxConn
-	pool.connections = make(chan TrackedNetConn, maxConn)
+	pool.connections = make(chan *TrackedNetConn, maxConn)
 	pool.totalConnNum = 0
 	if err := pool.parseConfiguration(config); err != nil {
 		return pool, err
@@ -60,18 +60,18 @@ func (pool *IOMgrConnPool) init() error {
 	return nil
 }
 
-func (pool *IOMgrConnPool) createConn() (TrackedNetConn, error) {
+func (pool *IOMgrConnPool) createConn() (*TrackedNetConn, error) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
-	trackedNetConn := TrackedNetConn{}
 	if pool.totalConnNum >= pool.maxConnNum {
-		return trackedNetConn, fmt.Errorf("Connot Create new connection. Now has %d.Max is %d", pool.totalConnNum, pool.maxConnNum)
+		return nil, fmt.Errorf("Too many connections, limit is %d", pool.maxConnNum)
 	}
 	conn, err := net.Dial(pool.network, pool.HostName+":"+fmt.Sprintf("%v", pool.Port))
 	if err != nil {
-		return trackedNetConn, fmt.Errorf("Cannot create new connection.%s", err)
+		return nil, fmt.Errorf("Can't create connection: %s", err)
 	}
 	pool.totalConnNum = pool.totalConnNum + 1
+	trackedNetConn := &TrackedNetConn{}
 	trackedNetConn.Conn = conn
 	trackedNetConn.RequestID = uint64(1)
 	return trackedNetConn, nil
@@ -112,7 +112,7 @@ func (pool *IOMgrConnPool) ReturnTrackedNetConn(IOMgrConn *IOMgrConnection) erro
 
 }
 
-func (pool *IOMgrConnPool) packConn(trackedNetConn TrackedNetConn) *IOMgrConnection {
+func (pool *IOMgrConnPool) packConn(trackedNetConn *TrackedNetConn) *IOMgrConnection {
 	ret := &IOMgrConnection{pool: pool}
 	ret.TrackedNetConn = trackedNetConn
 	return ret
@@ -125,19 +125,19 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 	pool.network = "tcp"
 
 	if value, err = siodbConfigFile.GetParameterValue("iomgr.rest.ipv4_port"); err != nil {
-		return fmt.Errorf("error for parameter 'iomgr.rest.ipv4_port': %v", err)
+		return fmt.Errorf("Invalid parameter 'iomgr.rest.ipv4_port': %v", err)
 	}
 	if pool.Port, err = StringToPortNumber(value); err != nil {
-		return fmt.Errorf("error for parameter 'iomgr.rest.ipv4_port': %v", err)
+		return fmt.Errorf("Invalid parameter 'iomgr.rest.ipv4_port': %v", err)
 	}
 
 	if pool.Port == 0 {
 
 		if value, err = siodbConfigFile.GetParameterValue("iomgr.rest.ipv6_port"); err != nil {
-			return fmt.Errorf("error for parameter 'iomgr.rest.ipv6_port': %v", err)
+			return fmt.Errorf("Invalid parameter 'iomgr.rest.ipv6_port': %v", err)
 		}
 		if pool.Port, err = StringToPortNumber(value); err != nil {
-			return fmt.Errorf("error for parameter 'iomgr.rest.ipv6_port': %v", err)
+			return fmt.Errorf("Invalid parameter 'iomgr.rest.ipv6_port': %v", err)
 		}
 
 		if pool.Port == 0 {
@@ -150,10 +150,10 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 		return err
 	}
 	if pool.maxJsonPayloadSize, err = StringToByteSize(value); err != nil {
-		return fmt.Errorf("error for parameter 'iomgr.max_json_payload_size': %v", err)
+		return fmt.Errorf("Invalid parameter 'iomgr.max_json_payload_size': %v", err)
 	}
 	if pool.maxJsonPayloadSize < JsonPayloadMinSize || pool.maxJsonPayloadSize > JsonPayloadMaxSize {
-		return fmt.Errorf("parameter 'iomgr.max_json_payload_size' (%v) is out of range (%v-%v)",
+		return fmt.Errorf("Invalid parameter 'iomgr.max_json_payload_size' (%v) is out of range (%v-%v)",
 			value, JsonPayloadMinSize, JsonPayloadMaxSize)
 	}
 

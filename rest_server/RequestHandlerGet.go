@@ -64,7 +64,7 @@ func (restWorker RestWorker) get(
 
 	var UserName, Token string
 	if UserName, Token, err = loadAuthenticationData(c); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 

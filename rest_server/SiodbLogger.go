@@ -50,13 +50,13 @@ func (sl *SiodbLogger) initLogger() error {
 		logFileName := fmt.Sprintf("rest_%v_%v.log",
 			time.Now().UTC().Format("20060102_150405"), unix.Getppid())
 		if _, err := os.Stat(strings.TrimSpace(strings.ToLower(sl.destination))); os.IsNotExist(err) {
-			return fmt.Errorf("Unknown log destination: %s", strings.TrimSpace(strings.ToLower(sl.destination)))
+			return fmt.Errorf("Invalid log destination: %s", strings.TrimSpace(strings.ToLower(sl.destination)))
 		}
 
 		var logFile io.Writer
 		if logFile, err = os.Create(
 			strings.TrimSpace(strings.ToLower(sl.destination)) + "/" + logFileName); err != nil {
-			return fmt.Errorf("can't create log file: %v", err)
+			return fmt.Errorf("Invalid log file destination: %v", err)
 		}
 		sl.out = logFile
 

@@ -112,10 +112,10 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool Si
 			siodbLogger.channelName = strings.ToLower(value)
 			siodbLogger.destination, _ = siodbConfigFile.GetParameterValue("log." + channel + ".destination")
 			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".severity"); err != nil {
-				return siodbLoggerPool, fmt.Errorf("error for parameter 'log."+channel+".severity': %v", err)
+				return siodbLoggerPool, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			if siodbLogger.severityLevel, err = StringToSeverityLevel(value); err != nil {
-				return siodbLoggerPool, fmt.Errorf("error for parameter 'log."+channel+".severity': %v", err)
+				return siodbLoggerPool, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			siodbLogger.logFileExpirationTimeout, _ = siodbConfigFile.GetParameterValue("log." + channel + ".exp_time")
 			siodbLogger.maxLogFileSize, _ = siodbConfigFile.GetParameterValue("log." + channel + ".max_file_size")
@@ -126,14 +126,14 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool Si
 			siodbLogger.channelName = strings.ToLower(value)
 			siodbLogger.destination, _ = siodbConfigFile.GetParameterValue("log." + channel + ".destination")
 			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".severity"); err != nil {
-				return siodbLoggerPool, fmt.Errorf("error for parameter 'log."+channel+".severity': %v", err)
+				return siodbLoggerPool, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			if siodbLogger.severityLevel, err = StringToSeverityLevel(value); err != nil {
-				return siodbLoggerPool, fmt.Errorf("error for parameter 'log."+channel+".severity': %v", err)
+				return siodbLoggerPool, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 
 		default:
-			return siodbLoggerPool, fmt.Errorf("the channel tpye '%v' doesn't exist", strings.ToLower(value))
+			return siodbLoggerPool, fmt.Errorf("Invalid channel type '%v'", strings.ToLower(value))
 		}
 
 		if err := siodbLogger.initLogger(); err != nil {

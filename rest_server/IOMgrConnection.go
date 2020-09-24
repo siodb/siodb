@@ -14,6 +14,7 @@ import (
 
 var (
 	IOMgrChunkMaxBufferedSize uint32 = 1024
+	MessageLengthMaxSize      uint64 = 1 * 1024 * 1024
 )
 
 var (
@@ -22,7 +23,7 @@ var (
 )
 
 type IOMgrConnection struct {
-	TrackedNetConn
+	*TrackedNetConn
 	pool *IOMgrConnPool
 }
 
@@ -398,7 +399,7 @@ func (IOMgrConn *IOMgrConnection) readMessage(messageTypeID uint64, m proto.Mess
 	// Read Message
 	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
 		if bytesRead >= len(prefixBuf) {
-			return 0, fmt.Errorf("invalid varint64 encountered")
+			return bytesRead, fmt.Errorf("invalid varint64 encountered")
 		}
 		// We have to read byte by byte here to avoid reading more bytes
 		// than required. Each read byte is appended to what we have
@@ -422,10 +423,14 @@ func (IOMgrConn *IOMgrConnection) readMessage(messageTypeID uint64, m proto.Mess
 	}
 
 	messageBuf := make([]byte, messageLength)
+	if messageLength > MessageLengthMaxSize {
+		return bytesRead, fmt.Errorf("message length received (%v) bigger than allowed (%v)",
+			messageLength, MessageLengthMaxSize)
+	}
 	newBytesRead, err := io.ReadFull(IOMgrConn, messageBuf)
 	bytesRead += newBytesRead
 	if err != nil {
-		return 0, err
+		return bytesRead, err
 	}
 
 	return bytesRead, proto.Unmarshal(messageBuf, m)
