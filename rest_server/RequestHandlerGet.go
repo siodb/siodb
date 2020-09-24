@@ -68,25 +68,23 @@ func (restWorker RestWorker) get(
 		return err
 	}
 
-	if err := IOMgrConn.writeIOMgrRequest(
+	var requestID uint64
+	if requestID, err = IOMgrConn.writeIOMgrRequest(
 		SiodbIomgrProtocol.RestVerb_GET, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
-	if err := IOMgrConn.readIOMgrResponse(true); err != nil {
+	if err := IOMgrConn.readIOMgrResponse(requestID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	} else {
-
 		// Read and stream chunked JSON
 		if err := IOMgrConn.readChunkedJSON(c); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 			return err
 		}
-
 	}
 
 	return nil
-
 }

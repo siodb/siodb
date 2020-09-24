@@ -141,7 +141,7 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 		}
 
 		if pool.Port == 0 {
-			return fmt.Errorf("no port enabled on iomgr for the rest server")
+			return fmt.Errorf("Missing iomgr port")
 		}
 		pool.network = "tcp6"
 	}
@@ -153,7 +153,7 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 		return fmt.Errorf("Invalid parameter 'iomgr.max_json_payload_size': %v", err)
 	}
 	if pool.maxJsonPayloadSize < JsonPayloadMinSize || pool.maxJsonPayloadSize > JsonPayloadMaxSize {
-		return fmt.Errorf("Invalid parameter 'iomgr.max_json_payload_size' (%v) is out of range (%v-%v)",
+		return fmt.Errorf("Invalid iomgr.max_json_payload_size=%v, expecting %v-%v",
 			value, JsonPayloadMinSize, JsonPayloadMaxSize)
 	}
 

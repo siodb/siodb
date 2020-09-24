@@ -11,13 +11,11 @@ import (
 
 func StringToByteSize(str string) (bytes uint64, err error) {
 
-	var Unit string = str[len(str)-1:]
-
-	if regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(Unit) {
+	if regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(str[len(str)-1:]) {
 		if bytes, err = strconv.ParseUint(str[:len(str)-1], 10, 64); err != nil {
-			return bytes, err
+			return 0, err
 		}
-		switch Unit {
+		switch str[len(str)-1:] {
 		case "k", "K":
 			bytes = bytes * 1024
 		case "m", "M":
@@ -25,15 +23,46 @@ func StringToByteSize(str string) (bytes uint64, err error) {
 		case "g", "G":
 			bytes = bytes * 1024 * 1024 * 1024
 		default:
-			return bytes, fmt.Errorf("Invalid unit for parameter '%v'", str)
+			return 0, fmt.Errorf("Invalid unit for parameter '%v'", str)
 		}
 	} else {
 		if bytes, err = strconv.ParseUint(str, 10, 64); err != nil {
-			return bytes, fmt.Errorf("Invalid parameter '%v'", str)
+			return 0, fmt.Errorf("Invalid parameter '%v'", str)
 		}
 	}
 
 	return bytes, nil
+}
+
+func StringToSeconds(str string) (seconds uint64, err error) {
+
+	if regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(str[len(str)-1:]) {
+		if seconds, err = strconv.ParseUint(str[:len(str)-1], 10, 64); err != nil {
+			return 0, err
+		}
+		switch str[len(str)-1:] {
+		case "M":
+			seconds = seconds * 60
+		case "h":
+			seconds = seconds * 60 * 60
+		case "d":
+			seconds = seconds * 60 * 60 * 24
+		case "W":
+			seconds = seconds * 60 * 60 * 24 * 7
+		case "m":
+			seconds = seconds * 60 * 60 * 24 * 31
+		case "y":
+			seconds = seconds * 60 * 60 * 24 * 365
+		default:
+			return 0, fmt.Errorf("Invalid unit for parameter '%v'", str)
+		}
+	} else {
+		if seconds, err = strconv.ParseUint(str, 10, 64); err != nil {
+			return 0, fmt.Errorf("Invalid parameter '%v'", str)
+		}
+	}
+
+	return seconds, nil
 }
 
 func StringToPortNumber(str string) (port uint32, err error) {
@@ -97,4 +126,14 @@ func verifyPath(SiodbInstanceConfigurationPath string, fileName string) (string,
 	} else {
 		return fileName, nil
 	}
+}
+
+func AppendBytes(slice []byte, data []byte) []byte {
+	m := len(slice)
+	n := m + len(data)
+	newSlice := make([]byte, n)
+	copy(newSlice, slice)
+	copy(newSlice[m:n], data)
+	slice = newSlice
+	return slice
 }

@@ -20,7 +20,7 @@ type SiodbLoggerPool struct {
 	siodbLogger []*SiodbLogger
 }
 
-func (l *SiodbLoggerPool) ConfigGinLogger() {
+func (loggerPool *SiodbLoggerPool) ConfigGinLogger() {
 
 	gin.SetMode(gin.ReleaseMode)
 	gin.DisableConsoleColor()
@@ -28,7 +28,7 @@ func (l *SiodbLoggerPool) ConfigGinLogger() {
 
 }
 
-func (l *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Duration) {
+func (loggerPool *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Duration) {
 
 	path := c.Request.URL.Path
 	raw := c.Request.URL.RawQuery
@@ -36,7 +36,7 @@ func (l *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Duration) {
 		path = path + "?" + raw
 	}
 
-	l.Output(INFO, "Request | %3d | %13v | %15s | %15v | %s | %-7s | %s",
+	loggerPool.Output(INFO, "Request | %3d | %13v | %15s | %15v | %s | %-7s | %s",
 		c.Writer.Status(),
 		latency,
 		c.ClientIP(),
@@ -47,9 +47,9 @@ func (l *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Duration) {
 	)
 }
 
-func (l *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error {
+func (loggerPool *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error {
 
-	for _, siodbLogger := range l.siodbLogger {
+	for _, siodbLogger := range loggerPool.siodbLogger {
 		siodbLogger.Output(logLevel, s, v...)
 	}
 
@@ -57,28 +57,28 @@ func (l *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error
 
 }
 
-func (l *SiodbLoggerPool) Trace(s string, v ...interface{}) {
-	l.Output(TRACE, s, v...)
+func (loggerPool *SiodbLoggerPool) Trace(s string, v ...interface{}) {
+	loggerPool.Output(TRACE, s, v...)
 }
 
-func (l *SiodbLoggerPool) Debug(s string, v ...interface{}) {
-	l.Output(DEBUG, s, v...)
+func (loggerPool *SiodbLoggerPool) Debug(s string, v ...interface{}) {
+	loggerPool.Output(DEBUG, s, v...)
 }
 
-func (l *SiodbLoggerPool) Info(s string, v ...interface{}) {
-	l.Output(INFO, s, v...)
+func (loggerPool *SiodbLoggerPool) Info(s string, v ...interface{}) {
+	loggerPool.Output(INFO, s, v...)
 }
 
-func (l *SiodbLoggerPool) Warning(s string, v ...interface{}) {
-	l.Output(WARNING, s, v...)
+func (loggerPool *SiodbLoggerPool) Warning(s string, v ...interface{}) {
+	loggerPool.Output(WARNING, s, v...)
 }
 
-func (l *SiodbLoggerPool) Error(s string, v ...interface{}) {
-	l.Output(ERROR, s, v...)
+func (loggerPool *SiodbLoggerPool) Error(s string, v ...interface{}) {
+	loggerPool.Output(ERROR, s, v...)
 }
 
-func (l *SiodbLoggerPool) Fatal(code int, s string, v ...interface{}) {
-	l.Output(FATAL, s, v...)
+func (loggerPool *SiodbLoggerPool) Fatal(code int, s string, v ...interface{}) {
+	loggerPool.Output(FATAL, s, v...)
 	os.Exit(code)
 }
 
@@ -90,13 +90,13 @@ func FormattedOutput(logLevel int, s string, v ...interface{}) string {
 	)
 }
 
-func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool SiodbLoggerPool, err error) {
+func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool *SiodbLoggerPool, err error) {
 
-	siodbLoggerPool = SiodbLoggerPool{}
+	siodbLoggerPool = &SiodbLoggerPool{}
 
 	var channels []string
-	if channels, err = siodbConfigFile.ParseLogChannelName(); err != nil {
-		return siodbLoggerPool, err
+	if channels, err = siodbConfigFile.ParseLogChannelsName(); err != nil {
+		return nil, err
 	}
 	for _, channel := range channels {
 
@@ -112,13 +112,23 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool Si
 			siodbLogger.channelName = strings.ToLower(value)
 			siodbLogger.destination, _ = siodbConfigFile.GetParameterValue("log." + channel + ".destination")
 			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".severity"); err != nil {
-				return siodbLoggerPool, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			if siodbLogger.severityLevel, err = StringToSeverityLevel(value); err != nil {
-				return siodbLoggerPool, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
-			siodbLogger.logFileExpirationTimeout, _ = siodbConfigFile.GetParameterValue("log." + channel + ".exp_time")
-			siodbLogger.maxLogFileSize, _ = siodbConfigFile.GetParameterValue("log." + channel + ".max_file_size")
+			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".max_file_size"); err != nil {
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v", channel, err)
+			}
+			if siodbLogger.maxLogFileSize, err = StringToByteSize(value); err != nil {
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v", channel, err)
+			}
+			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".exp_time"); err != nil {
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.exp_time': %v", channel, err)
+			}
+			if siodbLogger.logFileExpirationTimeout, err = StringToSeconds(value); err != nil {
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.exp_time': %v", channel, err)
+			}
 
 		case "console":
 
@@ -126,18 +136,18 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool Si
 			siodbLogger.channelName = strings.ToLower(value)
 			siodbLogger.destination, _ = siodbConfigFile.GetParameterValue("log." + channel + ".destination")
 			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".severity"); err != nil {
-				return siodbLoggerPool, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			if siodbLogger.severityLevel, err = StringToSeverityLevel(value); err != nil {
-				return siodbLoggerPool, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 
 		default:
-			return siodbLoggerPool, fmt.Errorf("Invalid channel type '%v'", strings.ToLower(value))
+			return nil, fmt.Errorf("Invalid channel type '%v'", strings.ToLower(value))
 		}
 
 		if err := siodbLogger.initLogger(); err != nil {
-			return siodbLoggerPool, err
+			return nil, err
 		}
 		siodbLoggerPool.siodbLogger = append(siodbLoggerPool.siodbLogger, siodbLogger)
 

@@ -41,12 +41,10 @@ func (restWorker *RestWorker) StartHTTPRouter() (err error) {
 
 	err = restWorker.ginEngine.Run(":" + fmt.Sprintf("%v", restWorker.Port))
 	return err
-
 }
 
 func (restWorker *RestWorker) StartHTTPSRouter(TLSCertificate string, TLSPrivateKey string) (err error) {
 
 	err = restWorker.ginEngine.RunTLS(":"+fmt.Sprintf("%v", restWorker.Port), TLSCertificate, TLSPrivateKey)
 	return err
-
 }

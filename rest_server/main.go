@@ -19,7 +19,7 @@ var (
 	IOMgrCPool                         *IOMgrConnPool
 	IOMgrCPoolMinConn                  = 4
 	IOMgrCPoolMaxConn                  = 8
-	siodbLoggerPool                    SiodbLoggerPool
+	siodbLoggerPool                    *SiodbLoggerPool
 )
 
 func main() {

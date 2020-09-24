@@ -26,55 +26,53 @@ const (
 )
 
 type SiodbLogger struct {
-	mu                       sync.Mutex
+	mutex                    sync.Mutex
 	out                      io.Writer // logFile, os.Stdout
 	channelType              uint
 	channelName              string
 	destination              string
-	maxLogFileSize           string
-	logFileExpirationTimeout string
+	maxLogFileSize           uint64
+	logFileExpirationTimeout uint64 // second
 	severityLevel            uint
 }
 
-func (sl *SiodbLogger) initLogger() error {
+func (logger *SiodbLogger) initLogger() error {
 
 	// Derive log destination
 	var err error
-	switch strings.TrimSpace(strings.ToLower(sl.destination)) {
+	switch strings.TrimSpace(strings.ToLower(logger.destination)) {
 	case "stdout":
-		sl.out = os.Stdout
+		logger.out = os.Stdout
 	case "stderr":
-		sl.out = os.Stderr
+		logger.out = os.Stderr
 	default: // Assuming it's a path
 
 		logFileName := fmt.Sprintf("rest_%v_%v.log",
 			time.Now().UTC().Format("20060102_150405"), unix.Getppid())
-		if _, err := os.Stat(strings.TrimSpace(strings.ToLower(sl.destination))); os.IsNotExist(err) {
-			return fmt.Errorf("Invalid log destination: %s", strings.TrimSpace(strings.ToLower(sl.destination)))
+		if _, err := os.Stat(strings.TrimSpace(strings.ToLower(logger.destination))); os.IsNotExist(err) {
+			return fmt.Errorf("Invalid log destination: %s", strings.TrimSpace(strings.ToLower(logger.destination)))
 		}
 
 		var logFile io.Writer
 		if logFile, err = os.Create(
-			strings.TrimSpace(strings.ToLower(sl.destination)) + "/" + logFileName); err != nil {
+			strings.TrimSpace(strings.ToLower(logger.destination)) + "/" + logFileName); err != nil {
 			return fmt.Errorf("Invalid log file destination: %v", err)
 		}
-		sl.out = logFile
+		logger.out = logFile
 
 	}
 
 	return nil
-
 }
 
-func (sl *SiodbLogger) Output(logLevel int, s string, v ...interface{}) error {
+func (logger *SiodbLogger) Output(logLevel int, s string, v ...interface{}) error {
 
-	sl.mu.Lock()
-	defer sl.mu.Unlock()
+	logger.mutex.Lock()
+	defer logger.mutex.Unlock()
 
-	if logLevel >= int(sl.severityLevel) {
-		io.WriteString(sl.out, FormattedOutput(logLevel, s, v...))
+	if logLevel >= int(logger.severityLevel) {
+		io.WriteString(logger.out, FormattedOutput(logLevel, s, v...))
 	}
 
 	return nil
-
 }

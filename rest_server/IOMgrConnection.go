@@ -14,12 +14,13 @@ import (
 
 var (
 	IOMgrChunkMaxBufferedSize uint32 = 1024
-	MessageLengthMaxSize      uint64 = 1 * 1024 * 1024
+	JSONPayloadBufferSize     uint64 = 64 * 1024
+	MessageLengthMaxSize      uint32 = 1 * 1024 * 1024
 )
 
 var (
-	DATABASEENGINERESPONSE    uint64 = 4
-	DATABASEENGINERESTREQUEST uint64 = 13
+	DATABASEENGINERESPONSE    uint32 = 4
+	DATABASEENGINERESTREQUEST uint32 = 13
 )
 
 type IOMgrConnection struct {
@@ -47,36 +48,38 @@ func (IOMgrConn *IOMgrConnection) cleanupTCPConn() (err error) {
 
 		counter++
 	}
-
 }
 
-func (IOMgrConn *IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) {
+func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Context) (err error) {
 
 	// Read Payload up to max json payload size
-	body := make([]byte, 0)
-	buffer := make([]byte, 1)
-	var bytesRead uint64 = 0
-
+	var bytesReadTotal uint64 = 0
+	var body []byte
 	siodbLoggerPool.Debug("IOMgrConn.pool.maxJsonPayloadSize: %v", IOMgrConn.pool.maxJsonPayloadSize)
 
 	for true {
-		if bytesRead > IOMgrConn.pool.maxJsonPayloadSize {
+		buffer := make([]byte, JSONPayloadBufferSize)
+		if JSONPayloadBufferSize > IOMgrConn.pool.maxJsonPayloadSize {
+			buffer = make([]byte, IOMgrConn.pool.maxJsonPayloadSize)
+		}
+		if bytesReadTotal > IOMgrConn.pool.maxJsonPayloadSize {
 			break
 		}
-		newBytesRead, err := c.Request.Body.Read(buffer)
-		if newBytesRead == 0 {
-			if io.EOF == err {
+		bytesRead, err := io.ReadFull(c.Request.Body, buffer)
+		if bytesRead == 0 {
+			if err == io.EOF {
+				body = AppendBytes(body, buffer)
 				break
 			} else if err != nil {
 				return err
 			}
 		}
-		body = append(body, buffer[0])
-		bytesRead = bytesRead + uint64(newBytesRead)
+		body = AppendBytes(body, buffer)
+		bytesReadTotal = bytesReadTotal + uint64(bytesRead)
 	}
-	siodbLoggerPool.Debug("Request.body: %s", body)
-	siodbLoggerPool.Debug("bytes read: %v", bytesRead)
-	siodbLoggerPool.Debug("len(Request.body): %v", len(body))
+	siodbLoggerPool.Trace("body: %s", body)
+	siodbLoggerPool.Debug("bytes read: %v", bytesReadTotal)
+	siodbLoggerPool.Debug("len(body): %v", len(body))
 
 	var buf [binary.MaxVarintLen32]byte
 	// Write Payload length
@@ -100,8 +103,8 @@ func (IOMgrConn *IOMgrConnection) streamJSONPayload(c *gin.Context) (err error) 
 	}
 
 	// Get Returned message
-	if err = IOMgrConn.readIOMgrResponse(true); err != nil {
-		if bytesRead > IOMgrConn.pool.maxJsonPayloadSize {
+	if err = IOMgrConn.readIOMgrResponse(requestID); err != nil {
+		if bytesReadTotal > IOMgrConn.pool.maxJsonPayloadSize {
 			return fmt.Errorf("JSON payload truncated because it has bigger size than authoried (%v). IOMgr: %v",
 				IOMgrConn.pool.maxJsonPayloadSize, err)
 		}
@@ -118,14 +121,14 @@ func (IOMgrConn *IOMgrConnection) writeIOMgrRequest(
 	userName string,
 	token string,
 	objectName string,
-	objectId uint64) (err error) {
+	objectId uint64) (requestId uint64, err error) {
 
+	requestId = IOMgrConn.RequestID
+	IOMgrConn.RequestID++
 	var databaseEngineRestRequest SiodbIomgrProtocol.DatabaseEngineRestRequest
-	databaseEngineRestRequest.RequestId = IOMgrConn.RequestID
+	databaseEngineRestRequest.RequestId = requestId
 	databaseEngineRestRequest.Verb = restVerb
 	databaseEngineRestRequest.ObjectType = objectType
-
-	siodbLoggerPool.Debug("user: %v", userName)
 	databaseEngineRestRequest.UserName = userName
 	databaseEngineRestRequest.Token = token
 
@@ -136,16 +139,17 @@ func (IOMgrConn *IOMgrConnection) writeIOMgrRequest(
 		databaseEngineRestRequest.ObjectId = objectId
 	}
 	siodbLoggerPool.Debug("databaseEngineRestRequest: %v", databaseEngineRestRequest)
+	siodbLoggerPool.Debug("IOMgrConn.RequestID: %v", requestId)
+	siodbLoggerPool.Debug("IOMgrConn.RequestID++: %v", IOMgrConn.RequestID)
 
 	if _, err := IOMgrConn.writeMessage(DATABASEENGINERESTREQUEST, &databaseEngineRestRequest); err != nil {
-		return fmt.Errorf("Unable to write message to IOMgr: %v", err)
+		return requestId, fmt.Errorf("Unable to write message to IOMgr: %v", err)
 	}
 
-	return nil
-
+	return requestId, nil
 }
 
-func (IOMgrConn *IOMgrConnection) readIOMgrResponse(incrementRequestID bool) (err error) {
+func (IOMgrConn *IOMgrConnection) readIOMgrResponse(requestID uint64) (err error) {
 
 	var databaseEngineResponse SiodbIomgrProtocol.DatabaseEngineResponse
 
@@ -156,14 +160,9 @@ func (IOMgrConn *IOMgrConnection) readIOMgrResponse(incrementRequestID bool) (er
 	siodbLoggerPool.Debug("databaseEngineResponse.RequestId: %v", databaseEngineResponse.RequestId)
 	siodbLoggerPool.Debug("IOMgrConn.RequestID: %v", IOMgrConn.RequestID)
 
-	if IOMgrConn.RequestID != databaseEngineResponse.RequestId {
+	if databaseEngineResponse.RequestId != requestID {
 		return fmt.Errorf("request IDs mismatch")
 	}
-
-	if incrementRequestID {
-		IOMgrConn.RequestID++
-	}
-	siodbLoggerPool.Debug("IOMgrConn.RequestID++: %v", IOMgrConn.RequestID)
 
 	if len(databaseEngineResponse.Message) > 0 {
 		return fmt.Errorf("code: %v, message: %v", databaseEngineResponse.Message[0].GetStatusCode(), databaseEngineResponse.Message[0].GetText())
@@ -262,22 +261,59 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 	c.String(http.StatusOK, JSONChunkBuff)
 
 	return nil
-
 }
 
 func (IOMgrConn *IOMgrConnection) readVarint32() (bytesRead int, ruint32 uint32, err error) {
+
+	// Function readVarint()
+	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
+	//
+	// Copyright 2013 Matt T. Proud
+	//
+	// Licensed under the Apache License, Version 2.0 (the "License");
+	// you may not use this file except in compliance with the License.
+	// You may obtain a copy of the License at
+	//
+	//     http://www.apache.org/licenses/LICENSE-2.0
+	//
+	// Unless required by applicable law or agreed to in writing, software
+	// distributed under the License is distributed on an "AS IS" BASIS,
+	// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	// See the License for the specific language governing permissions and
+	// limitations under the License.
+
+	var prefixBuf [binary.MaxVarintLen32]byte
 	var ruint64 uint64
-	if bytesRead, ruint64, err = IOMgrConn.readVarint(); err != nil {
-		return bytesRead, uint32(ruint64), err
+	var varIntBytes int
+	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
+		if bytesRead >= len(prefixBuf) {
+			return bytesRead, ruint32, fmt.Errorf("invalid varint32 encountered")
+		}
+		// We have to read byte by byte here to avoid reading more bytes
+		// than required. Each read byte is appended to what we have
+		// read before.
+		newBytesRead, err := IOMgrConn.Read(prefixBuf[bytesRead : bytesRead+1])
+		if newBytesRead == 0 {
+			if io.EOF == err {
+				return bytesRead, ruint32, nil
+			} else if err != nil {
+				return bytesRead, ruint32, err
+			}
+			// A Reader should not return (0, nil), but if it does,
+			// it should be treated as no-op (according to the
+			// Reader contract). So let's go on...
+			continue
+		}
+		bytesRead += newBytesRead
+		// Now present everything read so far to the varint decoder and
+		// see if a varint can be decoded already.
+		ruint64, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
 	}
+
 	return bytesRead, uint32(ruint64), err
 }
 
 func (IOMgrConn *IOMgrConnection) readVarint64() (bytesRead int, ruint64 uint64, err error) {
-	return IOMgrConn.readVarint()
-}
-
-func (IOMgrConn *IOMgrConnection) readVarint() (bytesRead int, n uint64, err error) {
 
 	// Function readVarint()
 	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
@@ -300,7 +336,7 @@ func (IOMgrConn *IOMgrConnection) readVarint() (bytesRead int, n uint64, err err
 	var varIntBytes int
 	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
 		if bytesRead >= len(prefixBuf) {
-			return bytesRead, n, fmt.Errorf("invalid varint64 encountered")
+			return bytesRead, ruint64, fmt.Errorf("invalid varint64 encountered")
 		}
 		// We have to read byte by byte here to avoid reading more bytes
 		// than required. Each read byte is appended to what we have
@@ -308,9 +344,9 @@ func (IOMgrConn *IOMgrConnection) readVarint() (bytesRead int, n uint64, err err
 		newBytesRead, err := IOMgrConn.Read(prefixBuf[bytesRead : bytesRead+1])
 		if newBytesRead == 0 {
 			if io.EOF == err {
-				return bytesRead, n, nil
+				return bytesRead, ruint64, nil
 			} else if err != nil {
-				return bytesRead, n, err
+				return bytesRead, ruint64, err
 			}
 			// A Reader should not return (0, nil), but if it does,
 			// it should be treated as no-op (according to the
@@ -320,118 +356,79 @@ func (IOMgrConn *IOMgrConnection) readVarint() (bytesRead int, n uint64, err err
 		bytesRead += newBytesRead
 		// Now present everything read so far to the varint decoder and
 		// see if a varint can be decoded already.
-		n, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
+		ruint64, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
+		if ruint64 == 0 && varIntBytes == 0 {
+			return 0, 0, fmt.Errorf("invalid varint64 encountered")
+		}
 	}
 
-	return bytesRead, n, err
+	return bytesRead, ruint64, err
 }
 
-func (IOMgrConn *IOMgrConnection) writeMessage(messageTypeID uint64, m proto.Message) (int, error) {
+func (IOMgrConn *IOMgrConnection) writeMessage(
+	messageTypeID uint32, message proto.Message) (bytesWrittenTotal int, err error) {
 
-	// Function writeMessage()
-	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/encode.go
-	//
-	// Copyright 2013 Matt T. Proud
-	//
-	// Licensed under the Apache License, Version 2.0 (the "License");
-	// you may not use this file except in compliance with the License.
-	// You may obtain a copy of the License at
-	//
-	//     http://www.apache.org/licenses/LICENSE-2.0
-	//
-	// Unless required by applicable law or agreed to in writing, software
-	// distributed under the License is distributed on an "AS IS" BASIS,
-	// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	// See the License for the specific language governing permissions and
-	// limitations under the License.
-
+	var bytesWritten int
 	var buf [binary.MaxVarintLen32]byte
-	encodedLength := binary.PutUvarint(buf[:], messageTypeID)
+	encodedLength := binary.PutUvarint(buf[:], uint64(messageTypeID))
 	IOMgrConn.Write(buf[:encodedLength])
 
-	em, err := proto.Marshal(m)
+	// Write message size
+	encodedLength = binary.PutUvarint(buf[:], uint64(proto.Size(message)))
+
+	bytesWritten, err = IOMgrConn.Write(buf[:encodedLength])
 	if nil != err {
 		return 0, err
 	}
+	bytesWrittenTotal += bytesWritten
 
-	encodedLength = binary.PutUvarint(buf[:], uint64(proto.Size(m)))
-
-	vib, err := IOMgrConn.Write(buf[:encodedLength])
-	if nil != err {
-		return vib, err
+	// Marshal and write message
+	messageMarshaled, err := proto.Marshal(message)
+	if err != nil {
+		return 0, err
 	}
+	bytesWritten, err = IOMgrConn.Write(messageMarshaled)
+	bytesWrittenTotal += bytesWritten
 
-	pbmmb, err := IOMgrConn.Write(em)
-
-	return vib + pbmmb, err
+	return bytesWritten, err
 }
 
-func (IOMgrConn *IOMgrConnection) readMessage(messageTypeID uint64, m proto.Message) (n int, err error) {
+func (IOMgrConn *IOMgrConnection) readMessage(
+	messageTypeID uint32, m proto.Message) (bytesReadTotal int, err error) {
 
-	// Function readMessage()
-	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
-	//
-	// Copyright 2013 Matt T. Proud
-	//
-	// Licensed under the Apache License, Version 2.0 (the "License");
-	// you may not use this file except in compliance with the License.
-	// You may obtain a copy of the License at
-	//
-	//     http://www.apache.org/licenses/LICENSE-2.0
-	//
-	// Unless required by applicable law or agreed to in writing, software
-	// distributed under the License is distributed on an "AS IS" BASIS,
-	// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	// See the License for the specific language governing permissions and
-	// limitations under the License.
+	var bytesRead int
+	var messageLength uint32
+	var readMessageTypeID uint32
 
-	var prefixBuf [binary.MaxVarintLen64]byte
-	var bytesRead, varIntBytes int
-	var messageLength uint64
-	var readMessageTypeID uint64
+	// Read Message Type Id
+	if bytesRead, readMessageTypeID, err = IOMgrConn.readVarint32(); err != nil {
+		return 0, err
+	}
+	bytesReadTotal += bytesRead
 
-	// Read and check Message Type Id
-	_, readMessageTypeID, err = IOMgrConn.readVarint()
+	// Check Message Type Id
 	if messageTypeID != readMessageTypeID {
 		return 0, err
 	}
+	siodbLoggerPool.Debug("readMessage > readMessageTypeID: %v", readMessageTypeID)
 
-	// Read Message
-	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
-		if bytesRead >= len(prefixBuf) {
-			return bytesRead, fmt.Errorf("invalid varint64 encountered")
-		}
-		// We have to read byte by byte here to avoid reading more bytes
-		// than required. Each read byte is appended to what we have
-		// read before.
-		newBytesRead, err := IOMgrConn.Read(prefixBuf[bytesRead : bytesRead+1])
-		if newBytesRead == 0 {
-			if io.EOF == err {
-				return 0, nil
-			} else if err != nil {
-				return 0, err
-			}
-			// A Reader should not return (0, nil), but if it does,
-			// it should be treated as no-op (according to the
-			// Reader contract). So let's go on...
-			continue
-		}
-		bytesRead += newBytesRead
-		// Now present everything read so far to the varint decoder and
-		// see if a varint can be decoded already.
-		messageLength, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
+	// Read messageLength
+	if bytesRead, messageLength, err = IOMgrConn.readVarint32(); err != nil {
+		return 0, err
 	}
+	bytesReadTotal += bytesRead
 
+	// Read message
 	messageBuf := make([]byte, messageLength)
 	if messageLength > MessageLengthMaxSize {
-		return bytesRead, fmt.Errorf("message length received (%v) bigger than allowed (%v)",
+		return 0, fmt.Errorf("message length received (%v) bigger than allowed (%v)",
 			messageLength, MessageLengthMaxSize)
 	}
-	newBytesRead, err := io.ReadFull(IOMgrConn, messageBuf)
-	bytesRead += newBytesRead
+	bytesRead, err = io.ReadFull(IOMgrConn, messageBuf)
+	bytesReadTotal += bytesRead
 	if err != nil {
-		return bytesRead, err
+		return 0, err
 	}
 
-	return bytesRead, proto.Unmarshal(messageBuf, m)
+	return bytesReadTotal, proto.Unmarshal(messageBuf, m)
 }

@@ -41,19 +41,20 @@ func (restWorker RestWorker) post(
 		return err
 	}
 
-	if err := IOMgrConn.writeIOMgrRequest(
+	var requestID uint64
+	if requestID, err = IOMgrConn.writeIOMgrRequest(
 		SiodbIomgrProtocol.RestVerb_POST, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
-	if err := IOMgrConn.readIOMgrResponse(false); err != nil {
+	if err := IOMgrConn.readIOMgrResponse(requestID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	// Write Payload
-	if err := IOMgrConn.streamJSONPayload(c); err != nil {
+	if err := IOMgrConn.writeJSONPayload(requestID, c); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
