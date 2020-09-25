@@ -21,15 +21,12 @@ type SiodbLoggerPool struct {
 }
 
 func (loggerPool *SiodbLoggerPool) ConfigGinLogger() {
-
 	gin.SetMode(gin.ReleaseMode)
 	gin.DisableConsoleColor()
 	gin.DefaultWriter = ioutil.Discard
-
 }
 
 func (loggerPool *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Duration) {
-
 	path := c.Request.URL.Path
 	raw := c.Request.URL.RawQuery
 	if raw != "" {
@@ -48,13 +45,10 @@ func (loggerPool *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Durat
 }
 
 func (loggerPool *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error {
-
 	for _, siodbLogger := range loggerPool.siodbLogger {
 		siodbLogger.Output(logLevel, s, v...)
 	}
-
 	return nil
-
 }
 
 func (loggerPool *SiodbLoggerPool) Trace(s string, v ...interface{}) {
@@ -77,13 +71,12 @@ func (loggerPool *SiodbLoggerPool) Error(s string, v ...interface{}) {
 	loggerPool.Output(ERROR, s, v...)
 }
 
-func (loggerPool *SiodbLoggerPool) Fatal(code int, s string, v ...interface{}) {
+func (loggerPool *SiodbLoggerPool) FatalAndExit(code int, s string, v ...interface{}) {
 	loggerPool.Output(FATAL, s, v...)
 	os.Exit(code)
 }
 
 func FormattedOutput(logLevel int, s string, v ...interface{}) string {
-
 	return fmt.Sprintf("%v %v %v %v REST Server | %s\n",
 		time.Now().UTC().Format("2006-01-02 15:04:05.999999"), ttos(logLevel), unix.Getpid(), unix.Gettid(),
 		fmt.Sprintf(s, v...),
@@ -154,5 +147,4 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool *S
 	}
 
 	return siodbLoggerPool, nil
-
 }

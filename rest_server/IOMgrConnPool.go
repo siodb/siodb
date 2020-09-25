@@ -109,7 +109,6 @@ func (pool *IOMgrConnPool) ReturnTrackedNetConn(IOMgrConn *IOMgrConnection) erro
 	default:
 		return IOMgrConn.Close()
 	}
-
 }
 
 func (pool *IOMgrConnPool) packConn(trackedNetConn *TrackedNetConn) *IOMgrConnection {
@@ -158,5 +157,4 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 	}
 
 	return nil
-
 }

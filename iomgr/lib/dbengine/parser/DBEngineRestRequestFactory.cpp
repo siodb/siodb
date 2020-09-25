@@ -68,7 +68,23 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createRestRequest(
                 case iomgr_protocol::ROW: return createDeleteRowRequest(msg);
                 default: {
                     throw DBEngineRequestFactoryError(
-                            "REST request: Invalid or unsupported object type for the POST "
+                            "REST request: Invalid or unsupported object type for the DELETE "
+                            "request");
+                }
+            }
+        }
+
+        case iomgr_protocol::PUT: {
+            if (input == nullptr) {
+                throw std::runtime_error(
+                        "DBEngineRestRequestFactory::createRestRequest(): Missing input stream, "
+                        "it is required to create PUT request");
+            }
+            switch (msg.object_type()) {
+                case iomgr_protocol::ROW: return createPatchRowRequest(msg, *input);
+                default: {
+                    throw DBEngineRequestFactoryError(
+                            "REST request: Invalid or unsupported object type for the PUT "
                             "request");
                 }
             }

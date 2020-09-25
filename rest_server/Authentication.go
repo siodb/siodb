@@ -30,8 +30,9 @@ func loadAuthenticationData(c *gin.Context) (UserName string, Token string, err 
 	if strings.Count(string(userPass), ":") != 1 {
 		return UserName, Token, fmt.Errorf("Invalid authorization information provided")
 	}
-	UserName = strings.Split(string(userPass), ":")[0]
-	Token = strings.Split(string(userPass), ":")[1]
+	splittedUserPass := strings.Split(string(userPass), ":")
+	UserName = splittedUserPass[0]
+	Token = splittedUserPass[1]
 
 	return UserName, Token, nil
 }

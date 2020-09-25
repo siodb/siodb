@@ -15,7 +15,7 @@ func (restWorker RestWorker) patchRow(c *gin.Context) {
 	var rowID uint64
 	var err error
 	if rowID, err = strconv.ParseUint(c.Param("row_id"), 10, 64); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "unable to parse row_id."})
+		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "Invalid row_id"})
 		siodbLoggerPool.Error("%v", err)
 	} else {
 		restWorker.patch(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
@@ -35,7 +35,7 @@ func (restWorker RestWorker) patch(
 		if r := recover(); r != nil {
 			siodbLoggerPool.Debug("Recovered from: %v", r)
 			if err := IOMgrConn.cleanupTCPConn(); err != nil {
-				siodbLoggerPool.Fatal(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER,
+				siodbLoggerPool.FatalAndExit(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER,
 					"unable to cleanup TCP buffer after broken pipe from client: %v", err)
 			}
 		}
@@ -74,5 +74,4 @@ func (restWorker RestWorker) patch(
 	}
 
 	return nil
-
 }

@@ -135,5 +135,5 @@ func AppendBytes(slice []byte, data []byte) []byte {
 	copy(newSlice, slice)
 	copy(newSlice[m:n], data)
 	slice = newSlice
-	return slice
+	return newSlice
 }

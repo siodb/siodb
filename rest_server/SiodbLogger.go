@@ -48,7 +48,7 @@ func (logger *SiodbLogger) initLogger() error {
 	default: // Assuming it's a path
 
 		logFileName := fmt.Sprintf("rest_%v_%v.log",
-			time.Now().UTC().Format("20060102_150405"), unix.Getppid())
+			time.Now().UTC().Format("20060102_150405"), unix.Getpid())
 		if _, err := os.Stat(strings.TrimSpace(strings.ToLower(logger.destination))); os.IsNotExist(err) {
 			return fmt.Errorf("Invalid log destination: %s", strings.TrimSpace(strings.ToLower(logger.destination)))
 		}

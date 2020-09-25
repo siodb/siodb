@@ -12,6 +12,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+var ()
 var (
 	IOMgrChunkMaxBufferedSize uint32 = 1024
 	JSONPayloadBufferSize     uint64 = 64 * 1024
@@ -66,13 +67,12 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 			break
 		}
 		bytesRead, err := io.ReadFull(c.Request.Body, buffer)
-		if bytesRead == 0 {
-			if err == io.EOF {
-				body = AppendBytes(body, buffer)
-				break
-			} else if err != nil {
-				return err
-			}
+		if err == io.ErrUnexpectedEOF {
+			body = AppendBytes(body, buffer[:bytesRead])
+			bytesReadTotal = bytesReadTotal + uint64(bytesRead)
+			break
+		} else if err != nil {
+			return err
 		}
 		body = AppendBytes(body, buffer)
 		bytesReadTotal = bytesReadTotal + uint64(bytesRead)
@@ -81,11 +81,10 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 	siodbLoggerPool.Debug("bytes read: %v", bytesReadTotal)
 	siodbLoggerPool.Debug("len(body): %v", len(body))
 
-	var buf [binary.MaxVarintLen32]byte
 	// Write Payload length
+	var buf [binary.MaxVarintLen32]byte
 	encodedLength := binary.PutUvarint(buf[:], uint64(len(body)))
-	_, err = IOMgrConn.Write(buf[:encodedLength])
-	if nil != err {
+	if _, err = IOMgrConn.Write(buf[:encodedLength]); err != nil {
 		return err
 	}
 
@@ -240,7 +239,9 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 			if len(JSONChunkBuff) >= int(restServerConfig.HTTPChunkSize) {
 				siodbLoggerPool.Debug("# len(JSONChunkBuff) > restServerConfig.HTTPChunkSize: sending to client...")
 				pos := int(0)
-				for i := 0; i <= (int(len(JSONChunkBuff)) - int(uint64(len(JSONChunkBuff))%restServerConfig.HTTPChunkSize) - int(restServerConfig.HTTPChunkSize)); i = i + int(restServerConfig.HTTPChunkSize) {
+				for i := 0;
+				    i <= (int(len(JSONChunkBuff)) - int(uint64(len(JSONChunkBuff))%restServerConfig.HTTPChunkSize) - int(restServerConfig.HTTPChunkSize));
+				    i = i + int(restServerConfig.HTTPChunkSize) {
 					siodbLoggerPool.Debug("Steaming buffer from position %v to %v.", i, i+int(restServerConfig.HTTPChunkSize))
 					siodbLoggerPool.Trace("JSONChunkBuff Steamed: %s", JSONChunkBuff[i:i+int(restServerConfig.HTTPChunkSize)])
 					c.String(http.StatusOK, JSONChunkBuff[i:i+int(restServerConfig.HTTPChunkSize)])
@@ -264,56 +265,17 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 }
 
 func (IOMgrConn *IOMgrConnection) readVarint32() (bytesRead int, ruint32 uint32, err error) {
-
-	// Function readVarint()
-	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
-	//
-	// Copyright 2013 Matt T. Proud
-	//
-	// Licensed under the Apache License, Version 2.0 (the "License");
-	// you may not use this file except in compliance with the License.
-	// You may obtain a copy of the License at
-	//
-	//     http://www.apache.org/licenses/LICENSE-2.0
-	//
-	// Unless required by applicable law or agreed to in writing, software
-	// distributed under the License is distributed on an "AS IS" BASIS,
-	// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	// See the License for the specific language governing permissions and
-	// limitations under the License.
-
-	var prefixBuf [binary.MaxVarintLen32]byte
 	var ruint64 uint64
-	var varIntBytes int
-	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
-		if bytesRead >= len(prefixBuf) {
-			return bytesRead, ruint32, fmt.Errorf("invalid varint32 encountered")
-		}
-		// We have to read byte by byte here to avoid reading more bytes
-		// than required. Each read byte is appended to what we have
-		// read before.
-		newBytesRead, err := IOMgrConn.Read(prefixBuf[bytesRead : bytesRead+1])
-		if newBytesRead == 0 {
-			if io.EOF == err {
-				return bytesRead, ruint32, nil
-			} else if err != nil {
-				return bytesRead, ruint32, err
-			}
-			// A Reader should not return (0, nil), but if it does,
-			// it should be treated as no-op (according to the
-			// Reader contract). So let's go on...
-			continue
-		}
-		bytesRead += newBytesRead
-		// Now present everything read so far to the varint decoder and
-		// see if a varint can be decoded already.
-		ruint64, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
-	}
-
-	return bytesRead, uint32(ruint64), err
+	bytesRead, ruint64, err = IOMgrConn.readVarint(binary.MaxVarintLen32)
+	ruint32 = uint32(ruint64)
+	return bytesRead, ruint32, err
 }
 
 func (IOMgrConn *IOMgrConnection) readVarint64() (bytesRead int, ruint64 uint64, err error) {
+	return IOMgrConn.readVarint(binary.MaxVarintLen64)
+}
+
+func (IOMgrConn *IOMgrConnection) readVarint(maxVarintLen int) (bytesRead int, ruint64 uint64, err error) {
 
 	// Function readVarint()
 	// source: https://github.com/stashed/stash/blob/master/vendor/github.com/matttproud/golang_protobuf_extensions/pbutil/decode.go
@@ -332,11 +294,11 @@ func (IOMgrConn *IOMgrConnection) readVarint64() (bytesRead int, ruint64 uint64,
 	// See the License for the specific language governing permissions and
 	// limitations under the License.
 
-	var prefixBuf [binary.MaxVarintLen64]byte
+	prefixBuf := make([]byte, maxVarintLen)
 	var varIntBytes int
 	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
 		if bytesRead >= len(prefixBuf) {
-			return bytesRead, ruint64, fmt.Errorf("invalid varint64 encountered")
+			return bytesRead, ruint64, fmt.Errorf("invalid varint (size %v) encountered", maxVarintLen)
 		}
 		// We have to read byte by byte here to avoid reading more bytes
 		// than required. Each read byte is appended to what we have
@@ -357,9 +319,6 @@ func (IOMgrConn *IOMgrConnection) readVarint64() (bytesRead int, ruint64 uint64,
 		// Now present everything read so far to the varint decoder and
 		// see if a varint can be decoded already.
 		ruint64, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
-		if ruint64 == 0 && varIntBytes == 0 {
-			return 0, 0, fmt.Errorf("invalid varint64 encountered")
-		}
 	}
 
 	return bytesRead, ruint64, err
