@@ -117,24 +117,26 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool *S
 				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".max_file_size"); err != nil {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v", channel, err)
-			}
-			if siodbLogger.maxLogFileSize, err = StringToByteSize(value); err != nil {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v", channel, err)
-			}
-			if siodbLogger.maxLogFileSize < LogFileSizeMin {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v, expecting > %v",
-					channel, siodbLogger.maxLogFileSize, LogFileSizeMin)
+				siodbLogger.maxLogFileSize = 0
+			} else {
+				if siodbLogger.maxLogFileSize, err = StringToByteSize(value); err != nil {
+					return nil, fmt.Errorf("Invalid value for parameter 'log.%s.max_file_size': %v", channel, err)
+				}
+				if siodbLogger.maxLogFileSize > 0 && siodbLogger.maxLogFileSize < LogFileSizeMin {
+					return nil, fmt.Errorf("Invalid value for parameter 'log.%s.max_file_size': %v, expecting > %v",
+						channel, siodbLogger.maxLogFileSize, LogFileSizeMin)
+				}
 			}
 			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".exp_time"); err != nil {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.exp_time': %v", channel, err)
-			}
-			if siodbLogger.logFileExpirationTimeout, err = StringToSeconds(value); err != nil {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.exp_time': %v", channel, err)
-			}
-			if siodbLogger.logFileExpirationTimeout < LogFileExpirationTimeoutMin {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v, expecting > %v",
-					channel, siodbLogger.logFileExpirationTimeout, LogFileExpirationTimeoutMin)
+				siodbLogger.logFileExpirationTimeout = 0
+			} else {
+				if siodbLogger.logFileExpirationTimeout, err = StringToSeconds(value); err != nil {
+					return nil, fmt.Errorf("Invalid value for parameter 'log.%s.exp_time': %v", channel, err)
+				}
+				if siodbLogger.logFileExpirationTimeout > 0 && siodbLogger.logFileExpirationTimeout < LogFileExpirationTimeoutMin {
+					return nil, fmt.Errorf("Invalid value for parameter 'log.%s.max_file_size': %v, expecting > %v",
+						channel, siodbLogger.logFileExpirationTimeout, LogFileExpirationTimeoutMin)
+				}
 			}
 
 		case "console":

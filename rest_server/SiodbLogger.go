@@ -89,7 +89,7 @@ func (logger *SiodbLogger) Output(logLevel int, log string) error {
 	defer logger.mutex.Unlock()
 
 	//logger.logFileExpirationTimeout
-	if logger.channelType == FILE {
+	if logger.channelType == FILE && logger.logFileExpirationTimeout > 0 {
 		if time.Now().Unix() > logger.fileCreatedUnixTime+int64(logger.logFileExpirationTimeout) {
 			if err := logger.closeLogFile(); err != nil {
 				return err
@@ -106,7 +106,7 @@ func (logger *SiodbLogger) Output(logLevel int, log string) error {
 	}
 
 	// logger.maxLogFileSize
-	if logger.channelType == FILE {
+	if logger.channelType == FILE && logger.maxLogFileSize > 0 {
 		if fileStat, err := logger.file.Stat(); err != nil {
 			return err
 		} else {
