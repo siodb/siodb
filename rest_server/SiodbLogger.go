@@ -28,6 +28,8 @@ const (
 type SiodbLogger struct {
 	mutex                    sync.Mutex
 	out                      io.Writer // logFile, os.Stdout
+	file                     *os.File
+	fileCreatedUnixTime      int64
 	channelType              uint
 	channelName              string
 	destination              string
@@ -36,42 +38,84 @@ type SiodbLogger struct {
 	severityLevel            uint
 }
 
-func (logger *SiodbLogger) initLogger() error {
+func (logger *SiodbLogger) initLogger() (err error) {
 
 	// Derive log destination
-	var err error
 	switch strings.TrimSpace(strings.ToLower(logger.destination)) {
 	case "stdout":
 		logger.out = os.Stdout
 	case "stderr":
 		logger.out = os.Stderr
 	default: // Assuming it's a path
-
-		logFileName := fmt.Sprintf("rest_%v_%v.log",
-			time.Now().UTC().Format("20060102_150405"), unix.Getpid())
-		if _, err := os.Stat(strings.TrimSpace(strings.ToLower(logger.destination))); os.IsNotExist(err) {
-			return fmt.Errorf("Invalid log destination: %s", strings.TrimSpace(strings.ToLower(logger.destination)))
+		if err = logger.createNewLogFile(); err != nil {
+			return err
 		}
-
-		var logFile io.Writer
-		if logFile, err = os.Create(
-			strings.TrimSpace(strings.ToLower(logger.destination)) + "/" + logFileName); err != nil {
-			return fmt.Errorf("Invalid log file destination: %v", err)
-		}
-		logger.out = logFile
-
 	}
 
 	return nil
 }
 
-func (logger *SiodbLogger) Output(logLevel int, s string, v ...interface{}) error {
+func (logger *SiodbLogger) closeLogFile() (err error) {
+	if err = logger.file.Close(); err != nil {
+		return fmt.Errorf("Cannot close log file: %v", err)
+	}
+	return nil
+}
+
+func (logger *SiodbLogger) createNewLogFile() (err error) {
+
+	logFileName := fmt.Sprintf("rest_%v_%v.log",
+		time.Now().UTC().Format("20060102_150405"), unix.Getpid())
+	if _, err = os.Stat(strings.TrimSpace(strings.ToLower(logger.destination))); os.IsNotExist(err) {
+		return fmt.Errorf("Invalid log destination: %s", strings.TrimSpace(strings.ToLower(logger.destination)))
+	}
+
+	var logFile *os.File
+	if logFile, err = os.Create(
+		strings.TrimSpace(strings.ToLower(logger.destination)) + "/" + logFileName); err != nil {
+		return fmt.Errorf("Invalid log file destination: %v", err)
+	}
+
+	logger.fileCreatedUnixTime = time.Now().Unix()
+	logger.file = logFile
+	logger.out = logFile
+
+	return err
+}
+
+func (logger *SiodbLogger) Output(logLevel int, log string) error {
 
 	logger.mutex.Lock()
 	defer logger.mutex.Unlock()
 
 	if logLevel >= int(logger.severityLevel) {
-		io.WriteString(logger.out, FormattedOutput(logLevel, s, v...))
+		io.WriteString(logger.out, log)
+	}
+
+	if logger.channelType == FILE {
+		//logger.logFileExpirationTimeout
+		if time.Now().Unix() > logger.fileCreatedUnixTime+int64(logger.logFileExpirationTimeout) {
+			if err := logger.closeLogFile(); err != nil {
+				return err
+			}
+			if err := logger.createNewLogFile(); err != nil {
+				return err
+			}
+		}
+
+		// logger.maxLogFileSize
+		if fileStat, err := logger.file.Stat(); err != nil {
+			return err
+		} else {
+			if fileStat.Size() > int64(logger.maxLogFileSize) {
+				if err := logger.closeLogFile(); err != nil {
+					return err
+				}
+				if err := logger.createNewLogFile(); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	return nil

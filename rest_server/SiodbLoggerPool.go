@@ -12,6 +12,11 @@ import (
 )
 
 var (
+	LogFileSizeMin              uint64 = 1 * 1024 * 1024
+	LogFileExpirationTimeoutMin uint64 = 1 * 60
+)
+
+var (
 	FATAL_INIT_ERROR                   = 2
 	FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER = 2
 )
@@ -45,8 +50,9 @@ func (loggerPool *SiodbLoggerPool) LogRequest(c *gin.Context, latency time.Durat
 }
 
 func (loggerPool *SiodbLoggerPool) Output(logLevel int, s string, v ...interface{}) error {
+	log := FormattedOutput(logLevel, s, v...)
 	for _, siodbLogger := range loggerPool.siodbLogger {
-		siodbLogger.Output(logLevel, s, v...)
+		siodbLogger.Output(logLevel, log)
 	}
 	return nil
 }
@@ -116,11 +122,19 @@ func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool *S
 			if siodbLogger.maxLogFileSize, err = StringToByteSize(value); err != nil {
 				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v", channel, err)
 			}
+			if siodbLogger.maxLogFileSize < LogFileSizeMin {
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v, expecting > %v",
+					channel, siodbLogger.maxLogFileSize, LogFileSizeMin)
+			}
 			if value, err = siodbConfigFile.GetParameterValue("log." + channel + ".exp_time"); err != nil {
 				return nil, fmt.Errorf("Invalid parameter 'log.%s.exp_time': %v", channel, err)
 			}
 			if siodbLogger.logFileExpirationTimeout, err = StringToSeconds(value); err != nil {
 				return nil, fmt.Errorf("Invalid parameter 'log.%s.exp_time': %v", channel, err)
+			}
+			if siodbLogger.logFileExpirationTimeout < LogFileExpirationTimeoutMin {
+				return nil, fmt.Errorf("Invalid parameter 'log.%s.max_file_size': %v, expecting > %v",
+					channel, siodbLogger.logFileExpirationTimeout, LogFileExpirationTimeoutMin)
 			}
 
 		case "console":
