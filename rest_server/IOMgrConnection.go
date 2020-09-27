@@ -13,7 +13,7 @@ import (
 var (
 	IOMgrChunkMaxSize         uint32 = 65536
 	IOMgrChunkMaxBufferedSize uint64 = 1021
-	JSONPayloadBufferSize     uint64 = 64 * 1024
+	JSONPayloadBufferSize     uint32 = 2 ^ 31 - 1
 	MessageLengthMaxSize      uint32 = 1 * 1024 * 1024
 )
 
@@ -53,14 +53,21 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 
 	// Read Payload up to max json payload size
 	var bytesReadTotal uint64 = 0
+	var JSONPayloadBufferSize uint64 = 0
 	var body []byte
-	siodbLoggerPool.Debug("IOMgrConn.pool.maxJsonPayloadSize: %v", IOMgrConn.pool.maxJsonPayloadSize)
+
+	if JSONPayloadBufferMaxSize > IOMgrConn.pool.maxJsonPayloadSize {
+		JSONPayloadBufferSize = IOMgrConn.pool.maxJsonPayloadSize
+	} else {
+		JSONPayloadBufferSize = JSONPayloadBufferMaxSize
+
+	}
+	siodbLoggerPool.Debug("IOMgrConn.pool.maxJsonPayloadSize: %v, JSONPayloadBufferMaxSize: %v, JSONPayloadBufferSize: %v",
+		IOMgrConn.pool.maxJsonPayloadSize, JSONPayloadBufferMaxSize, JSONPayloadBufferSize)
+	buffer = make([]byte, JSONPayloadBufferSize)
 
 	for true {
-		buffer := make([]byte, JSONPayloadBufferSize)
-		if JSONPayloadBufferSize > IOMgrConn.pool.maxJsonPayloadSize {
-			buffer = make([]byte, IOMgrConn.pool.maxJsonPayloadSize)
-		}
+
 		if bytesReadTotal > IOMgrConn.pool.maxJsonPayloadSize {
 			break
 		}
@@ -109,7 +116,6 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 	}
 
 	return nil
-
 }
 
 func (IOMgrConn *IOMgrConnection) writeIOMgrRequest(

@@ -120,5 +120,4 @@ func main() {
 
 	sig := <-sigs
 	siodbLoggerPool.Info("Signal received: %v", sig)
-
 }
