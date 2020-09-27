@@ -96,7 +96,7 @@ func StringToSeverityLevel(str string) (level uint, err error) {
 	return level, nil
 }
 
-func ttos(t int) string {
+func SeverityLevelToString(t int) string {
 	switch t {
 	case 1:
 		return "trace"

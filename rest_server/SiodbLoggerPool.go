@@ -84,7 +84,8 @@ func (loggerPool *SiodbLoggerPool) FatalAndExit(code int, s string, v ...interfa
 
 func FormattedOutput(logLevel int, s string, v ...interface{}) string {
 	return fmt.Sprintf("%v %v %v %v REST Server | %s\n",
-		time.Now().UTC().Format("2006-01-02 15:04:05.999999"), ttos(logLevel), unix.Getpid(), unix.Gettid(),
+		time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
+		SeverityLevelToString(logLevel), unix.Getpid(), unix.Gettid(),
 		fmt.Sprintf(s, v...),
 	)
 }

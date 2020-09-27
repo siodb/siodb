@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 	if len(*SiodbInstanceName) == 0 {
 		fmt.Printf("%v %v %v %v REST Server | %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
-			ttos(FATAL), unix.Getpid(), unix.Gettid(), "Invalid instance name in argument '--instance'")
+			SeverityLevelToString(FATAL), unix.Getpid(), unix.Gettid(), "Invalid instance name in argument '--instance'")
 		os.Exit(1)
 	}
 
@@ -46,14 +46,14 @@ func main() {
 	siodbConfigFile.path = SiodbInstanceConfigurationPath + "/config"
 	if err := siodbConfigFile.ParseParameters(); err != nil {
 		fmt.Printf("%v %v %v %v REST Server | %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
-			ttos(FATAL), unix.Getpid(), unix.Gettid(), err)
+			SeverityLevelToString(FATAL), unix.Getpid(), unix.Gettid(), err)
 		os.Exit(2)
 	}
 
 	// Logging setup
 	if siodbLoggerPool, err = CreateSiodbLoggerPool(siodbConfigFile); err != nil {
 		fmt.Printf("%v %v %v %v REST Server | %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
-			ttos(FATAL), unix.Getpid(), unix.Gettid(), err)
+			SeverityLevelToString(FATAL), unix.Getpid(), unix.Gettid(), err)
 		os.Exit(2)
 	}
 	siodbLoggerPool.ConfigGinLogger()
