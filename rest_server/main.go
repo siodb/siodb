@@ -119,5 +119,9 @@ func main() {
 	}
 
 	sig := <-sigs
-	siodbLoggerPool.Info("Signal received: %v", sig)
+	siodbLoggerPool.Info("%v signal received, terminating... ", sig)
+	err = IOMgrCPool.CloseAllConnections()
+	if err != nil {
+		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot close connection pool: %v", err)
+	}
 }

@@ -60,6 +60,17 @@ func (pool *IOMgrConnPool) init() error {
 	return nil
 }
 
+func (pool *IOMgrConnPool) CloseAllConnections() error {
+	for i := 0; i < pool.totalConnNum; i++ {
+		connection := <-pool.connections
+		err := connection.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (pool *IOMgrConnPool) createConn() (*TrackedNetConn, error) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
