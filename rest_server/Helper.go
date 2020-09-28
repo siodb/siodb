@@ -127,12 +127,3 @@ func verifyPath(SiodbInstanceConfigurationPath string, fileName string) (string,
 		return fileName, nil
 	}
 }
-
-func AppendBytes(slice []byte, data []byte) []byte {
-	m := len(slice)
-	n := m + len(data)
-	newSlice := make([]byte, n)
-	copy(newSlice, slice)
-	copy(newSlice[m:n], data)
-	return newSlice
-}
