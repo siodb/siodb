@@ -189,13 +189,7 @@ func (IOMgrConn *IOMgrConnection) readIOMgrResponse(requestID uint64) (err error
 func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 	var IOMgrReceivedChunkSize uint32
-	//var IOMgrBytesRead uint32
-	var IOMgrbuffSize uint32
-	if restServerConfig.HTTPChunkSize < restServerConfig.IOMgrChunkBufferSize {
-		IOMgrbuffSize = uint32(restServerConfig.HTTPChunkSize)
-	} else {
-		IOMgrbuffSize = uint32(restServerConfig.IOMgrChunkBufferSize)
-	}
+	IOMgrbuffSize := uint32(restServerConfig.HTTPChunkSize)
 	IOMgrbuff := make([]byte, IOMgrbuffSize)
 
 	c.Writer.Header().Add("Content-Type", "application/json")
