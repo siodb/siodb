@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,4 +52,15 @@ func (restWorker *RestWorker) StartHTTPSRouter(TLSCertificate string, TLSPrivate
 
 	err = restWorker.ginEngine.RunTLS(":"+fmt.Sprintf("%v", restWorker.Port), TLSCertificate, TLSPrivateKey)
 	return err
+}
+
+func CloseRequest(c *gin.Context, IOMgrConn *IOMgrConnection, start time.Time) {
+	if r := recover(); r != nil {
+		siodbLoggerPool.Debug("Recovered from: %v", r)
+		IOMgrConn.Close()
+		IOMgrConn.TrackedNetConn.Conn = nil
+	}
+	IOMgrCPool.ReturnTrackedNetConn(IOMgrConn)
+	siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
+	siodbLoggerPool.LogRequest(c, time.Now().Sub(start))
 }

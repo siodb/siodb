@@ -17,9 +17,8 @@ import (
 )
 
 var (
-	IOMgrChunkMaxSize    uint32 = 65536
+	IOMgrChunkMaxSize    uint32 = (2 * 1024 * 1024 * 1024) - 1
 	MessageLengthMaxSize uint32 = 1 * 1024 * 1024
-	IOMgrReadDeadline           = 5 * time.Second
 )
 
 var (
@@ -30,38 +29,6 @@ var (
 type IOMgrConnection struct {
 	*TrackedNetConn
 	pool *IOMgrConnPool
-}
-
-func (IOMgrConn *IOMgrConnection) cleanupTCPConn() (err error) {
-
-	var IOMgrChunkSize uint32
-	var counter int16
-
-	for {
-		// Get Current Row Size
-		if _, IOMgrChunkSize, err = IOMgrConn.readVarint32(); err != nil {
-			return fmt.Errorf("cleanupTCPConn: unable to read chunk size")
-		}
-		if IOMgrChunkSize == 0 {
-			siodbLoggerPool.Debug("cleanupTCPConn: %d chunks dropped.", counter)
-			return err
-		}
-		siodbLoggerPool.Debug("cleanupTCPConn: Chunk size to drop: %d.", IOMgrChunkSize)
-		buff := make([]byte, IOMgrChunkSize)
-		IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrReadDeadline))
-		_, err = io.ReadFull(IOMgrConn, buff)
-		if err != nil {
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				IOMgrConn.Close()
-				IOMgrConn.TrackedNetConn.Conn = nil
-				return fmt.Errorf("cleanupTCPConn | Protocol error (read timeout): %v", err)
-			} else {
-				return fmt.Errorf("cleanupTCPConn | Protocol error: %v", err)
-			}
-		}
-
-		counter++
-	}
 }
 
 func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Context) (err error) {
@@ -258,12 +225,12 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 					NumberOfbytesToRead = NumberOfbytesToReadInIOMmgrCurrentChunk % IOMgrbuffSize
 				}
 				siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToRead: %v", NumberOfbytesToRead)
-				IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrReadDeadline))
+				IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrCPool.readDeadline))
 				bytesRead, err := io.ReadFull(IOMgrConn, IOMgrbuff[:NumberOfbytesToRead])
 				if err != nil {
 					if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 						IOMgrConn.Close()
-						IOMgrConn.TrackedNetConn.Conn = nil
+						IOMgrConn = nil
 						return fmt.Errorf("readChunkedJSON | Protocol error (read timeout): %v", err)
 					} else {
 						return fmt.Errorf("readChunkedJSON | Protocol error: %v", err)
@@ -334,7 +301,7 @@ func (IOMgrConn *IOMgrConnection) readVarint(maxVarintLen int) (bytesRead int, r
 		// We have to read byte by byte here to avoid reading more bytes
 		// than required. Each read byte is appended to what we have
 		// read before.
-		IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrReadDeadline))
+		IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrCPool.readDeadline))
 		newBytesRead, err := IOMgrConn.Read(prefixBuf[bytesRead : bytesRead+1])
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
@@ -424,12 +391,12 @@ func (IOMgrConn *IOMgrConnection) readMessage(
 		return 0, fmt.Errorf("message length received (%v) bigger than allowed (%v)",
 			messageLength, MessageLengthMaxSize)
 	}
-	IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrReadDeadline))
+	IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrCPool.readDeadline))
 	bytesRead, err = io.ReadFull(IOMgrConn, messageBuf)
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			IOMgrConn.Close()
-			IOMgrConn.TrackedNetConn.Conn = nil
+			IOMgrConn = nil
 			return bytesRead, fmt.Errorf("readMessage | Protocol error (read timeout): %v, bytes read: %v", err, bytesRead)
 		} else {
 			return bytesRead, fmt.Errorf("readMessage | Protocol error: %v, bytes read: %v", err, bytesRead)

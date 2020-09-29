@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 var (
 	JsonPayloadMinSize uint64 = 1024
 	JsonPayloadMaxSize uint64 = 10 * 1024 * 1024
+	readDeadlineMin    uint64 = 5
+	readDeadlineMax    uint64 = 60
 )
 
 type TrackedNetConn struct {
@@ -26,6 +29,7 @@ type IOMgrConnPool struct {
 	Port               uint32
 	lock               sync.Mutex
 	connections        chan *TrackedNetConn
+	readDeadline       time.Duration
 	minConnNum         int
 	maxConnNum         int
 	totalConnNum       int
@@ -114,6 +118,7 @@ func (pool *IOMgrConnPool) ReturnTrackedNetConn(IOMgrConn *IOMgrConnection) erro
 	siodbLoggerPool.Debug("ReturnTrackedNetConn trackedNetConn : %v", IOMgrConn)
 
 	if IOMgrConn.TrackedNetConn.Conn == nil {
+		siodbLoggerPool.Debug("Removing closed connection from pool: %v", IOMgrConn)
 		pool.lock.Lock()
 		pool.totalConnNum = pool.totalConnNum - 1
 		pool.lock.Unlock()
@@ -162,6 +167,7 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 		pool.network = "tcp6"
 	}
 
+	// iomgr.max_json_payload_size
 	if value, err = siodbConfigFile.GetParameterValue("iomgr.max_json_payload_size"); err != nil {
 		return err
 	}
@@ -172,6 +178,21 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 		return fmt.Errorf("Invalid iomgr.max_json_payload_size=%v, expecting %v-%v",
 			value, JsonPayloadMinSize, JsonPayloadMaxSize)
 	}
+
+	if value, err = siodbConfigFile.GetParameterValue("rest_server.iomgr_read_dead_line"); err != nil {
+		return err
+	}
+
+	// rest_server.iomgr_read_dead_line
+	var readDeadline uint64
+	if readDeadline, err = StringToSeconds(value); err != nil {
+		return fmt.Errorf("Invalid parameter 'rest_server.iomgr_read_dead_line': %v", err)
+	}
+	if readDeadline < readDeadlineMin || readDeadline > readDeadlineMax {
+		return fmt.Errorf("Invalid rest_server.iomgr_read_dead_line=%v, expecting %v-%v",
+			value, readDeadlineMin, readDeadlineMax)
+	}
+	pool.readDeadline = time.Duration(readDeadline) * time.Second
 
 	return nil
 }

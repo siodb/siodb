@@ -21,8 +21,7 @@ var (
 )
 
 var (
-	FATAL_INIT_ERROR                   = 2
-	FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER = 2
+	FATAL_INIT_ERROR = 2
 )
 
 type SiodbLoggerPool struct {

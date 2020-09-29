@@ -32,21 +32,8 @@ func (restWorker RestWorker) delete(
 
 	start := time.Now()
 	IOMgrConn, _ := IOMgrCPool.GetTrackedNetConn()
-	defer IOMgrCPool.ReturnTrackedNetConn(IOMgrConn)
+	defer CloseRequest(c, IOMgrConn, start)
 	siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
-
-	// Use to trap interuption from client
-	defer func() {
-		if r := recover(); r != nil {
-			siodbLoggerPool.Debug("Recovered from: %v", r)
-			if err := IOMgrConn.cleanupTCPConn(); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_UNABLE_TO_CLEANUP_TCP_BUFFER,
-					"Recovered from: %v", "unable to cleanup TCP buffer after broken pipe from client: %v", err)
-			}
-		}
-		siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
-		siodbLoggerPool.LogRequest(c, time.Now().Sub(start))
-	}()
 
 	var UserName, Token string
 	if UserName, Token, err = loadAuthenticationData(c); err != nil {
