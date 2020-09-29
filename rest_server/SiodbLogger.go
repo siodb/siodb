@@ -61,7 +61,8 @@ func (logger *SiodbLogger) initLogger() (err error) {
 
 func (logger *SiodbLogger) closeLogFile() (err error) {
 	if err = logger.file.Close(); err != nil {
-		return fmt.Errorf("Cannot close log file: %v", err)
+		println(FormattedOutput(WARNING, "issue closing log file '%v': %v",
+			logger.destination, err))
 	}
 	return nil
 }
@@ -95,9 +96,7 @@ func (logger *SiodbLogger) Output(logLevel int, log string) error {
 	//logger.logFileExpirationTimeout
 	if logger.channelType == FILE && logger.logFileExpirationTimeout >= 0 {
 		if time.Now().Unix() > logger.fileCreatedUnixTime+int64(logger.logFileExpirationTimeout) {
-			if err := logger.closeLogFile(); err != nil {
-				return err
-			}
+			logger.closeLogFile()
 			if err := logger.createNewLogFile(); err != nil {
 				return err
 			}
@@ -115,9 +114,7 @@ func (logger *SiodbLogger) Output(logLevel int, log string) error {
 			return err
 		} else {
 			if fileStat.Size() >= int64(logger.maxLogFileSize) {
-				if err := logger.closeLogFile(); err != nil {
-					return err
-				}
+				logger.closeLogFile()
 				if err := logger.createNewLogFile(); err != nil {
 					return err
 				}

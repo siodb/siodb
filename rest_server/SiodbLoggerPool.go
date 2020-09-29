@@ -88,7 +88,7 @@ func (loggerPool *SiodbLoggerPool) FatalAndExit(code int, s string, v ...interfa
 }
 
 func FormattedOutput(logLevel int, s string, v ...interface{}) string {
-	return fmt.Sprintf("%v %v %v %v REST Server | %s\n",
+	return fmt.Sprintf("%v %v %v %v %s\n",
 		time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
 		SeverityLevelToString(logLevel), unix.Getpid(), unix.Gettid(),
 		fmt.Sprintf(s, v...),
@@ -98,11 +98,7 @@ func FormattedOutput(logLevel int, s string, v ...interface{}) string {
 func (loggerPool *SiodbLoggerPool) ClosePool() {
 	for _, siodbLogger := range loggerPool.siodbLogger {
 		if siodbLogger.channelType != CONSOLE {
-			err := siodbLogger.file.Close()
-			if err != nil {
-				FormattedOutput(WARNING, "Error closing log file '%v': %v",
-					siodbLogger.destination, err)
-			}
+			siodbLogger.closeLogFile()
 		}
 	}
 }
