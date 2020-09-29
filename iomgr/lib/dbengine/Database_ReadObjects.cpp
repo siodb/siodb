@@ -70,7 +70,7 @@ void Database::readAllTables()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysTablesTable->getName(), m_uuid, m_sysTablesTable->getId(), 2);
         }
@@ -182,7 +182,7 @@ void Database::readAllColumnSets()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnSetsTable->getName(), m_uuid, m_sysColumnSetsTable->getId(), 2);
         }
@@ -285,7 +285,7 @@ void Database::readAllColumns()
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(key, &trid);
         //DBG_LOG_DEBUG("Database " << m_name << ": readAllColumns: Looking up TRID " << trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1)
+        if (index->find(currentKey, indexValue.m_data, 1) != 1)
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnsTable->getName(), m_uuid, m_sysColumnsTable->getId(), 2);
         ColumnDataAddress mcrAddr;
@@ -490,7 +490,7 @@ void Database::readAllColumnDefs()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnDefsTable->getName(), m_uuid, m_sysColumnDefsTable->getId(), 2);
         }
@@ -588,7 +588,7 @@ void Database::readAllColumnSetColumns()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnSetColumnsTable->getName(), m_uuid,
                     m_sysColumnSetColumnsTable->getId(), 2);
@@ -727,7 +727,7 @@ void Database::readAllConstraintDefs()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysConstraintDefsTable->getName(), m_uuid, m_sysConstraintDefsTable->getId(),
                     2);
@@ -838,7 +838,7 @@ void Database::readAllConstraints()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysConstraintsTable->getName(), m_uuid, m_sysConstraintsTable->getId(), 2);
         }
@@ -964,7 +964,7 @@ void Database::readAllColumnDefConstraints()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysColumnDefConstraintsTable->getName(), m_uuid,
                     m_sysColumnDefConstraintsTable->getId(), 2);
@@ -1123,7 +1123,7 @@ void Database::readAllIndices()
             //DBG_LOG_DEBUG("Database " << m_name
             //                          << ": readAllIndices: Looking up SYS_INDEX_COLUMNS.TRID "
             //                          << trid);
-            if (sysIndexColumnsIndex->findValue(currentKey, indexValue.m_data, 1) != 1) {
+            if (sysIndexColumnsIndex->find(currentKey, indexValue.m_data, 1) != 1) {
                 throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                         m_name, m_sysIndexColumnsTable->getName(), m_uuid,
                         m_sysIndexColumnsTable->getId(), 2);
@@ -1201,7 +1201,7 @@ void Database::readAllIndices()
             ::pbeDecodeUInt64(currentKey, &trid);
             //DBG_LOG_DEBUG("Database " << m_name << ": readAllIndices: Looking up SYS_INDICES.TRID "
             //                          << trid);
-            if (sysIndicesIndex->findValue(currentKey, indexValue.m_data, 1) != 1) {
+            if (sysIndicesIndex->find(currentKey, indexValue.m_data, 1) != 1) {
                 throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                         m_name, m_sysIndicesTable->getName(), m_uuid, m_sysIndicesTable->getId(),
                         2);

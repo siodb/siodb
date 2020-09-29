@@ -155,13 +155,14 @@ struct ColumnDataRecord {
 
 struct MasterColumnRecord {
     varuint16           RecordLength;
+    varuint64           TableRowId;
     varuint64           TransactionId;
     varuint64           CreateTimestamp;
     varuint64           UpdateTimestamp;
     varuint64           Version;
+    varuint64           OperationId;
     uint8               OperationType;
     varuint32           UserId;
-    varuint64           TableRowId;
     varuint64           ColumnSetId;
     varuint64           PrivateDataExpirationTimestamp;
     ColumnDataRecord[]  Columns;

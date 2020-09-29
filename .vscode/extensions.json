@@ -4,8 +4,9 @@
     // List of extensions which should be recommended for users of this workspace.
     "recommendations": [
         "davidanson.vscode-markdownlint",
-        "ms-vscode.cpptools",
+        "golang.go",
         "kangping.protobuf",
-        "mike-lischke.vscode-antlr4"
+        "mike-lischke.vscode-antlr4",
+        "ms-vscode.cpptools"
     ]
 }

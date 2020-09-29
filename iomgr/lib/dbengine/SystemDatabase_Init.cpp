@@ -66,6 +66,8 @@ SystemDatabase::SystemDatabase(
     m_sysUserAccessKeysTable = createTableUnlocked(
             kSysUserAccessKeysTableName, TableType::kDisk, 0, kSysUserAccessKeysTableDescription);
     allTables.push_back(m_sysUserAccessKeysTable);
+    // Skip one access key TRID for super user initial access key
+    m_sysUserAccessKeysTable->generateNextUserTrid();
 
     // Create table SYS_DATABASES
     m_sysDatabasesTable = createTableUnlocked(kSysDatabasesTableName, TableType::kDisk,

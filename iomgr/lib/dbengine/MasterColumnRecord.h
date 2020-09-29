@@ -35,28 +35,30 @@ public:
 
     /**
      * Initializes new object of class MasterColumnRecord.
-     * @param transactionId Incremental number for a transaction.
+     * @param tableRowId Unique row identifier.
+     * @param transactionId Incremental number of a transaction.
      * @param createTimestamp Timestamp of the transaction that created this TRID
      *                        at microseconds precision.
      * @param updateTimestamp Timestamp of the transaction at microseconds precision.
      * @param version Record version.
+     * @param operationId Unique operation identifier.
      * @param operationType Operation type.
      * @param userId The user ID of the author of the transaction.
-     * @param tableRowId Unique row identifier.
      * @param columnSetId Column set identifier.
      * @param previousVersionAddress Address of the previous version.
      */
-    MasterColumnRecord(std::uint64_t transactionId, std::uint64_t createTimestamp,
-            std::uint64_t updateTimestamp, std::uint64_t version, DmlOperationType operationType,
-            std::uint32_t userId, std::uint64_t tableRowId, std::uint64_t columnSetId,
-            const ColumnDataAddress& previousVersionAddress) noexcept
-        : m_transactionId(transactionId)
+    MasterColumnRecord(std::uint64_t tableRowId, std::uint64_t transactionId,
+            std::uint64_t createTimestamp, std::uint64_t updateTimestamp, std::uint64_t version,
+            std::uint64_t operationId, DmlOperationType operationType, std::uint32_t userId,
+            std::uint64_t columnSetId, const ColumnDataAddress& previousVersionAddress) noexcept
+        : m_tableRowId(tableRowId)
+        , m_transactionId(transactionId)
         , m_createTimestamp(createTimestamp)
         , m_updateTimestamp(updateTimestamp)
         , m_version(version)
+        , m_operationId(operationId)
         , m_operationType(operationType)
         , m_userId(userId)
-        , m_tableRowId(tableRowId)
         , m_columnSetId(columnSetId)
         , m_privateDataExpirationTimestamp(0)
         , m_previousVersionAddress(previousVersionAddress)
@@ -66,27 +68,37 @@ public:
     /**
      * Initializes new object of class MasterColumnRecord.
      * @param table Table for which this MCR is created.
+     * @param tableRowId Unique row identifier.
      * @param transactionId Incremental number for a transaction.
      * @param createTimestamp Timestamp of the transaction that created this TRID
      *                        at microseconds precision.
      * @param updateTimestamp Timestamp of the transaction at microseconds precision.
      * @param version Record version.
+     * @param operationId Unique operation identifier.
      * @param operationType Operation type.
      * @param userId The user ID of the author of the transaction.
-     * @param tableRowId Unique row identifier.
      * @param columnSetId Column set identifier.
      * @param previousVersionAddress Address of the previous version.
      */
-    MasterColumnRecord(Table& table, std::uint64_t transactionId, std::uint64_t createTimestamp,
-            std::uint64_t updateTimestamp, std::uint64_t version, DmlOperationType operationType,
-            std::uint32_t userId, std::uint64_t tableRowId, std::uint64_t columnSetId,
-            const ColumnDataAddress& previousVersionAddress);
+    MasterColumnRecord(Table& table, std::uint64_t tableRowId, std::uint64_t transactionId,
+            std::uint64_t createTimestamp, std::uint64_t updateTimestamp, std::uint64_t version,
+            std::uint64_t operationId, DmlOperationType operationType, std::uint32_t userId,
+            std::uint64_t columnSetId, const ColumnDataAddress& previousVersionAddress);
+
+    /**
+     * Returns table row ID.
+     * @return Table row ID.
+     */
+    auto getTableRowId() const noexcept
+    {
+        return m_tableRowId;
+    }
 
     /**
      * Returns transaction ID.
      * @return Transaction ID.
      */
-    std::uint64_t getTransactionId() const noexcept
+    auto getTransactionId() const noexcept
     {
         return m_transactionId;
     }
@@ -95,7 +107,7 @@ public:
      * Returns create TRID timestamp.
      * @return Create TRID timestamp.
      */
-    std::uint64_t getCreateTimestamp() const noexcept
+    auto getCreateTimestamp() const noexcept
     {
         return m_createTimestamp;
     }
@@ -104,7 +116,7 @@ public:
      * Returns update timestamp.
      * @return Update timestamp.
      */
-    std::uint64_t getUpdateTimestamp() const noexcept
+    auto getUpdateTimestamp() const noexcept
     {
         return m_updateTimestamp;
     }
@@ -113,16 +125,25 @@ public:
      * Returns record version.
      * @return Record version.
      */
-    std::uint64_t getVersion() const noexcept
+    auto getVersion() const noexcept
     {
         return m_version;
+    }
+
+    /**
+     * Returns unique operation identifier.
+     * @return Unique operation identifier.
+     */
+    auto getOperationId() const noexcept
+    {
+        return m_operationId;
     }
 
     /**
      * Returns atomic operation type.
      * @return Atomic operation type.
      */
-    DmlOperationType getOperationType() const noexcept
+    auto getOperationType() const noexcept
     {
         return m_operationType;
     }
@@ -131,25 +152,16 @@ public:
      * Returns user ID.
      * @return User ID.
      */
-    std::uint32_t getUserId() const noexcept
+    auto getUserId() const noexcept
     {
         return m_userId;
-    }
-
-    /**
-     * Returns table row ID.
-     * @return Table row ID.
-     */
-    std::uint64_t getTableRowId() const noexcept
-    {
-        return m_tableRowId;
     }
 
     /**
      * Returns column set ID.
      * @return Column set ID.
      */
-    std::uint64_t getColumnSetId() const noexcept
+    auto getColumnSetId() const noexcept
     {
         return m_columnSetId;
     }
@@ -158,7 +170,7 @@ public:
      * Returns private data expiration timestamp.
      * @return Private data expiration timestamp.
      */
-    std::uint64_t getPrivateDataExpirationTimestamp() const noexcept
+    auto getPrivateDataExpirationTimestamp() const noexcept
     {
         return m_privateDataExpirationTimestamp;
     }
@@ -282,6 +294,12 @@ public:
     std::string dumpColumnAddresses() const;
 
 private:
+    /**
+     * The unique ID generated at each new transaction of **type INSERT only**.
+     * It identifies uniquely a Row across multiple columns of the same table.
+     */
+    std::uint64_t m_tableRowId;
+
     /** Incremental number for a transaction */
     std::uint64_t m_transactionId;
 
@@ -294,17 +312,14 @@ private:
     /** Record version (incremented at each operation) */
     std::uint64_t m_version;
 
+    /** Unique operation identifier. */
+    std::uint64_t m_operationId;
+
     /** Operation type that has created or changed this record */
     DmlOperationType m_operationType;
 
     /** The user ID of the author of the transaction (for the time being 1) */
     std::uint32_t m_userId;
-
-    /**
-     * The unique ID generated at each new transaction of **type INSERT only**.
-     * It identifies uniquely a Row across multiple columns of the same table.
-     */
-    std::uint64_t m_tableRowId;
 
     /** Column set that is effective for this record. */
     std::uint64_t m_columnSetId;

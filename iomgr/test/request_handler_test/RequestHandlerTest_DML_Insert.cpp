@@ -299,8 +299,9 @@ TEST(DML_Insert, InsertMultipleRecords)
             if (i > 0) ss << ", ";
             ss << "('TEST" << i << "', 'TEST" << (i + 1) << "')";
         }
+        const auto statement = ss.str();
 
-        parser_ns::SqlParser parser(ss.str());
+        parser_ns::SqlParser parser(statement);
         parser.parse();
 
         const auto insertRequest =

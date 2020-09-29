@@ -444,30 +444,10 @@ private:
     int openMetadataFile() const;
 
     /**
-     * Loads existing instance metadata. Performs metadata access synchronization.
-     * @throw DatabaseError if metadata could not be loaded.
-     */
-    void syncLoadMetadata()
-    {
-        std::lock_guard lock(m_mutex);
-        loadMetadata();
-    }
-
-    /**
      * Loads existing instance metadata. Doesn't perform metadata access synchronization.
      * @throw DatabaseError if metadata could not be loaded.
      */
     void loadMetadata();
-
-    /**
-     * Saves instance metadata. Performs metadata access synchronization.
-     * @throw DatabaseError if metadata could not be loaded.
-     */
-    void syncSaveMetadata() const
-    {
-        std::lock_guard lock(m_mutex);
-        saveMetadata();
-    }
 
     /**
      * Saves instance metadata. Doesn't perform metadata access synchronization.
@@ -608,7 +588,7 @@ private:
     static constexpr std::size_t kSerializedMetadataSize = sizeof(kCurrentMetadataVersion);
 
     /** Instance initialization completion flag file name */
-    static constexpr const char* kInitializationFlagFile = "initialized";
+    static constexpr const char* kInitializationFlagFile = ".initialized";
 
     /** Metadata file name */
     static constexpr const char* kMetadataFileName = "instance_metadata";

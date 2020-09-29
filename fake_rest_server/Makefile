@@ -2,19 +2,13 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-# Recursive makefile for fake_rest_server
+# rest_server application makefile
 
+SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../mk/Prolog.mk
-include $(MK)/MainTargets.mk
 
-ifeq ($(BUILD_UNIT_TESTS),1)
+TARGET_GO_EXE:=siodb_rest_server
 
-$(MAIN_TARGETS):
-	$(MAKE) $(MAKECMDGOALS) -C app
+GO_SRC:=Main.go
 
-else
-
-$(MAIN_TARGETS):
-	$(MAKE) $(MAKECMDGOALS) -C fake_app
-
-endif
+include $(MK)/Main.mk

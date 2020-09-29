@@ -125,6 +125,7 @@ MSG Error TableColumnIndexOutOfRange    Table column index '%3%' is out of range
 MSG Error CannotInsertToSystemTable     Insert into system table '%1%'.'%2%' is not allowed
 MSG Error CannotInsertIntoMasterColumn  Cannot insert value into TRID, it is assigned automatically
 MSG Error CannotInsertNullValue         Can't insert NULL value to column '%1%'.'%2%'.'%3%'
+MSG Error CannotInsertDuplicateTrid     Cannot insert duplicate value %4% into master column '%1%'.'%2%'.'%3%'
 
 # UPDATE
 MSG Error ValuesListIsEmpty             VALUES list type is empty 
@@ -311,8 +312,6 @@ MSG Error CannotMoveSystemObjectsFile    Can't move system objects file for the 
 MSG Error CannotSerializeSystemObject    Can't serialize system object for the database '%1%' (%2%): %3%
 MSG Error CannotDeserializeSystemObject  Can't deserialize system object for the database '%1%' (%2%): %3%
 
-MSG Error UliFlushNodeCacheFailed  There were errors while flushing ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) node cache for the file #%7%: %8%
-
 MSG Error BptiFlushNodeCacheFailed  There were errors while flushing BPTI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) node cache to disk: %7%
 
 MSG Error CannotCreateTridCountersFile  Can't create TRID counter file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
@@ -372,7 +371,9 @@ MSG Error MissingTableColumns  Missing columns information for the table '%1%'.'
 
 MSG Error UliMissingLessValueWhenExpected     ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) missing less value when it is expected to exist
 MSG Error UliMissingGreaterValueWhenExpected  ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) missing greater value when it is expected to exist
-MSG Error UliMissingNodeWhenExpected          ULI '%1%'.'%2%'.'%3%' (%5%.%6%.%7%) missing node %4% when it is expected to exist
+MSG Error UliMissingFileWhenExpected          ULI '%1%'.'%2%'.'%3%' (%5%.%6%.%7%) missing file #%4% when it is expected to exist
+MSG Error UliCorrupted                        ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) corrupted at key %7%
+MSG Error UliInvalidIndexFileName             ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) invalid index file name %7%
 
 MSG Error InvalidLobChunkHeader         Invalid LOB header at address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %9%
 MSG Error InvalidLobChunkHeaderAddress  Invalid LOB header address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %9%

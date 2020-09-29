@@ -599,8 +599,8 @@ allow_group_permissions_on_config_files = true
 - Build release version: `make -j4 DEBUG=0`. Build outputs will appear in the directory `release/bin`.
 - List all available build commands: `make help`.
 
-**NOTE:** Adjust `-jN` option in the above `make` commands according to available number of CPUs and memory
-  on the build host.
+**NOTE:** Adjust `-jN` option in the above `make` commands according to available number of CPUs
+  and memory on the your build host.
 
 ## Running Siodb
 

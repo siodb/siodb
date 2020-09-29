@@ -13,11 +13,8 @@ namespace siodb::iomgr::dbengine {
 ColumnDefinitionConstraint::ColumnDefinitionConstraint(
         ColumnDefinition& columnDefinition, const ConstraintPtr& constraint)
     : m_columnDefinition(columnDefinition)
-    , m_id(m_columnDefinition.getColumn()
-                      .getTable()
-                      .getDatabase()
-                      .generateNextColumnDefinitionConstraintId(
-                              m_columnDefinition.getTable().isSystemTable()))
+    , m_id(m_columnDefinition.getDatabase().generateNextColumnDefinitionConstraintId(
+              m_columnDefinition.getTable().isSystemTable()))
     , m_constraint(constraint)
 {
 }

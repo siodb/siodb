@@ -28,8 +28,7 @@ struct FullIndexId {
     /** Non-equality operator */
     bool operator!=(const FullIndexId& other) const noexcept
     {
-        return m_databaseUuid != other.m_databaseUuid || m_tableId != other.m_tableId
-               || m_indexId != other.m_indexId;
+        return !(*this == other);
     }
 
     /** Database UUID */
@@ -39,7 +38,7 @@ struct FullIndexId {
     std::uint32_t m_tableId;
 
     /** Index ID */
-    std::uint32_t m_indexId;
+    std::uint64_t m_indexId;
 
     /** Serialized size */
     static constexpr const std::size_t kSerializedSize =
@@ -62,7 +61,7 @@ protected:
      * Initializes instance of class IndexFileHeaderBase.
      * @param indexType Index type.
      */
-    IndexFileHeaderBase(IndexType indexType)
+    IndexFileHeaderBase(IndexType indexType) noexcept
         : m_version(kCurrentVersion)
         , m_indexType(indexType)
         , m_fullIndexId {utils::getZeroUuid(), 0, 0}
@@ -76,12 +75,25 @@ protected:
      * @param indexId Index ID.
      * @param indexType Index type.
      */
-    IndexFileHeaderBase(const Uuid& databaseUuid, std::uint32_t tableId, std::uint32_t indexId,
-            IndexType indexType)
+    IndexFileHeaderBase(const Uuid& databaseUuid, std::uint32_t tableId, std::uint64_t indexId,
+            IndexType indexType) noexcept
         : m_version(kCurrentVersion)
         , m_indexType(indexType)
         , m_fullIndexId {databaseUuid, tableId, indexId}
     {
+    }
+
+    /** Equality operator */
+    bool operator==(const IndexFileHeaderBase& other) const noexcept
+    {
+        return m_version == other.m_version && m_indexType == other.m_indexType
+               && m_fullIndexId == other.m_fullIndexId;
+    }
+
+    /** Non-equality operator */
+    bool operator!=(const IndexFileHeaderBase& other) const noexcept
+    {
+        return !(*this == other);
     }
 
     /**

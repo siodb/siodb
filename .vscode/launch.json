@@ -136,7 +136,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=RestPatch.PatchExstingRowWithInvalidData"
+                "--gtest_filter=UM.CreateAccessKey"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

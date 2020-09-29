@@ -293,7 +293,7 @@ std::pair<bool, MasterColumnRecordPtr> Table::deleteRow(
     std::uint8_t key[8];
     IndexValue indexValue;
     ::pbeEncodeUInt64(trid, key);
-    if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, indexValue.m_data, 1))
+    if (!m_masterColumn->getMasterColumnMainIndex()->find(key, indexValue.m_data, 1))
         return std::make_pair(false, MasterColumnRecordPtr());
 
     // Read master column record
@@ -310,10 +310,11 @@ MasterColumnRecordPtr Table::deleteRow(const MasterColumnRecord& mcr,
         const ColumnDataAddress& mcrAddress, const TransactionParameters& transactionParameters)
 {
     std::lock_guard lock(m_mutex);
-    auto newMcr = std::make_unique<MasterColumnRecord>(*this, transactionParameters.m_transactionId,
-            mcr.getCreateTimestamp(), transactionParameters.m_timestamp, mcr.getVersion() + 1,
-            DmlOperationType::kDelete, transactionParameters.m_userId, mcr.getTableRowId(),
-            m_currentColumnSet->getId(), mcrAddress);
+    auto newMcr = std::make_unique<MasterColumnRecord>(*this, mcr.getTableRowId(),
+            transactionParameters.m_transactionId, mcr.getCreateTimestamp(),
+            transactionParameters.m_timestamp, mcr.getVersion() + 1,
+            m_database.generateNextAtomicOperationId(), DmlOperationType::kDelete,
+            transactionParameters.m_userId, m_currentColumnSet->getId(), mcrAddress);
     m_masterColumn->writeMasterColumnRecord(*newMcr);
     return newMcr;
 }
@@ -349,7 +350,7 @@ std::tuple<bool, MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::updat
     std::uint8_t key[8];
     IndexValue indexValue;
     ::pbeEncodeUInt64(trid, key);
-    if (!m_masterColumn->getMasterColumnMainIndex()->findValue(key, indexValue.m_data, 1))
+    if (!m_masterColumn->getMasterColumnMainIndex()->find(key, indexValue.m_data, 1))
         return std::make_tuple(false, MasterColumnRecordPtr(), std::vector<std::uint64_t>());
 
     // Read master column record
@@ -381,9 +382,9 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::updateRow(
                 m_database.getName(), m_name, columnValues.size(), columnRecords.size());
     }
 
-    auto newMcr = std::make_unique<MasterColumnRecord>(*this, tp.m_transactionId,
-            mcr.getCreateTimestamp(), tp.m_timestamp, mcr.getVersion() + 1,
-            DmlOperationType::kUpdate, tp.m_userId, mcr.getTableRowId(),
+    auto newMcr = std::make_unique<MasterColumnRecord>(*this, mcr.getTableRowId(),
+            tp.m_transactionId, mcr.getCreateTimestamp(), tp.m_timestamp, mcr.getVersion() + 1,
+            m_database.generateNextAtomicOperationId(), DmlOperationType::kUpdate, tp.m_userId,
             m_currentColumnSet->getId(), mcrAddress);
 
     const auto tableColumns = getColumnsOrderedByPosition();
@@ -702,9 +703,9 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::doInsertRowU
         std::uint64_t customTrid)
 {
     // Write columns
-    auto mcr = std::make_unique<MasterColumnRecord>(*this, tp.m_transactionId, tp.m_timestamp,
-            tp.m_timestamp, 0, DmlOperationType::kInsert, tp.m_userId, customTrid,
-            m_currentColumnSet->getId(), kNullValueAddress);
+    auto mcr = std::make_unique<MasterColumnRecord>(*this, customTrid, tp.m_transactionId,
+            tp.m_timestamp, tp.m_timestamp, 0U, m_database.generateNextAtomicOperationId(),
+            DmlOperationType::kInsert, tp.m_userId, m_currentColumnSet->getId(), kNullValueAddress);
 
     std::vector<std::uint64_t> nextBlockIds;
     nextBlockIds.reserve(mcr->getColumnCount());

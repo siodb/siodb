@@ -337,6 +337,7 @@ std::uint64_t Database::generateNextColumnDefinitionConstraintId(bool system)
                              : ++m_tmpTridCounters.m_lastColumnDefinitionConstraintId)
                   : m_sysColumnDefConstraintsTable->generateNextUserTrid();
 }
+
 std::uint64_t Database::generateNextIndexId(bool system)
 {
     return system ? (m_sysIndicesTable ? m_sysIndicesTable->generateNextSystemTrid()

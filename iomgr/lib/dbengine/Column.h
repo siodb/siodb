@@ -699,15 +699,6 @@ private:
     void createInitializationFlagFile() const;
 
     /**
-     * Key comparison function for the master column main index.
-     * @param left Left operand in comparison.
-     * @param right Right operand in comparison.
-     * @return 0 if left and right are equal, negative value if left < right,
-     *         positive value if left > right.
-     */
-    static int compareEncodedTableRowId(const void* left, const void* right) noexcept;
-
-    /**
      * Creates master column data if applicable.
      * @param create Indicates that master column data must be created.
      * @param firstUserTrid First user range TRID.
@@ -791,7 +782,7 @@ private:
     static constexpr const char* kMasterColumnDataDirPrefix = "mc";
 
     /** Initialization flag file name */
-    static constexpr const char* kInitializationFlagFile = "initialized";
+    static constexpr const char* kInitializationFlagFile = ".initialized";
 
     /** Main index ID file name */
     static constexpr const char* kMainIndexIdFile = "main_index_id";

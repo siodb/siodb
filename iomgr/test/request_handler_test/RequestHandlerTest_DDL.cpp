@@ -47,11 +47,12 @@ TEST(DDL, CreateDatabase)
         boost::to_upper(databaseName);
         {
             /// ----------- CREATE DATABASE -----------
-            std::ostringstream ss;
-            ss << "CREATE DATABASE " << databaseName << " WITH CIPHER_ID = '" << cipherId
-               << "', CIPHER_KEY_SEED = '" << keySeed << '\'';
+            const std::string statement = stdext::string_builder()
+                                          << "CREATE DATABASE " << databaseName
+                                          << " WITH CIPHER_ID = '" << cipherId
+                                          << "', CIPHER_KEY_SEED = '" << keySeed << '\'';
 
-            parser_ns::SqlParser parser(ss.str());
+            parser_ns::SqlParser parser(statement);
             parser.parse();
 
             const auto createDatabaseRequest =
@@ -77,11 +78,12 @@ TEST(DDL, CreateDatabase)
 
         /// ----------- SELECT -----------
         {
-            std::ostringstream ss;
-            ss << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '" << databaseName
-               << "' AND CIPHER_ID = '" << cipherId << '\'';
+            const std::string statement = stdext::string_builder()
+                                          << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
+                                          << databaseName << "' AND CIPHER_ID = '" << cipherId
+                                          << '\'';
 
-            parser_ns::SqlParser parser(ss.str());
+            parser_ns::SqlParser parser(statement);
             parser.parse();
 
             const auto selectRequest =
@@ -123,9 +125,10 @@ TEST(DDL, CreateDatabase)
         {
             const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-            std::ostringstream ss;
-            ss << "DROP DATABASE " << (index % 2 == 0 ? "IF EXISTS " : "") << databaseName;
-            parser_ns::SqlParser parser(ss.str());
+            const std::string statement = stdext::string_builder()
+                                          << "DROP DATABASE "
+                                          << (index % 2 == 0 ? "IF EXISTS " : "") << databaseName;
+            parser_ns::SqlParser parser(statement);
             parser.parse();
 
             const auto dropDatabaseRequest =
@@ -212,10 +215,10 @@ TEST(DDL, UseDatabase_ExistentDB)
 
     {
         /// ----------- CREATE DATABASE -----------
-        std::ostringstream ss;
-        ss << "CREATE DATABASE UseDatabase_ExistentDB_database";
+        const std::string statement = stdext::string_builder()
+                                      << "CREATE DATABASE UseDatabase_ExistentDB_database";
 
-        parser_ns::SqlParser parser(ss.str());
+        parser_ns::SqlParser parser(statement);
         parser.parse();
 
         const auto createDatabaseRequest =
@@ -240,9 +243,10 @@ TEST(DDL, UseDatabase_ExistentDB)
         /// ----------- CREATE TABLE -----------
         // Create a table in current database
 
-        std::ostringstream ss;
-        ss << "CREATE TABLE UseDatabase_ExistentDB_database." << tableName << " (TEST text)";
-        parser_ns::SqlParser parser(ss.str());
+        const std::string statement = stdext::string_builder()
+                                      << "CREATE TABLE UseDatabase_ExistentDB_database."
+                                      << tableName << " (TEST text)";
+        parser_ns::SqlParser parser(statement);
         parser.parse();
 
         const auto createTableRequest =
@@ -282,9 +286,9 @@ TEST(DDL, UseDatabase_ExistentDB)
 
     /// ----------- SELECT -----------
     {
-        std::ostringstream ss;
-        ss << "SELECT * FROM " << tableName;
-        parser_ns::SqlParser parser(ss.str());
+        const std::string statement = stdext::string_builder() << "SELECT * FROM " << tableName;
+
+        parser_ns::SqlParser parser(statement);
         parser.parse();
 
         const auto selectRequest =
@@ -343,10 +347,10 @@ TEST(DDL, DropUsedDatabase)
 
     {
         /// ----------- CREATE DATABASE -----------
-        std::ostringstream ss;
-        ss << "CREATE DATABASE DropUsedDatabase_database";
+        const std::string statement = stdext::string_builder()
+                                      << "CREATE DATABASE DropUsedDatabase_database";
 
-        parser_ns::SqlParser parser(ss.str());
+        parser_ns::SqlParser parser(statement);
         parser.parse();
 
         const auto createDatabaseRequest =

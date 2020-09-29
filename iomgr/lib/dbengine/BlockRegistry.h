@@ -242,7 +242,7 @@ private:
     static constexpr std::size_t kNextBlockListDataFileCacheSize = 64;
 
     /** Initialization flag file name */
-    static constexpr const char* kInitializationFlagFile = "initialized";
+    static constexpr const char* kInitializationFlagFile = ".initialized";
 
     /** Block list data file name prefix */
     static constexpr const char* kBlockListFileName = "blist";

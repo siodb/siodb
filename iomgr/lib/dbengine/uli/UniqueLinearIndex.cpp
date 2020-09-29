@@ -7,7 +7,6 @@
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "FileData.h"
-#include "Node.h"
 #include "../Debug.h"
 #include "../IndexColumn.h"
 #include "../ThrowDatabaseError.h"
@@ -35,48 +34,49 @@ UniqueLinearIndex::UniqueLinearIndex(Table& table, IndexType type, std::string&&
         std::optional<std::string>&& description)
     : Index(table, type, std::move(name), keyTraits, valueSize, keyCompare, true,
             IndexColumnSpecificationList {columnSpec}, std::move(description))
-    , m_dataFileSize(dataFileSize)
+    , m_dataFileSize(validateIndexFileSize(dataFileSize))
     , m_validatedKeySize(validateKeySize())
     , m_isSignedKey(validateKeyType(keyTraits))
     , m_sortDescending(columnSpec.m_sortDescending)
-    , m_recordSize(m_valueSize + 1)
-    , m_numberOfRecordsPerNode(uli::Node::kSize / m_recordSize)
-    , m_numberOfNodesPerFile(m_dataFileSize / uli::Node::kSize - 1)
-    , m_numberOfRecordsPerFile(m_numberOfNodesPerFile * m_numberOfRecordsPerNode)
+    , m_recordSize(computeIndexRecordSize())
+    , m_numberOfRecordsPerFile(computeNumberOfRecordsPerFile())
     , m_minPossibleKey(keyTraits.getMinKey())
     , m_maxPossibleKey(keyTraits.getMaxKey())
-    , m_maxPossibleNodeId(computeMaxPossibleNodeId())
+    , m_maxPossibleFileId(computeMaxPossibleFileId())
     , m_fileCache(*this, kFileCacheCapacity)
-    , m_minKey(findLeadingKey())
-    , m_maxKey(findTrailingKey())
+    , m_minKey(m_maxPossibleKey)
+    , m_maxKey(m_minPossibleKey)
+    , m_minNumericKey(0)
+    , m_maxNumericKey(0)
 {
     createInitializationFlagFile();
-
-    // Log this always
-    LOG_DEBUG << "Index " << makeDisplayName() << ": fileCount=" << m_fileIds.size()
-              << ", minKey=" << decodeKey(m_minKey.data())
-              << ", maxKey=" << decodeKey(m_maxKey.data());
 }
 
 UniqueLinearIndex::UniqueLinearIndex(Table& table, const IndexRecord& indexRecord,
         const IndexKeyTraits& keyTraits, std::size_t valueSize, KeyCompareFunction keyCompare)
     : Index(table, indexRecord, keyTraits, valueSize, keyCompare)
-    , m_dataFileSize(indexRecord.m_dataFileSize)
+    , m_dataFileSize(validateIndexFileSize(indexRecord.m_dataFileSize))
     , m_validatedKeySize(validateKeySize())
     , m_isSignedKey(validateKeyType(keyTraits))
     , m_sortDescending(m_columns.at(0)->isDescendingSortOrder())
-    , m_recordSize(m_valueSize + 1)
-    , m_numberOfRecordsPerNode(uli::Node::kSize / m_recordSize)
-    , m_numberOfNodesPerFile(m_dataFileSize / uli::Node::kSize - 1)
-    , m_numberOfRecordsPerFile(m_numberOfNodesPerFile * m_numberOfRecordsPerNode)
+    , m_recordSize(computeIndexRecordSize())
+    , m_numberOfRecordsPerFile(computeNumberOfRecordsPerFile())
     , m_minPossibleKey(keyTraits.getMinKey())
     , m_maxPossibleKey(keyTraits.getMaxKey())
-    , m_maxPossibleNodeId(computeMaxPossibleNodeId())
+    , m_maxPossibleFileId(computeMaxPossibleFileId())
     , m_fileIds(scanFiles())
     , m_fileCache(*this, kFileCacheCapacity)
     , m_minKey(findLeadingKey())
     , m_maxKey(findTrailingKey())
+    , m_minNumericKey(0)
+    , m_maxNumericKey(0)
 {
+    if (m_keyCompare(m_minKey.data(), m_maxKey.data()) <= 0) {
+        m_minNumericKey = decodeKey(m_minKey.data());
+        m_maxNumericKey = decodeKey(m_maxKey.data());
+        if (m_minNumericKey > m_maxNumericKey) std::swap(m_minNumericKey, m_maxNumericKey);
+    }
+
     // Log this always
     LOG_DEBUG << "Index " << makeDisplayName() << ": fileCount=" << m_fileIds.size()
               << ", minKey=" << decodeKey(m_minKey.data())
@@ -88,134 +88,125 @@ std::uint32_t UniqueLinearIndex::getDataFileSize() const noexcept
     return m_dataFileSize;
 }
 
-bool UniqueLinearIndex::insert(const void* key, const void* value, bool replaceExisting)
+bool UniqueLinearIndex::insert(const void* key, const void* value)
 {
     const auto numericKey = decodeKey(key);
-    const auto nodeId = getNodeIdForKey(numericKey);
-    auto node = findNode(nodeId);
-    if (!node) node = makeNode(nodeId);
-    const auto offset = (numericKey % m_numberOfRecordsPerNode) * m_recordSize;
-    const auto record = node->m_data + offset;
-    const bool keyDoesntExist = *record != kValueStateExists;
+    const auto fileId = getFileIdForKey(numericKey);
+    auto file = findFile(fileId);
+    if (!file) file = makeFile(fileId);
+    const auto offset = file->getRecordOffsetInMemory(numericKey);
+    const auto record = file->getBuffer() + offset;
+    const bool keyAbsent = (*record == kValueStateFree);
 
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": INSERT key=" << numericKey << " (node "
-                               << node.get() << " id " << node->m_nodeId << ", tag " << node->m_tag
-                               << ", offset " << offset << ", key "
-                               << (keyDoesntExist ? "doesn't exist" : "exists") << ')');
+    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": INSERT key=" << numericKey << " (fileId "
+                               << fileId << ", offset " << offset << ", key "
+                               << (keyAbsent ? "doesn't exists" : "exists") << ')');
 
-    if (keyDoesntExist || replaceExisting) {
-        // Store value
-        ::memcpy(record + 1, value, m_valueSize);
-        *record = kValueStateExists;
-        node->m_modified = true;
+    //if (getTableName() == "SYS_COLUMN_DEF_CONSTRAINTS" && numericKey == 3) {
+    //    DBG_LOG_DEBUG("Insert #" << numericKey);
+    //}
+
+    if (keyAbsent) {
+        // Update data
+        file->update(offset + 1, value, m_valueSize);
+        std::uint8_t state = kValueStateExists1;
+        file->update(offset, &state, 1);
+
         // Update min and max keys
-        if (m_keyCompare(key, m_minKey.data()) < 0) std::memcpy(m_minKey.data(), key, m_keySize);
-        if (m_keyCompare(key, m_maxKey.data()) > 0) std::memcpy(m_maxKey.data(), key, m_keySize);
+        if (m_keyCompare(m_maxKey.data(), m_minKey.data()) < 0) {
+            // First record in the index
+            std::memcpy(m_minKey.data(), key, m_keySize);
+            std::memcpy(m_maxKey.data(), key, m_keySize);
+            m_minNumericKey = numericKey;
+            m_maxNumericKey = numericKey;
+        } else {
+            // There are some records in the index
+            if (m_keyCompare(key, m_minKey.data()) < 0)
+                std::memcpy(m_minKey.data(), key, m_keySize);
+            if (m_keyCompare(key, m_maxKey.data()) > 0)
+                std::memcpy(m_maxKey.data(), key, m_keySize);
+            if (numericKey < m_minNumericKey) m_minNumericKey = numericKey;
+            if (numericKey > m_maxNumericKey) m_maxNumericKey = numericKey;
+        }
     }
-    return keyDoesntExist;
+    return keyAbsent;
 }
 
 std::uint64_t UniqueLinearIndex::erase(const void* key)
 {
     // Find record
     const auto numericKey = decodeKey(key);
-    auto node = findNode(getNodeIdForKey(numericKey));
-    if (!node) return 0;
-    const auto offset = (numericKey % m_numberOfRecordsPerNode) * m_recordSize;
-    const auto record = node->m_data + offset;
-    const bool keyExists = (*record == kValueStateExists);
+    auto file = findFile(getFileIdForKey(numericKey));
+    if (!file) return 0;
+    const auto offset = file->getRecordOffsetInMemory(numericKey);
+    const auto record = file->getBuffer() + offset;
+    const bool keyExists = *record != kValueStateFree;
 
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": ERASE key=" << numericKey << " (node "
-                               << node.get() << " id " << node->m_nodeId << ", tag " << node->m_tag
-                               << ", offset " << offset << ", key "
-                               << (keyExists ? "exists" : "doesn't exist") << ')');
+    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": DELETE key=" << numericKey << " (fileId "
+                               << fileId << ", offset " << offset << ", key "
+                               << (keyExists ? "doesn't exist" : "exists") << ')');
 
     if (!keyExists) return 0;
 
-    updateMinMaxKeysAfterRemoval(key);
-
     // Mark record as free
-    *record = kValueStateFree;
-    node->m_modified = true;
+    std::uint8_t state = kValueStateFree;
+    file->update(offset, &state, 1);
+
+    updateMinAndMaxKeysAfterRemoval(key);
+
     return 1;
 }
 
 std::uint64_t UniqueLinearIndex::update(const void* key, const void* value)
 {
     const auto numericKey = decodeKey(key);
-    auto node = findNode(getNodeIdForKey(numericKey));
-    if (!node) return 0;
-    const auto offset = (numericKey % m_numberOfRecordsPerNode) * m_recordSize;
-    const auto record = node->m_data + offset;
-    const bool keyExists = (*record == kValueStateExists);
+    auto file = findFile(getFileIdForKey(numericKey));
+    if (!file) return 0;
+    const auto offset = file->getRecordOffsetInMemory(numericKey);
+    const auto record = file->getBuffer() + offset;
+    const bool keyExists = *record != kValueStateFree;
 
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": UPDATE key=" << numericKey << " (node "
-                               << node.get() << " id " << node->m_nodeId << ", tag " << node->m_tag
-                               << ", offset " << offset << ", key "
-                               << (keyExists ? "exists" : "doesn't exist") << ')');
+    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": UPDATE key=" << numericKey << " (fileId "
+                               << fileId << ", offset " << offset << ", key "
+                               << (keyExists ? "doesn't exist" : "exists") << ')');
 
     if (keyExists) {
-        ::memcpy(record + 1, value, m_valueSize);
-        node->m_modified = true;
+        // Update data
+        std::uint8_t state =
+                (*record == kValueStateExists1) ? kValueStateExists2 : kValueStateExists1;
+        file->update(offset + 1 + m_valueSize * (state - 1), value, m_valueSize);
+        file->update(offset, &state, 1);
         return 1;
     }
     return 0;
 }
 
-bool UniqueLinearIndex::markAsDeleted(const void* key, const void* value)
-{
-    const auto numericKey = decodeKey(key);
-    auto node = findNode(getNodeIdForKey(numericKey));
-    if (!node) return 0;
-    const auto offset = (numericKey % m_numberOfRecordsPerNode) * m_recordSize;
-    const auto record = node->m_data + offset;
-    const bool keyExists = (*record == kValueStateExists);
-
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": markAsDeleted key=" << numericKey
-                               << " (node " << node.get() << " id " << node->m_nodeId << ", tag "
-                               << node->m_tag << ", offset " << offset << ", key "
-                               << (keyExists ? "exists" : "doesn't exist") << ')');
-
-    if (keyExists) {
-        updateMinMaxKeysAfterRemoval(key);
-        ::memcpy(record + 1, value, m_valueSize);
-        *record = kValueStateDeleted;
-        node->m_modified = true;
-    }
-    return keyExists;
-}
-
 void UniqueLinearIndex::flush()
 {
-    for (const auto& e : m_fileCache) {
-        try {
-            e.second->m_nodeCache.flush();
-        } catch (std::exception& ex) {
-            throwDatabaseError(IOManagerMessageId::kErrorUliFlushNodeCacheFailed, getDatabaseName(),
-                    m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, e.first,
-                    ex.what());
-        }
-    }
+    // Nothing to do here
 }
 
-std::uint64_t UniqueLinearIndex::findValue(const void* key, void* value, std::size_t count)
+std::uint64_t UniqueLinearIndex::find(const void* key, void* value, std::size_t count)
 {
     if (count == 0) return 0;
     const auto numericKey = decodeKey(key);
-    auto node = findNode(getNodeIdForKey(numericKey));
-    if (!node) return 0;
-    const auto offset = (numericKey % m_numberOfRecordsPerNode) * m_recordSize;
-    const auto record = node->m_data + offset;
-    const auto keyExists = (*record == kValueStateExists);
+    auto file = findFile(getFileIdForKey(numericKey));
+    if (!file) return 0;
+    const auto offset = file->getRecordOffsetInMemory(numericKey);
+    const auto record = file->getBuffer() + offset;
+    const bool keyExists = *record != kValueStateFree;
 
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": getValue: key=" << numericKey << " (node "
-                               << node.get() << " id " << node->m_nodeId << ", tag " << node->m_tag
-                               << ", offset " << offset << ", key "
-                               << (keyExists ? "exists" : "doesn't exist") << ')');
+    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": GET key=" << numericKey << " (fileId "
+                               << fileId << ", offset " << offset << ", key "
+                               << (keyExists ? "doesn't exist" : "exists") << ')');
 
     if (keyExists) {
-        ::memcpy(value, record + 1, m_valueSize);
-        return 1;
+        if (SIODB_LIKELY(*record <= kValueStateExists2)) {
+            ::memcpy(value, record + 1 + ((*record - 1) * m_valueSize), m_valueSize);
+            return 1;
+        }
+        throwDatabaseError(IOManagerMessageId::kErrorUliCorrupted, getDatabaseName(),
+                m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, numericKey);
     }
     return 0;
 }
@@ -223,16 +214,15 @@ std::uint64_t UniqueLinearIndex::findValue(const void* key, void* value, std::si
 std::uint64_t UniqueLinearIndex::count(const void* key)
 {
     const auto numericKey = decodeKey(key);
-    auto node = findNode(getNodeIdForKey(numericKey));
-    if (!node) return 0;
-    const auto offset = (numericKey % m_numberOfRecordsPerNode) * m_recordSize;
-    const auto record = node->m_data + offset;
-    const auto keyExists = (*record == kValueStateExists);
+    auto file = findFile(getFileIdForKey(numericKey));
+    if (!file) return 0;
+    const auto offset = file->getRecordOffsetInMemory(numericKey);
+    const auto record = file->getBuffer() + offset;
+    const bool keyExists = *record != kValueStateFree;
 
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": COUNT key=" << numericKey << " (node "
-                               << node.get() << " id " << node->m_nodeId << ", tag " << node->m_tag
-                               << ", offset " << offset << ", key "
-                               << (keyExists ? "exists" : "doesn't exist") << ')');
+    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": COUNT key=" << numericKey << " (fileId "
+                               << fileId << ", offset " << offset << ", key "
+                               << (keyExists ? "doesn't exist" : "exists") << ')');
 
     return keyExists ? 1 : 0;
 }
@@ -275,6 +265,17 @@ bool UniqueLinearIndex::findNextKey(const void* key, void* nextKey)
     return m_sortDescending ? findKeyBefore(key, nextKey) : findKeyAfter(key, nextKey);
 }
 
+// ----- internals -----
+
+std::uint32_t UniqueLinearIndex::validateIndexFileSize(std::uint32_t size)
+{
+    if (size < kMinDataFileSize)
+        throw std::invalid_argument("UniqueLinearIndex: Index file size is too small");
+    if (size > kMaxDataFileSize)
+        throw std::invalid_argument("UniqueLinearIndex: Index file size is too large");
+    return size;
+}
+
 io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
 {
     std::string tmpFilePath;
@@ -289,7 +290,7 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
                     kDataFileCreationMode, m_dataFileSize);
         } catch (std::system_error& ex) {
             if (ex.code().value() != ENOTSUP) throw;
-            // O_TMPFILE not supported, fallback to named temporary file
+            // O_TMPFILE not supported, fallback to the named temporary file
             tmpFilePath = indexFilePath + kTempFileExtension;
             file = m_table.getDatabase().createFile(
                     tmpFilePath, kBaseExtraOpenFlags, kDataFileCreationMode, m_dataFileSize);
@@ -300,10 +301,10 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
                 m_id, ex.code().value(), std::strerror(ex.code().value()));
     }
 
-    stdext::buffer<std::uint8_t> buffer(uli::Node::kSize, 0);
+    stdext::buffer<std::uint8_t> buffer(kDataFileHeaderSize, 0);
 
     // Write header
-    IndexFileHeader indexFileHeader;
+    IndexFileHeader indexFileHeader(getDatabaseUuid(), getTableId(), m_id, m_type);
     indexFileHeader.serialize(buffer.data());
     if (file->write(buffer.data(), buffer.size(), 0) != buffer.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, indexFilePath,
@@ -311,14 +312,14 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
                 m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()));
     }
 
-    // Write nodes
-    const off_t firstNodeOffset = buffer.size();
-    buffer.resize(m_numberOfNodesPerFile * uli::Node::kSize);
+    // Write initial data
+    const off_t dataOffset = buffer.size();
+    buffer.resize(m_dataFileSize - kDataFileHeaderSize);
     buffer.fill(0);
-    if (file->write(buffer.data(), buffer.size(), firstNodeOffset) != buffer.size()) {
+    if (file->write(buffer.data(), buffer.size(), dataOffset) != buffer.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, indexFilePath,
                 getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
-                m_id, firstNodeOffset, buffer.size(), file->getLastError(),
+                m_id, dataOffset, buffer.size(), file->getLastError(),
                 std::strerror(file->getLastError()));
     }
 
@@ -347,6 +348,7 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
 
 io::FilePtr UniqueLinearIndex::openIndexFile(std::uint64_t fileId) const
 {
+    // Open file
     const auto indexFilePath = makeIndexFilePath(fileId);
     io::FilePtr file;
     try {
@@ -356,24 +358,56 @@ io::FilePtr UniqueLinearIndex::openIndexFile(std::uint64_t fileId) const
                 getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
                 m_id, ex.code().value(), std::strerror(ex.code().value()));
     }
+
+    // Check file size
+    struct stat st;
+    if (!file->stat(st)) {
+        throwDatabaseError(IOManagerMessageId::kErrorCannotStatIndexFile, getDatabaseName(),
+                getTableName(), getName(), file->getLastError(),
+                std::strerror(file->getLastError()));
+    }
+    const auto expectedFileSize = getDataFileSize();
+    if (st.st_size != expectedFileSize) {
+        std::ostringstream str;
+        str << "invalid file size " << st.st_size << " bytes, expected " << expectedFileSize
+            << " bytes";
+        throwDatabaseError(IOManagerMessageId::kErrorIndexFileCorrupted, getDatabaseName(),
+                getTableName(), m_name, getDatabaseUuid(), getTableId(), m_id, str.str());
+    }
+
+    // Check header
+    stdext::buffer<std::uint8_t> buffer(kDataFileHeaderSize);
+    if (file->read(buffer.data(), buffer.size(), 0) != buffer.size()) {
+        throwDatabaseError(IOManagerMessageId::kErrorCannotReadIndexFile, indexFilePath,
+                getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
+                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()));
+    }
+    IndexFileHeader actualHeader(m_type);
+    actualHeader.deserialize(buffer.data());
+    const IndexFileHeader expectedHeader(getDatabaseUuid(), getTableId(), m_id, m_type);
+    if (actualHeader != expectedHeader) {
+        throwDatabaseError(IOManagerMessageId::kErrorIndexFileCorrupted, indexFilePath,
+                getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
+                m_id, "invalid header");
+    }
+
     return file;
 }
 
-uli::NodePtr UniqueLinearIndex::findNodeChecked(std::uint64_t nodeId)
+uli::FileDataPtr UniqueLinearIndex::findFileChecked(std::uint64_t fileId)
 {
-    auto node = findNode(nodeId);
-    if (node) return node;
-    throwDatabaseError(IOManagerMessageId::kErrorUliMissingNodeWhenExpected, getDatabaseName(),
-            m_table.getName(), m_name, nodeId, getDatabaseUuid(), m_table.getId(), m_id);
+    auto file = findFile(fileId);
+    if (file) return file;
+    throwDatabaseError(IOManagerMessageId::kErrorUliMissingFileWhenExpected, getDatabaseName(),
+            m_table.getName(), m_name, fileId, getDatabaseUuid(), m_table.getId(), m_id);
 }
 
-uli::NodePtr UniqueLinearIndex::findNode(std::uint64_t nodeId)
+uli::FileDataPtr UniqueLinearIndex::findFile(std::uint64_t fileId)
 {
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": Getting node " << nodeId);
+    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": Getting file #" << fileId);
 
-    if (nodeId > m_maxPossibleNodeId) throw std::out_of_range("Index node ID is out of range");
+    if (fileId > m_maxPossibleFileId) throw std::out_of_range("Index file ID is out of range");
 
-    const auto fileId = getFileIdForNode(nodeId);
     if (m_fileIds.count(fileId) == 0) return nullptr;
 
     uli::FileDataPtr fileData;
@@ -381,25 +415,21 @@ uli::NodePtr UniqueLinearIndex::findNode(std::uint64_t nodeId)
     if (maybeFileData)
         fileData = *maybeFileData;
     else {
-        fileData = std::make_shared<uli::FileData>(*this, openIndexFile(fileId), fileId);
+        fileData = std::make_shared<uli::FileData>(*this, fileId, openIndexFile(fileId));
         m_fileCache.emplace(fileId, fileData);
     }
 
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": Getting node " << nodeId << " from file #"
-                               << fileData->getFileId());
-
-    return fileData->findNode(nodeId);
+    return fileData;
 }
 
-uli::NodePtr UniqueLinearIndex::makeNode(std::uint64_t nodeId)
+uli::FileDataPtr UniqueLinearIndex::makeFile(std::uint64_t fileId)
 {
-    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": Creating node " << nodeId);
-    const auto fileId = getFileIdForNode(nodeId);
+    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": Creating file " << fileId);
     auto indexFile = createIndexFile(fileId);
-    auto fileData = std::make_shared<uli::FileData>(*this, std::move(indexFile), fileId);
+    auto fileData = std::make_shared<uli::FileData>(*this, fileId, std::move(indexFile));
     m_fileIds.insert(fileId);
     m_fileCache.emplace(fileId, fileData);
-    return fileData->findNode(nodeId);
+    return fileData;
 }
 
 std::uint64_t UniqueLinearIndex::decodeKey(const void* key) const noexcept
@@ -581,23 +611,18 @@ bool UniqueLinearIndex::findLeadingKey(void* key)
 {
     ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findLeadingKey");
     for (const auto fileId : m_fileIds) {
-        std::uint64_t nodeId = (fileId - 1) * m_numberOfNodesPerFile + 1;
-        for (std::size_t j = 0; j <= m_numberOfNodesPerFile; ++j, ++nodeId) {
-            const auto node = findNodeChecked(nodeId);
-            auto record = node->m_data;
-            for (std::size_t i = 0; i < m_numberOfRecordsPerNode; ++i, record += m_recordSize) {
-                if (*record == kValueStateExists) {
-                    const std::uint64_t numericKey = (nodeId - 1) * m_numberOfRecordsPerNode + i;
-                    encodeKey(numericKey, key);
+        const auto file = findFileChecked(fileId);
+        auto record = file->getBuffer();
+        for (std::size_t i = 0; i < m_numberOfRecordsPerFile; ++i, record += m_recordSize) {
+            if (*record != kValueStateFree) {
+                const std::uint64_t numericKey = (fileId - 1) * m_numberOfRecordsPerFile + i;
+                encodeKey(numericKey, key);
 
-                    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName()
-                                               << ": findLeadingKey: found active record node "
-                                               << nodeId << " tag " << node->m_tag << " record "
-                                               << i << " offset " << (record - node->m_data)
-                                               << " key " << numericKey);
+                ULI_DBG_LOG_DEBUG("Index " << makeDisplayName()
+                                           << ": findLeadingKey: found active record file "
+                                           << fileId << " record " << i << " key " << numericKey);
 
-                    return true;
-                }
+                return true;
             }
         }
     }
@@ -616,23 +641,20 @@ bool UniqueLinearIndex::findTrailingKey(void* key)
     ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findTrailingKey");
     for (auto it = m_fileIds.crbegin(); it != m_fileIds.crend(); ++it) {
         const auto fileId = *it;
-        std::uint64_t nodeId = fileId * m_numberOfNodesPerFile;
-        for (std::size_t j = 0; j < m_numberOfNodesPerFile; ++j, --nodeId) {
-            const auto node = findNodeChecked(nodeId);
-            auto record = node->m_data + (m_numberOfRecordsPerNode - 1) * m_recordSize;
-            for (std::size_t i = 0; i < m_numberOfRecordsPerNode; ++i, record -= m_recordSize) {
-                if (*record == kValueStateExists) {
-                    const std::uint64_t numericKey = nodeId * m_numberOfRecordsPerNode - (i + 1);
-                    encodeKey(numericKey, key);
+        const auto file = findFileChecked(fileId);
+        const auto buffer = file->getBuffer();
+        auto record = buffer + (m_numberOfRecordsPerFile - 1) * m_recordSize;
+        for (std::size_t i = m_numberOfRecordsPerFile; i != 0; --i, record -= m_recordSize) {
+            if (*record != kValueStateFree) {
+                const std::uint64_t numericKey = (fileId - 1) * m_numberOfRecordsPerFile + i - 1;
+                encodeKey(numericKey, key);
 
-                    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName()
-                                               << ": findTrailingKey: found active record node "
-                                               << nodeId << " tag " << node->m_tag << " record "
-                                               << (m_numberOfRecordsPerNode - 1 - i) << " offset "
-                                               << (record - node->m_data) << " key " << numericKey);
+                ULI_DBG_LOG_DEBUG("Index " << makeDisplayName()
+                                           << ": findTrailingKey: found active record file "
+                                           << fileId << " record " << (i - 1) << " offset "
+                                           << " key " << numericKey);
 
-                    return true;
-                }
+                return true;
             }
         }
     }
@@ -650,73 +672,65 @@ bool UniqueLinearIndex::findKeyBefore(const void* key, void* keyBefore)
         return false;
     }
 
-    // Determine node ID
+    // Determine file ID
     const auto numericKey = decodeKey(key);
-    auto nodeId = getNodeIdForKey(numericKey);
+    auto fileId = getFileIdForKey(numericKey);
 
     ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyBefore: key=" << numericKey
-                               << " nodeId=" << nodeId);
+                               << " fileId=" << fileId);
 
-    // Additionally validate node ID
-    const auto minNodeId = getMinAvailableNodeId();
-    if (nodeId < minNodeId) {
+    // Additionally validate file ID
+    const auto minFileId = getMinAvailableFileId();
+    if (fileId < minFileId) {
         ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyBefore: key=" << numericKey
-                                   << " nodeId=" << nodeId << " is before minNodeId " << minNodeId);
+                                   << " fileId=" << fileId << " is before minFileId " << minFileId);
         return false;
     }
 
     // Get record ID for the given key
-    auto recordId = numericKey % m_numberOfRecordsPerNode;
+    auto recordId = numericKey % m_numberOfRecordsPerFile;
+    auto currentNumericKey = numericKey;
 
-    // Step to valid file
-    auto fileId = getFileIdForNode(nodeId);
-    auto firstNodeId = (fileId - 1) * m_numberOfNodesPerFile + 1;
+    // Step to a valid file
     auto fileIter = std::as_const(m_fileIds).lower_bound(fileId);
     if (fileIter == m_fileIds.cend() || *fileIter > fileId) {
         fileId = *--fileIter;
-        firstNodeId = (fileId - 1) * m_numberOfNodesPerFile + 1;
-        nodeId = firstNodeId + m_numberOfNodesPerFile - 1;
-        recordId = m_numberOfRecordsPerNode;
+        recordId = m_numberOfRecordsPerFile;
+        currentNumericKey = (fileId - 1) * m_numberOfRecordsPerFile + recordId;
     }
 
     while (true) {
-        // Obtain node
-        const auto node = findNodeChecked(nodeId);
+        auto file = findFileChecked(fileId);
         ULI_DBG_LOG_DEBUG(
-                "Index " << makeDisplayName() << ": findKeyBefore: obtained node #" << nodeId);
+                "Index " << makeDisplayName() << ": findKeyBefore: obtained file #" << fileId);
 
-        // Scan node
+        // Scan file
         if (recordId > 0) {
             --recordId;
-            for (auto record = node->m_data + recordId * m_recordSize; record >= node->m_data;
-                    --recordId, record -= m_recordSize) {
-                if (*record == kValueStateExists) {
-                    const std::uint64_t numericKey =
-                            (nodeId - 1) * m_numberOfRecordsPerNode + recordId;
-                    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyBefore: key="
-                                               << numericKey << " result=" << numericKey);
-                    encodeKey(numericKey, keyBefore);
-                    return true;
+            --currentNumericKey;
+            const auto base = file->getBuffer();
+            auto record = base + file->getRecordOffsetInMemory(recordId);
+            for (; record >= base; --recordId, --currentNumericKey, record -= m_recordSize) {
+                if (*record != kValueStateFree) {
+                    encodeKey(currentNumericKey, keyBefore);
+                    if (m_keyCompare(keyBefore, key) < 0) {
+                        ULI_DBG_LOG_DEBUG("Index " << makeDisplayName()
+                                                   << ": findKeyBefore: key=" << numericKey
+                                                   << " result=" << currentNumericKey);
+                        return true;
+                    }
                 }
             }
         }
 
-        // Step back
-        if (nodeId > firstNodeId) {
-            // Step to previous node
-            --nodeId;
-        } else {
-            // Step to previous file
-            if (fileIter == m_fileIds.cbegin()) {
-                ULI_DBG_LOG_DEBUG(
-                        "Index " << makeDisplayName() << ": findKeyBefore: no more files");
-                return false;
-            }
-            fileId = *--fileIter;
-            firstNodeId = (fileId - 1) * m_numberOfNodesPerFile + 1;
-            nodeId = firstNodeId + m_numberOfNodesPerFile - 1;
+        // Step to a previous file
+        if (fileIter == m_fileIds.cbegin()) {
+            ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyBefore: no more files");
+            return false;
         }
-        recordId = m_numberOfRecordsPerNode;
+        fileId = *--fileIter;
+        recordId = m_numberOfRecordsPerFile;
+        currentNumericKey = (fileId - 1) * m_numberOfRecordsPerFile + recordId;
     }
 }
 
@@ -731,106 +745,104 @@ bool UniqueLinearIndex::findKeyAfter(const void* key, void* keyAfter)
         return false;
     }
 
-    // Determine node ID
+    // Determine file ID
     const auto numericKey = decodeKey(key);
-    auto nodeId = getNodeIdForKey(numericKey);
+    auto fileId = getFileIdForKey(numericKey);
 
     ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyAfter: key=" << numericKey
-                               << " nodeId=" << nodeId);
+                               << " fileId=" << fileId);
 
-    // Additionally validate node ID
-    const auto maxNodeId = getMaxAvailableNodeId();
-    if (nodeId > maxNodeId) {
+    // Additionally validate file ID
+    const auto maxFileId = getMaxAvailableFileId();
+    if (fileId > maxFileId) {
         ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyBefore: key=" << numericKey
-                                   << " nodeId=" << nodeId << " is after maxNodeId " << maxNodeId);
+                                   << " fileId=" << fileId << " is after maxFileId " << maxFileId);
         return false;
     }
 
     // Get record ID for the given key
-    auto recordId = numericKey % m_numberOfRecordsPerNode;
+    auto recordId = numericKey % m_numberOfRecordsPerFile;
+    auto currentNumericKey = numericKey;
 
-    // Step to valid file
-    auto fileId = getFileIdForNode(nodeId);
-    auto lastNodeId = fileId * m_numberOfNodesPerFile;
+    // Step to a valid file
     auto fileIter = std::as_const(m_fileIds).lower_bound(fileId);
     if (fileIter == m_fileIds.cend()) {
         // Key belongs to a file before first available file
         fileIter = m_fileIds.cbegin();
         fileId = *fileIter;
-        lastNodeId = fileId * m_numberOfNodesPerFile;
-        nodeId = lastNodeId - m_numberOfNodesPerFile + 1;
         recordId = 0;
+        currentNumericKey = (fileId - 1) * m_numberOfRecordsPerFile;
     } else if (*fileIter > fileId) {
         // Key belongs to a not available file in the middle
         fileId = *fileIter;
-        lastNodeId = fileId * m_numberOfNodesPerFile;
-        nodeId = lastNodeId - m_numberOfNodesPerFile + 1;
         recordId = 0;
+        currentNumericKey = (fileId - 1) * m_numberOfRecordsPerFile;
     } else {
-        // File is available, step to next record in the node
+        // File is available, step to next record in the file
         ++recordId;
+        ++currentNumericKey;
     }
 
     while (true) {
-        // Obtain node
-        const auto node = findNodeChecked(nodeId);
+        // Obtain file
+        const auto file = findFileChecked(fileId);
         ULI_DBG_LOG_DEBUG(
-                "Index " << makeDisplayName() << ": findKeyAfter: obtained node #" << nodeId);
+                "Index " << makeDisplayName() << ": findKeyAfter: obtained file #" << fileId);
 
-        // Scan node
-        for (auto record = node->m_data + recordId * m_recordSize;
-                recordId < m_numberOfRecordsPerNode; ++recordId, record += m_recordSize) {
-            if (*record == kValueStateExists) {
-                const std::uint64_t numericKey = (nodeId - 1) * m_numberOfRecordsPerNode + recordId;
-                encodeKey(numericKey, keyAfter);
-                ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyAfter: key="
-                                           << numericKey << " result=" << numericKey);
-                return true;
+        // Scan file
+        const auto base = file->getBuffer();
+        auto record = base + file->getRecordOffsetInMemory(recordId);
+        const auto end = base + m_numberOfRecordsPerFile * m_recordSize;
+        for (; record != end; ++recordId, ++currentNumericKey, record += m_recordSize) {
+            if (*record != kValueStateFree) {
+                encodeKey(currentNumericKey, keyAfter);
+                if (m_keyCompare(keyAfter, key) > 0) {
+                    ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyAfter: key="
+                                               << numericKey << " result=" << currentNumericKey);
+                    return true;
+                }
             }
         }
 
-        // Step forward
-        if (nodeId < lastNodeId) {
-            // Step to next node
-            ++nodeId;
-        } else {
-            // Step to next file
-            if (++fileIter == m_fileIds.cend()) {
-                ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyAfter: no more files");
-                return false;
-            }
-            fileId = *fileIter;
-            lastNodeId = fileId * m_numberOfNodesPerFile;
-            nodeId = lastNodeId - m_numberOfNodesPerFile + 1;
+        // Step to a next file
+        if (++fileIter == m_fileIds.cend()) {
+            ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": findKeyAfter: no more files");
+            return false;
         }
+        fileId = *fileIter;
         recordId = 0;
+        currentNumericKey = (fileId - 1) * m_numberOfRecordsPerFile;
     }
 }
 
-void UniqueLinearIndex::updateMinMaxKeysAfterRemoval(const void* key)
+void UniqueLinearIndex::updateMinAndMaxKeysAfterRemoval(const void* removedKey)
 {
     // Update min and max keys
-    const bool isMinKey = m_keyCompare(key, m_minKey.data()) == 0;
-    const bool isMaxKey = m_keyCompare(key, m_maxKey.data()) == 0;
-    if (isMinKey || isMaxKey) {
+    const bool isMinKeyRemoved = m_keyCompare(removedKey, m_minKey.data()) == 0;
+    const bool isMaxKeyRemoved = m_keyCompare(removedKey, m_maxKey.data()) == 0;
+    if (isMinKeyRemoved || isMaxKeyRemoved) {
         // Change of 2 keys must be exception-safe, so first prepare copies, then swap
         BinaryValue newMinKey, newMaxKey;
-        if (isMinKey && isMaxKey) {
+        if (isMinKeyRemoved && isMaxKeyRemoved) {
             newMinKey = m_maxPossibleKey;
             newMaxKey = m_minPossibleKey;
+            m_minKey.swap(newMinKey);
+            m_maxKey.swap(newMaxKey);
+            m_minNumericKey = 0;
+            m_maxNumericKey = 0;
         } else {
-            BinaryValue lessKey, greaterKey;
+            BinaryValue lesserKey, greaterKey;
 
-            if (isMinKey) {
-                lessKey.resize(m_keySize);
-                if (m_sortDescending ? findNextKey(key, lessKey.data())
-                                     : findPreviousKey(key, lessKey.data())) {
-                    newMinKey = lessKey;
+            if (isMinKeyRemoved) {
+                lesserKey.resize(m_keySize);
+                if (m_sortDescending ? findNextKey(removedKey, lesserKey.data())
+                                     : findPreviousKey(removedKey, lesserKey.data())) {
+                    newMinKey = lesserKey;
                 } else {
-                    lessKey.clear();
+                    lesserKey.clear();
                     greaterKey.resize(m_keySize);
-                    if (m_sortDescending ? findPreviousKey(key, greaterKey.data())
-                                         : findNextKey(key, greaterKey.data()))
+                    if (m_sortDescending ? findPreviousKey(removedKey, greaterKey.data())
+                                         : findNextKey(removedKey, greaterKey.data()))
                         newMinKey = greaterKey;
                     else {
                         throwDatabaseError(
@@ -839,21 +851,19 @@ void UniqueLinearIndex::updateMinMaxKeysAfterRemoval(const void* key)
                                 m_table.getId(), m_id);
                     }
                 }
-            }
-
-            if (isMaxKey) {
+            } else if (isMaxKeyRemoved) {
                 if (greaterKey.empty()) {
                     greaterKey.resize(m_keySize);
-                    if (!(m_sortDescending ? findNextKey(key, greaterKey.data())
-                                           : findPreviousKey(key, greaterKey.data()))) {
+                    if (!(m_sortDescending ? findNextKey(removedKey, greaterKey.data())
+                                           : findPreviousKey(removedKey, greaterKey.data()))) {
                         greaterKey.clear();
                     }
                 }
                 if (greaterKey.empty()) {
-                    lessKey.resize(m_keySize);
-                    if (m_sortDescending ? findNextKey(key, lessKey.data())
-                                         : findPreviousKey(key, lessKey.data()))
-                        newMaxKey = lessKey;
+                    lesserKey.resize(m_keySize);
+                    if (m_sortDescending ? findNextKey(removedKey, lesserKey.data())
+                                         : findPreviousKey(removedKey, lesserKey.data()))
+                        newMaxKey = lesserKey;
                     else {
                         throwDatabaseError(
                                 IOManagerMessageId::kErrorUliMissingLessValueWhenExpected,
@@ -863,9 +873,19 @@ void UniqueLinearIndex::updateMinMaxKeysAfterRemoval(const void* key)
                 } else
                     newMaxKey = greaterKey;
             }
+
+            if (!newMinKey.empty()) {
+                m_minKey.swap(newMinKey);
+                m_minNumericKey = decodeKey(m_minKey.data());
+            }
+
+            if (!newMaxKey.empty()) {
+                m_maxKey.swap(newMaxKey);
+                m_maxNumericKey = decodeKey(m_maxKey.data());
+            }
+
+            if (m_minNumericKey > m_maxNumericKey) std::swap(m_minNumericKey, m_maxNumericKey);
         }
-        if (!newMinKey.empty()) m_minKey.swap(newMinKey);
-        if (!newMaxKey.empty()) m_maxKey.swap(newMaxKey);
     }
 }
 
@@ -886,9 +906,11 @@ std::set<std::uint64_t> UniqueLinearIndex::scanFiles() const
         try {
             std::size_t pos = 0;
             fileId = std::stoull(fileIdStr, &pos);
-            if (pos != fileIdStr.length()) throw std::invalid_argument("Invalid file ID");
+            if (pos != fileIdStr.length() || fileId == 0)
+                throw std::invalid_argument("Invalid file ID");
         } catch (std::exception& ex) {
-            continue;
+            throwDatabaseError(IOManagerMessageId::kErrorUliInvalidIndexFileName, getDatabaseName(),
+                    getTableName(), m_name, getDatabaseUuid(), getTableId(), m_id, fileName);
         }
         ULI_DBG_LOG_DEBUG("Index " << makeDisplayName() << ": scanFiles: adding file #" << fileId);
         fileIds.insert(fileId);
@@ -896,10 +918,10 @@ std::set<std::uint64_t> UniqueLinearIndex::scanFiles() const
     return fileIds;
 }
 
-std::uint64_t UniqueLinearIndex::computeMaxPossibleNodeId() const noexcept
+std::uint64_t UniqueLinearIndex::computeMaxPossibleFileId() const noexcept
 {
     const auto n = decodeKey(m_maxPossibleKey.data());
-    return (n / m_numberOfRecordsPerNode) + (n % m_numberOfRecordsPerNode > 0 ? 1 : 0);
+    return (n / m_numberOfRecordsPerFile) + (n % m_numberOfRecordsPerFile > 0 ? 1 : 0);
 }
 
 ///////////////////// class UniqueLinearIndex::IndexFileHeader ////////////////////////////////////

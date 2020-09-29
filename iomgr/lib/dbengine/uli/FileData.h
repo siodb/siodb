@@ -6,14 +6,11 @@
 
 // Project headers
 #include "FileDataPtr.h"
-#include "NodeCache.h"
+#include "UniqueLinearIndex.h"
 
 // Common project headers
+#include <siodb/common/stl_ext/buffer.h>
 #include <siodb/iomgr/shared/dbengine/io/File.h>
-
-// STL headers
-#include <atomic>
-#include <unordered_set>
 
 namespace siodb::iomgr::dbengine {
 
@@ -24,74 +21,78 @@ class UniqueLinearIndex;
 namespace siodb::iomgr::dbengine::uli {
 
 /** Linear index file related data */
-struct FileData {
-    /** Node cache capacity */
-    static constexpr std::size_t kNodeCacheCapacity = 16;
-
+class FileData {
+public:
     /**
-     * Initilizes object of class FileData.
+     * Initializes object of class FileData.
      * @param index Owner index object.
-     * @param file File object.
      * @param fileId File ID.
+     * @param file File object.
      */
-    FileData(UniqueLinearIndex& index, io::FilePtr&& file, std::uint64_t fileId);
+    FileData(UniqueLinearIndex& index, std::uint64_t fileId, io::FilePtr&& file);
 
     /**
-     * Counts actual number of nodes in the index file.
-     * @return Actual number of nodes in the index file.
+     * Returns mutable buffer address.
+     * @return Buffer address.
      */
-    std::size_t countNodesInFile() const;
-
-    /**
-     * Returns existing physical node.
-     * @param nodeId Node ID.
-     * @return Node object.
-     */
-    NodePtr findNode(std::uint64_t nodeId);
-
-    /**
-     * Reads in existing physical node.
-     * @param nodeId Node ID.
-     * @return Node object.
-     */
-    NodePtr readNode(std::uint64_t nodeId);
-
-    /**
-     * Calculates node offset.
-     * @param nodeId Node ID.
-     * @return Node offset in the file.
-     */
-    off_t getNodeOffset(std::uint64_t nodeId) const noexcept;
-
-    /**
-     * Returns file ID.
-     * @return File ID.
-     */
-    auto getFileId() const noexcept
+    std::uint8_t* getBuffer() noexcept
     {
-        return m_nodeCache.getIndexFileId();
+        return m_data.data();
     }
 
+    /**
+     * Returns mutable buffer address.
+     * @return Buffer address.
+     */
+    const std::uint8_t* getBuffer() const noexcept
+    {
+        return m_data.data();
+    }
+
+    /**
+     * Calculates record offset in the memory.
+     * Assumes record belongs to this file.
+     * @param recordId Record identifier.
+     * @return Record offset in the file.
+     */
+    std::size_t getRecordOffsetInMemory(std::uint64_t recordId) const noexcept
+    {
+        return (recordId % m_index.getNumberOfRecordsPerFile()) * m_index.getRecordSize();
+    }
+
+    /**
+     * Calculates record offset in the data file.
+     * Assumes record belongs to this file.
+     * @param recordId Record ID.
+     * @return Record offset in the file.
+     */
+    off_t getRecordOffsetInFile(std::uint64_t recordId) const noexcept
+    {
+        return getRecordOffsetInMemory(recordId) + UniqueLinearIndex::kDataFileHeaderSize;
+    }
+
+    /**
+     * Updates data in the memory and file.
+     * @param pos Position in the memory buffer.
+     * @param src Source buffer address.
+     * @param size Data size.
+     * @throw std::out_of_range if combination of the destOffset and size is invalid.
+     * @throw DatabaseError if write to file fails.
+     */
+    void update(std::size_t pos, const void* src, std::size_t size);
+
+private:
     /** Owner index object */
     UniqueLinearIndex& m_index;
 
-    /** Node tag counter */
-    std::atomic<std::uint64_t> m_lastNodeTag;
+    /** File identifier */
+    const std::uint64_t m_fileId;
 
-    /** Index file descriptor. */
+    /** Index file. */
     io::FilePtr m_file;
 
-    /** Number of nodes in the file */
-    const std::uint64_t m_nodeCount;
-
-    /** Node cache */
-    NodeCache m_nodeCache;
-
-    /** Maximum available node ID */
-    std::uint64_t m_maxNodeId;
-
-    /** Modified nodes (used during modification operations) */
-    std::unordered_set<Node*> m_modifiedNodes;
+    /** Index file data buffer */
+    stdext::buffer<std::uint8_t> m_data;
 };
 
 }  // namespace siodb::iomgr::dbengine::uli

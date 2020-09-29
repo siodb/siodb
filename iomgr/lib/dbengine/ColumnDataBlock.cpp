@@ -189,7 +189,7 @@ io::FilePtr ColumnDataBlock::createDataFile() const
                     kBaseExtraOpenFlags | O_TMPFILE, kDataFileCreationMode, getDataFileSize());
         } catch (std::system_error& ex) {
             if (ex.code().value() != ENOTSUP) throw;
-            // O_TMPFILE not supported, fallback to named temporary file
+            // O_TMPFILE not supported, fallback to the named temporary file
             tmpFilePath = m_dataFilePath + kTempFileExtension;
             file = m_column.getDatabase().createFile(
                     tmpFilePath, kBaseExtraOpenFlags, kDataFileCreationMode, getDataFileSize());

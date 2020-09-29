@@ -13,17 +13,19 @@
 
 namespace siodb::iomgr::dbengine {
 
-MasterColumnRecord::MasterColumnRecord(Table& table, std::uint64_t transactionId,
-        std::uint64_t createTimestamp, std::uint64_t updateTimestamp, std::uint64_t version,
-        DmlOperationType operationType, std::uint32_t userId, std::uint64_t tableRowId,
-        std::uint64_t columnSetId, const ColumnDataAddress& previousVersionAddress)
-    : m_transactionId(transactionId)
+MasterColumnRecord::MasterColumnRecord(Table& table, std::uint64_t tableRowId,
+        std::uint64_t transactionId, std::uint64_t createTimestamp, std::uint64_t updateTimestamp,
+        std::uint64_t version, std::uint64_t operationId, DmlOperationType operationType,
+        std::uint32_t userId, std::uint64_t columnSetId,
+        const ColumnDataAddress& previousVersionAddress)
+    : m_tableRowId(tableRowId ? tableRowId : table.generateNextUserTrid())
+    , m_transactionId(transactionId)
     , m_createTimestamp(createTimestamp)
     , m_updateTimestamp(updateTimestamp)
     , m_version(version)
+    , m_operationId(operationId)
     , m_operationType(operationType)
     , m_userId(userId)
-    , m_tableRowId(tableRowId ? tableRowId : table.generateNextUserTrid())
     , m_columnSetId(columnSetId)
     , m_privateDataExpirationTimestamp(0)
     , m_previousVersionAddress(previousVersionAddress)
@@ -33,11 +35,11 @@ MasterColumnRecord::MasterColumnRecord(Table& table, std::uint64_t transactionId
 
 std::size_t MasterColumnRecord::getSerializedSize() const noexcept
 {
-    std::size_t size = ::getVarIntSize(m_transactionId) + ::getVarIntSize(m_createTimestamp)
-                       + ::getVarIntSize(m_updateTimestamp) + ::getVarIntSize(m_version)
+    std::size_t size = ::getVarIntSize(m_tableRowId) + ::getVarIntSize(m_transactionId)
+                       + ::getVarIntSize(m_createTimestamp) + ::getVarIntSize(m_updateTimestamp)
+                       + ::getVarIntSize(m_version) + ::getVarIntSize(m_operationId)
                        + 1  // Atomic operation type is always 1 byte
-                       + ::getVarIntSize(m_userId) + ::getVarIntSize(m_tableRowId)
-                       + ::getVarIntSize(m_columnSetId)
+                       + ::getVarIntSize(m_userId) + ::getVarIntSize(m_columnSetId)
                        + ::getVarIntSize(m_privateDataExpirationTimestamp)
                        + ::getVarIntSize(static_cast<std::uint32_t>(m_columnRecords.size()))
                        + m_previousVersionAddress.getSerializedSize();
@@ -57,13 +59,14 @@ std::uint8_t* MasterColumnRecord::serializeUncheckedWithSizeTag(
         std::uint8_t* buffer, std::uint16_t sizeTag) const noexcept
 {
     buffer = ::encodeVarUInt16(sizeTag, buffer);
+    buffer = ::encodeVarInt(m_tableRowId, buffer);
     buffer = ::encodeVarInt(m_transactionId, buffer);
     buffer = ::encodeVarInt(m_createTimestamp, buffer);
     buffer = ::encodeVarInt(m_updateTimestamp, buffer);
     buffer = ::encodeVarInt(m_version, buffer);
+    buffer = ::encodeVarInt(m_operationId, buffer);
     *buffer++ = static_cast<std::uint8_t>(m_operationType);
     buffer = ::encodeVarInt(m_userId, buffer);
-    buffer = ::encodeVarInt(m_tableRowId, buffer);
     buffer = ::encodeVarInt(m_columnSetId, buffer);
     buffer = ::encodeVarInt(m_privateDataExpirationTimestamp, buffer);
     buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_columnRecords.size()), buffer);
@@ -79,9 +82,13 @@ std::uint8_t* MasterColumnRecord::serializeUncheckedWithSizeTag(
 std::size_t MasterColumnRecord::deserialize(
         const std::uint8_t* buffer, std::size_t dataSize) noexcept
 {
-    int consumed = ::decodeVarInt(buffer, dataSize, m_transactionId);
+    int consumed = ::decodeVarInt(buffer, dataSize, m_tableRowId);
     if (consumed < 1) return 0;
     std::size_t totalConsumed = consumed;
+
+    consumed = ::decodeVarInt(buffer + totalConsumed, dataSize - totalConsumed, m_transactionId);
+    if (consumed < 1) return 0;
+    totalConsumed += consumed;
 
     consumed = ::decodeVarInt(buffer + totalConsumed, dataSize - totalConsumed, m_createTimestamp);
     if (consumed < 1) return 0;
@@ -95,15 +102,15 @@ std::size_t MasterColumnRecord::deserialize(
     if (consumed < 1) return 0;
     totalConsumed += consumed;
 
+    consumed = ::decodeVarInt(buffer + totalConsumed, dataSize - totalConsumed, m_operationId);
+    if (consumed < 1) return 0;
+    totalConsumed += consumed;
+
     if (totalConsumed >= dataSize) return 0;
     m_operationType = static_cast<DmlOperationType>(buffer[totalConsumed]);
     ++totalConsumed;
 
     consumed = ::decodeVarInt(buffer + totalConsumed, dataSize - totalConsumed, m_userId);
-    if (consumed < 1) return 0;
-    totalConsumed += consumed;
-
-    consumed = ::decodeVarInt(buffer + totalConsumed, dataSize - totalConsumed, m_tableRowId);
     if (consumed < 1) return 0;
     totalConsumed += consumed;
 
@@ -165,6 +172,7 @@ std::string MasterColumnRecord::dumpColumnAddresses() const
 std::ostream& operator<<(std::ostream& os, const MasterColumnRecord& mcr)
 {
     return os << "TRID: " << mcr.getTableRowId() << ", txnid: " << mcr.getTransactionId()
+              << ", opid: " << mcr.getOperationId()
               << ", op: " << static_cast<int>(mcr.getOperationType())
               << ", version: " << mcr.getVersion() << ", user_id: " << mcr.getUserId()
               << ", columns: " << mcr.dumpColumnAddresses();

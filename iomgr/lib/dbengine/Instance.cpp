@@ -838,6 +838,7 @@ void Instance::checkDataConsistency()
 int Instance::openMetadataFile() const
 {
     const auto metadataFilePath = makeMetadataFilePath();
+    LOG_DEBUG << "Instance: Opening or creating metadta file " << metadataFilePath;
     const int fd = ::open(metadataFilePath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC | O_NOATIME,
             kDataFileCreationMode);
     if (fd < 0) {
@@ -849,6 +850,8 @@ int Instance::openMetadataFile() const
 
 void Instance::loadMetadata()
 {
+    LOG_DEBUG << "Instance: Loading metadata";
+
     // Read metadata file
     std::uint8_t buffer[kSerializedMetadataSize];
     if (::preadExact(m_metadataFile.getFD(), buffer, sizeof(buffer), 0, kIgnoreSignals)
@@ -867,6 +870,8 @@ void Instance::loadMetadata()
 
 void Instance::saveMetadata() const
 {
+    LOG_DEBUG << "Instance: Saving metadata";
+
     // Serialize metadata to buffer
     std::uint8_t buffer[kSerializedMetadataSize];
     serializeMetadata(buffer);
