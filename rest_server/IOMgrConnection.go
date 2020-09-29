@@ -63,7 +63,7 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 	siodbLoggerPool.Debug("writeJSONPayload | IOMgrConn.pool.maxJsonPayloadSize: %v, restServerConfig.RequestPayloadBufferSize: %v",
 		IOMgrConn.pool.maxJsonPayloadSize, restServerConfig.RequestPayloadBufferSize)
 
-	for true {
+	for {
 		if uint64(bytesReadTotal) > IOMgrConn.pool.maxJsonPayloadSize {
 			break
 		}
@@ -202,53 +202,71 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 		}
 		siodbLoggerPool.Debug("readChunkedJSON | New chunk arriving from IOMgr with size: %v", IOMgrReceivedChunkSize)
 
-		if IOMgrReceivedChunkSize > IOMgrChunkMaxSize {
-			return fmt.Errorf("Invalid IOMgr chunk size: %v, expecting maximum size: %v",
-				IOMgrReceivedChunkSize, IOMgrChunkMaxSize)
-		}
-
 		if IOMgrReceivedChunkSize == 0 {
 			break
 		}
 
-		// Fill IOMgrbuff from IOMgr data and send IOMgrbuffSize
-		IOMgrReceivedChunkReadBytes := uint32(0)
-		writtenBytesTotal := uint32(0)
-		var numberOfHTTPChunksInIOMgrChunk = IOMgrReceivedChunkSize / IOMgrbuffSize
-		if IOMgrReceivedChunkSize%IOMgrbuffSize > 0 {
-			numberOfHTTPChunksInIOMgrChunk++
+		numberOfIOMmgrChunksInIOMgrChunk := IOMgrReceivedChunkSize / IOMgrChunkMaxSize
+		if IOMgrReceivedChunkSize%IOMgrChunkMaxSize > 0 {
+			numberOfIOMmgrChunksInIOMgrChunk++
 		}
+		siodbLoggerPool.Debug("readChunkedJSON | number of chunks for current IOMgr chunk: %v",
+			numberOfIOMmgrChunksInIOMgrChunk)
+		for i := uint64(0); i < uint64(numberOfIOMmgrChunksInIOMgrChunk); i++ {
 
-		siodbLoggerPool.Debug("readChunkedJSON | number of HTTP chunks for current IOMgr chunk: %v",
-			numberOfHTTPChunksInIOMgrChunk)
-		for i := uint64(0); i < uint64(numberOfHTTPChunksInIOMgrChunk); i++ {
-			NumberOfbytesToRead := IOMgrbuffSize
-			if IOMgrReceivedChunkSize%IOMgrbuffSize > 0 && i == uint64(numberOfHTTPChunksInIOMgrChunk)-1 {
-				NumberOfbytesToRead = IOMgrReceivedChunkSize % IOMgrbuffSize
+			var NumberOfbytesToReadInIOMmgrCurrentChunk uint32
+			if IOMgrReceivedChunkSize > IOMgrChunkMaxSize {
+				NumberOfbytesToReadInIOMmgrCurrentChunk = IOMgrChunkMaxSize
+				if IOMgrReceivedChunkSize%IOMgrChunkMaxSize > 0 && i == uint64(numberOfIOMmgrChunksInIOMgrChunk)-1 {
+					NumberOfbytesToReadInIOMmgrCurrentChunk = IOMgrReceivedChunkSize % IOMgrChunkMaxSize
+				}
+			} else {
+				NumberOfbytesToReadInIOMmgrCurrentChunk = IOMgrReceivedChunkSize
+				if IOMgrReceivedChunkSize%IOMgrChunkMaxSize > 0 && i == uint64(numberOfIOMmgrChunksInIOMgrChunk)-1 {
+					NumberOfbytesToReadInIOMmgrCurrentChunk = IOMgrReceivedChunkSize % IOMgrChunkMaxSize
+				}
 			}
-			siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToRead: %v", NumberOfbytesToRead)
-			bytesRead, err := io.ReadFull(IOMgrConn, IOMgrbuff[:NumberOfbytesToRead])
-			if err != nil {
-				return err
+			siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToReadInIOMmgrCurrentChunk: %v", NumberOfbytesToReadInIOMmgrCurrentChunk)
+
+			// Fill IOMgrbuff from IOMgr data and send IOMgrbuffSize
+			IOMgrReceivedChunkReadBytes := uint32(0)
+			writtenBytesTotal := uint32(0)
+			var numberOfHTTPChunksInIOMgrChunk = NumberOfbytesToReadInIOMmgrCurrentChunk / IOMgrbuffSize
+			if NumberOfbytesToReadInIOMmgrCurrentChunk%IOMgrbuffSize > 0 {
+				numberOfHTTPChunksInIOMgrChunk++
 			}
-			IOMgrReceivedChunkReadBytes += uint32(bytesRead)
-			writtenBytes, err := c.Writer.Write(IOMgrbuff[:bytesRead])
-			if err != nil {
-				return err
+
+			siodbLoggerPool.Debug("readChunkedJSON | number of HTTP chunks for current chunk: %v",
+				numberOfHTTPChunksInIOMgrChunk)
+			for i := uint64(0); i < uint64(numberOfHTTPChunksInIOMgrChunk); i++ {
+				NumberOfbytesToRead := IOMgrbuffSize
+				if NumberOfbytesToReadInIOMmgrCurrentChunk%IOMgrbuffSize > 0 && i == uint64(numberOfHTTPChunksInIOMgrChunk)-1 {
+					NumberOfbytesToRead = NumberOfbytesToReadInIOMmgrCurrentChunk % IOMgrbuffSize
+				}
+				siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToRead: %v", NumberOfbytesToRead)
+				bytesRead, err := io.ReadFull(IOMgrConn, IOMgrbuff[:NumberOfbytesToRead])
+				if err != nil {
+					return err
+				}
+				IOMgrReceivedChunkReadBytes += uint32(bytesRead)
+				writtenBytes, err := c.Writer.Write(IOMgrbuff[:bytesRead])
+				if err != nil {
+					return err
+				}
+				writtenBytesTotal += uint32(writtenBytes)
+				c.Writer.Flush()
+				siodbLoggerPool.Debug("readChunkedJSON | chunk: %v, IOMgr bytes read: %v (total: %v), HTTP bytes written: %v",
+					i, bytesRead, IOMgrReceivedChunkReadBytes, writtenBytes)
+				siodbLoggerPool.Trace("readChunkedJSON | HTTP chunk content of bytes read : %s", IOMgrbuff[:bytesRead])
 			}
-			writtenBytesTotal += uint32(writtenBytes)
-			c.Writer.Flush()
-			siodbLoggerPool.Debug("readChunkedJSON | chunk: %v, IOMgr bytes read: %v (total: %v), HTTP bytes written: %v",
-				i, bytesRead, IOMgrReceivedChunkReadBytes, writtenBytes)
-			siodbLoggerPool.Trace("readChunkedJSON | HTTP chunk content of bytes read : %s", IOMgrbuff[:bytesRead])
-		}
-		siodbLoggerPool.Debug("readChunkedJSON | IOMgr chunk size received: %v, chunk bytes read total: %v, chunk bytes read written: %v",
-			IOMgrReceivedChunkSize, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
-		if IOMgrReceivedChunkSize != IOMgrReceivedChunkReadBytes || IOMgrReceivedChunkSize != writtenBytesTotal {
-			siodbLoggerPool.Error("Bytes read (%v) diffent from bytes received from IOMgr (%v) and bytes written (%v)",
-				IOMgrReceivedChunkSize, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
-			return fmt.Errorf("Bytes read (%v) diffent from bytes received from IOMgr (%v) and bytes written (%v)",
-				IOMgrReceivedChunkSize, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
+			siodbLoggerPool.Debug("readChunkedJSON | IOMgr chunk size received: %v, chunk bytes read total: %v, chunk bytes read written: %v",
+				NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
+			if NumberOfbytesToReadInIOMmgrCurrentChunk != IOMgrReceivedChunkReadBytes || NumberOfbytesToReadInIOMmgrCurrentChunk != writtenBytesTotal {
+				siodbLoggerPool.Error("Bytes read (%v) diffent from bytes received from IOMgr (%v) and bytes written (%v)",
+					NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
+				return fmt.Errorf("Bytes read (%v) diffent from bytes received from IOMgr (%v) and bytes written (%v)",
+					NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
+			}
 		}
 	}
 
