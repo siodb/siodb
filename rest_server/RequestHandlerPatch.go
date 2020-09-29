@@ -49,6 +49,7 @@ func (restWorker RestWorker) patch(
 
 	var UserName, Token string
 	if UserName, Token, err = loadAuthenticationData(c); err != nil {
+		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
@@ -56,23 +57,27 @@ func (restWorker RestWorker) patch(
 	var requestID uint64
 	if requestID, err = IOMgrConn.writeIOMgrRequest(
 		SiodbIomgrProtocol.RestVerb_PATCH, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
+		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	if err := IOMgrConn.readIOMgrResponse(requestID); err != nil {
+		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	// Write Payload
 	if err := IOMgrConn.writeJSONPayload(requestID, c); err != nil {
+		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	// Read and stream chunked JSON
 	if err := IOMgrConn.readChunkedJSON(c); err != nil {
+		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}

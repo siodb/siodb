@@ -65,6 +65,8 @@ func (pool *IOMgrConnPool) init() error {
 }
 
 func (pool *IOMgrConnPool) CloseAllConnections() {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 	for i := 0; i < pool.totalConnNum; i++ {
 		connection := <-pool.connections
 		err := connection.Close()

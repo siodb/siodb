@@ -9,6 +9,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"net"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/proto"
@@ -17,6 +19,7 @@ import (
 var (
 	IOMgrChunkMaxSize    uint32 = 65536
 	MessageLengthMaxSize uint32 = 1 * 1024 * 1024
+	IOMgrReadDeadline           = 5 * time.Second
 )
 
 var (
@@ -45,7 +48,17 @@ func (IOMgrConn *IOMgrConnection) cleanupTCPConn() (err error) {
 		}
 		siodbLoggerPool.Debug("cleanupTCPConn: Chunk size to drop: %d.", IOMgrChunkSize)
 		buff := make([]byte, IOMgrChunkSize)
+		IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrReadDeadline))
 		_, err = io.ReadFull(IOMgrConn, buff)
+		if err != nil {
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				IOMgrConn.Close()
+				IOMgrConn.TrackedNetConn.Conn = nil
+				return fmt.Errorf("cleanupTCPConn | Protocol error (read timeout): %v", err)
+			} else {
+				return fmt.Errorf("cleanupTCPConn | Protocol error: %v", err)
+			}
+		}
 
 		counter++
 	}
@@ -206,12 +219,16 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 			break
 		}
 
+		// Fill IOMgrbuff from IOMgr data and send IOMgrbuffSize
+		IOMgrReceivedChunkReadBytes := uint32(0)
+		writtenBytesTotal := uint32(0)
 		numberOfIOMmgrChunksInIOMgrChunk := IOMgrReceivedChunkSize / IOMgrChunkMaxSize
 		if IOMgrReceivedChunkSize%IOMgrChunkMaxSize > 0 {
 			numberOfIOMmgrChunksInIOMgrChunk++
 		}
 		siodbLoggerPool.Debug("readChunkedJSON | number of chunks for current IOMgr chunk: %v",
 			numberOfIOMmgrChunksInIOMgrChunk)
+
 		for i := uint64(0); i < uint64(numberOfIOMmgrChunksInIOMgrChunk); i++ {
 
 			var NumberOfbytesToReadInIOMmgrCurrentChunk uint32
@@ -228,9 +245,6 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 			}
 			siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToReadInIOMmgrCurrentChunk: %v", NumberOfbytesToReadInIOMmgrCurrentChunk)
 
-			// Fill IOMgrbuff from IOMgr data and send IOMgrbuffSize
-			IOMgrReceivedChunkReadBytes := uint32(0)
-			writtenBytesTotal := uint32(0)
 			var numberOfHTTPChunksInIOMgrChunk = NumberOfbytesToReadInIOMmgrCurrentChunk / IOMgrbuffSize
 			if NumberOfbytesToReadInIOMmgrCurrentChunk%IOMgrbuffSize > 0 {
 				numberOfHTTPChunksInIOMgrChunk++
@@ -244,9 +258,16 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 					NumberOfbytesToRead = NumberOfbytesToReadInIOMmgrCurrentChunk % IOMgrbuffSize
 				}
 				siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToRead: %v", NumberOfbytesToRead)
+				IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrReadDeadline))
 				bytesRead, err := io.ReadFull(IOMgrConn, IOMgrbuff[:NumberOfbytesToRead])
 				if err != nil {
-					return err
+					if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+						IOMgrConn.Close()
+						IOMgrConn.TrackedNetConn.Conn = nil
+						return fmt.Errorf("readChunkedJSON | Protocol error (read timeout): %v", err)
+					} else {
+						return fmt.Errorf("readChunkedJSON | Protocol error: %v", err)
+					}
 				}
 				IOMgrReceivedChunkReadBytes += uint32(bytesRead)
 				writtenBytes, err := c.Writer.Write(IOMgrbuff[:bytesRead])
@@ -261,10 +282,11 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 			}
 			siodbLoggerPool.Debug("readChunkedJSON | IOMgr chunk size received: %v, chunk bytes read total: %v, chunk bytes read written: %v",
 				NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
-			if NumberOfbytesToReadInIOMmgrCurrentChunk != IOMgrReceivedChunkReadBytes || NumberOfbytesToReadInIOMmgrCurrentChunk != writtenBytesTotal {
-				siodbLoggerPool.Error("Bytes read (%v) diffent from bytes received from IOMgr (%v) and bytes written (%v)",
+			if NumberOfbytesToReadInIOMmgrCurrentChunk != IOMgrReceivedChunkReadBytes ||
+				NumberOfbytesToReadInIOMmgrCurrentChunk != writtenBytesTotal {
+				siodbLoggerPool.Error("Bytes read (%v), received from IOMgr (%v), written to client (%v)",
 					NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
-				return fmt.Errorf("Bytes read (%v) diffent from bytes received from IOMgr (%v) and bytes written (%v)",
+				return fmt.Errorf("Protocol error: Bytes read (%v), received from IOMgr (%v), written to client (%v)",
 					NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
 			}
 		}
@@ -312,7 +334,17 @@ func (IOMgrConn *IOMgrConnection) readVarint(maxVarintLen int) (bytesRead int, r
 		// We have to read byte by byte here to avoid reading more bytes
 		// than required. Each read byte is appended to what we have
 		// read before.
+		IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrReadDeadline))
 		newBytesRead, err := IOMgrConn.Read(prefixBuf[bytesRead : bytesRead+1])
+		if err != nil {
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				IOMgrConn.Close()
+				IOMgrConn.TrackedNetConn.Conn = nil
+				return bytesRead, ruint64, fmt.Errorf("readVarint | Protocol error (read timeout): %v", err)
+			} else {
+				return bytesRead, ruint64, fmt.Errorf("readVarint | Protocol error: %v", err)
+			}
+		}
 		if newBytesRead == 0 {
 			if io.EOF == err {
 				return bytesRead, ruint64, nil
@@ -392,7 +424,17 @@ func (IOMgrConn *IOMgrConnection) readMessage(
 		return 0, fmt.Errorf("message length received (%v) bigger than allowed (%v)",
 			messageLength, MessageLengthMaxSize)
 	}
+	IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrReadDeadline))
 	bytesRead, err = io.ReadFull(IOMgrConn, messageBuf)
+	if err != nil {
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			IOMgrConn.Close()
+			IOMgrConn.TrackedNetConn.Conn = nil
+			return bytesRead, fmt.Errorf("readMessage | Protocol error (read timeout): %v, bytes read: %v", err, bytesRead)
+		} else {
+			return bytesRead, fmt.Errorf("readMessage | Protocol error: %v, bytes read: %v", err, bytesRead)
+		}
+	}
 	bytesReadTotal += bytesRead
 	if err != nil {
 		return 0, err
