@@ -1,3 +1,7 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
 package main
 
 import (
@@ -5,18 +9,24 @@ import (
 )
 
 var (
-	HTTPChunkSizeMinSize uint64 = 1024
-	HTTPChunkSizeMaxSize uint64 = 1 * 1024 * 1024
+	HTTPChunkSizeMinSize        uint64 = 1 * 1024
+	HTTPChunkSizeMaxSize        uint64 = 1 * 1024 * 1024
+	IOMgrChunkMinBufferedSize   uint64 = 1 * 1024
+	IOMgrChunkMaxBufferedSize   uint64 = 10 * 1024 * 1024
+	RequestPayloadMinBufferSize uint64 = 1 * 1024
+	RequestPayloadMaxBufferSize uint64 = 10 * 1024 * 1024
 )
 
 type RestServerConfig struct {
-	Ipv4HTTPPort   uint32
-	Ipv4HTTPSPort  uint32
-	Ipv6HTTPPort   uint32
-	Ipv6HTTPSPort  uint32
-	TLSCertificate string
-	TLSPrivateKey  string
-	HTTPChunkSize  uint64
+	Ipv4HTTPPort             uint32
+	Ipv4HTTPSPort            uint32
+	Ipv6HTTPPort             uint32
+	Ipv6HTTPSPort            uint32
+	TLSCertificate           string
+	TLSPrivateKey            string
+	HTTPChunkSize            uint64
+	IOMgrChunkBufferSize     uint64
+	RequestPayloadBufferSize uint64
 }
 
 func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbConfigFile *SiodbConfigFile) (err error) {
@@ -74,7 +84,7 @@ func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbCon
 		return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
 	}
 
-	// Chunk size
+	// HTTP chunk_size
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.chunk_size"); err != nil {
 		return err
 	}
@@ -84,6 +94,30 @@ func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbCon
 	if restServerConfig.HTTPChunkSize < HTTPChunkSizeMinSize || restServerConfig.HTTPChunkSize > HTTPChunkSizeMaxSize {
 		return fmt.Errorf("Invalid parameter: 'rest_server.chunk_size' (%v) is out of range (%v-%v)",
 			value, HTTPChunkSizeMinSize, HTTPChunkSizeMaxSize)
+	}
+
+	// iomgr_io_buffer_size
+	if value, err = siodbConfigFile.GetParameterValue("rest_server.iomgr_io_buffer_size"); err != nil {
+		return err
+	}
+	if restServerConfig.IOMgrChunkBufferSize, err = StringToByteSize(value); err != nil {
+		return fmt.Errorf("Invalid parameter 'rest_server.iomgr_io_buffer_size': %v", err)
+	}
+	if restServerConfig.IOMgrChunkBufferSize < IOMgrChunkMinBufferedSize || restServerConfig.IOMgrChunkBufferSize > IOMgrChunkMaxBufferedSize {
+		return fmt.Errorf("Invalid parameter: 'rest_server.iomgr_io_buffer_size' (%v) is out of range (%v-%v)",
+			value, IOMgrChunkMinBufferedSize, IOMgrChunkMaxBufferedSize)
+	}
+
+	// request_payload_buffer_size
+	if value, err = siodbConfigFile.GetParameterValue("rest_server.request_payload_buffer_size"); err != nil {
+		return err
+	}
+	if restServerConfig.RequestPayloadBufferSize, err = StringToByteSize(value); err != nil {
+		return fmt.Errorf("Invalid parameter 'rest_server.request_payload_buffer_size': %v", err)
+	}
+	if restServerConfig.RequestPayloadBufferSize < RequestPayloadMinBufferSize || restServerConfig.RequestPayloadBufferSize > RequestPayloadMaxBufferSize {
+		return fmt.Errorf("Invalid parameter: 'rest_server.request_payload_buffer_size' (%v) is out of range (%v-%v)",
+			value, RequestPayloadMinBufferSize, RequestPayloadMaxBufferSize)
 	}
 
 	return nil

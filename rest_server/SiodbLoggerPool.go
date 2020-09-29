@@ -1,3 +1,7 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
 package main
 
 import (
@@ -79,6 +83,7 @@ func (loggerPool *SiodbLoggerPool) Error(s string, v ...interface{}) {
 
 func (loggerPool *SiodbLoggerPool) FatalAndExit(code int, s string, v ...interface{}) {
 	loggerPool.Output(FATAL, s, v...)
+	loggerPool.ClosePool()
 	os.Exit(code)
 }
 
@@ -88,6 +93,18 @@ func FormattedOutput(logLevel int, s string, v ...interface{}) string {
 		SeverityLevelToString(logLevel), unix.Getpid(), unix.Gettid(),
 		fmt.Sprintf(s, v...),
 	)
+}
+
+func (loggerPool *SiodbLoggerPool) ClosePool() {
+	for _, siodbLogger := range loggerPool.siodbLogger {
+		if siodbLogger.channelType != CONSOLE {
+			err := siodbLogger.file.Close()
+			if err != nil {
+				FormattedOutput(WARNING, "Error closing log file '%v': %v",
+					siodbLogger.destination, err)
+			}
+		}
+	}
 }
 
 func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool *SiodbLoggerPool, err error) {

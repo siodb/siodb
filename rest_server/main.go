@@ -1,3 +1,7 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
 package main
 
 // specs from https://github.com/siodb/siodb/blob/master/docs/dev/designs/RestServer.md
@@ -57,7 +61,7 @@ func main() {
 		os.Exit(2)
 	}
 	siodbLoggerPool.ConfigGinLogger()
-	siodbLoggerPool.Info("Logger Pool initialized successfully")
+	siodbLoggerPool.Info("Logging started")
 
 	// Create REST Server config
 	if err = restServerConfig.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
@@ -120,8 +124,8 @@ func main() {
 
 	sig := <-sigs
 	siodbLoggerPool.Info("%v signal received, terminating... ", sig)
-	err = IOMgrCPool.CloseAllConnections()
-	if err != nil {
-		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot close connection pool: %v", err)
-	}
+	IOMgrCPool.CloseAllConnections()
+	siodbLoggerPool.Info("IOMgr connection pool stopped")
+	siodbLoggerPool.Info("Logging stopped")
+	siodbLoggerPool.ClosePool()
 }

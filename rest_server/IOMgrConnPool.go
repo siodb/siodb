@@ -1,3 +1,7 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
 package main
 
 import (
@@ -60,15 +64,15 @@ func (pool *IOMgrConnPool) init() error {
 	return nil
 }
 
-func (pool *IOMgrConnPool) CloseAllConnections() error {
+func (pool *IOMgrConnPool) CloseAllConnections() {
 	for i := 0; i < pool.totalConnNum; i++ {
 		connection := <-pool.connections
 		err := connection.Close()
 		if err != nil {
-			return err
+			siodbLoggerPool.Warning("Error closing connection (%v) from connection pool: %v",
+				connection, err)
 		}
 	}
-	return nil
 }
 
 func (pool *IOMgrConnPool) createConn() (*TrackedNetConn, error) {

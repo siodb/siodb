@@ -1,3 +1,7 @@
+// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Use of this source code is governed by a license that can be found
+// in the LICENSE file.
+
 package main
 
 import (
@@ -11,10 +15,8 @@ import (
 )
 
 var (
-	IOMgrChunkMaxSize         uint32 = 65536
-	IOMgrChunkMaxBufferedSize uint64 = 1021
-	JSONPayloadBufferSize     uint32 = (2 * 1024) - 1
-	MessageLengthMaxSize      uint32 = 1 * 1024 * 1024
+	IOMgrChunkMaxSize    uint32 = 65536
+	MessageLengthMaxSize uint32 = 1 * 1024 * 1024
 )
 
 var (
@@ -56,10 +58,10 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 	var bytesReadTotal int = 0
 	var bytesWritten int = 0
 	var bytesWrittenTotal int = 0
-	buffer := make([]byte, JSONPayloadBufferSize)
+	buffer := make([]byte, restServerConfig.RequestPayloadBufferSize)
 
-	siodbLoggerPool.Debug("writeJSONPayload | IOMgrConn.pool.maxJsonPayloadSize: %v, JSONPayloadBufferSize: %v",
-		IOMgrConn.pool.maxJsonPayloadSize, JSONPayloadBufferSize)
+	siodbLoggerPool.Debug("writeJSONPayload | IOMgrConn.pool.maxJsonPayloadSize: %v, restServerConfig.RequestPayloadBufferSize: %v",
+		IOMgrConn.pool.maxJsonPayloadSize, restServerConfig.RequestPayloadBufferSize)
 
 	for true {
 		if uint64(bytesReadTotal) > IOMgrConn.pool.maxJsonPayloadSize {
@@ -189,10 +191,10 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 	var IOMgrReceivedChunkSize uint32
 	//var IOMgrBytesRead uint32
 	var IOMgrbuffSize uint32
-	if restServerConfig.HTTPChunkSize < IOMgrChunkMaxBufferedSize {
+	if restServerConfig.HTTPChunkSize < restServerConfig.IOMgrChunkBufferSize {
 		IOMgrbuffSize = uint32(restServerConfig.HTTPChunkSize)
-	} else if restServerConfig.HTTPChunkSize >= IOMgrChunkMaxBufferedSize {
-		IOMgrbuffSize = uint32(IOMgrChunkMaxBufferedSize)
+	} else {
+		IOMgrbuffSize = uint32(restServerConfig.IOMgrChunkBufferSize)
 	}
 	IOMgrbuff := make([]byte, IOMgrbuffSize)
 
@@ -217,11 +219,21 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 		// Fill IOMgrbuff from IOMgr data and send IOMgrbuffSize
 		IOMgrReceivedChunkReadBytes := uint32(0)
-		numberOfHTTPChunksInIOMgrChunk :=
-			(uint64(IOMgrReceivedChunkSize) - (uint64(IOMgrReceivedChunkSize) % uint64(IOMgrbuffSize))) / uint64(IOMgrbuffSize)
+		writtenBytesTotal := uint32(0)
+		var numberOfHTTPChunksInIOMgrChunk = IOMgrReceivedChunkSize / IOMgrbuffSize
+		if IOMgrReceivedChunkSize%IOMgrbuffSize > 0 {
+			numberOfHTTPChunksInIOMgrChunk++
+		}
 
-		for i := uint64(0); i < numberOfHTTPChunksInIOMgrChunk; i++ {
-			bytesRead, err := io.ReadFull(IOMgrConn, IOMgrbuff[:IOMgrbuffSize])
+		siodbLoggerPool.Debug("readChunkedJSON | number of HTTP chunks for current IOMgr chunk: %v",
+			numberOfHTTPChunksInIOMgrChunk)
+		for i := uint64(0); i < uint64(numberOfHTTPChunksInIOMgrChunk); i++ {
+			NumberOfbytesToRead := IOMgrbuffSize
+			if IOMgrReceivedChunkSize%IOMgrbuffSize > 0 && i == uint64(numberOfHTTPChunksInIOMgrChunk)-1 {
+				NumberOfbytesToRead = IOMgrReceivedChunkSize % IOMgrbuffSize
+			}
+			siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToRead: %v", NumberOfbytesToRead)
+			bytesRead, err := io.ReadFull(IOMgrConn, IOMgrbuff[:NumberOfbytesToRead])
 			if err != nil {
 				return err
 			}
@@ -230,28 +242,20 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 			if err != nil {
 				return err
 			}
+			writtenBytesTotal += uint32(writtenBytes)
 			c.Writer.Flush()
-			siodbLoggerPool.Debug("readChunkedJSON | IOMgr bytes read: %v, HTTP bytes written: %v", bytesRead, writtenBytes)
+			siodbLoggerPool.Debug("readChunkedJSON | chunk: %v, IOMgr bytes read: %v (total: %v), HTTP bytes written: %v",
+				i, bytesRead, IOMgrReceivedChunkReadBytes, writtenBytes)
 			siodbLoggerPool.Trace("readChunkedJSON | HTTP chunk content of bytes read : %s", IOMgrbuff[:bytesRead])
 		}
-		siodbLoggerPool.Debug("readChunkedJSON | IOMgr chunk size received: %v, chunk bytes read total: %v",
-			IOMgrReceivedChunkSize, IOMgrReceivedChunkReadBytes)
-
-		bytesRead, err := io.ReadFull(IOMgrConn, IOMgrbuff[:IOMgrReceivedChunkSize-IOMgrReceivedChunkReadBytes])
-		if err != nil {
-			return err
+		siodbLoggerPool.Debug("readChunkedJSON | IOMgr chunk size received: %v, chunk bytes read total: %v, chunk bytes read written: %v",
+			IOMgrReceivedChunkSize, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
+		if IOMgrReceivedChunkSize != IOMgrReceivedChunkReadBytes || IOMgrReceivedChunkSize != writtenBytesTotal {
+			siodbLoggerPool.Error("Bytes read (%v) diffent from bytes received from IOMgr (%v) and bytes written (%v)",
+				IOMgrReceivedChunkSize, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
+			return fmt.Errorf("Bytes read (%v) diffent from bytes received from IOMgr (%v) and bytes written (%v)",
+				IOMgrReceivedChunkSize, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
 		}
-		IOMgrReceivedChunkReadBytes += uint32(bytesRead)
-		writtenBytes, err := c.Writer.Write(IOMgrbuff[:bytesRead])
-		if err != nil {
-			return err
-		}
-		c.Writer.Flush()
-		siodbLoggerPool.Debug("readChunkedJSON | IOMgr bytes read: %v, HTTP bytes written: %v", bytesRead, writtenBytes)
-		siodbLoggerPool.Trace("readChunkedJSON | HTTP chunk content of bytes read : %s", IOMgrbuff[:bytesRead])
-		siodbLoggerPool.Debug("readChunkedJSON | IOMgr chunk size received: %v, chunk bytes read total: %v",
-			IOMgrReceivedChunkSize, IOMgrReceivedChunkReadBytes)
-
 	}
 
 	return nil
