@@ -125,7 +125,6 @@ func main() {
 	sig := <-sigs
 	siodbLoggerPool.Info("%v signal received, terminating... ", sig)
 	IOMgrCPool.CloseAllConnections()
-	siodbLoggerPool.Info("IOMgr connection pool stopped")
-	siodbLoggerPool.Info("Logging stopped")
+	siodbLoggerPool.Info("IOMgr connection pool stopped.")
 	siodbLoggerPool.ClosePool()
 }

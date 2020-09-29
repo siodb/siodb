@@ -97,9 +97,11 @@ func FormattedOutput(logLevel int, s string, v ...interface{}) string {
 func (loggerPool *SiodbLoggerPool) ClosePool() {
 	for _, siodbLogger := range loggerPool.siodbLogger {
 		if siodbLogger.channelType != CONSOLE {
+			siodbLogger.Output(INFO, FormattedOutput(INFO, "Logging stopped."))
 			siodbLogger.closeLogFile()
 		}
 	}
+	fmt.Println(FormattedOutput(INFO, "Logging stopped."))
 }
 
 func CreateSiodbLoggerPool(siodbConfigFile *SiodbConfigFile) (siodbLoggerPool *SiodbLoggerPool, err error) {

@@ -78,7 +78,7 @@ func (logger *SiodbLogger) createNewLogFile() (err error) {
 	var logFile *os.File
 	if logFile, err = os.Create(
 		strings.TrimSpace(strings.ToLower(logger.destination)) + "/" + logFileName); err != nil {
-		return fmt.Errorf("Invalid log file destination: %v", err)
+		return fmt.Errorf("Can't create new log file: %v", err)
 	}
 
 	logger.fileCreatedUnixTime = time.Now().Unix()
