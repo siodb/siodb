@@ -180,17 +180,17 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 			value, JsonPayloadMinSize, JsonPayloadMaxSize)
 	}
 
-	if value, err = siodbConfigFile.GetParameterValue("rest_server.iomgr_read_dead_line"); err != nil {
+	if value, err = siodbConfigFile.GetParameterValue("rest_server.iomgr_read_deadline"); err != nil {
 		return err
 	}
 
-	// rest_server.iomgr_read_dead_line
+	// rest_server.iomgr_read_deadline
 	var readDeadline uint64
 	if readDeadline, err = StringToSeconds(value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.iomgr_read_dead_line': %v", err)
+		return fmt.Errorf("Invalid parameter 'rest_server.iomgr_read_deadline': %v", err)
 	}
 	if readDeadline < readDeadlineMin || readDeadline > readDeadlineMax {
-		return fmt.Errorf("Invalid rest_server.iomgr_read_dead_line=%v, expecting %v-%v",
+		return fmt.Errorf("Invalid rest_server.iomgr_read_deadline=%v, expecting %v-%v",
 			value, readDeadlineMin, readDeadlineMax)
 	}
 	pool.readDeadline = time.Duration(readDeadline) * time.Second

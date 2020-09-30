@@ -191,7 +191,7 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 		if IOMgrReceivedChunkSize > IOMgrChunkMaxSize {
 			IOMgrConn.Close()
 			IOMgrConn.TrackedNetConn.Conn = nil
-			return fmt.Errorf("readChunkedJSON | protocol error: can't read IOMgr chunk size")
+			return fmt.Errorf("readChunkedJSON | protocol error: invalid IOMgr chunk size")
 		}
 
 		for IOMgrReceivedChunkSize > 0 {
@@ -248,14 +248,14 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 }
 
 func (IOMgrConn *IOMgrConnection) writeHttpChunk(
-	c *gin.Context, buffer []byte, writeSize uint32) (bytesWrittenTotal uint64, err error) {
+	c *gin.Context, buffer []byte, writeSize uint32) (uint64, error) {
+	var err error
 	writtenBytes, err := c.Writer.Write(buffer[:writeSize])
 	if err != nil {
 		return uint64(writtenBytes), err
 	}
-	bytesWrittenTotal += uint64(writtenBytes)
 	c.Writer.Flush()
-	return bytesWrittenTotal, nil
+	return uint64(writtenBytes), nil
 }
 
 func (IOMgrConn *IOMgrConnection) readBytesFromIomgr(

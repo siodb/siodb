@@ -82,7 +82,7 @@ func (loggerPool *SiodbLoggerPool) Error(s string, v ...interface{}) {
 }
 
 func (loggerPool *SiodbLoggerPool) FatalAndExit(code int, s string, v ...interface{}) {
-	loggerPool.Output(FATAL, s, v...)
+	println(FormattedOutput(FATAL, s, v...))
 	loggerPool.ClosePool()
 	os.Exit(code)
 }

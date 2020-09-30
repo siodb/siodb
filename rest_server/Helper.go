@@ -99,7 +99,6 @@ func StringToSeverityLevel(str string) (level uint, err error) {
 	default:
 		return 0, fmt.Errorf("Invalid severity level", str)
 	}
-	return level, nil
 }
 
 func SeverityLevelToString(t int) string {
