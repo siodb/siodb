@@ -82,7 +82,11 @@ func (loggerPool *SiodbLoggerPool) Error(s string, v ...interface{}) {
 }
 
 func (loggerPool *SiodbLoggerPool) FatalAndExit(code int, s string, v ...interface{}) {
-	println(FormattedOutput(FATAL, s, v...))
+	if code == FATAL_CANNOT_CREATE_LOG_FILE {
+		println(FormattedOutput(FATAL, s, v...))
+	} else {
+		loggerPool.Output(FATAL, s, v...)
+	}
 	loggerPool.ClosePool()
 	os.Exit(code)
 }
