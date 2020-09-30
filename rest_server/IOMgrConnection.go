@@ -78,6 +78,11 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 		return err
 	}
 
+	// Get Returned message
+	if err = IOMgrConn.readIOMgrResponse(requestID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -89,6 +94,8 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayloadChunk(
 	var buf [binary.MaxVarintLen32]byte
 	encodedLength := binary.PutUvarint(buf[:], uint64(size))
 	if _, err := IOMgrConn.Write(buf[:encodedLength]); err != nil {
+		IOMgrConn.Close()
+		IOMgrConn.TrackedNetConn.Conn = nil
 		return 0, err
 	}
 	siodbLoggerPool.Debug("writeJSONPayloadChunk | Payload size written to IOMgr: %v",
@@ -97,7 +104,8 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayloadChunk(
 	if size > 0 {
 		// Write raw payload
 		if bytesWritten, err := IOMgrConn.Write(JSONPayloadBuffer[:size]); err != nil {
-			siodbLoggerPool.Error("err: %v", err)
+			IOMgrConn.Close()
+			IOMgrConn.TrackedNetConn.Conn = nil
 			return uint64(bytesWritten), fmt.Errorf("not able to write payload to IOMgr: %v", err)
 		}
 	}
@@ -151,11 +159,16 @@ func (IOMgrConn *IOMgrConnection) readIOMgrResponse(requestID uint64) (err error
 	siodbLoggerPool.Debug("readIOMgrResponse | IOMgrConn.RequestID: %v", IOMgrConn.RequestID)
 
 	if databaseEngineResponse.RequestId != requestID {
+		IOMgrConn.Close()
+		IOMgrConn.TrackedNetConn.Conn = nil
+		return fmt.Errorf("request IDs mismatch: databaseEngineResponse.RequestId (%v) != requestID (%v)",
+			databaseEngineResponse.RequestId, requestID)
 		return fmt.Errorf("request IDs mismatch")
 	}
 
 	if len(databaseEngineResponse.Message) > 0 {
-		return fmt.Errorf("code: %v, message: %v", databaseEngineResponse.Message[0].GetStatusCode(), databaseEngineResponse.Message[0].GetText())
+		return fmt.Errorf("code: %v, message: %v",
+			databaseEngineResponse.Message[0].GetStatusCode(), databaseEngineResponse.Message[0].GetText())
 	}
 
 	return nil
@@ -357,13 +370,20 @@ func (IOMgrConn *IOMgrConnection) writeMessage(
 	var err error
 	var buf [binary.MaxVarintLen32]byte
 	encodedLength := binary.PutUvarint(buf[:], uint64(messageTypeID))
-	IOMgrConn.Write(buf[:encodedLength])
+	bytesWritten, err = IOMgrConn.Write(buf[:encodedLength])
+	if nil != err {
+		IOMgrConn.Close()
+		IOMgrConn.TrackedNetConn.Conn = nil
+		return 0, err
+	}
 
 	// Write message size
 	encodedLength = binary.PutUvarint(buf[:], uint64(proto.Size(message)))
 
 	bytesWritten, err = IOMgrConn.Write(buf[:encodedLength])
 	if nil != err {
+		IOMgrConn.Close()
+		IOMgrConn.TrackedNetConn.Conn = nil
 		return 0, err
 	}
 	bytesWrittenTotal += uint64(bytesWritten)
@@ -374,6 +394,11 @@ func (IOMgrConn *IOMgrConnection) writeMessage(
 		return 0, err
 	}
 	bytesWritten, err = IOMgrConn.Write(messageMarshaled)
+	if nil != err {
+		IOMgrConn.Close()
+		IOMgrConn.TrackedNetConn.Conn = nil
+		return 0, err
+	}
 	bytesWrittenTotal += uint64(bytesWritten)
 
 	return bytesWrittenTotal, err
@@ -396,7 +421,10 @@ func (IOMgrConn *IOMgrConnection) readMessage(
 
 	// Check Message Type Id
 	if messageTypeID != readMessageTypeID {
-		return 0, err
+		IOMgrConn.Close()
+		IOMgrConn.TrackedNetConn.Conn = nil
+		return 0, fmt.Errorf("Protocol error messageTypeID (%v) != readMessageTypeID (%v)",
+			messageTypeID, readMessageTypeID)
 	}
 	siodbLoggerPool.Debug("readMessage | readMessageTypeID: %v", readMessageTypeID)
 

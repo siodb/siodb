@@ -6,69 +6,77 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 )
 
 func StringToByteSize(str string) (bytes uint32, err error) {
 
-	var Uint64 uint64 = 0
+	var mult uint64 = 1
+	if strings.HasSuffix(str, "k") || strings.HasSuffix(str, "K") {
+		mult = 1024
+	} else if strings.HasSuffix(str, "m") || strings.HasSuffix(str, "M") {
+		mult = 1024 * 1024
+	} else if strings.HasSuffix(str, "g") || strings.HasSuffix(str, "G") {
+		mult = 1024 * 1024 * 1024
+	}
 
-	if regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(str[len(str)-1:]) {
-		if Uint64, err = strconv.ParseUint(str[:len(str)-1], 10, 32); err != nil {
+	var value uint64
+	if mult > 1 {
+		if value, err = strconv.ParseUint(str[:len(str)-1], 10, 32); err != nil {
 			return 0, err
 		}
-		switch str[len(str)-1:] {
-		case "k", "K":
-			Uint64 = Uint64 * 1024
-		case "m", "M":
-			Uint64 = Uint64 * 1024 * 1024
-		case "g", "G":
-			Uint64 = Uint64 * 1024 * 1024 * 1024
-		default:
-			return 0, fmt.Errorf("Invalid unit for parameter '%v'", str)
-		}
 	} else {
-		if Uint64, err = strconv.ParseUint(str, 10, 32); err != nil {
-			return 0, fmt.Errorf("Invalid parameter '%v'", str)
+		if value, err = strconv.ParseUint(str, 10, 32); err != nil {
+			return 0, err
 		}
 	}
 
-	return uint32(Uint64), nil
+	var upperBound = math.MaxUint32 / mult
+	if value > upperBound {
+		return 0, fmt.Errorf("Number of bytes is too big: '%v'", str)
+	}
+
+	return uint32(value * mult), nil
 }
 
 func StringToSeconds(str string) (seconds uint64, err error) {
 
-	if regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(str[len(str)-1:]) {
-		if seconds, err = strconv.ParseUint(str[:len(str)-1], 10, 64); err != nil {
+	var mult uint64 = 1
+	if strings.HasSuffix(str, "M") {
+		mult = 1024
+	} else if strings.HasSuffix(str, "h") {
+		mult = 1024 * 1024
+	} else if strings.HasSuffix(str, "d") {
+		mult = 1024 * 1024 * 1024
+	} else if strings.HasSuffix(str, "W") {
+		mult = 1024 * 1024 * 1024
+	} else if strings.HasSuffix(str, "m") {
+		mult = 1024 * 1024 * 1024
+	} else if strings.HasSuffix(str, "y") {
+		mult = 1024 * 1024 * 1024
+	}
+
+	var value uint64
+	if mult > 1 {
+		if value, err = strconv.ParseUint(str[:len(str)-1], 10, 64); err != nil {
 			return 0, err
 		}
-		switch str[len(str)-1:] {
-		case "M":
-			seconds = seconds * 60
-		case "h":
-			seconds = seconds * 60 * 60
-		case "d":
-			seconds = seconds * 60 * 60 * 24
-		case "W":
-			seconds = seconds * 60 * 60 * 24 * 7
-		case "m":
-			seconds = seconds * 60 * 60 * 24 * 31
-		case "y":
-			seconds = seconds * 60 * 60 * 24 * 365
-		default:
-			return 0, fmt.Errorf("Invalid unit for parameter '%v'", str)
-		}
 	} else {
-		if seconds, err = strconv.ParseUint(str, 10, 64); err != nil {
-			return 0, fmt.Errorf("Invalid parameter '%v'", str)
+		if value, err = strconv.ParseUint(str, 10, 64); err != nil {
+			return 0, err
 		}
 	}
 
-	return seconds, nil
+	var upperBound = math.MaxUint64 / mult
+	if value > upperBound {
+		return 0, fmt.Errorf("Number of bytes is too big: '%v'", str)
+	}
+
+	return value * mult, nil
 }
 
 func StringToPortNumber(str string) (port uint32, err error) {
