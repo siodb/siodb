@@ -131,3 +131,11 @@ func verifyPath(SiodbInstanceConfigurationPath string, fileName string) (string,
 		return fileName, nil
 	}
 }
+
+func min(a uint64, b uint64) uint64 {
+	if a > b {
+		return b
+	} else {
+		return a
+	}
+}

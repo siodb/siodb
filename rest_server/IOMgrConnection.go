@@ -170,8 +170,7 @@ func (IOMgrConn *IOMgrConnection) readIOMgrResponse(requestID uint64) (err error
 func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 	var IOMgrReceivedChunkSize uint32
-	IOMgrbuffSize := uint32(restServerConfig.HTTPChunkSize)
-	IOMgrbuff := make([]byte, IOMgrbuffSize)
+	httpChunkBuffer := make([]byte, uint32(restServerConfig.HTTPChunkSize))
 
 	c.Writer.Header().Add("Content-Type", "application/json")
 
@@ -181,84 +180,43 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 		if _, IOMgrReceivedChunkSize, err = IOMgrConn.readVarint32(); err != nil {
 			return fmt.Errorf("Not able to read chunk size from IOMgr: %v", err)
 		}
-		siodbLoggerPool.Debug("readChunkedJSON | New chunk arriving from IOMgr with size: %v", IOMgrReceivedChunkSize)
+		siodbLoggerPool.Debug("readChunkedJSON | New chunk with size: %v", IOMgrReceivedChunkSize)
 
 		if IOMgrReceivedChunkSize == 0 {
 			break
 		}
 
-		// Fill IOMgrbuff from IOMgr data and send IOMgrbuffSize
-		IOMgrReceivedChunkReadBytes := uint32(0)
-		writtenBytesTotal := uint32(0)
-		numberOfIOMmgrChunksInIOMgrChunk := IOMgrReceivedChunkSize / IOMgrChunkMaxSize
-		if IOMgrReceivedChunkSize%IOMgrChunkMaxSize > 0 {
-			numberOfIOMmgrChunksInIOMgrChunk++
+		if IOMgrReceivedChunkSize > IOMgrChunkMaxSize {
+			IOMgrConn.Close()
+			IOMgrConn = nil
+			return fmt.Errorf("readChunkedJSON | protocol error: can't read IOMgr chunk size")
 		}
-		siodbLoggerPool.Debug("readChunkedJSON | number of chunks for current IOMgr chunk: %v",
-			numberOfIOMmgrChunksInIOMgrChunk)
 
-		for i := uint64(0); i < uint64(numberOfIOMmgrChunksInIOMgrChunk); i++ {
-
-			var NumberOfbytesToReadInIOMmgrCurrentChunk uint32
-			if IOMgrReceivedChunkSize > IOMgrChunkMaxSize {
-				NumberOfbytesToReadInIOMmgrCurrentChunk = IOMgrChunkMaxSize
-				if IOMgrReceivedChunkSize%IOMgrChunkMaxSize > 0 && i == uint64(numberOfIOMmgrChunksInIOMgrChunk)-1 {
-					NumberOfbytesToReadInIOMmgrCurrentChunk = IOMgrReceivedChunkSize % IOMgrChunkMaxSize
-				}
-			} else {
-				NumberOfbytesToReadInIOMmgrCurrentChunk = IOMgrReceivedChunkSize
-				if IOMgrReceivedChunkSize%IOMgrChunkMaxSize > 0 && i == uint64(numberOfIOMmgrChunksInIOMgrChunk)-1 {
-					NumberOfbytesToReadInIOMmgrCurrentChunk = IOMgrReceivedChunkSize % IOMgrChunkMaxSize
-				}
+		for IOMgrReceivedChunkSize > 0 {
+			maxReadSize := min(len(httpChunkBuffer)-httpBufferPos, IOMgrReceivedChunkSize)
+			readBytes, err := IOMgrConn.readBytesFromIomgr(httpChunkBuffer, maxReadSize, httpBufferPos)
+			if err != nil {
+				return fmt.Errorf("readChunkedJSON | protocol error: can't read IOMgr chunk bytes")
 			}
-			siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToReadInIOMmgrCurrentChunk: %v", NumberOfbytesToReadInIOMmgrCurrentChunk)
+			IOMgrReceivedChunkSize -= readBytes
+			httpBufferPos += readBytes
 
-			var numberOfHTTPChunksInIOMgrChunk = NumberOfbytesToReadInIOMmgrCurrentChunk / IOMgrbuffSize
-			if NumberOfbytesToReadInIOMmgrCurrentChunk%IOMgrbuffSize > 0 {
-				numberOfHTTPChunksInIOMgrChunk++
-			}
-
-			siodbLoggerPool.Debug("readChunkedJSON | number of HTTP chunks for current chunk: %v",
-				numberOfHTTPChunksInIOMgrChunk)
-			for i := uint64(0); i < uint64(numberOfHTTPChunksInIOMgrChunk); i++ {
-				NumberOfbytesToRead := IOMgrbuffSize
-				if NumberOfbytesToReadInIOMmgrCurrentChunk%IOMgrbuffSize > 0 && i == uint64(numberOfHTTPChunksInIOMgrChunk)-1 {
-					NumberOfbytesToRead = NumberOfbytesToReadInIOMmgrCurrentChunk % IOMgrbuffSize
-				}
-				siodbLoggerPool.Debug("readChunkedJSON | NumberOfbytesToRead: %v", NumberOfbytesToRead)
-				IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrCPool.readDeadline))
-				bytesRead, err := io.ReadFull(IOMgrConn, IOMgrbuff[:NumberOfbytesToRead])
+			if httpBufferPos == restServerConfig.HTTPChunkSize {
+				writtenBytes, err := IOMgrConn.writeHttpChunkOfSize(httpChunkBuffer, restServerConfig.HTTPChunkSize)
 				if err != nil {
-					if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-						IOMgrConn.Close()
-						IOMgrConn = nil
-						return fmt.Errorf("readChunkedJSON | Protocol error (read timeout): %v", err)
-					} else {
-						return fmt.Errorf("readChunkedJSON | Protocol error: %v", err)
-					}
+					return fmt.Errorf("readChunkedJSON | protocol error: can't write chunk to client")
 				}
-				IOMgrReceivedChunkReadBytes += uint32(bytesRead)
-				writtenBytes, err := c.Writer.Write(IOMgrbuff[:bytesRead])
-				if err != nil {
-					return err
-				}
-				writtenBytesTotal += uint32(writtenBytes)
-				c.Writer.Flush()
-				siodbLoggerPool.Debug("readChunkedJSON | chunk: %v, IOMgr bytes read: %v (total: %v), HTTP bytes written: %v",
-					i, bytesRead, IOMgrReceivedChunkReadBytes, writtenBytes)
-				siodbLoggerPool.Trace("readChunkedJSON | HTTP chunk content of bytes read : %s", IOMgrbuff[:bytesRead])
-			}
-			siodbLoggerPool.Debug("readChunkedJSON | IOMgr chunk size received: %v, chunk bytes read total: %v, chunk bytes read written: %v",
-				NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
-			if NumberOfbytesToReadInIOMmgrCurrentChunk != IOMgrReceivedChunkReadBytes ||
-				NumberOfbytesToReadInIOMmgrCurrentChunk != writtenBytesTotal {
-				siodbLoggerPool.Error("Bytes read (%v), received from IOMgr (%v), written to client (%v)",
-					NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
-				return fmt.Errorf("Protocol error: Bytes read (%v), received from IOMgr (%v), written to client (%v)",
-					NumberOfbytesToReadInIOMmgrCurrentChunk, IOMgrReceivedChunkReadBytes, writtenBytesTotal)
+				httpBufferPos = 0
 			}
 		}
-	}
+
+		if httpBufferPos > 0 {
+			writtenBytes, err := IOMgrConn.writeHttpChunkOfSize(httpChunkBuffer, restServerConfig.HTTPChunkSize)
+			if err != nil {
+				return fmt.Errorf("readChunkedJSON | protocol error: can't write chunk to client")
+			}
+			httpBufferPos = 0
+		}
 
 	return nil
 }
