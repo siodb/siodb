@@ -26,6 +26,7 @@
 // System headers
 #include <fcntl.h>
 #include <signal.h>
+#include <unistd.h>
 
 // Boost headers
 #include <boost/algorithm/string.hpp>
@@ -80,6 +81,7 @@ extern "C" int restcliMain(int argc, char** argv)
                 "Payload string (takes precendece over payload file)");
         desc.add_options()("file,f",
                 boost::program_options::value<std::string>()->default_value(""), "Payload file");
+        desc.add_options()("drop,D", "Drop connection test while POST/PATCH/PUT");
         desc.add_options()("help,h", "Produce help message");
         desc.add_options()("nologo", "Do not print logo");
         desc.add_options()("debug,d", "Print debug messages");
@@ -113,6 +115,7 @@ extern "C" int restcliMain(int argc, char** argv)
         params.m_tokenFile = vm["token-file"].as<std::string>();
         params.m_payload = vm["payload"].as<std::string>();
         params.m_payloadFile = vm["file"].as<std::string>();
+        params.m_dropConnection = vm.count("drop") > 0;
         params.m_noLogo = vm.count("nologo") > 0;
         params.m_printDebugMessages = vm.count("debug") > 0;
 
@@ -170,8 +173,10 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
     iomgr_protocol::RestVerb verb = iomgr_protocol::GET;
     if (params.m_method == "POST")
         verb = iomgr_protocol::POST;
-    else if (params.m_method == "PATCH" || params.m_method == "PUT")
+    else if (params.m_method == "PATCH")
         verb = iomgr_protocol::PATCH;
+    else if (params.m_method == "PUT")
+        verb = iomgr_protocol::PATCH;  // TODO: change to PUT when REST Server merged
     else if (params.m_method == "DELETE")
         verb = iomgr_protocol::DELETE;
     else if (params.m_method != "GET")
@@ -295,8 +300,9 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
         if (errorOccurred) return 3;
 
         // Send payload
-        constexpr std::size_t kChunkSize = 65536;
-        io::BufferedChunkedOutputStream chunkedOutput(kChunkSize, connection);
+        // With some probability higher buffer will send later
+        std::size_t chunkSize = params.m_dropConnection ? 1024 * 1024 : 65536;
+        io::BufferedChunkedOutputStream chunkedOutput(chunkSize, connection);
         if (!params.m_payload.empty()) {
             if (params.m_printDebugMessages) {
                 std::cerr << "debug: Sending payload:\ndebug: ===== PAYLOAD ("
@@ -313,6 +319,12 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
                     != params.m_payload.length()) {
                 stdext::throw_system_error("Failed to send payload");
             }
+            if (params.m_dropConnection) {
+                std::cout << "Dropping iomgr connection (by just exiting)." << std::endl;
+                _exit(0);
+            }
+            if (chunkedOutput.close() != 0)
+                stdext::throw_system_error("Failed to send last part of the payload string");
         } else if (!params.m_payloadFile.empty()) {
             if (params.m_printDebugMessages) {
                 std::cerr << "debug: Opening payload file " << params.m_payloadFile << std::endl;
@@ -332,15 +344,19 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
                 }
                 if (chunkedOutput.write(buffer, n) != n)
                     stdext::throw_system_error("Failed to send payload");
+                if (params.m_dropConnection) {
+                    std::cout << "Dropping iomgr connection (by just exiting)." << std::endl;
+                    _exit(0);
+                }
             }
             if (n < 0) stdext::throw_system_error("Failed to read payload file");
+            if (chunkedOutput.close() != 0)
+                stdext::throw_system_error("Failed to send last part of the payload file");
         }
         if (params.m_printDebugMessages) {
             std::cerr << "debug: Flushing pending payload from the buffer: "
                       << chunkedOutput.getDataSize() << " bytes..." << std::endl;
         }
-        if (chunkedOutput.close() != 0)
-            stdext::throw_system_error("Failed to send last part of the payload");
     }
 
     // Read server response

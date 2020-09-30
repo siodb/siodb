@@ -7,6 +7,10 @@
 // Project headers
 #include "InputOutputStream.h"
 
+// System headers
+#include <sys/stat.h>
+#include <sys/types.h>
+
 namespace siodb::io {
 
 /** File descriptor input/output */
@@ -69,6 +73,12 @@ public:
     bool isValid() const noexcept override;
 
     /**
+     * Closes file descriptor.
+     * @return Zero on success, nonzero otherwise.
+     */
+    int close() noexcept override;
+
+    /**
      * Reads data from file.
      * @param buffer Data buffer.
      * @param size Data size in bytes.
@@ -92,10 +102,11 @@ public:
     std::ptrdiff_t skip(std::size_t size) noexcept override;
 
     /**
-     * Closes file descriptor.
-     * @return Zero on success, nonzero otherwise.
+     * Stats file.
+     * @param sb Stat buffer structure.
+     * @return true on seccess, false on error.
      */
-    int close() noexcept override;
+    bool stat(struct stat& sb) const noexcept;
 
     /**
      * Swaps content with other object.

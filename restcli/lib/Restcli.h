@@ -51,6 +51,9 @@ struct RestClientParameters {
     /** Payload file */
     std::string m_payloadFile;
 
+    /** Indicates that restcli should drop connection in the middle of sending payload */
+    bool m_dropConnection = false;
+
     /** Indicates that restcli should not print logo */
     bool m_noLogo = false;
 

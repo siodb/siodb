@@ -15,7 +15,7 @@ function _testfails {
 }
 
 function _killSiodb {
-  if [[ `pkill -c siodb` -gt 0 ]]; then
+  if [[ $(pkill -c siodb) -gt 0 ]]; then
     pkill -9 siodb
   fi
 }
@@ -157,9 +157,19 @@ function _RunRestRequest6 {
   ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' -u $6 -T $7
 }
 
+function _RunRestRequest6d {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' -u $6 -T $7 --drop
+}
+
 function _RunRestRequest7 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
   ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 -T $7
+}
+
+function _RunRestRequest7d {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 -T $7 --drop
 }
 
 function _TestExternalAbort {
@@ -243,6 +253,7 @@ else
   _RunRestRequest3 get row sys.sys_tables 1 root ${root_token}
   _CheckLogFiles
 
+
   _log "INFO" "Running USER1 tests"
 
   _RunRestRequest1 get db user1 ${user1_token}
@@ -307,8 +318,30 @@ else
     "[{\"a\":10, \"b\": \"text 2 updated\"}]" \
     user1 ${user1_token}
   _CheckLogFiles
+
+  _RunRestRequest6 put row db2.t2_1 1 \
+    "[{\"a\":10, \"b\": \"text 2 updated\"}]" \
+    user1 ${user1_token}
+  _CheckLogFiles
+
+  _RunRestRequest6 put row db2.t2_1 101 \
+    "[{\"a\":10, \"b\": \"text 2 updated\"}]" \
+    user1 ${user1_token}
+  _CheckLogFiles
+
+
+  _log "INFO" "Running special tests"
+
+  # Comment out meanwhile
+  # Drop connection test
+  #_RunRestRequest6d put row db2.t2_1 101 \
+  #  "[{\"a\":10, \"b\": \"text 2 updated\"}]" \
+  #  user1 ${user1_token}
+  ##_CheckLogFiles
+
 fi
 
 _StopSiodb
 _CheckLogFiles
+
 _log "INFO" "All tests passed"
