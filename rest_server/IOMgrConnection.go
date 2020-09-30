@@ -45,7 +45,8 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 
 	for {
 		if uint64(bytesReadTotal) > IOMgrConn.pool.maxJsonPayloadSize {
-			break
+			return fmt.Errorf("JSON payload is too large:  received %v bytes, but expecting at most %v bytes",
+				bytesReadTotal, IOMgrConn.pool.maxJsonPayloadSize)
 		}
 		bytesRead, err = io.ReadFull(c.Request.Body, buffer)
 		if err == io.ErrUnexpectedEOF {
