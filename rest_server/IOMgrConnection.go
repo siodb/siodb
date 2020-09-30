@@ -169,13 +169,20 @@ func (IOMgrConn *IOMgrConnection) readIOMgrResponse(requestID uint64) (err error
 
 func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
-	var IOMgrReceivedChunkSize uint32
+	var IOMgrReceivedChunkSize uint32 = 0
 	var httpBufferPos uint32 = 0
+	var readBytes uint32 = 0
+	var writtenBytes uint32 = 0
+	var readBytesTotal uint32 = 0
+	var writtenBytesTotal uint32 = 0
 	httpChunkBuffer := make([]byte, uint32(restServerConfig.HTTPChunkSize))
 
 	c.Writer.Header().Add("Content-Type", "application/json")
 
 	for {
+
+		readBytesTotalPerChunk := uint32(0)
+		writtenBytesTotalPerChunk := uint32(0)
 
 		// Get Current IOMgr chunk Size
 		if _, IOMgrReceivedChunkSize, err = IOMgrConn.readVarint32(); err != nil {
@@ -195,32 +202,89 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 		for IOMgrReceivedChunkSize > 0 {
 			maxReadSize := minUint32(uint32(len(httpChunkBuffer))-httpBufferPos, IOMgrReceivedChunkSize)
-			readBytes, err := IOMgrConn.readBytesFromIomgr(httpChunkBuffer, maxReadSize, httpBufferPos)
+			readBytes, err = IOMgrConn.readBytesFromIomgr(httpChunkBuffer, int(maxReadSize), httpBufferPos)
 			if err != nil {
-				return fmt.Errorf("readChunkedJSON | protocol error: can't read IOMgr chunk bytes")
+				return err
 			}
 			IOMgrReceivedChunkSize -= readBytes
+			readBytesTotalPerChunk += readBytes
 			httpBufferPos += readBytes
 
 			if httpBufferPos == restServerConfig.HTTPChunkSize {
-				writtenBytes, err := IOMgrConn.writeHttpChunkOfSize(httpChunkBuffer, restServerConfig.HTTPChunkSize)
+				writtenBytes, err = IOMgrConn.writeHttpChunkOfSize(
+					c, httpChunkBuffer, restServerConfig.HTTPChunkSize)
 				if err != nil {
-					return fmt.Errorf("readChunkedJSON | protocol error: can't write chunk to client")
+					return err
 				}
 				httpBufferPos = 0
+				writtenBytesTotalPerChunk += uint32(writtenBytes)
 			}
+			siodbLoggerPool.Debug("readChunkedJSON | IOMgr bytes read: %v (total: %v), Remain From chunk: %v, httpBufferPos: %v",
+				readBytes, readBytesTotalPerChunk, IOMgrReceivedChunkSize, httpBufferPos)
+
 		}
 
 		if httpBufferPos > 0 {
-			writtenBytes, err := IOMgrConn.writeHttpChunkOfSize(httpChunkBuffer, restServerConfig.HTTPChunkSize)
+			writtenBytes, err = IOMgrConn.writeHttpChunkOfSize(
+				c, httpChunkBuffer, httpBufferPos)
 			if err != nil {
-				return fmt.Errorf("readChunkedJSON | protocol error: can't write chunk to client")
+				return err
 			}
 			httpBufferPos = 0
+			writtenBytesTotalPerChunk += uint32(writtenBytes)
+			siodbLoggerPool.Debug("readChunkedJSON | IOMgr bytes read: %v (total: %v), Remain From chunk: %v, httpBufferPos: %v",
+				0, readBytesTotalPerChunk, IOMgrReceivedChunkSize, httpBufferPos)
 		}
+		readBytesTotal += readBytesTotalPerChunk
+		writtenBytesTotal += writtenBytesTotalPerChunk
+
+		siodbLoggerPool.Debug("readChunkedJSON | IOMgr chunk read: %v, HTTP chunk written: %v",
+			readBytesTotalPerChunk, writtenBytesTotalPerChunk)
 	}
 
+	if readBytesTotal != writtenBytesTotal {
+		IOMgrConn.Close()
+		IOMgrConn = nil
+		return fmt.Errorf("readChunkedJSON | protocol error: readBytesTotal(%v) != writtenBytesTotal(%v)",
+			readBytesTotal, writtenBytesTotal)
+	}
+
+	siodbLoggerPool.Debug("readChunkedJSON | Finish with readBytesTotal: %v and writtenBytesTotal: %v",
+		readBytesTotal, writtenBytesTotal)
+
 	return nil
+}
+
+func (IOMgrConn *IOMgrConnection) writeHttpChunkOfSize(
+	c *gin.Context, buffer []byte, writeSize uint32) (bytesWrittenTotal uint32, err error) {
+	writtenBytes, err := c.Writer.Write(buffer[:writeSize])
+	if err != nil {
+		return uint32(writtenBytes), err
+	}
+	bytesWrittenTotal += uint32(writtenBytes)
+	c.Writer.Flush()
+	return bytesWrittenTotal, nil
+}
+
+func (IOMgrConn *IOMgrConnection) readBytesFromIomgr(
+	buffer []byte, BytesToRead int, httpBufferPos uint32) (bytesReadTotal uint32, err error) {
+
+	IOMgrConn.SetReadDeadline(time.Now().Add(IOMgrCPool.readDeadline))
+	bytesRead, err := io.ReadFull(IOMgrConn, buffer[httpBufferPos:BytesToRead])
+	if err != nil {
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			IOMgrConn.Close()
+			IOMgrConn = nil
+			return uint32(bytesRead),
+				fmt.Errorf("readMessage | Protocol error (read timeout): %v, bytes read: %v", err, bytesRead)
+		} else {
+			return uint32(bytesRead),
+				fmt.Errorf("readMessage | Protocol error: %v, bytes read: %v", err, bytesRead)
+		}
+	}
+	bytesReadTotal += uint32(bytesRead)
+
+	return bytesReadTotal, nil
 }
 
 func (IOMgrConn *IOMgrConnection) readVarint32() (bytesRead int, ruint32 uint32, err error) {
