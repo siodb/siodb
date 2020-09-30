@@ -21,8 +21,8 @@ var (
 	SiodbInstanceConfigurationRootPath string = "/etc/siodb/instances"
 	restServerConfig                   RestServerConfig
 	IOMgrCPool                         *IOMgrConnPool
-	IOMgrCPoolMinConn                  = 4
-	IOMgrCPoolMaxConn                  = 8
+	IOMgrCPoolMinConn                  = 1
+	IOMgrCPoolMaxConn                  = 1
 	siodbLoggerPool                    *SiodbLoggerPool
 )
 
