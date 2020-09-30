@@ -79,6 +79,7 @@ func (pool *IOMgrConnPool) CloseAllConnections() {
 				connection, err)
 		}
 	}
+	siodbLoggerPool.Info("IOMgr connection pool stopped.")
 }
 
 func (pool *IOMgrConnPool) createConn() (*TrackedNetConn, error) {

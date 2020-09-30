@@ -2,9 +2,9 @@
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
-package main
-
 // specs from https://github.com/siodb/siodb/blob/master/docs/dev/designs/RestServer.md
+
+package main
 
 import (
 	"flag"
@@ -67,7 +67,9 @@ func main() {
 	if err = restServerConfig.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
 		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "cannot parse the rest configuration properly", err)
 	}
-	siodbLoggerPool.Info("REST server config initialized successfully")
+	siodbLoggerPool.Info("Siodb REST Server v.%v.%v.%v",
+		SIODB_VERSION_MAJOR, SIODB_VERSION_MINOR, SIODB_VERSION_PATCH)
+	siodbLoggerPool.Info("Copyright (C) %s Siodb GmbH. All rights reserved.", SIODB_COPYRIGHT_YEARS)
 
 	// Connection pool to IOMgr
 	IOMgrCPool, err = CreateIOMgrConnPool(siodbConfigFile, IOMgrCPoolMinConn, IOMgrCPoolMaxConn)
@@ -125,6 +127,5 @@ func main() {
 	sig := <-sigs
 	siodbLoggerPool.Info("%v signal received, terminating... ", sig)
 	IOMgrCPool.CloseAllConnections()
-	siodbLoggerPool.Info("IOMgr connection pool stopped.")
 	siodbLoggerPool.ClosePool()
 }

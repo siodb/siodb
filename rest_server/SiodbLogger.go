@@ -51,9 +51,7 @@ func (logger *SiodbLogger) initLogger() (err error) {
 	case "stderr":
 		logger.out = os.Stderr
 	default: // Assuming it's a path
-		if err = logger.createNewLogFile(); err != nil {
-			return err
-		}
+		logger.createNewLogFile()
 	}
 
 	return nil
@@ -67,25 +65,20 @@ func (logger *SiodbLogger) closeLogFile() (err error) {
 	return nil
 }
 
-func (logger *SiodbLogger) createNewLogFile() (err error) {
-
+func (logger *SiodbLogger) createNewLogFile() {
+	var err error
 	logFileName := fmt.Sprintf("rest_%v_%v.log",
 		time.Now().UTC().Format("20060102_150405"), unix.Getpid())
-	if _, err = os.Stat(strings.TrimSpace(strings.ToLower(logger.destination))); os.IsNotExist(err) {
-		return fmt.Errorf("Invalid log destination: %s", strings.TrimSpace(strings.ToLower(logger.destination)))
-	}
 
 	var logFile *os.File
 	if logFile, err = os.Create(
 		strings.TrimSpace(strings.ToLower(logger.destination)) + "/" + logFileName); err != nil {
-		return fmt.Errorf("Can't create new log file: %v", err)
+		siodbLoggerPool.FatalAndExit(FATAL_CANNOT_CREATE_LOG_FILE, "Cannot create log file: %v", err)
 	}
 
 	logger.fileCreatedUnixTime = time.Now().Unix()
 	logger.file = logFile
 	logger.out = logFile
-
-	return err
 }
 
 func (logger *SiodbLogger) Output(logLevel int, log string) error {
@@ -97,9 +90,7 @@ func (logger *SiodbLogger) Output(logLevel int, log string) error {
 	if logger.channelType == FILE && logger.logFileExpirationTimeout >= 0 {
 		if time.Now().Unix() > logger.fileCreatedUnixTime+int64(logger.logFileExpirationTimeout) {
 			logger.closeLogFile()
-			if err := logger.createNewLogFile(); err != nil {
-				return err
-			}
+			logger.createNewLogFile()
 		}
 	}
 
@@ -115,9 +106,7 @@ func (logger *SiodbLogger) Output(logLevel int, log string) error {
 		} else {
 			if fileStat.Size() >= int64(logger.maxLogFileSize) {
 				logger.closeLogFile()
-				if err := logger.createNewLogFile(); err != nil {
-					return err
-				}
+				logger.createNewLogFile()
 			}
 		}
 	}

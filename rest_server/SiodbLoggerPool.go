@@ -21,7 +21,8 @@ var (
 )
 
 var (
-	FATAL_INIT_ERROR = 2
+	FATAL_INIT_ERROR             = 2
+	FATAL_CANNOT_CREATE_LOG_FILE = 3
 )
 
 type SiodbLoggerPool struct {
