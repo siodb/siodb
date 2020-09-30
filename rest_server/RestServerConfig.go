@@ -9,12 +9,10 @@ import (
 )
 
 var (
-	HTTPChunkSizeMinSize        uint64 = 1 * 1024
-	HTTPChunkSizeMaxSize        uint64 = 1 * 1024 * 1024
-	IOMgrChunkMinBufferedSize   uint64 = 1 * 1024
-	IOMgrChunkMaxBufferedSize   uint64 = 10 * 1024 * 1024
-	RequestPayloadMinBufferSize uint64 = 1 * 1024
-	RequestPayloadMaxBufferSize uint64 = 10 * 1024 * 1024
+	HTTPChunkSizeMinSize        uint32 = 1 * 1024
+	HTTPChunkSizeMaxSize        uint32 = 1 * 1024 * 1024
+	RequestPayloadMinBufferSize uint32 = 1 * 1024
+	RequestPayloadMaxBufferSize uint32 = 10 * 1024 * 1024
 )
 
 type RestServerConfig struct {
@@ -24,9 +22,8 @@ type RestServerConfig struct {
 	Ipv6HTTPSPort            uint32
 	TLSCertificate           string
 	TLSPrivateKey            string
-	HTTPChunkSize            uint64
-	IOMgrChunkBufferSize     uint64
-	RequestPayloadBufferSize uint64
+	HTTPChunkSize            uint32
+	RequestPayloadBufferSize uint32
 }
 
 func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbConfigFile *SiodbConfigFile) (err error) {
@@ -94,18 +91,6 @@ func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbCon
 	if restServerConfig.HTTPChunkSize < HTTPChunkSizeMinSize || restServerConfig.HTTPChunkSize > HTTPChunkSizeMaxSize {
 		return fmt.Errorf("Invalid parameter: 'rest_server.chunk_size' (%v) is out of range (%v-%v)",
 			value, HTTPChunkSizeMinSize, HTTPChunkSizeMaxSize)
-	}
-
-	// iomgr_io_buffer_size
-	if value, err = siodbConfigFile.GetParameterValue("rest_server.iomgr_io_buffer_size"); err != nil {
-		return err
-	}
-	if restServerConfig.IOMgrChunkBufferSize, err = StringToByteSize(value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.iomgr_io_buffer_size': %v", err)
-	}
-	if restServerConfig.IOMgrChunkBufferSize < IOMgrChunkMinBufferedSize || restServerConfig.IOMgrChunkBufferSize > IOMgrChunkMaxBufferedSize {
-		return fmt.Errorf("Invalid parameter: 'rest_server.iomgr_io_buffer_size' (%v) is out of range (%v-%v)",
-			value, IOMgrChunkMinBufferedSize, IOMgrChunkMaxBufferedSize)
 	}
 
 	// request_payload_buffer_size

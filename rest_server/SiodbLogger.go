@@ -37,7 +37,7 @@ type SiodbLogger struct {
 	channelType              uint
 	channelName              string
 	destination              string
-	maxLogFileSize           uint64
+	maxLogFileSize           uint32
 	logFileExpirationTimeout uint64 // second
 	severityLevel            uint
 }

@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	JsonPayloadMinSize uint64 = 1024
-	JsonPayloadMaxSize uint64 = 10 * 1024 * 1024
+	JsonPayloadMinSize uint32 = 1024
+	JsonPayloadMaxSize uint32 = 10 * 1024 * 1024
 	readDeadlineMin    uint64 = 5
 	readDeadlineMax    uint64 = 60
 )
@@ -33,7 +33,7 @@ type IOMgrConnPool struct {
 	minConnNum         int
 	maxConnNum         int
 	totalConnNum       int
-	maxJsonPayloadSize uint64
+	maxJsonPayloadSize uint32
 }
 
 func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrConnPool, error) {

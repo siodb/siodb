@@ -35,16 +35,16 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 
 	// Read Payload up to max json payload size
 	var bytesRead int = 0
-	var bytesReadTotal int = 0
+	var bytesReadTotal uint32 = 0
 	var bytesWritten int = 0
-	var bytesWrittenTotal int = 0
+	var bytesWrittenTotal uint32 = 0
 	buffer := make([]byte, restServerConfig.RequestPayloadBufferSize)
 
 	siodbLoggerPool.Debug("writeJSONPayload | IOMgrConn.pool.maxJsonPayloadSize: %v, restServerConfig.RequestPayloadBufferSize: %v",
 		IOMgrConn.pool.maxJsonPayloadSize, restServerConfig.RequestPayloadBufferSize)
 
 	for {
-		if uint64(bytesReadTotal) > IOMgrConn.pool.maxJsonPayloadSize {
+		if bytesReadTotal > IOMgrConn.pool.maxJsonPayloadSize {
 			return fmt.Errorf("JSON payload is too large:  received %v bytes, but expecting at most %v bytes",
 				bytesReadTotal, IOMgrConn.pool.maxJsonPayloadSize)
 		}
@@ -54,8 +54,8 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 			if err != nil {
 				return err
 			}
-			bytesReadTotal += bytesRead
-			bytesWrittenTotal += bytesWritten
+			bytesReadTotal += uint32(bytesRead)
+			bytesWrittenTotal += uint32(bytesWritten)
 			siodbLoggerPool.Debug("writeJSONPayload | bytes Read: %v (total: %v), bytes Written: %v (total: %v)",
 				bytesRead, bytesReadTotal, bytesWritten, bytesWrittenTotal)
 			break
@@ -66,8 +66,8 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 		if err != nil {
 			return err
 		}
-		bytesReadTotal += bytesRead
-		bytesWrittenTotal += bytesWritten
+		bytesReadTotal += uint32(bytesRead)
+		bytesWrittenTotal += uint32(bytesWritten)
 		siodbLoggerPool.Debug("writeJSONPayload | bytes Read: %v (total: %v), bytes Written: %v (total: %v)",
 			bytesRead, bytesReadTotal, bytesWritten, bytesWrittenTotal)
 	}
@@ -78,7 +78,7 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 
 	// Get Returned message
 	if err = IOMgrConn.readIOMgrResponse(requestID); err != nil {
-		if uint64(bytesReadTotal) > IOMgrConn.pool.maxJsonPayloadSize {
+		if bytesReadTotal > IOMgrConn.pool.maxJsonPayloadSize {
 			return fmt.Errorf("JSON payload truncated because it has bigger size than authoried (%v). IOMgr: %v",
 				IOMgrConn.pool.maxJsonPayloadSize, err)
 		}
@@ -170,6 +170,7 @@ func (IOMgrConn *IOMgrConnection) readIOMgrResponse(requestID uint64) (err error
 func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 	var IOMgrReceivedChunkSize uint32
+	var httpBufferPos uint32 = 0
 	httpChunkBuffer := make([]byte, uint32(restServerConfig.HTTPChunkSize))
 
 	c.Writer.Header().Add("Content-Type", "application/json")
@@ -193,7 +194,7 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 		}
 
 		for IOMgrReceivedChunkSize > 0 {
-			maxReadSize := min(len(httpChunkBuffer)-httpBufferPos, IOMgrReceivedChunkSize)
+			maxReadSize := minUint32(uint32(len(httpChunkBuffer))-httpBufferPos, IOMgrReceivedChunkSize)
 			readBytes, err := IOMgrConn.readBytesFromIomgr(httpChunkBuffer, maxReadSize, httpBufferPos)
 			if err != nil {
 				return fmt.Errorf("readChunkedJSON | protocol error: can't read IOMgr chunk bytes")
@@ -217,6 +218,7 @@ func (IOMgrConn *IOMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 			}
 			httpBufferPos = 0
 		}
+	}
 
 	return nil
 }

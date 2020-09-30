@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	LogFileSizeMin              uint64 = 1 * 1024 * 1024
+	LogFileSizeMin              uint32 = 1 * 1024 * 1024
 	LogFileExpirationTimeoutMin uint64 = 1 * 60
 )
 

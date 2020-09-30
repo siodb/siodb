@@ -13,29 +13,31 @@ import (
 	"strings"
 )
 
-func StringToByteSize(str string) (bytes uint64, err error) {
+func StringToByteSize(str string) (bytes uint32, err error) {
+
+	var Uint64 uint64 = 0
 
 	if regexp.MustCompile(`^[a-zA-Z]+$`).MatchString(str[len(str)-1:]) {
-		if bytes, err = strconv.ParseUint(str[:len(str)-1], 10, 64); err != nil {
+		if Uint64, err = strconv.ParseUint(str[:len(str)-1], 10, 32); err != nil {
 			return 0, err
 		}
 		switch str[len(str)-1:] {
 		case "k", "K":
-			bytes = bytes * 1024
+			Uint64 = Uint64 * 1024
 		case "m", "M":
-			bytes = bytes * 1024 * 1024
+			Uint64 = Uint64 * 1024 * 1024
 		case "g", "G":
-			bytes = bytes * 1024 * 1024 * 1024
+			Uint64 = Uint64 * 1024 * 1024 * 1024
 		default:
 			return 0, fmt.Errorf("Invalid unit for parameter '%v'", str)
 		}
 	} else {
-		if bytes, err = strconv.ParseUint(str, 10, 64); err != nil {
+		if Uint64, err = strconv.ParseUint(str, 10, 32); err != nil {
 			return 0, fmt.Errorf("Invalid parameter '%v'", str)
 		}
 	}
 
-	return bytes, nil
+	return uint32(Uint64), nil
 }
 
 func StringToSeconds(str string) (seconds uint64, err error) {
@@ -132,7 +134,7 @@ func verifyPath(SiodbInstanceConfigurationPath string, fileName string) (string,
 	}
 }
 
-func min(a uint64, b uint64) uint64 {
+func minUint32(a uint32, b uint32) uint32 {
 	if a > b {
 		return b
 	} else {
