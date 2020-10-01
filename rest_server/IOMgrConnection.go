@@ -290,8 +290,7 @@ func (IOMgrConn *IOMgrConnection) readBytesFromIomgr(
 func (IOMgrConn *IOMgrConnection) readVarint32() (bytesRead int, ruint32 uint32, err error) {
 	var ruint64 uint64
 	bytesRead, ruint64, err = IOMgrConn.readVarint(binary.MaxVarintLen32)
-	ruint32 = uint32(ruint64)
-	return bytesRead, ruint32, err
+	return bytesRead, uint32(ruint64), err
 }
 
 func (IOMgrConn *IOMgrConnection) readVarint64() (bytesRead int, ruint64 uint64, err error) {
