@@ -46,13 +46,13 @@ func StringToByteSize(str string) (bytes uint32, err error) {
 func StringToSeconds(str string) (seconds uint64, err error) {
 
 	var mult uint64 = 1
-	if strings.HasSuffix(str, "M") {
+	if strings.HasSuffix(str, "m") || strings.HasSuffix(str, "M") {
 		mult = 60
-	} else if strings.HasSuffix(str, "h") {
+	} else if strings.HasSuffix(str, "h") || strings.HasSuffix(str, "H") {
 		mult = 60 * 60
-	} else if strings.HasSuffix(str, "d") {
+	} else if strings.HasSuffix(str, "d") || strings.HasSuffix(str, "D") {
 		mult = 60 * 60 * 24
-	} else if strings.HasSuffix(str, "W") {
+	} else if strings.HasSuffix(str, "w") || strings.HasSuffix(str, "W") {
 		mult = 60 * 60 * 24 * 7
 	}
 
