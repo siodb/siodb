@@ -13,15 +13,16 @@ CXX_SRC:=IOManagerMain.cpp
 
 TARGET_OWN_LIBS:=iomgr_main iomgr_dbengine
 
-TARGET_COMMON_LIBS:=iomgr_shared crypto options log net proto protobuf sys utils data io stl_ext crt_ext
+TARGET_COMMON_LIBS:=\
+	iomgr_shared crypto options log net proto protobuf sys utils data io stl_ext crt_ext
 
 TARGET_LIBS:=-lboost_filesystem -lboost_log -lboost_thread -lboost_program_options \
 		-lboost_system -lprotobuf -lcrypto -lantlr4-runtime -lxxhash
 
-BIN_FILES:=iomgr_messages.txt
+BIN_FILES:=$(THIS_GENERATED_FILES_DIR)/iomgr_messages.txt
 
 include $(MK)/Main.mk
 
-iomgr_messages.txt: ../lib/messages/iomgr.msg
-	@echo SIODBMC $@
-	@$(SIODBMC) -T -VM -i $< -o $@
+$(THIS_GENERATED_FILES_DIR)/iomgr_messages.txt: ../lib/messages/iomgr.msg | $$(@D)/.
+	@echo MC $@
+	@$(MESSAGE_COMPILER_TOOL) -T -VM -i $< -o $@

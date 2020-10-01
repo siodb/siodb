@@ -38,4 +38,4 @@ $(TARGET): $(OBJ)
 	$(LD) -o $@ $(LDFLAGS) $^ $(LIBS)
 
 install:
-	install -s -m 0755 ./siodbmc1 /usr/local/bin
+	install -s -m 0755 ./format_comments /usr/local/bin

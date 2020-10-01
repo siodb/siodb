@@ -1,6 +1,4 @@
-siodbmc1
-siodbmc
-siodbmc.*
+message_compiler
 iomgr.msg
 iomgr.txt
 testmsg.txt

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./siodbmc -T -VM -i ../../iomgr/lib/messages/iomgr.msg -o iomgr.txt
+./message_compiler -T -VM -i ../../iomgr/lib/messages/iomgr.msg -o iomgr.txt

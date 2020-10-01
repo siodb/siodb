@@ -7,15 +7,17 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../mk/Prolog.mk
 
-COMPILER_VERSION=0.1.5
+GGV_VERSION=0.0.1
 
-TARGET_EXE:=message_compiler
+TARGET_EXE:=generate_version_go
 
 CXX_SRC:=\
-	Compiler.cpp  \
-	CompilerOptions.cpp
+	GenerateGoVersion.cpp
 
-DEFS+=-DCOMPILER_VERSION=\"$(COMPILER_VERSION)\"
+CXX_HDR:=\
+	GenerateGoVersion.h
+
+DEFS+=-DGGV_VERSION=\"$(GGV_VERSION)\"
 
 TARGET_OWN_LIBS:=
 

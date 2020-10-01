@@ -10,6 +10,8 @@ NC=\033[0m
 
 help:
 	@echo "${CYAN}make all${NC} - Build all targets."
+	@echo "${CYAN}make tools${NC} - Build build tools."
+	@echo "${CYAN}make common${NC} - Build common libraries."
 	@echo "${CYAN}make conn_worker${NC} - Build Connection Worker."
 	@echo "${CYAN}make iomgr${NC} - Build IO Manager."
 	@echo "${CYAN}make siodb${NC} - Build main server executable."

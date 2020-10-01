@@ -1,3 +1,7 @@
+Version 0.1.5 Oct 01 2020
+============================
+- Write output files using temporary files.
+
 Version 0.1.4 May 18 2020
 ============================
 - Minor updates.
@@ -30,7 +34,7 @@ Version 0.0.4 Nov 13 2019
 
 Version 0.0.3 Aug 27 2019
 ============================
-- Added STEP directive
+- Added STEP directive:
   - Initial step is 1
   - Step is auto-reset to 1 on each ID directive
   - STEP directive accept both positive and negative integers as parameter
@@ -45,6 +49,6 @@ Version 0.0.2 Aug 26 2019
 Version 0.0.1 May 15 2019
 ============================
 Basic functionality:
-  - Parsing msg files
-  - Generation of header
-  - Generation of text file with messages
+- Parsing msg files
+- Generation of header
+- Generation of text file with messages
