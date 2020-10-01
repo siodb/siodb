@@ -54,6 +54,12 @@ func (restWorker RestWorker) post(
 		return err
 	}
 
+	if err := IOMgrConn.readIOMgrResponse(requestID); err != nil {
+		siodbLoggerPool.Error("%v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		return err
+	}
+
 	// Read and stream chunked JSON
 	if err := IOMgrConn.readChunkedJSON(c); err != nil {
 		siodbLoggerPool.Error("%v", err)

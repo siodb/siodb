@@ -78,11 +78,6 @@ func (IOMgrConn *IOMgrConnection) writeJSONPayload(requestID uint64, c *gin.Cont
 		return err
 	}
 
-	// Get Returned message
-	if err = IOMgrConn.readIOMgrResponse(requestID); err != nil {
-		return err
-	}
-
 	return nil
 }
 

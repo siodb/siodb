@@ -47,17 +47,13 @@ func StringToSeconds(str string) (seconds uint64, err error) {
 
 	var mult uint64 = 1
 	if strings.HasSuffix(str, "M") {
-		mult = 1024
+		mult = 60
 	} else if strings.HasSuffix(str, "h") {
-		mult = 1024 * 1024
+		mult = 60 * 60
 	} else if strings.HasSuffix(str, "d") {
-		mult = 1024 * 1024 * 1024
+		mult = 60 * 60 * 24
 	} else if strings.HasSuffix(str, "W") {
-		mult = 1024 * 1024 * 1024
-	} else if strings.HasSuffix(str, "m") {
-		mult = 1024 * 1024 * 1024
-	} else if strings.HasSuffix(str, "y") {
-		mult = 1024 * 1024 * 1024
+		mult = 60 * 60 * 24 * 7
 	}
 
 	var value uint64
@@ -73,7 +69,7 @@ func StringToSeconds(str string) (seconds uint64, err error) {
 
 	var upperBound = math.MaxUint64 / mult
 	if value > upperBound {
-		return 0, fmt.Errorf("Number of bytes is too big: '%v'", str)
+		return 0, fmt.Errorf("Number of seconds is too big: '%v'", str)
 	}
 
 	return value * mult, nil
