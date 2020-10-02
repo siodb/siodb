@@ -293,7 +293,7 @@ void Instance::updateUser(
     }
 
     if (needUpdateState) {
-        // Super user cannot be blocked
+        // Super user can't be blocked
         if (id == User::kSuperUserId && !*params.m_active)
             throwDatabaseError(IOManagerMessageId::kErrorCannotChangeSuperUserState);
         user->setActive(*params.m_active);

@@ -11,7 +11,7 @@ import "CommonMessages.proto";
 package siodb.iomgr_protocol;
 
 option optimize_for=SPEED;
-option go_package = ".;SiodbIomgrProtocol";
+option go_package = ".;siodbproto";
 
 /** Request message. */
 message DatabaseEngineRequest {

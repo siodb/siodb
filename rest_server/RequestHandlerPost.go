@@ -5,7 +5,7 @@
 package main
 
 import (
-	"SiodbIomgrProtocol"
+	"siodbproto"
 	"fmt"
 	"net/http"
 	"time"
@@ -15,11 +15,11 @@ import (
 
 func (restWorker RestWorker) postRows(c *gin.Context) {
 	siodbLoggerPool.Debug("handler: postRows")
-	restWorker.post(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
+	restWorker.post(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
 }
 
 func (restWorker RestWorker) post(
-	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) (err error) {
+	c *gin.Context, ObjectType siodbproto.DatabaseObjectType, ObjectName string, ObjectID uint64) (err error) {
 
 	start := time.Now()
 	IOMgrConn, _ := IOMgrCPool.GetTrackedNetConn()
@@ -35,7 +35,7 @@ func (restWorker RestWorker) post(
 
 	var requestID uint64
 	if requestID, err = IOMgrConn.writeIOMgrRequest(
-		SiodbIomgrProtocol.RestVerb_POST, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
+		siodbproto.RestVerb_POST, ObjectType, UserName, Token, ObjectName, ObjectID); err != nil {
 		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err

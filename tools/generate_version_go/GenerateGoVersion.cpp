@@ -99,11 +99,10 @@ int main(int argc, char** argv)
     const std::string patchVersionKey("SIODB_VERSION_PATCH");
     const std::string copyrightYearsKey("SIODB_COPYRIGHT_YEARS");
 
-    ofs << R"text(
+    ofs << R"text(// THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.
 // Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
-// in the LICENSE file.
-    )text";
+// in the LICENSE file.)text";
     ofs << "\npackage main\n\n";
     ofs << "var " << majorVersionKey << " = " << defines[majorVersionKey] << '\n';
     ofs << "var " << minorVersionKey << " = " << defines[minorVersionKey] << '\n';

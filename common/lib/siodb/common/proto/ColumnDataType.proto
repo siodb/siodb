@@ -7,7 +7,7 @@ syntax = "proto3";
 package siodb;
 
 option optimize_for=SPEED;
-option go_package = ".;SiodbIomgrProtocol";
+option go_package = ".;siodbproto";
 
 /** Column data types. */
 enum ColumnDataType {

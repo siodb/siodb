@@ -123,16 +123,16 @@ MSG Error ValuesListNotMatchColumns     Length of '%1%'.'%2%' VALUES list doesn'
 MSG Error ValuesListLengthsNotSame      '%1%'.'%2%' VALUES lists must all have the same length %3%, but row %4% has %5% values
 MSG Error TableColumnIndexOutOfRange    Table column index '%3%' is out of range for the '%1%'.'%2%'
 MSG Error CannotInsertToSystemTable     Insert into system table '%1%'.'%2%' is not allowed
-MSG Error CannotInsertIntoMasterColumn  Cannot insert value into TRID, it is assigned automatically
+MSG Error CannotInsertIntoMasterColumn  Can't insert value into TRID, it is assigned automatically
 MSG Error CannotInsertNullValue         Can't insert NULL value to column '%1%'.'%2%'.'%3%'
-MSG Error CannotInsertDuplicateTrid     Cannot insert duplicate value %4% into master column '%1%'.'%2%'.'%3%'
+MSG Error CannotInsertDuplicateTrid     Can't insert duplicate value %4% into master column '%1%'.'%2%'.'%3%'
 
 # UPDATE
 MSG Error ValuesListIsEmpty             VALUES list type is empty 
 MSG Error ColumnsListIsEmpty            '%1%'.'%2%' columns list type is empty 
 MSG Error UpdateInvalidValueExpression  UPDATE SET expression is invalid: %1%
 MSG Error CannotUpdateSystemTable       Update system table '%1%'.'%2%' is not allowed
-MSG Error CannotUpdateMasterColumn      Cannot update master column in the table '%1%'.'%2%'
+MSG Error CannotUpdateMasterColumn      Can't update master column in the table '%1%'.'%2%'
 MSG Error ValueAndColumnTypeMismatch    Column '%1%' data type '%2%' isn't compatible with value type '%3%'
 MSG Error UpdateValuesDoesNotFitToPositions      '%1%'.'%2%' values count %3% not equal to positions count %4%
 MSG Error UpdateValuesCountGreaterThanAddresses  '%1%'.'%2%' values count %3% greater than column data addresses %4%
@@ -408,7 +408,7 @@ MSG Error ExplicitConstraintsForMasterColumnProhibited  Explicit spcification of
 
 # Database
 ID -100000
-MSG Error CannotReleaseUnusedDatabase Cannot release database '%1%' (%2%) which is marked as unused
+MSG Error CannotReleaseUnusedDatabase Can't release database '%1%' (%2%) which is marked as unused
 MSG Error MissingSystemTable Missing system table '%1%'.'%2%' (%3%.'%4%')
 
 # Table

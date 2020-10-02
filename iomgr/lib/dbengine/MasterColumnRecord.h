@@ -277,7 +277,7 @@ public:
      * @param buffer Buffer address.
      * @param dataSize Available data size in buffer.
      * @param masterColumn Master column data structure to fill.
-     * @return Number of consumed bytes or zero if data cannot be read.
+     * @return Number of consumed bytes or zero if data can't be read.
      */
     std::size_t deserialize(const std::uint8_t* buffer, std::size_t dataSize) noexcept;
 

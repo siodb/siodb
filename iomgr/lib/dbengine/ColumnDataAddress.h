@@ -87,7 +87,7 @@ public:
      * De-serializes object from a memory buffer using variable length encoding.
      * @param buffer Buffer address.
      * @param dataSize Available data size in buffer.
-     * @return Number of bytes consumed or zero if data cannot be read.
+     * @return Number of bytes consumed or zero if data can't be read.
      */
     std::size_t deserialize(const std::uint8_t* buffer, std::size_t dataSize) noexcept;
 
@@ -95,7 +95,7 @@ public:
      * De-serializes object from a memory buffer using plain binary encoding.
      * @param buffer Buffer address.
      * @param dataSize Available data size in buffer.
-     * @return Address after the last read byte or nullptr if data cannot be read
+     * @return Address after the last read byte or nullptr if data can't be read
      *         (data size is too small or data corrupted).
      */
     const std::uint8_t* pbeDeserialize(const std::uint8_t* buffer, std::size_t dataSize) noexcept;

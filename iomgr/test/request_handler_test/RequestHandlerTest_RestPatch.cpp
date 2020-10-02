@@ -283,7 +283,7 @@ TEST(RestPatch, PatchExstingRowWithInvalidData)
     siodb::io::MemoryOutputStream out(payloadBuffer.data(), payloadBuffer.size());
     {
         siodb::io::BufferedChunkedOutputStream chunkedOutput(17, out);
-        // Introduce invalid data: "B" cannot be NULL
+        // Introduce invalid data: "B" can't be NULL
         constexpr const char* kSingleRowJson = R"json(
             [ { "a": -2, "b": null, "c": 33.0, "d": true, "e": null } ]
         )json";

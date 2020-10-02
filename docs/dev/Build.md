@@ -296,6 +296,20 @@ Now, proceed to the section [All Systems](#all-systems).
 
 ## All Systems
 
+### Install Go
+
+Run following commands:
+
+```bash
+cd /tmp
+wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
+tar xaf go1.15.2.linux-amd64.tar.gz
+mv go go-1.15
+sudo mv go-1.15 /usr/local
+```
+
+### Install boost-pretty-printer GDB Extension
+
 For better debugging experience, it is recommended to install
 [Boost Pretty Printers](https://github.com/ruediger/Boost-Pretty-Printer):
 
@@ -321,6 +335,8 @@ For better debugging experience, it is recommended to install
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ## Building Third-Party Libraries
+
+### C and C++ Libraries
 
 Change current directory to the root of siodb Git repository and execute following commands:
 
@@ -498,6 +514,16 @@ sudo make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
+```
+
+### Go Libraries
+
+Run following commands:
+
+```bash
+export GO_VERSION=1.15
+/usr/local/go-${GO_VERSION}/bin/go get -u github.com/golang/protobuf/protoc-gen-go
+/usr/local/go-${GO_VERSION}/bin/go get -u github.com/gin-gonic/gin
 ```
 
 ## System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)

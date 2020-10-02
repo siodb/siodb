@@ -31,7 +31,7 @@ public static method to make this check using it.
 each duplicate column.
 
 6. Get designated database and obtain read lock for it. If database name
-   is empty, use database SYS. Indicate error of database cannot be immediately
+   is empty, use database SYS. Indicate error of database can't be immediately
    read-locked.
 
 See document about SELECT statement for details.
@@ -49,7 +49,7 @@ See document about SELECT statement for details.
 See document about SELECT statement for details.
 
 10. Resolve column objects for each column in the insert request. If some column
-   cannot be resolved, indicate error. Generate separate error message for
+   can't be resolved, indicate error. Generate separate error message for
    each unresolved column. Build list of column objects as result of this step.
 
 12. Initialize MasterColumnRecord data structure with new TRID.

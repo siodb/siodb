@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	JsonPayloadMinSize uint32 = 1024
-	JsonPayloadMaxSize uint32 = 10 * 1024 * 1024
+	JSONPayloadMinSize uint32 = 1024
+	JSONPayloadMaxSize uint32 = 10 * 1024 * 1024
 	readDeadlineMin    uint64 = 5
 	readDeadlineMax    uint64 = 60
 )
@@ -33,7 +33,7 @@ type IOMgrConnPool struct {
 	minConnNum         int
 	maxConnNum         int
 	totalConnNum       int
-	maxJsonPayloadSize uint32
+	maxJSONPayloadSize uint32
 }
 
 func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrConnPool, error) {
@@ -123,7 +123,7 @@ func (pool *IOMgrConnPool) ReturnTrackedNetConn(IOMgrConn *IOMgrConnection) erro
 		pool.lock.Lock()
 		pool.totalConnNum = pool.totalConnNum - 1
 		pool.lock.Unlock()
-		return fmt.Errorf("cannot put nil to connection pool")
+		return fmt.Errorf("Can't put nil to connection pool")
 	}
 
 	select {
@@ -172,12 +172,12 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 	if value, err = siodbConfigFile.GetParameterValue("iomgr.max_json_payload_size"); err != nil {
 		return err
 	}
-	if pool.maxJsonPayloadSize, err = StringToByteSize(value); err != nil {
+	if pool.maxJSONPayloadSize, err = StringToByteSize(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'iomgr.max_json_payload_size': %v", err)
 	}
-	if pool.maxJsonPayloadSize < JsonPayloadMinSize || pool.maxJsonPayloadSize > JsonPayloadMaxSize {
+	if pool.maxJSONPayloadSize < JSONPayloadMinSize || pool.maxJSONPayloadSize > JSONPayloadMaxSize {
 		return fmt.Errorf("Invalid iomgr.max_json_payload_size=%v, expecting %v-%v",
-			value, JsonPayloadMinSize, JsonPayloadMaxSize)
+			value, JSONPayloadMinSize, JSONPayloadMaxSize)
 	}
 
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.iomgr_read_timeout"); err != nil {

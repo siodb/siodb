@@ -43,7 +43,7 @@ func (siodbConfigFile *SiodbConfigFile) GetParameterValue(parameter string) (str
 		}
 	}
 
-	return "", fmt.Errorf("parameter '%v' doesn't exist in the parameter file", parameter)
+	return "", fmt.Errorf("Parameter '%v' doesn't exist in the parameter file", parameter)
 }
 
 func (siodbConfigFile *SiodbConfigFile) ParseParameters() (err error) {

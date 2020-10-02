@@ -57,7 +57,7 @@ public:
     void validate(const ExpressionEvaluationContext& context) const override;
 
     /**
-     * Evaluates expression. Cannot be applied to "all columns" expression.
+     * Evaluates expression. Can't be applied to "all columns" expression.
      * @param context Evaluation context.
      * @return Resulting value.
      * @throw std::runtime_error if evaluation error happens.

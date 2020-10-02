@@ -7,11 +7,10 @@
 
 syntax = "proto3";
 
-import "CommonMessages.proto";
-
 package siodb.common_protocol;
 
 option optimize_for=SPEED;
+option go_package = ".;siodbproto";
 
 /** Request for server version and capabilities information */
 message ServerInformationRequest {

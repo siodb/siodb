@@ -5,9 +5,9 @@
 package main
 
 import (
-	"SiodbIomgrProtocol"
 	"fmt"
 	"net/http"
+	"siodbproto"
 	"strconv"
 	"time"
 
@@ -23,12 +23,12 @@ func (restWorker RestWorker) deleteRow(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "Invalid row_id"})
 		siodbLoggerPool.Error("%v", err)
 	} else {
-		restWorker.delete(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
+		restWorker.delete(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
 	}
 }
 
 func (restWorker RestWorker) delete(
-	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) (err error) {
+	c *gin.Context, ObjectType siodbproto.DatabaseObjectType, ObjectName string, ObjectID uint64) (err error) {
 
 	start := time.Now()
 	IOMgrConn, _ := IOMgrCPool.GetTrackedNetConn()
@@ -44,7 +44,7 @@ func (restWorker RestWorker) delete(
 
 	var requestID uint64
 	if requestID, err = IOMgrConn.writeIOMgrRequest(
-		SiodbIomgrProtocol.RestVerb_DELETE, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
+		siodbproto.RestVerb_DELETE, ObjectType, UserName, Token, ObjectName, ObjectID); err != nil {
 		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
@@ -54,13 +54,12 @@ func (restWorker RestWorker) delete(
 		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
-	} else {
-		// Read and stream chunked JSON
-		if err := IOMgrConn.readChunkedJSON(c); err != nil {
-			siodbLoggerPool.Error("%v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
-			return err
-		}
+	}
+	// Read and stream chunked JSON
+	if err := IOMgrConn.readChunkedJSON(c); err != nil {
+		siodbLoggerPool.Error("%v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		return err
 	}
 
 	return nil

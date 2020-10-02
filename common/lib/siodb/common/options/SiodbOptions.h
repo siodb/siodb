@@ -320,7 +320,7 @@ struct SiodbOptions {
      * Reads options for given instance.
      * @param instanceName Siodb instance name.
      * @throw InvalidConfigurationError
-     *        - If configuration file cannot be read.
+     *        - If configuration file can't be read.
      *        - If value of some configuration options is invalid.
      */
     void load(const std::string& instanceName);
@@ -330,7 +330,7 @@ struct SiodbOptions {
      * @param instanceName Siodb instance name.
      * @param configPath Configuration file path.
      * @throw InvalidConfigurationError
-     *        - If configuration file cannot be read.
+     *        - If configuration file can't be read.
      *        - If value of some configuration options is invalid.
      */
     void load(const std::string& instanceName, const std::string& configPath);

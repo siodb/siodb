@@ -73,7 +73,7 @@ func (logger *SiodbLogger) createNewLogFile() {
 	var logFile *os.File
 	if logFile, err = os.Create(
 		strings.TrimSpace(strings.ToLower(logger.destination)) + "/" + logFileName); err != nil {
-		siodbLoggerPool.FatalAndExit(FATAL_CANNOT_CREATE_LOG_FILE, "Cannot create log file: %v", err)
+		siodbLoggerPool.FatalAndExit(FATAL_CANNOT_CREATE_LOG_FILE, "Can't create log file: %v", err)
 	}
 
 	logger.fileCreatedUnixTime = time.Now().Unix()
@@ -101,13 +101,13 @@ func (logger *SiodbLogger) Output(logLevel int, log string) error {
 
 	// logger.maxLogFileSize
 	if logger.channelType == FILE && logger.maxLogFileSize > 0 {
-		if fileStat, err := logger.file.Stat(); err != nil {
+		fileStat, err := logger.file.Stat()
+		if err != nil {
 			return err
-		} else {
-			if fileStat.Size() >= int64(logger.maxLogFileSize) {
-				logger.closeLogFile()
-				logger.createNewLogFile()
-			}
+		}
+		if fileStat.Size() >= int64(logger.maxLogFileSize) {
+			logger.closeLogFile()
+			logger.createNewLogFile()
 		}
 	}
 

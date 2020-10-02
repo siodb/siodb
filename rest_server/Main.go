@@ -65,7 +65,7 @@ func main() {
 
 	// Create REST Server config
 	if err = restServerConfig.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
-		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "cannot parse the rest configuration properly", err)
+		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Invalid REST Server configuration: %v", err)
 	}
 	siodbLoggerPool.Info("Siodb REST Server v.%v.%v.%v",
 		SIODB_VERSION_MAJOR, SIODB_VERSION_MINOR, SIODB_VERSION_PATCH)
@@ -74,7 +74,7 @@ func main() {
 	// Connection pool to IOMgr
 	IOMgrCPool, err = CreateIOMgrConnPool(siodbConfigFile, IOMgrCPoolMinConn, IOMgrCPoolMaxConn)
 	if err != nil {
-		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot create connection pool: %v", err)
+		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create connection pool: %v", err)
 	}
 	siodbLoggerPool.Info("IOMgr connection pool initialized successfully")
 
@@ -83,10 +83,10 @@ func main() {
 		go func() {
 			var restWorker RestWorker
 			if err := restWorker.CreateRouter(restServerConfig.Ipv4HTTPPort); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot create route: %v", err)
+				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create route: %v", err)
 			}
 			if err := restWorker.StartHTTPRouter(); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot start router: %v", err)
+				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't start router: %v", err)
 			}
 		}()
 	}
@@ -94,10 +94,10 @@ func main() {
 		go func() {
 			var restWorker RestWorker
 			if err := restWorker.CreateRouter(restServerConfig.Ipv4HTTPSPort); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot create route: %v", err)
+				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create route: %v", err)
 			}
 			if err := restWorker.StartHTTPSRouter(restServerConfig.TLSCertificate, restServerConfig.TLSPrivateKey); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot start router: %v", err)
+				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't start router: %v", err)
 			}
 		}()
 	}
@@ -105,10 +105,10 @@ func main() {
 		go func() {
 			var restWorker RestWorker
 			if err := restWorker.CreateRouter(restServerConfig.Ipv6HTTPPort); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot create route: %v", err)
+				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create route: %v", err)
 			}
 			if err := restWorker.StartHTTPRouter(); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot start router: %v", err)
+				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't start router: %v", err)
 			}
 		}()
 	}
@@ -116,10 +116,10 @@ func main() {
 		go func() {
 			var restWorker RestWorker
 			if err := restWorker.CreateRouter(restServerConfig.Ipv6HTTPSPort); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot create route: %v", err)
+				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create route: %v", err)
 			}
 			if err := restWorker.StartHTTPSRouter(restServerConfig.TLSCertificate, restServerConfig.TLSPrivateKey); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Cannot start router: %v", err)
+				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't start router: %v", err)
 			}
 		}()
 	}

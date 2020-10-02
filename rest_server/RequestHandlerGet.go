@@ -5,9 +5,9 @@
 package main
 
 import (
-	"SiodbIomgrProtocol"
 	"fmt"
 	"net/http"
+	"siodbproto"
 	"strconv"
 	"time"
 
@@ -17,19 +17,19 @@ import (
 func (restWorker RestWorker) getDatabases(c *gin.Context) {
 
 	siodbLoggerPool.Debug("getDatabases")
-	restWorker.get(c, SiodbIomgrProtocol.DatabaseObjectType_DATABASE, "", 0)
+	restWorker.get(c, siodbproto.DatabaseObjectType_DATABASE, "", 0)
 }
 
 func (restWorker RestWorker) getTables(c *gin.Context) {
 
 	siodbLoggerPool.Debug("getTables")
-	restWorker.get(c, SiodbIomgrProtocol.DatabaseObjectType_TABLE, c.Param("database_name"), 0)
+	restWorker.get(c, siodbproto.DatabaseObjectType_TABLE, c.Param("database_name"), 0)
 }
 
 func (restWorker RestWorker) getRows(c *gin.Context) {
 
 	siodbLoggerPool.Debug("getRows")
-	restWorker.get(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
+	restWorker.get(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
 }
 
 func (restWorker RestWorker) getRow(c *gin.Context) {
@@ -41,12 +41,12 @@ func (restWorker RestWorker) getRow(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "Invalid row_id"})
 		siodbLoggerPool.Error("%v", err)
 	} else {
-		restWorker.get(c, SiodbIomgrProtocol.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
+		restWorker.get(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
 	}
 }
 
 func (restWorker RestWorker) get(
-	c *gin.Context, ObjectType SiodbIomgrProtocol.DatabaseObjectType, ObjectName string, ObjectId uint64) (err error) {
+	c *gin.Context, ObjectType siodbproto.DatabaseObjectType, ObjectName string, ObjectID uint64) (err error) {
 
 	start := time.Now()
 	IOMgrConn, _ := IOMgrCPool.GetTrackedNetConn()
@@ -62,7 +62,7 @@ func (restWorker RestWorker) get(
 
 	var requestID uint64
 	if requestID, err = IOMgrConn.writeIOMgrRequest(
-		SiodbIomgrProtocol.RestVerb_GET, ObjectType, UserName, Token, ObjectName, ObjectId); err != nil {
+		siodbproto.RestVerb_GET, ObjectType, UserName, Token, ObjectName, ObjectID); err != nil {
 		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
@@ -72,13 +72,12 @@ func (restWorker RestWorker) get(
 		siodbLoggerPool.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
-	} else {
-		// Read and stream chunked JSON
-		if err := IOMgrConn.readChunkedJSON(c); err != nil {
-			siodbLoggerPool.Error("%v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
-			return err
-		}
+	}
+	// Read and stream chunked JSON
+	if err := IOMgrConn.readChunkedJSON(c); err != nil {
+		siodbLoggerPool.Error("%v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		return err
 	}
 
 	return nil

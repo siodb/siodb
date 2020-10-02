@@ -60,25 +60,26 @@ func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbCon
 	}
 
 	// TLS
-	if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate_chain"); err != nil {
-		if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate"); err != nil {
-			return fmt.Errorf("unable to find parameter for tls certificate '%v'", err)
+	if restServerConfig.Ipv4HTTPSPort != 0 || restServerConfig.Ipv6HTTPSPort != 0 {
+		if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate_chain"); err != nil {
+			if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate"); err != nil {
+				return fmt.Errorf("Can't find parameter for TLS certificate '%v'", err)
+			}
+			if restServerConfig.TLSCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
+				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate': %v", err)
+			}
 		} else {
 			if restServerConfig.TLSCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
 				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate': %v", err)
 			}
 		}
-	} else {
-		if restServerConfig.TLSCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
-			return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate': %v", err)
-		}
-	}
 
-	if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_private_key"); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
-	}
-	if restServerConfig.TLSPrivateKey, err = verifyPath(siodbConfigFile.path, value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
+		if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_private_key"); err != nil {
+			return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
+		}
+		if restServerConfig.TLSPrivateKey, err = verifyPath(siodbConfigFile.path, value); err != nil {
+			return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
+		}
 	}
 
 	// HTTP chunk_size

@@ -128,19 +128,16 @@ func verifyPath(SiodbInstanceConfigurationPath string, fileName string) (string,
 
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		if _, err := os.Stat(filepath.Dir(SiodbInstanceConfigurationPath) + `/` + fileName); os.IsNotExist(err) {
-			return "", fmt.Errorf("can't stat file %v", fileName)
-		} else {
-			return filepath.Dir(SiodbInstanceConfigurationPath) + `/` + fileName, nil
+			return "", fmt.Errorf("Can't stat file %v", fileName)
 		}
-	} else {
-		return fileName, nil
+		return filepath.Dir(SiodbInstanceConfigurationPath) + `/` + fileName, nil
 	}
+	return fileName, nil
 }
 
 func minUint32(a uint32, b uint32) uint32 {
-	if a > b {
-		return b
-	} else {
+	if a < b {
 		return a
 	}
+	return a
 }

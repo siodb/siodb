@@ -30,7 +30,7 @@ public:
     /**
      * Creates copy of this stream.
      * @return Copy of this stream object.
-     * @throw std::logic_error if stream cannot be cloned.
+     * @throw std::logic_error if stream can't be cloned.
      */
     virtual LobStream* clone() const = 0;
 

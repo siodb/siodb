@@ -469,25 +469,25 @@ void Table::flushIndices()
 
 std::uint64_t Table::generateNextUserTrid()
 {
-    // NOTE: This function cannot be moved to header or inlined due to compilation dependencies.
+    // NOTE: This function can't be moved to header or inlined due to compilation dependencies.
     return m_masterColumn->generateNextUserTrid();
 }
 
 std::uint64_t Table::generateNextSystemTrid()
 {
-    // NOTE: This function cannot be moved to header or inlined due to compilation dependencies.
+    // NOTE: This function can't be moved to header or inlined due to compilation dependencies.
     return m_masterColumn->generateNextSystemTrid();
 }
 
 void Table::setLastSystemTrid(std::uint64_t lastSystemTrid)
 {
-    // NOTE: This function cannot be moved to header or inlined due to compilation dependencies.
+    // NOTE: This function can't be moved to header or inlined due to compilation dependencies.
     m_masterColumn->setLastSystemTrid(lastSystemTrid);
 }
 
 void Table::setLastUserTrid(std::uint64_t lastUserTrid)
 {
-    // NOTE: This function cannot be moved to header or inlined due to compilation dependencies.
+    // NOTE: This function can't be moved to header or inlined due to compilation dependencies.
     m_masterColumn->setLastUserTrid(lastUserTrid);
 }
 

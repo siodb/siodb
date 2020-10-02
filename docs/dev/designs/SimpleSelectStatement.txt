@@ -24,13 +24,13 @@ Table lock timeout - timeout in which table lock must be obtained.
    Generate separate error message for each invalid column name.
 
 4. Get designated database and obtain read lock for it. If database name
-   is empty, use database SYS. Indicate error of database cannot be immediately
+   is empty, use database SYS. Indicate error of database can't be immediately
    read-locked.
 
 This step requires changes to class Instance. It must store RW locks for each
 database. When database is read locked in the instance, other connections
 can't drop it. To drop database you need write lock on it. Read/write lock here
-however doesn't mean database content cannot be changed. This lock is only
+however doesn't mean database content can't be changed. This lock is only
 intended to save database from destruction when it is used. Lock itself must be
 somehow independent from database, because when database is being dropped, lock
 object must survive, because it is in the write-locked state, and only when drop
@@ -44,7 +44,7 @@ when error is indicated, automatic unlocking happens.
 
 Similar to database lock in the instance, described above, here, table RW-lock
 aims to protect table from being dropped while used. Indicate error, if read
-lock cannot be obtained immediately.
+lock can't be obtained immediately.
 
 6. Lock table itself.
 
@@ -56,7 +56,7 @@ the table object.
 7. Obtain master column object.
 
 8. Resolve column objects for each column in the select request. If some column 
-   cannot be resolved, indicate error. Generate separate error message for
+   can't be resolved, indicate error. Generate separate error message for
    each unresolved column. Build list of column objects as result of this step.
 
 9. Fill response header with column names and data types.

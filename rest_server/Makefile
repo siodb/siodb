@@ -9,12 +9,24 @@ include ../mk/Prolog.mk
 
 TARGET_GO_EXE:=siodb_rest_server
 
-# TODO: Change value to Version.go
-VERSION_GO_FILE:=TmpVersion.go
+VERSION_GO_FILE:=Version.go
 
 GO_SRC:=\
-	TmpMain.go  \
-	$(VERSION_GO_FILE)
+	$(VERSION_GO_FILE)  \
+	Authentication.go  \
+	Helper.go  \
+	IOMgrConnPool.go  \
+	IOMgrConnection.go  \
+	Main.go  \
+	RequestHandlerDelete.go  \
+	RequestHandlerGet.go  \
+	RequestHandlerPatch.go  \
+	RequestHandlerPost.go  \
+	RestServerConfig.go  \
+	RestWorker.go  \
+	SiodbConfig.go  \
+	SiodbLogger.go  \
+	SiodbLoggerPool.go
 
 include $(MK)/Main.mk
 
