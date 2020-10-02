@@ -139,5 +139,5 @@ func minUint32(a uint32, b uint32) uint32 {
 	if a < b {
 		return a
 	}
-	return a
+	return b
 }
