@@ -13,7 +13,7 @@ The URL to the REST API can be:
 You can generate a token for a user using SQL command:
 
 ```sql
-ALTER USER <user_name> CREATE TOKEN <token_name>;
+ALTER USER <user_name> ADD TOKEN <token_name>;
 ```
 
 Generated tokens are guaranteed at least to be unique among all currently existing tokens for the
@@ -25,13 +25,13 @@ token lost there is no way to renew it. In such case new token should be generat
 Token can be assigned expiration time:
 
 ```sql
-ALTER USER <user_name> CREATE TOKEN <token_name> WITH EXPIRATION_TIME='yyyy-mm-dd hh:mm:ss';
+ALTER USER <user_name> ADD TOKEN <token_name> WITH EXPIRATION_TIME='yyyy-mm-dd hh:mm:ss';
 ```
 
 It is possible to add token with supplied value:
 
 ```sql
-ALTER USER <user_name> CREATE TOKEN <token_name> x'xxxx...xx';
+ALTER USER <user_name> ADD TOKEN <token_name> x'xxxx...xx';
 ```
 
 Supplied value must be unique among existing tokens for the designated user,
@@ -157,7 +157,7 @@ Action on all rows from a table identified by `<TABLE_NAME>`.
 
 **Description:** TODO.
 
-**body:**
+**body:** A JSON dictionary encoded with UTF-8 character set.
 
 ```json
 [
@@ -170,7 +170,7 @@ Action on all rows from a table identified by `<TABLE_NAME>`.
 **Response:**
 
 ```json
-
+TODO
 ```
 
 #### PUT
