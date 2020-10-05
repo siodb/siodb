@@ -1,3 +1,8 @@
+Version 0.1.6 Oct 05 2020
+============================
+- Fixed temporary files renaming.
+- Guard header with "#pragma once" by default.
+
 Version 0.1.5 Oct 01 2020
 ============================
 - Write output files using temporary files.

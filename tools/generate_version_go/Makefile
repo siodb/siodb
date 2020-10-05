@@ -7,8 +7,6 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../mk/Prolog.mk
 
-GGV_VERSION=0.0.1
-
 TARGET_EXE:=generate_version_go
 
 CXX_SRC:=\
@@ -17,12 +15,10 @@ CXX_SRC:=\
 CXX_HDR:=\
 	GenerateGoVersion.h
 
-DEFS+=-DGGV_VERSION=\"$(GGV_VERSION)\"
-
 TARGET_OWN_LIBS:=
 
 TARGET_COMMON_LIBS:=
 
-TARGET_LIBS:=-lboost_iostreams
+TARGET_LIBS:=-lboost_iostreams -lboost_system -lboost_filesystem
 
 include $(MK)/Main.mk

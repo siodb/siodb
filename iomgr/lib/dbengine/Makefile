@@ -50,7 +50,7 @@ include $(MK)/Main.mk
 
 $(MESSAGES_HDR): ../messages/iomgr.msg | $$(@D)/.
 	@echo MC $@
-	$(NOECHO)$(MESSAGE_COMPILER_TOOL) -H -b int -n siodb.iomgr -e IOManagerMessageId -gp -i $< -o $@
+	$(NOECHO)$(MESSAGE_COMPILER_TOOL) -H -b int -n siodb.iomgr -e IOManagerMessageId -i $< -o $@
 
 .PRECIOUS: $(MESSAGES_HDR) $(ANTLR_GENERATED_FILES)
 

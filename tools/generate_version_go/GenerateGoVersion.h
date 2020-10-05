@@ -5,12 +5,7 @@
 // STL headers
 #include <string>
 
-#ifndef GGV_VERSION
-#define GGV_VERSION "internal"
-#endif
-
-#define GGV_COPYRIGHT_YEARS "2019-2020"
-
 void printUsage(const char* program);
 
+bool renameFile(const std::string& src, const std::string& dest);
 std::tuple<std::string, int, int> makeTemporaryFile();

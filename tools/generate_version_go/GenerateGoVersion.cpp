@@ -4,6 +4,12 @@
 
 #include "GenerateGoVersion.h"
 
+// Project headers
+#include "Version.h"
+
+// Common project headers
+#include <siodb/common/stl_wrap/filesystem_wrapper.h>
+
 // CRT headers
 #include <cstdlib>
 #include <cstring>
@@ -127,6 +133,25 @@ void printUsage(const char* program)
     std::cerr << "Usage:\n" << program << " -i INPUT_FILE -o OUTPUT_FILE" << std::endl;
 }
 
+bool renameFile(const std::string& src, const std::string& to)
+{
+    boost::system::error_code ec;
+    fs::rename(src, to, ec);
+    if (!ec) return true;
+
+    if (ec.value() == EXDEV) {
+        fs::copy_file(src, to, ec);
+        if (!ec) {
+            fs::remove(src, ec);
+            if (!ec) return true;
+        }
+    }
+
+    std::cerr << "Can't rename temporary file " << src << " into " << to << ": " << ec.message()
+              << std::endl;
+    return false;
+}
+
 std::tuple<std::string, int, int> makeTemporaryFile()
 {
     std::string tmpFilePath;
@@ -136,7 +161,7 @@ std::tuple<std::string, int, int> makeTemporaryFile()
         if (tmpFilePath.back() != '/') tmpFilePath += '/';
     } else
         tmpFilePath = "/tmp/";
-    tmpFilePath += "siodb_message_compiler-XXXXXX";
+    tmpFilePath += "siodb_generate_version_go-XXXXXX";
     const int fd = ::mkstemp(tmpFilePath.data());
     const int errorCode = errno;
     return std::make_tuple(std::move(tmpFilePath), fd, errorCode);
