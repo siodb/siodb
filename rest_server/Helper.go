@@ -13,8 +13,7 @@ import (
 	"strings"
 )
 
-func StringToByteSize(str string) (bytes uint32, err error) {
-
+func stringToByteSize(str string) (bytes uint32, err error) {
 	var mult uint64 = 1
 	if strings.HasSuffix(str, "k") || strings.HasSuffix(str, "K") {
 		mult = 1024
@@ -43,8 +42,7 @@ func StringToByteSize(str string) (bytes uint32, err error) {
 	return uint32(value * mult), nil
 }
 
-func StringToSeconds(str string) (seconds uint64, err error) {
-
+func stringToSeconds(str string) (seconds uint64, err error) {
 	var mult uint64 = 1
 	if strings.HasSuffix(str, "m") || strings.HasSuffix(str, "M") {
 		mult = 60
@@ -75,7 +73,7 @@ func StringToSeconds(str string) (seconds uint64, err error) {
 	return value * mult, nil
 }
 
-func StringToPortNumber(str string) (port uint32, err error) {
+func stringToPortNumber(str string) (port uint32, err error) {
 	var ui64 uint64
 	if ui64, err = strconv.ParseUint(str, 10, 32); err != nil {
 		return 0, fmt.Errorf("Invalid port number '%v'", str)
@@ -86,7 +84,7 @@ func StringToPortNumber(str string) (port uint32, err error) {
 	return uint32(ui64), nil
 }
 
-func StringToSeverityLevel(str string) (level uint, err error) {
+func stringToSeverityLevel(str string) (level uint, err error) {
 	switch strings.ToLower(str) {
 	case "trace":
 		return 1, nil
@@ -101,11 +99,11 @@ func StringToSeverityLevel(str string) (level uint, err error) {
 	case "fatal":
 		return 6, nil
 	default:
-		return 0, fmt.Errorf("Invalid severity level", str)
+		return 0, fmt.Errorf("Invalid severity level %v", str)
 	}
 }
 
-func SeverityLevelToString(t int) string {
+func severityLevelToString(t int) string {
 	switch t {
 	case 1:
 		return "trace"
@@ -125,7 +123,6 @@ func SeverityLevelToString(t int) string {
 }
 
 func verifyPath(SiodbInstanceConfigurationPath string, fileName string) (string, error) {
-
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		if _, err := os.Stat(filepath.Dir(SiodbInstanceConfigurationPath) + `/` + fileName); os.IsNotExist(err) {
 			return "", fmt.Errorf("Can't stat file %v", fileName)

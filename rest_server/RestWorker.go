@@ -11,56 +11,54 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type RestWorker struct {
+type restWorker struct {
 	ginEngine *gin.Engine
 	Port      uint32
 }
 
-func (restWorker *RestWorker) CreateRouter(Port uint32) (err error) {
-
-	restWorker.Port = Port
-	restWorker.ginEngine = gin.New()
+func (worker *restWorker) CreateRouter(Port uint32) (err error) {
+	worker.Port = Port
+	worker.ginEngine = gin.New()
 
 	// GET
-	restWorker.ginEngine.GET("/databases", restWorker.getDatabases)
-	restWorker.ginEngine.GET("/databases/:database_name/tables", restWorker.getTables)
-	restWorker.ginEngine.GET("/databases/:database_name/tables/:table_name/rows", restWorker.getRows)
-	restWorker.ginEngine.GET("/databases/:database_name/tables/:table_name/rows/:row_id", restWorker.getRow)
+	worker.ginEngine.GET("/databases", worker.getDatabases)
+	worker.ginEngine.GET("/databases/:database_name/tables", worker.getTables)
+	worker.ginEngine.GET("/databases/:database_name/tables/:table_name/rows", worker.getRows)
+	worker.ginEngine.GET("/databases/:database_name/tables/:table_name/rows/:row_id", worker.getRow)
 
 	// POST
-	restWorker.ginEngine.POST("/databases/:database_name/tables/:table_name/rows", restWorker.postRows)
+	worker.ginEngine.POST("/databases/:database_name/tables/:table_name/rows", worker.postRows)
 
 	// PUT
-	restWorker.ginEngine.PUT("/databases/:database_name/tables/:table_name/rows/:row_id", restWorker.patchRow)
+	worker.ginEngine.PUT("/databases/:database_name/tables/:table_name/rows/:row_id", worker.patchRow)
 
 	// PATCH
-	restWorker.ginEngine.PATCH("/databases/:database_name/tables/:table_name/rows/:row_id", restWorker.patchRow)
+	worker.ginEngine.PATCH("/databases/:database_name/tables/:table_name/rows/:row_id", worker.patchRow)
 
 	// DELETE
-	restWorker.ginEngine.DELETE("/databases/:database_name/tables/:table_name/rows/:row_id", restWorker.deleteRow)
+	worker.ginEngine.DELETE("/databases/:database_name/tables/:table_name/rows/:row_id", worker.deleteRow)
 
 	return nil
 }
 
-func (restWorker *RestWorker) StartHTTPRouter() (err error) {
-
-	err = restWorker.ginEngine.Run(":" + fmt.Sprintf("%v", restWorker.Port))
+func (worker *restWorker) StartHTTPRouter() (err error) {
+	err = worker.ginEngine.Run(":" + fmt.Sprintf("%v", worker.Port))
 	return err
 }
 
-func (restWorker *RestWorker) StartHTTPSRouter(TLSCertificate string, TLSPrivateKey string) (err error) {
+func (worker *restWorker) StartHTTPSRouter(TLSCertificate string, TLSPrivateKey string) (err error) {
 
-	err = restWorker.ginEngine.RunTLS(":"+fmt.Sprintf("%v", restWorker.Port), TLSCertificate, TLSPrivateKey)
+	err = worker.ginEngine.RunTLS(":"+fmt.Sprintf("%v", worker.Port), TLSCertificate, TLSPrivateKey)
 	return err
 }
 
-func CloseRequest(c *gin.Context, IOMgrConn *IOMgrConnection, start time.Time) {
+func closeRequest(c *gin.Context, ioMgrConn *ioMgrConnection, start time.Time) {
 	if r := recover(); r != nil {
-		siodbLoggerPool.Debug("Recovered from: %v", r)
-		IOMgrConn.Close()
-		IOMgrConn.TrackedNetConn.Conn = nil
+		log.Debug("Recovered from: %v", r)
+		ioMgrConn.Close()
+		ioMgrConn.trackedNetConn.Conn = nil
 	}
-	IOMgrCPool.ReturnTrackedNetConn(IOMgrConn)
-	siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
-	siodbLoggerPool.LogRequest(c, time.Now().Sub(start))
+	ioMgrCPool.ReturnTrackedNetConn(ioMgrConn)
+	log.Debug("ioMgrConn: %v", ioMgrConn)
+	log.LogRequest(c, time.Now().Sub(start))
 }

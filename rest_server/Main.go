@@ -18,22 +18,21 @@ import (
 )
 
 var (
-	SiodbInstanceConfigurationRootPath string = "/etc/siodb/instances"
-	restServerConfig                   RestServerConfig
-	IOMgrCPool                         *IOMgrConnPool
-	IOMgrCPoolMinConn                  = 1
-	IOMgrCPoolMaxConn                  = 8
-	siodbLoggerPool                    *SiodbLoggerPool
+	siodbInstanceConfigurationRootPath string = "/etc/siodb/instances"
+	config                             restServerConfig
+	ioMgrCPool                         *ioMgrConnPool
+	ioMgrCPoolMinConn                  = 1
+	ioMgrCPoolMaxConn                  = 8
+	log                         *siodbLoggerPool
 )
 
 func main() {
-
 	// Parse Args
 	SiodbInstanceName := flag.String("instance", "", "Instance name")
 	flag.Parse()
 	if len(*SiodbInstanceName) == 0 {
 		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
-			SeverityLevelToString(FATAL), unix.Getpid(), unix.Gettid(), "Invalid instance name in argument '--instance'")
+			severityLevelToString(logLevelFatal), unix.Getpid(), unix.Gettid(), "Invalid instance name in argument '--instance'")
 		os.Exit(1)
 	}
 
@@ -42,90 +41,90 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	// Variables
-	SiodbInstanceConfigurationPath := SiodbInstanceConfigurationRootPath + "/" + *SiodbInstanceName
+	siodbInstanceConfigurationPath := siodbInstanceConfigurationRootPath + "/" + *SiodbInstanceName
 	var err error
 
 	// Parse Siodb instance parameters file
-	siodbConfigFile := &SiodbConfigFile{}
-	siodbConfigFile.path = SiodbInstanceConfigurationPath + "/config"
+	siodbConfigFile := &siodbConfigFile{}
+	siodbConfigFile.path = siodbInstanceConfigurationPath + "/config"
 	if err := siodbConfigFile.ParseParameters(); err != nil {
 		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
-			SeverityLevelToString(FATAL), unix.Getpid(), unix.Gettid(), err)
+			severityLevelToString(logLevelFatal), unix.Getpid(), unix.Gettid(), err)
 		os.Exit(2)
 	}
 
 	// Logging setup
-	if siodbLoggerPool, err = CreateSiodbLoggerPool(siodbConfigFile); err != nil {
+	if log, err = createLog(siodbConfigFile); err != nil {
 		fmt.Printf("%v %v %v %v %s\n", time.Now().UTC().Format("2006-01-02 15:04:05.999999"),
-			SeverityLevelToString(FATAL), unix.Getpid(), unix.Gettid(), err)
+			severityLevelToString(logLevelFatal), unix.Getpid(), unix.Gettid(), err)
 		os.Exit(2)
 	}
-	siodbLoggerPool.ConfigGinLogger()
-	siodbLoggerPool.Info("Logging started")
+	log.ConfigGinLogger()
+	log.Info("Logging started")
 
 	// Create REST Server config
-	if err = restServerConfig.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
-		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Invalid REST Server configuration: %v", err)
+	if err = config.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
+		log.FatalAndExit(fatalInitError, "Invalid REST Server configuration: %v", err)
 	}
-	siodbLoggerPool.Info("Siodb REST Server v.%v.%v.%v",
-		SIODB_VERSION_MAJOR, SIODB_VERSION_MINOR, SIODB_VERSION_PATCH)
-	siodbLoggerPool.Info("Copyright (C) %s Siodb GmbH. All rights reserved.", SIODB_COPYRIGHT_YEARS)
+	log.Info("Siodb REST Server v.%v.%v.%v",
+		siodbVersionMajor, siodbVersionMinor, siodbVersionPatch)
+	log.Info("Copyright (C) %s Siodb GmbH. All rights reserved.", siodbCopyrightYears)
 
 	// Connection pool to IOMgr
-	IOMgrCPool, err = CreateIOMgrConnPool(siodbConfigFile, IOMgrCPoolMinConn, IOMgrCPoolMaxConn)
+	ioMgrCPool, err = createIOMgrConnPool(siodbConfigFile, ioMgrCPoolMinConn, ioMgrCPoolMaxConn)
 	if err != nil {
-		siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create connection pool: %v", err)
+		log.FatalAndExit(fatalInitError, "Can't create connection pool: %v", err)
 	}
-	siodbLoggerPool.Info("IOMgr connection pool initialized successfully")
+	log.Info("IOMgr connection pool initialized successfully")
 
 	// Start routers
-	if restServerConfig.Ipv4HTTPPort != 0 {
+	if config.ipv4HTTPPort != 0 {
 		go func() {
-			var restWorker RestWorker
-			if err := restWorker.CreateRouter(restServerConfig.Ipv4HTTPPort); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create route: %v", err)
+			var worker restWorker
+			if err := worker.CreateRouter(config.ipv4HTTPPort); err != nil {
+				log.FatalAndExit(fatalInitError, "Can't create route: %v", err)
 			}
-			if err := restWorker.StartHTTPRouter(); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't start router: %v", err)
+			if err := worker.StartHTTPRouter(); err != nil {
+				log.FatalAndExit(fatalInitError, "Can't start router: %v", err)
 			}
 		}()
 	}
-	if restServerConfig.Ipv4HTTPSPort != 0 {
+	if config.ipv4HTTPSPort != 0 {
 		go func() {
-			var restWorker RestWorker
-			if err := restWorker.CreateRouter(restServerConfig.Ipv4HTTPSPort); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create route: %v", err)
+			var worker restWorker
+			if err := worker.CreateRouter(config.ipv4HTTPSPort); err != nil {
+				log.FatalAndExit(fatalInitError, "Can't create route: %v", err)
 			}
-			if err := restWorker.StartHTTPSRouter(restServerConfig.TLSCertificate, restServerConfig.TLSPrivateKey); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't start router: %v", err)
+			if err := worker.StartHTTPSRouter(config.tlsCertificate, config.tlsPrivateKey); err != nil {
+				log.FatalAndExit(fatalInitError, "Can't start router: %v", err)
 			}
 		}()
 	}
-	if restServerConfig.Ipv6HTTPPort != 0 {
+	if config.ipv6HTTPPort != 0 {
 		go func() {
-			var restWorker RestWorker
-			if err := restWorker.CreateRouter(restServerConfig.Ipv6HTTPPort); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create route: %v", err)
+			var worker restWorker
+			if err := worker.CreateRouter(config.ipv6HTTPPort); err != nil {
+				log.FatalAndExit(fatalInitError, "Can't create route: %v", err)
 			}
-			if err := restWorker.StartHTTPRouter(); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't start router: %v", err)
+			if err := worker.StartHTTPRouter(); err != nil {
+				log.FatalAndExit(fatalInitError, "Can't start router: %v", err)
 			}
 		}()
 	}
-	if restServerConfig.Ipv6HTTPSPort != 0 {
+	if config.ipv6HTTPSPort != 0 {
 		go func() {
-			var restWorker RestWorker
-			if err := restWorker.CreateRouter(restServerConfig.Ipv6HTTPSPort); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't create route: %v", err)
+			var worker restWorker
+			if err := worker.CreateRouter(config.ipv6HTTPSPort); err != nil {
+				log.FatalAndExit(fatalInitError, "Can't create route: %v", err)
 			}
-			if err := restWorker.StartHTTPSRouter(restServerConfig.TLSCertificate, restServerConfig.TLSPrivateKey); err != nil {
-				siodbLoggerPool.FatalAndExit(FATAL_INIT_ERROR, "Can't start router: %v", err)
+			if err := worker.StartHTTPSRouter(config.tlsCertificate, config.tlsPrivateKey); err != nil {
+				log.FatalAndExit(fatalInitError, "Can't start router: %v", err)
 			}
 		}()
 	}
 
 	sig := <-sigs
-	siodbLoggerPool.Info("%v signal received, terminating... ", sig)
-	IOMgrCPool.CloseAllConnections()
-	siodbLoggerPool.ClosePool()
+	log.Info("%v signal received, terminating... ", sig)
+	ioMgrCPool.CloseAllConnections()
+	log.ClosePool()
 }

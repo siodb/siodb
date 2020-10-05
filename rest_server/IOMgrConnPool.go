@@ -12,23 +12,23 @@ import (
 )
 
 var (
-	JSONPayloadMinSize uint32 = 1024
-	JSONPayloadMaxSize uint32 = 10 * 1024 * 1024
+	jsonPayloadMinSize uint32 = 1024
+	jsonPayloadMaxSize uint32 = 10 * 1024 * 1024
 	readDeadlineMin    uint64 = 5
 	readDeadlineMax    uint64 = 60
 )
 
-type TrackedNetConn struct {
+type trackedNetConn struct {
 	net.Conn
 	RequestID uint64
 }
 
-type IOMgrConnPool struct {
+type ioMgrConnPool struct {
 	network            string
 	HostName           string
 	Port               uint32
 	lock               sync.Mutex
-	connections        chan *TrackedNetConn
+	connections        chan *trackedNetConn
 	readDeadline       time.Duration
 	minConnNum         int
 	maxConnNum         int
@@ -36,16 +36,16 @@ type IOMgrConnPool struct {
 	maxJSONPayloadSize uint32
 }
 
-func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrConnPool, error) {
+func createIOMgrConnPool(config *siodbConfigFile, minConn, maxConn int) (*ioMgrConnPool, error) {
 
 	if minConn > maxConn || minConn < 0 || maxConn <= 0 {
 		return nil, fmt.Errorf("Invalid number of connections for the IOMgr connection pool")
 	}
 
-	pool := &IOMgrConnPool{}
+	pool := &ioMgrConnPool{}
 	pool.minConnNum = minConn
 	pool.maxConnNum = maxConn
-	pool.connections = make(chan *TrackedNetConn, maxConn)
+	pool.connections = make(chan *trackedNetConn, maxConn)
 	pool.totalConnNum = 0
 	if err := pool.parseConfiguration(config); err != nil {
 		return pool, err
@@ -54,10 +54,9 @@ func CreateIOMgrConnPool(config *SiodbConfigFile, minConn, maxConn int) (*IOMgrC
 		return nil, err
 	}
 	return pool, nil
-
 }
 
-func (pool *IOMgrConnPool) init() error {
+func (pool *ioMgrConnPool) init() error {
 	for i := 0; i < pool.minConnNum; i++ {
 		conn, err := pool.createConn()
 		if err != nil {
@@ -68,21 +67,21 @@ func (pool *IOMgrConnPool) init() error {
 	return nil
 }
 
-func (pool *IOMgrConnPool) CloseAllConnections() {
+func (pool *ioMgrConnPool) CloseAllConnections() {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 	for i := 0; i < pool.totalConnNum; i++ {
 		connection := <-pool.connections
 		err := connection.Close()
 		if err != nil {
-			siodbLoggerPool.Warning("Error closing connection (%v) from connection pool: %v",
+			log.Warning("Error closing connection (%v) from connection pool: %v",
 				connection, err)
 		}
 	}
-	siodbLoggerPool.Info("IOMgr connection pool stopped.")
+	log.Info("IOMgr connection pool stopped.")
 }
 
-func (pool *IOMgrConnPool) createConn() (*TrackedNetConn, error) {
+func (pool *ioMgrConnPool) createConn() (*trackedNetConn, error) {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 	if pool.totalConnNum >= pool.maxConnNum {
@@ -93,14 +92,13 @@ func (pool *IOMgrConnPool) createConn() (*TrackedNetConn, error) {
 		return nil, fmt.Errorf("Can't create connection: %s", err)
 	}
 	pool.totalConnNum = pool.totalConnNum + 1
-	trackedNetConn := &TrackedNetConn{}
+	trackedNetConn := &trackedNetConn{}
 	trackedNetConn.Conn = conn
 	trackedNetConn.RequestID = uint64(1)
 	return trackedNetConn, nil
 }
 
-func (pool *IOMgrConnPool) GetTrackedNetConn() (*IOMgrConnection, error) {
-
+func (pool *ioMgrConnPool) GetTrackedNetConn() (*ioMgrConnection, error) {
 	go func() {
 		conn, err := pool.createConn()
 		if err != nil {
@@ -114,12 +112,11 @@ func (pool *IOMgrConnPool) GetTrackedNetConn() (*IOMgrConnection, error) {
 	}
 }
 
-func (pool *IOMgrConnPool) ReturnTrackedNetConn(IOMgrConn *IOMgrConnection) error {
+func (pool *ioMgrConnPool) ReturnTrackedNetConn(ioMgrConn *ioMgrConnection) error {
+	log.Debug("ReturnTrackedNetConn trackedNetConn : %v", ioMgrConn)
 
-	siodbLoggerPool.Debug("ReturnTrackedNetConn trackedNetConn : %v", IOMgrConn)
-
-	if IOMgrConn.TrackedNetConn.Conn == nil {
-		siodbLoggerPool.Debug("Removing closed connection from pool: %v", IOMgrConn)
+	if ioMgrConn.trackedNetConn.Conn == nil {
+		log.Debug("Removing closed connection from pool: %v", ioMgrConn)
 		pool.lock.Lock()
 		pool.totalConnNum = pool.totalConnNum - 1
 		pool.lock.Unlock()
@@ -127,21 +124,20 @@ func (pool *IOMgrConnPool) ReturnTrackedNetConn(IOMgrConn *IOMgrConnection) erro
 	}
 
 	select {
-	case pool.connections <- IOMgrConn.TrackedNetConn:
+	case pool.connections <- ioMgrConn.trackedNetConn:
 		return nil
 	default:
-		return IOMgrConn.Close()
+		return ioMgrConn.Close()
 	}
 }
 
-func (pool *IOMgrConnPool) packConn(trackedNetConn *TrackedNetConn) *IOMgrConnection {
-	ret := &IOMgrConnection{pool: pool}
-	ret.TrackedNetConn = trackedNetConn
+func (pool *ioMgrConnPool) packConn(trackedNetConn *trackedNetConn) *ioMgrConnection {
+	ret := &ioMgrConnection{pool: pool}
+	ret.trackedNetConn = trackedNetConn
 	return ret
 }
 
-func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) (err error) {
-
+func (pool *ioMgrConnPool) parseConfiguration(siodbConfigFile *siodbConfigFile) (err error) {
 	var value string
 	pool.HostName = "localhost"
 	pool.network = "tcp"
@@ -149,16 +145,15 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 	if value, err = siodbConfigFile.GetParameterValue("iomgr.rest.ipv4_port"); err != nil {
 		return fmt.Errorf("Invalid parameter 'iomgr.rest.ipv4_port': %v", err)
 	}
-	if pool.Port, err = StringToPortNumber(value); err != nil {
+	if pool.Port, err = stringToPortNumber(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'iomgr.rest.ipv4_port': %v", err)
 	}
 
 	if pool.Port == 0 {
-
 		if value, err = siodbConfigFile.GetParameterValue("iomgr.rest.ipv6_port"); err != nil {
 			return fmt.Errorf("Invalid parameter 'iomgr.rest.ipv6_port': %v", err)
 		}
-		if pool.Port, err = StringToPortNumber(value); err != nil {
+		if pool.Port, err = stringToPortNumber(value); err != nil {
 			return fmt.Errorf("Invalid parameter 'iomgr.rest.ipv6_port': %v", err)
 		}
 
@@ -172,12 +167,12 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 	if value, err = siodbConfigFile.GetParameterValue("iomgr.max_json_payload_size"); err != nil {
 		return err
 	}
-	if pool.maxJSONPayloadSize, err = StringToByteSize(value); err != nil {
+	if pool.maxJSONPayloadSize, err = stringToByteSize(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'iomgr.max_json_payload_size': %v", err)
 	}
-	if pool.maxJSONPayloadSize < JSONPayloadMinSize || pool.maxJSONPayloadSize > JSONPayloadMaxSize {
+	if pool.maxJSONPayloadSize < jsonPayloadMinSize || pool.maxJSONPayloadSize > jsonPayloadMaxSize {
 		return fmt.Errorf("Invalid iomgr.max_json_payload_size=%v, expecting %v-%v",
-			value, JSONPayloadMinSize, JSONPayloadMaxSize)
+			value, jsonPayloadMinSize, jsonPayloadMaxSize)
 	}
 
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.iomgr_read_timeout"); err != nil {
@@ -186,7 +181,7 @@ func (pool *IOMgrConnPool) parseConfiguration(siodbConfigFile *SiodbConfigFile) 
 
 	// rest_server.iomgr_read_timeout
 	var readDeadline uint64
-	if readDeadline, err = StringToSeconds(value); err != nil {
+	if readDeadline, err = stringToSeconds(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.iomgr_read_timeout': %v", err)
 	}
 	if readDeadline < readDeadlineMin || readDeadline > readDeadlineMax {
