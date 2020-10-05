@@ -80,7 +80,7 @@ func (logger *siodbLogger) createNewLogFile() {
 	logger.out = logFile
 }
 
-func (logger *siodbLogger) Output(logLevel int, log string) error {
+func (logger *siodbLogger) Output(logLevel int, message string) error {
 	logger.mutex.Lock()
 	defer logger.mutex.Unlock()
 
@@ -94,7 +94,7 @@ func (logger *siodbLogger) Output(logLevel int, log string) error {
 
 	// Log
 	if logLevel >= int(logger.severityLevel) {
-		io.WriteString(logger.out, log)
+		io.WriteString(logger.out, message)
 	}
 
 	// logger.maxLogFileSize

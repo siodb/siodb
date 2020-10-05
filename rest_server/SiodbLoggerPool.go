@@ -176,5 +176,8 @@ func createLog(configFile *siodbConfigFile) (log *siodbLoggerPool, err error) {
 		log.loggers = append(log.loggers, logger)
 	}
 
+	log.Info("Logging started")
+	log.Debug("Created %v loggers", len(log.loggers))
+
 	return log, nil
 }

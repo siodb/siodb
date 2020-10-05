@@ -23,7 +23,7 @@ var (
 	ioMgrCPool                         *ioMgrConnPool
 	ioMgrCPoolMinConn                  = 1
 	ioMgrCPoolMaxConn                  = 8
-	log                         *siodbLoggerPool
+	log                                *siodbLoggerPool
 )
 
 func main() {
@@ -60,7 +60,7 @@ func main() {
 		os.Exit(2)
 	}
 	log.ConfigGinLogger()
-	log.Info("Logging started")
+	log.Info("Configured Gin logging")
 
 	// Create REST Server config
 	if err = config.ParseAndValidateConfiguration(siodbConfigFile); err != nil {
@@ -79,6 +79,7 @@ func main() {
 
 	// Start routers
 	if config.ipv4HTTPPort != 0 {
+		log.Info("Starting HTTP listener on the port %v", config.ipv4HTTPPort)
 		go func() {
 			var worker restWorker
 			if err := worker.CreateRouter(config.ipv4HTTPPort); err != nil {
@@ -87,9 +88,12 @@ func main() {
 			if err := worker.StartHTTPRouter(); err != nil {
 				log.FatalAndExit(fatalInitError, "Can't start router: %v", err)
 			}
+			log.Info("Listening for HTTP on the port %v", config.ipv4HTTPPort)
 		}()
 	}
+
 	if config.ipv4HTTPSPort != 0 {
+		log.Info("Starting HTTPS listener on the port %v", config.ipv4HTTPSPort)
 		go func() {
 			var worker restWorker
 			if err := worker.CreateRouter(config.ipv4HTTPSPort); err != nil {
@@ -98,9 +102,12 @@ func main() {
 			if err := worker.StartHTTPSRouter(config.tlsCertificate, config.tlsPrivateKey); err != nil {
 				log.FatalAndExit(fatalInitError, "Can't start router: %v", err)
 			}
+			log.Info("Listening for HTTPS on the port %v", config.ipv4HTTPSPort)
 		}()
 	}
+
 	if config.ipv6HTTPPort != 0 {
+		log.Info("Starting tcp6/HTTP listener on the port %v", config.ipv6HTTPPort)
 		go func() {
 			var worker restWorker
 			if err := worker.CreateRouter(config.ipv6HTTPPort); err != nil {
@@ -109,9 +116,12 @@ func main() {
 			if err := worker.StartHTTPRouter(); err != nil {
 				log.FatalAndExit(fatalInitError, "Can't start router: %v", err)
 			}
+			log.Info("Listening for tcp6/HTTP on the port %v", config.ipv6HTTPPort)
 		}()
 	}
+
 	if config.ipv6HTTPSPort != 0 {
+		log.Info("Starting tcp6/HTTPS listener on the port %v", config.ipv6HTTPSPort)
 		go func() {
 			var worker restWorker
 			if err := worker.CreateRouter(config.ipv6HTTPSPort); err != nil {
@@ -120,8 +130,11 @@ func main() {
 			if err := worker.StartHTTPSRouter(config.tlsCertificate, config.tlsPrivateKey); err != nil {
 				log.FatalAndExit(fatalInitError, "Can't start router: %v", err)
 			}
+			log.Info("Listening for tcp6/HTTPS on the port %v", config.ipv6HTTPSPort)
 		}()
 	}
+
+	log.Info("All configured listeners started")
 
 	sig := <-sigs
 	log.Info("%v signal received, terminating... ", sig)
