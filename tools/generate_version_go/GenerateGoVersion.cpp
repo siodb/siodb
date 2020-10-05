@@ -118,12 +118,7 @@ int main(int argc, char** argv)
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), outputFilePath.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << outputFilePath << ": " << std::strerror(errorCode) << std::endl;
-        return 2;
-    }
+    if (!renameFile(std::get<0>(tmpFileInfo), outputFilePath)) return 2;
 
     return 0;
 }
