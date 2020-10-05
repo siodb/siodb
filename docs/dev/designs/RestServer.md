@@ -11,14 +11,14 @@ back to HTTP client. REST Server will support both HTTP and HTTPS protocols.
 ## Authentication
 
 Siodb must provide a new table `sys_user_tokens` with following columns:
-|Column Name|Data type|Mandatory|Description|
-|---|---|---|---|
-|TRID|UINT64|Yes|Token ID|
-|USER_ID|UINT64|Yes|User ID|
-|NAME|TEXT|Yes|Token name|
-|VALUE|BINARY|Yes|Token value|
-|EXPIRATION_TIMESTAMP|TIMESTAMP|No|Token expiration timestamp|
-|DESCRIPTION|TEXT|No|Token description|
+| Column Name          | Data type | Mandatory | Description                |
+| -------------------- | --------- | --------- | -------------------------- |
+| TRID                 | UINT64    | Yes       | Token ID                   |
+| USER_ID              | UINT64    | Yes       | User ID                    |
+| NAME                 | TEXT      | Yes       | Token name                 |
+| VALUE                | BINARY    | Yes       | Token value                |
+| EXPIRATION_TIMESTAMP | TIMESTAMP | No        | Token expiration timestamp |
+| DESCRIPTION          | TEXT      | No        | Token description          |
 
 New token is generated using SQL command:
 

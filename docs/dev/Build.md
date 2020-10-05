@@ -8,7 +8,12 @@
   - [CentOS 8](#centos-8)
   - [RHEL 7](#rhel-7)
   - [RHEL 8](#rhel-8)
+- [All Systems](#all-systems)
+  - [Install Go](#install-go)
+  - [Install boost-pretty-printer GDB Extension](#install-boost-pretty-printer-gdb-extension)
 - [Building Third-Party Libraries](#building-third-party-libraries)
+  - [C and C++ Libraries](#c-and-c-libraries)
+  - [Go Libraries](#go-libraries)
 - [System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)](#system-setup-debian-ubuntu-centos-rhel-suse-sles)
 - [Compiling Siodb](#compiling-siodb)
 - [Running Siodb](#running-siodb)
@@ -108,30 +113,6 @@ sudo ln -s /usr/bin/python2 /usr/bin/python
 ```
 
 Now, proceed to the section [All Systems](#all-systems).
-
-### Ubuntu 20.04 LTS
-
-Run following commands:
-
-```shell
-cd $HOME
-
-# Required tools and libraries
-sudo apt install build-essential cmake doxygen gdb graphviz gcc-8 g++-8 libboost1.67-dev \
-    libboost-log1.67-dev libboost-program-options1.67-dev libcurl4-openssl-dev \
-    libssl-dev openjdk-8-jdk-headless pkg-config uuid-dev clang-format-8 \
-    ubuntu-dbgsym-keyring
-
-# Set up alternatives for the clang-format
-sudo update-alternatives --install /usr/bin/clang-format clang-format \
-    /usr/lib/llvm-8/bin/clang-format 1
-sudo update-alternatives --install /usr/bin/git-clang-format git-clang-format \
-    /usr/lib/llvm-8/bin/git-clang-format 1
-sudo update-alternatives --set clang-format /usr/lib/llvm-8/bin/clang-format
-sudo update-alternatives --set git-clang-format /usr/lib/llvm-8/bin/git-clang-format
-```
-
-Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ### CentOS 7
 
@@ -574,9 +555,9 @@ sudo chmod 0600 /etc/siodb/instances/siodb/config
 sudo chown siodb:siodb /etc/siodb/instances/siodb/config
 sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/master_key bs=16 count=1
 sudo chmod 0600 /etc/siodb/instances/siodb/master_key
-sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/initial_access_key
-sudo chmod 0600 /etc/siodb/instances/siodb/initial_access_key
-sudo chown siodb:siodb /etc/siodb/instances/siodb/initial_access_key
+sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/encryption.master_key
+sudo chmod 0600 /etc/siodb/instances/siodb/encryption.master_key
+sudo chown siodb:siodb /etc/siodb/instances/siodb/encryption.master_key
 
 # Create default data directory
 sudo mkdir -p /var/lib/siodb
@@ -630,7 +611,7 @@ To allow running SQL tests under your own user (may be required on the CentOS an
 # 2. Adjust Siodb defult instance configuration file permissions
 sudo chmod 0660 /etc/siodb/instances/siodb/config
 sudo chmod 0660 /etc/siodb/instances/siodb/master_key
-sudo chmod 0660 /etc/siodb/instances/siodb/initial_access_key
+sudo chmod 0660 /etc/siodb/instances/siodb/encryption.master_key
 
 # 3. Edit default instance configuration file /etc/siodb/instances/siodb/config
 #    set following parameter to "true"

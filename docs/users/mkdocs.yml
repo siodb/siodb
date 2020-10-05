@@ -23,12 +23,15 @@ extra_css:
 nav:
     - Home: index.md
     - Quick start: quick_start.md
-    - Developer's Guide: development.md
+    - Developer's Guide:
+        - REST: rest_api.md
+        - SQL Drivers: sql_drivers.md
     - Concepts: concepts.md
     - Installation: installation.md
     - Administration:
         - General: administration.md
-        - User management: users.md
+        - Parameters: parameters.md
+        - User access: users.md
         - Encryption: encryption.md
         - System tables: system_tables.md
 
