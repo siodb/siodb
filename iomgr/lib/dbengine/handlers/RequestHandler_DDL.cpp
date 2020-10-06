@@ -30,7 +30,7 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
     if (!isValidDatabaseObjectName(request.m_database))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    if (request.m_temporary)
+    if (request.m_isTemporary)
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateTemporaryDatabase);
 
     auto cipherId = m_instance.getDefaultDatabaseCipherId();
@@ -58,8 +58,8 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
     const auto cipher = crypto::getCipher(cipherId);
     const auto keyLength = cipher ? cipher->getKeySizeInBits() : 0;
     auto cipherKey = cipher ? crypto::generateCipherKey(keyLength, cipherKeySeed) : BinaryValue();
-    m_instance.createDatabase(
-            std::string(request.m_database), cipherId, std::move(cipherKey), {}, m_userId);
+    m_instance.createDatabase(std::string(request.m_database), cipherId, std::move(cipherKey), {},
+            request.m_maxTableCount, m_userId);
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);

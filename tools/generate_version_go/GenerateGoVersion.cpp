@@ -4,6 +4,12 @@
 
 #include "GenerateGoVersion.h"
 
+// Project headers
+#include "Version.h"
+
+// Common project headers
+#include <siodb/common/stl_wrap/filesystem_wrapper.h>
+
 // CRT headers
 #include <cstdlib>
 #include <cstring>
@@ -98,26 +104,25 @@ int main(int argc, char** argv)
     const std::string minorVersionKey("SIODB_VERSION_MINOR");
     const std::string patchVersionKey("SIODB_VERSION_PATCH");
     const std::string copyrightYearsKey("SIODB_COPYRIGHT_YEARS");
+    const std::string majorVersionKeyGo("siodbVersionMajor");
+    const std::string minorVersionKeyGo("siodbVersionMinor");
+    const std::string patchVersionKeyGo("siodbVersionPatch");
+    const std::string copyrightYearsKeyGo("siodbCopyrightYears");
 
     ofs << R"text(// THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.
 // Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.)text";
     ofs << "\npackage main\n\n";
-    ofs << "var " << majorVersionKey << " = " << defines[majorVersionKey] << '\n';
-    ofs << "var " << minorVersionKey << " = " << defines[minorVersionKey] << '\n';
-    ofs << "var " << patchVersionKey << " = " << defines[patchVersionKey] << '\n';
-    ofs << "var " << copyrightYearsKey << " = " << defines[copyrightYearsKey] << '\n';
+    ofs << "var " << majorVersionKeyGo << " = " << defines[majorVersionKey] << '\n';
+    ofs << "var " << minorVersionKeyGo << " = " << defines[minorVersionKey] << '\n';
+    ofs << "var " << patchVersionKeyGo << " = " << defines[patchVersionKey] << '\n';
+    ofs << "var " << copyrightYearsKeyGo << " = " << defines[copyrightYearsKey] << '\n';
 
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), outputFilePath.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << outputFilePath << ": " << std::strerror(errorCode) << std::endl;
-        return 2;
-    }
+    if (!renameFile(std::get<0>(tmpFileInfo), outputFilePath)) return 2;
 
     return 0;
 }
@@ -125,6 +130,25 @@ int main(int argc, char** argv)
 void printUsage(const char* program)
 {
     std::cerr << "Usage:\n" << program << " -i INPUT_FILE -o OUTPUT_FILE" << std::endl;
+}
+
+bool renameFile(const std::string& src, const std::string& to)
+{
+    boost::system::error_code ec;
+    fs::rename(src, to, ec);
+    if (!ec) return true;
+
+    if (ec.value() == EXDEV) {
+        fs::copy_file(src, to, ec);
+        if (!ec) {
+            fs::remove(src, ec);
+            if (!ec) return true;
+        }
+    }
+
+    std::cerr << "Can't rename temporary file " << src << " into " << to << ": " << ec.message()
+              << std::endl;
+    return false;
 }
 
 std::tuple<std::string, int, int> makeTemporaryFile()
@@ -136,7 +160,7 @@ std::tuple<std::string, int, int> makeTemporaryFile()
         if (tmpFilePath.back() != '/') tmpFilePath += '/';
     } else
         tmpFilePath = "/tmp/";
-    tmpFilePath += "siodb_message_compiler-XXXXXX";
+    tmpFilePath += "siodb_generate_version_go-XXXXXX";
     const int fd = ::mkstemp(tmpFilePath.data());
     const int errorCode = errno;
     return std::make_tuple(std::move(tmpFilePath), fd, errorCode);

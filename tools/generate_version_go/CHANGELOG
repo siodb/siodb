@@ -1,0 +1,14 @@
+Siodb Generate Version.go Utility Change History
+==================================================
+
+Version 0.0.3 Oct 05 2020
+============================
+- Use proper Go variable names.
+
+Version 0.0.2 Oct 05 2020
+============================
+- Fixed temporary files renaming.
+
+Version 0.0.1 Oct 01 2020
+============================
+- Initial version.

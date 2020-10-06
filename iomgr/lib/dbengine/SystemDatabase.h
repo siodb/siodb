@@ -6,6 +6,7 @@
 
 // Project headers
 #include "Database.h"
+#include "UserPermission.h"
 
 namespace siodb::iomgr::dbengine {
 
@@ -203,6 +204,9 @@ private:
 
     /** Table SYS_USER_PERMISSIONS */
     TablePtr m_sysUserPermissionsTable;
+
+    /** Maximum table count in the system database */
+    static constexpr std::size_t kMaxTableCount = 1024;
 };
 
 }  // namespace siodb::iomgr::dbengine

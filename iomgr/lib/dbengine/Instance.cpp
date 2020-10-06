@@ -66,9 +66,9 @@ Instance::Instance(const config::SiodbOptions& options)
     , m_superUserInitialAccessKey(options.m_generalOptions.m_superUserInitialAccessKey.empty()
                                           ? loadSuperUserInitialAccessKey()
                                           : options.m_generalOptions.m_superUserInitialAccessKey)
-    , m_userCache(options.m_ioManagerOptions.m_userCacheCapacity)
-    , m_databaseCache(options.m_ioManagerOptions.m_databaseCacheCapacity)
-    , m_tableCacheCapacity(options.m_ioManagerOptions.m_tableCacheCapacity)
+    , m_maxUsers(options.m_ioManagerOptions.m_maxUsers)
+    , m_maxDatabases(options.m_ioManagerOptions.m_maxDatabases)
+    , m_maxTableCountPerDatabase(options.m_ioManagerOptions.m_maxTableCountPerDatabase)
     , m_blockCacheCapacity(options.m_ioManagerOptions.m_blockCacheCapacity)
     , m_metadataFile()
     , m_allowCreatingUserTablesInSystemDatabase(
@@ -134,31 +134,34 @@ DatabasePtr Instance::findDatabase(const std::string& databaseName)
     const auto it = index.find(databaseName);
     if (it == index.end()) return nullptr;
 
-    auto cachedDatabase = m_databaseCache.get(it->m_id);
-    if (cachedDatabase) return *cachedDatabase;
+    auto itdb = m_databases.find(it->m_id);
+    if (itdb != m_databases.end()) return itdb->second;
 
-    auto database = std::make_shared<UserDatabase>(*this, *it, m_tableCacheCapacity);
-    m_databaseCache.emplace(database->getId(), database);
+    auto database = std::make_shared<UserDatabase>(*this, *it);
+    m_databases.emplace(database->getId(), database);
     return database;
 }
 
 DatabasePtr Instance::createDatabase(std::string&& name, const std::string& cipherId,
         BinaryValue&& cipherKey, std::optional<std::string>&& description,
-        std::uint32_t currentUserId)
+        std::uint32_t maxTableCount, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
 
-    // Check if database already exists
+    if (m_databaseRegistry.size() >= m_maxDatabases)
+        throwDatabaseError(IOManagerMessageId::kErrorTooManyDatabases);
+
     if (m_databaseRegistry.byName().count(name) > 0)
         throwDatabaseError(IOManagerMessageId::kErrorDatabaseAlreadyExists, name);
 
-    // Create and register database
+    if (maxTableCount == 0) maxTableCount = m_maxTableCountPerDatabase;
+
     auto database = std::make_shared<UserDatabase>(*this, std::move(name), cipherId,
-            std::move(cipherKey), m_tableCacheCapacity, std::move(description));
+            std::move(cipherKey), std::move(description), maxTableCount);
     m_databaseRegistry.emplace(*database);
     const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
     m_systemDatabase->recordDatabase(*database, tp);
-    m_databaseCache.emplace(database->getId(), database);
+    m_databases.emplace(database->getId(), database);
     return database;
 }
 
@@ -185,7 +188,7 @@ bool Instance::dropDatabase(
 
     const auto uuid = database->getUuid();
     const auto dataDir = database->getDataDir();
-    m_databaseCache.erase(id);
+    m_databases.erase(id);
     m_databaseRegistry.byId().erase(id);
     m_systemDatabase->deleteDatabase(id, currentUserId);
     boost::system::error_code errorCode;
@@ -216,6 +219,9 @@ std::uint32_t Instance::createUser(const std::string& name,
 {
     std::lock_guard lock(m_cacheMutex);
 
+    if (m_userRegistry.size() >= m_maxUsers)
+        throwDatabaseError(IOManagerMessageId::kErrorTooManyUsers);
+
     // Check if user already exists
     if (m_userRegistry.byName().count(name) > 0)
         throwDatabaseError(IOManagerMessageId::kErrorUserAlreadyExists, name);
@@ -226,7 +232,7 @@ std::uint32_t Instance::createUser(const std::string& name,
     m_userRegistry.emplace(*user);
     const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
     m_systemDatabase->recordUser(*user, tp);
-    m_userCache.emplace(user->getId(), user);
+    m_users.emplace(user->getId(), user);
     return user->getId();
 }
 
@@ -246,7 +252,7 @@ void Instance::dropUser(const std::string& name, bool userMustExist, std::uint32
     if (id == User::kSuperUserId) throwDatabaseError(IOManagerMessageId::kErrorCannotDropSuperUser);
 
     auto user = findUserUnlocked(*it);
-    m_userCache.erase(id);
+    m_users.erase(id);
     index.erase(it);
 
     // Delete assoiated access keys
@@ -698,7 +704,7 @@ void Instance::createSystemDatabase()
     m_systemDatabase =
             std::make_shared<SystemDatabase>(*this, m_systemDatabaseCipherId, std::move(cipherKey));
     m_databaseRegistry.emplace(*m_systemDatabase);
-    m_databaseCache.emplace(m_systemDatabase->getId(), m_systemDatabase);
+    m_databases.emplace(m_systemDatabase->getId(), m_systemDatabase);
 }
 
 void Instance::loadSystemDatabase()
@@ -706,7 +712,7 @@ void Instance::loadSystemDatabase()
     LOG_DEBUG << "Instance: Loading system database.";
     m_systemDatabase = std::make_shared<SystemDatabase>(*this, m_systemDatabaseCipherId);
     m_databaseRegistry.emplace(*m_systemDatabase);
-    m_databaseCache.emplace(m_systemDatabase->getId(), m_systemDatabase);
+    m_databases.emplace(m_systemDatabase->getId(), m_systemDatabase);
 }
 
 void Instance::loadUsers()
@@ -729,7 +735,7 @@ void Instance::createSuperUser()
                 UserAccessKey::kSuperUserInitialAccessKeyDescription, true);
     }
     m_userRegistry.emplace(*m_superUser);
-    m_userCache.emplace(m_superUser->getId(), m_superUser);
+    m_users.emplace(m_superUser->getId(), m_superUser);
 }
 
 void Instance::recordSuperUser()
@@ -806,11 +812,11 @@ DatabasePtr Instance::findDatabaseUnlocked(const std::string& databaseName)
     const auto it = databasesByName.find(databaseName);
     if (it == databasesByName.end()) return nullptr;
 
-    const auto cachedDatabase = m_databaseCache.get(it->m_id);
-    if (cachedDatabase) return *cachedDatabase;
+    const auto itdb = m_databases.find(it->m_id);
+    if (itdb != m_databases.end()) return itdb->second;
 
-    auto database = std::make_shared<UserDatabase>(*this, *it, m_tableCacheCapacity);
-    m_databaseCache.emplace(database->getId(), database);
+    auto database = std::make_shared<UserDatabase>(*this, *it);
+    m_databases.emplace(database->getId(), database);
     return database;
 }
 
@@ -830,8 +836,8 @@ void Instance::checkDataConsistency()
 
     for (const auto& record : index) {
         if (record.m_uuid == Database::kSystemDatabaseUuid) continue;
-        auto database = std::make_shared<UserDatabase>(*this, record, m_tableCacheCapacity);
-        m_databaseCache.emplace(database->getId(), database);
+        auto database = std::make_shared<UserDatabase>(*this, record);
+        m_databases.emplace(database->getId(), database);
     }
 }
 
@@ -963,10 +969,10 @@ UserPtr Instance::findUserUnlocked(std::uint32_t userId)
 
 UserPtr Instance::findUserUnlocked(const UserRecord& userRecord)
 {
-    const auto cachedUser = m_userCache.get(userRecord.m_id);
-    if (cachedUser) return *cachedUser;
+    const auto it = m_users.find(userRecord.m_id);
+    if (it != m_users.end()) return it->second;
     auto user = std::make_shared<User>(userRecord);
-    m_userCache.emplace(user->getId(), user);
+    m_users.emplace(user->getId(), user);
     return user;
 }
 

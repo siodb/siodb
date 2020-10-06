@@ -25,16 +25,16 @@ namespace siodb::iomgr::dbengine {
 class UniqueLinearIndex : public Index {
 public:
     /** Data file header size */
-    static constexpr std::uint32_t kDataFileHeaderSize = 4096;
+    static constexpr std::uint32_t kIndexFileHeaderSize = 1024;
 
     /** Minimum data size in the file */
     static constexpr std::uint32_t kMinDataSizePerFile = 4096;
 
     /** Minimum data file size */
-    static constexpr std::uint32_t kMinDataFileSize = kDataFileHeaderSize + kMinDataSizePerFile;
+    static constexpr std::uint32_t kMinDataFileSize = kIndexFileHeaderSize + kMinDataSizePerFile;
 
     /** Maximum data file size */
-    static constexpr std::uint32_t kMaxDataFileSize = kDataFileHeaderSize + (100 * 1024 * 1024);
+    static constexpr std::uint32_t kMaxDataFileSize = kIndexFileHeaderSize + (100 * 1024 * 1024);
 
 protected:
     /**
@@ -491,7 +491,7 @@ private:
      */
     std::uint64_t computeNumberOfRecordsPerFile() const noexcept
     {
-        return (m_dataFileSize - kDataFileHeaderSize) / m_recordSize;
+        return (m_dataFileSize - kIndexFileHeaderSize) / m_recordSize;
     }
 
 private:

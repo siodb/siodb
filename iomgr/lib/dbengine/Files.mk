@@ -132,6 +132,7 @@ CXX_HDR+= \
 	UserAccessKeyPtr.h  \
 	UserCache.h  \
 	UserDatabase.h  \
+	UserIdGenerator.h  \
 	UserPermission.h  \
 	UserPtr.h  \
 	UserToken.h  \

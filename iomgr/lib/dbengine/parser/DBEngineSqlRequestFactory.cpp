@@ -13,6 +13,7 @@
 
 // Common project headers
 #include "expr/ExpressionFactory.h"
+#include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/log/Log.h>
 
 // Boost headers
@@ -768,7 +769,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
         throw DBEngineRequestFactoryError("CREATE DATABASE: malformed statement");
 
     // Database node could be 2 or 3 (CREATE TEMPORARY DATABASE <name>)
-    bool temporary = false;
+    bool isTemporary = false;
+    std::uint32_t maxTableCount = 0;
     size_t databaseNodeIndex = 0;
     if (helpers::getNonTerminalType(node->children[2]) == SiodbParser::RuleDatabase_name) {
         databaseNodeIndex = 2;
@@ -776,7 +778,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
                && helpers::getNonTerminalType(node->children[3])
                           == SiodbParser::RuleDatabase_name) {
         databaseNodeIndex = 3;
-        temporary = true;
+        isTemporary = true;
     } else
         throw DBEngineRequestFactoryError("CREATE DATABASE: missing database name");
 
@@ -808,8 +810,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
     } else if (node->children.size() != databaseNodeIndex + 1)
         throw DBEngineRequestFactoryError("CREATE DATABASE: malformed statement");
 
-    return std::make_unique<requests::CreateDatabaseRequest>(
-            std::move(database), temporary, std::move(cipherId), std::move(cipherKeySeed));
+    return std::make_unique<requests::CreateDatabaseRequest>(std::move(database), isTemporary,
+            std::move(cipherId), std::move(cipherKeySeed), maxTableCount);
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropDatabaseRequest(

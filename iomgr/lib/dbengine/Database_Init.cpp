@@ -10,6 +10,7 @@
 #include "ColumnSetColumn.h"
 #include "ConstraintDefinition.h"
 #include "Table.h"
+#include "User.h"
 #include "crypto/GetCipher.h"
 #include "parser/expr/ConstantExpression.h"
 
@@ -132,6 +133,7 @@ const std::unordered_map<std::string, std::unordered_set<std::string>> Database:
                         kSysDatabases_Name_ColumnName,
                         kSysDatabases_CipherId_ColumnName,
                         kSysDatabases_Description_ColumnName,
+                        kSysDatabases_MaxTables_ColumnName,
                 }},
         {kSysUserPermissionsTableName,
                 {
@@ -164,8 +166,8 @@ const std::unordered_set<std::string> Database::m_systemDatabaseOnlySystemTables
 
 // New database
 Database::Database(Instance& instance, std::string&& name, const std::string& cipherId,
-        BinaryValue&& cipherKey, std::size_t tableCacheCapacity,
-        std::optional<std::string>&& description)
+        BinaryValue&& cipherKey, std::optional<std::string>&& description,
+        std::uint32_t maxTableCount)
     : m_instance(instance)
     , m_uuid(computeDatabaseUuid(
               name, name == kSystemDatabaseName ? kSystemDatabaseCreationTime : std::time(nullptr)))
@@ -177,12 +179,10 @@ Database::Database(Instance& instance, std::string&& name, const std::string& ci
     , m_cipherKey(std::move(cipherKey))
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
     , m_decryptionContext(m_cipher ? m_cipher->createDecryptionContext(m_cipherKey) : nullptr)
+    , m_maxTableCount(maxTableCount)
     , m_metadataFile(createMetadataFile())
     , m_metadata(static_cast<DatabaseMetadata*>(m_metadataFile->getMappingAddress()))
     , m_createTransactionParams(User::kSuperUserId, generateNextTransactionId())
-    , m_tableCache(m_name,
-              tableCacheCapacity > 0 ? tableCacheCapacity : instance.getTableCacheCapacity())
-    , m_constraintDefinitionCache(*this, kConstraintDefinitionCacheCapacity)
     , m_useCount(0)
     , m_systemNotNullConstraintDefinition(createSystemConstraintDefinitionUnlocked(
               ConstraintType::kNotNull, std::make_unique<requests::ConstantExpression>(true)))
@@ -194,8 +194,7 @@ Database::Database(Instance& instance, std::string&& name, const std::string& ci
 }
 
 // Init existing database
-Database::Database(
-        Instance& instance, const DatabaseRecord& dbRecord, std::size_t tableCacheCapacity)
+Database::Database(Instance& instance, const DatabaseRecord& dbRecord)
     : m_instance(instance)
     , m_uuid(dbRecord.m_uuid)
     , m_name(dbRecord.m_name)
@@ -206,11 +205,9 @@ Database::Database(
     , m_cipherKey(loadCipherKey())
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
     , m_decryptionContext(m_cipher ? m_cipher->createDecryptionContext(m_cipherKey) : nullptr)
+    , m_maxTableCount(dbRecord.m_maxTableCount)
     , m_metadataFile(openMetadataFile())
     , m_metadata(static_cast<DatabaseMetadata*>(m_metadataFile->getMappingAddress()))
-    , m_tableCache(m_name,
-              tableCacheCapacity > 0 ? tableCacheCapacity : instance.getTableCacheCapacity())
-    , m_constraintDefinitionCache(*this, kConstraintDefinitionCacheCapacity)
     , m_useCount(0)
     , m_sysTablesTable(loadSystemTable(kSysTablesTableName))
     , m_sysDummyTable(loadSystemTable(kSysDummyTableName))

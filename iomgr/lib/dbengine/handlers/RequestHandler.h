@@ -9,6 +9,7 @@
 #include "../Instance.h"
 #include "../MasterColumnRecord.h"
 #include "../TableDataSet.h"
+#include "../User.h"
 #include "../parser/DBEngineRestRequest.h"
 #include "../parser/DBEngineSqlRequest.h"
 #include "../parser/DBExpressionEvaluationContext.h"

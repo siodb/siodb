@@ -45,13 +45,13 @@ CompoundDatabaseError::ErrorRecord makeDatabaseError(MessageId messageId, Args&&
         error.m_errorCode = 6;
         std::ostringstream os;
         os << "Too few parameters for the message #" << static_cast<int>(messageId) << ": expected "
-           << ex.get_expected() << ", but got " << ex.get_cur();
+           << ex.get_expected() << ", but received " << ex.get_cur();
         error.m_message = os.str();
     } catch (boost::io::too_many_args& ex) {
         error.m_errorCode = 7;
         std::ostringstream os;
         os << "Too many parameters for the message #" << static_cast<int>(messageId)
-           << ": expected " << ex.get_expected() << ", but got " << ex.get_cur();
+           << ": expected " << ex.get_expected() << ", but received " << ex.get_cur();
         error.m_message = os.str();
     } catch (boost::io::out_of_range& ex) {
         error.m_errorCode = 8;
@@ -92,12 +92,12 @@ template<class MessageId, class... Args>
     } catch (boost::io::too_few_args& ex) {
         std::ostringstream os;
         os << "Too few parameters for the message #" << static_cast<int>(messageId) << ": expected "
-           << ex.get_expected() << ", but got " << ex.get_cur();
+           << ex.get_expected() << ", but received " << ex.get_cur();
         throw InternalDatabaseError(6, os.str());
     } catch (boost::io::too_many_args& ex) {
         std::ostringstream os;
         os << "Too many parameters for the message #" << static_cast<int>(messageId)
-           << ": expected " << ex.get_expected() << ", but got " << ex.get_cur();
+           << ": expected " << ex.get_expected() << ", but received " << ex.get_cur();
         throw InternalDatabaseError(7, os.str());
     } catch (boost::io::out_of_range& ex) {
         std::ostringstream os;

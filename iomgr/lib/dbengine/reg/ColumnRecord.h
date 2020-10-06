@@ -5,7 +5,7 @@
 #pragma once
 
 // Common project headers
-#include <siodb/common/config/SiodbDefs.h>
+#include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/utils/Uuid.h>
 #include <siodb/iomgr/shared/dbengine/ColumnState.h>
 
@@ -86,8 +86,8 @@ struct ColumnRecord {
      * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
-            noexcept;
+    std::uint8_t* serializeUnchecked(
+            std::uint8_t* buffer, unsigned version = kClassVersion) const noexcept;
 
     /**
      * Deserializes object from buffer.

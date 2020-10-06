@@ -5,6 +5,7 @@
 #include "SiodbConnectionManager.h"
 
 // Common project headers
+#include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/SocketDomain.h>
 #include <siodb/common/net/TcpServer.h>

@@ -13,20 +13,19 @@ import (
 	"testing"
 )
 
-type SiodbConfigFile struct {
+type siodbConfigFile struct {
 	path      string
-	parameter []Parameter
+	parameter []configurationParameter
 }
 
-type Parameter struct {
+type configurationParameter struct {
 	name  string
 	value string
 }
 
-func (siodbConfigFile SiodbConfigFile) ParseLogChannelsName() (channel []string, err error) {
-
+func (configFile *siodbConfigFile) ParseLogChannelsName() (channel []string, err error) {
 	var value string
-	if value, err = siodbConfigFile.GetParameterValue("log_channels"); err != nil {
+	if value, err = configFile.GetParameterValue("log_channels"); err != nil {
 		return channel, err
 	}
 	for _, c := range strings.Split(value, ",") {
@@ -35,23 +34,21 @@ func (siodbConfigFile SiodbConfigFile) ParseLogChannelsName() (channel []string,
 	return channel, nil
 }
 
-func (siodbConfigFile *SiodbConfigFile) GetParameterValue(parameter string) (string, error) {
-
-	for _, param := range siodbConfigFile.parameter {
+func (configFile *siodbConfigFile) GetParameterValue(parameter string) (string, error) {
+	for _, param := range configFile.parameter {
 		if param.name == parameter {
 			return param.value, nil
 		}
 	}
 
-	return "", fmt.Errorf("Parameter '%v' doesn't exist in the parameter file", parameter)
+	return "", fmt.Errorf("configurationParameter '%v' doesn't exist in the parameter file", parameter)
 }
 
-func (siodbConfigFile *SiodbConfigFile) ParseParameters() (err error) {
-
-	if len(siodbConfigFile.path) == 0 {
+func (configFile *siodbConfigFile) ParseParameters() (err error) {
+	if len(configFile.path) == 0 {
 		return nil
 	}
-	file, err := os.Open(siodbConfigFile.path)
+	file, err := os.Open(configFile.path)
 	if err != nil {
 		return err
 	}
@@ -61,8 +58,14 @@ func (siodbConfigFile *SiodbConfigFile) ParseParameters() (err error) {
 
 	for {
 		line, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
 
-		parameter := &Parameter{}
+		parameter := &configurationParameter{}
 
 		if !strings.HasPrefix(strings.TrimSpace(line), "#") && len(line) > 0 {
 			if equal := strings.Index(line, "="); equal >= 0 {
@@ -70,25 +73,18 @@ func (siodbConfigFile *SiodbConfigFile) ParseParameters() (err error) {
 					if len(line) > equal {
 						parameter.name = key
 						parameter.value = strings.TrimSpace(line[equal+1:])
-						siodbConfigFile.parameter = append(siodbConfigFile.parameter, *parameter)
+						configFile.parameter = append(configFile.parameter, *parameter)
 					}
 				}
 			}
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
 		}
 	}
 
 	return nil
 }
 
-func TestConfig(t *testing.T) {
-
-	siodbConfigFile := &SiodbConfigFile{}
+func testConfig(t *testing.T) {
+	siodbConfigFile := &siodbConfigFile{}
 	siodbConfigFile.path = "/etc/siodb/instances/siodb000/config"
 	err := siodbConfigFile.ParseParameters()
 	fmt.Printf("siodbConfigFile: %v | error: %v.\n", siodbConfigFile, err)

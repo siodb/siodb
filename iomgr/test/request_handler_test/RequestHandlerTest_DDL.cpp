@@ -19,6 +19,9 @@
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/string_builder.h>
 
+// STL headers
+#include <random>
+
 // Boost headers
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -588,6 +591,169 @@ TEST(DDL, CreateTable)
     }
 }
 
+// Intent of this test is to check correctness of the some use cases in the block registry.
+TEST(DDL, CreateManyTables)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+#if 0
+    std::random_device rd;
+    const auto seed = rd();
+#else
+    //const auto seed = 4281804057UL;
+    const auto seed = 2888146611UL;
+#endif
+
+    LOG_INFO << "DDL.CreateManyTables.seed=" << seed;
+    std::mt19937 gen(seed);
+    std::uniform_real_distribution realDist(0.0, 1.0);
+    std::uniform_int_distribution<int> intDist(1, std::numeric_limits<int16_t>::max());
+
+    constexpr int kTableCount = 60;
+    for (int tableNo = 0; tableNo < kTableCount; ++tableNo) {
+        /// ----------- CREATE TABLE -----------
+        const std::string tableName = stdext::string_builder() << "DDL_TEST_TABLE_MANY_" << tableNo;
+        std::size_t randomStringLength = (intDist(gen) % 100) + 1;
+        std::string randomString;
+        randomString.resize(randomStringLength);
+        for (std::size_t i = 0; i < randomStringLength; ++i) {
+            unsigned char ch;
+            do {
+                ch = intDist(gen);
+            } while (ch == 0 || ch > 0x7f || ch == '\'' || ch == '\"');
+            randomString[i] = static_cast<char>(ch);
+        }
+        const std::string statement =
+                stdext::string_builder()
+                << "CREATE TABLE " << tableName << "\n(TEST_INTEGER INTEGER DEFAULT "
+                << intDist(gen) << "\n,  TEST_INT INT NOT NULL DEFAULT " << intDist(gen)
+                << "\n, TEST_UINT UINT DEFAULT " << intDist(gen)
+                << "\n, TEST_TINYINT TINYINT NOT NULL DEFAULT "
+                << (intDist(gen) % std::numeric_limits<std::int8_t>::max())
+                << "\n, TEST_TINYUINT TINYUINT DEFAULT "
+                << (intDist(gen) % std::numeric_limits<std::uint8_t>::max())
+                << "\n, TEST_SMALLINT SMALLINT NOT NULL DEFAULT " << intDist(gen)
+                << "\n, TEST_SMALLUINT SMALLUINT DEFAULT " << intDist(gen)
+                << "\n, TEST_BIGINT BIGINT NOT NULL DEFAULT " << intDist(gen)
+                << "\n, TEST_BIGUINT BIGUINT DEFAULT " << intDist(gen)
+                << "\n, TEST_SMALLREAL SMALLREAL NOT NULL DEFAULT " << realDist(gen)
+                << "\n, TEST_REAL REAL DEFAULT " << realDist(gen)
+                << "\n, TEST_FLOAT FLOAT NOT NULL DEFAULT " << intDist(gen)
+                << "\n, TEST_DOUBLE DOUBLE DEFAULT " << intDist(gen)
+                << "\n, TEST_TEXT TEXT NOT NULL DEFAULT '" << randomString << "-zzz'"
+                << "\n, TEST_CHAR CHAR DEFAULT '" << randomString[0] << "'"
+                << "\n, TEST_VARCHAR VARCHAR NOT NULL DEFAULT '" << randomString << "'"
+                << "\n, TEST_BLOB BLOB,  TEST_TIMESTAMP TIMESTAMP NOT NULL)\n";
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        const auto createTableRequest =
+                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+        requestHandler->executeRequest(*createTableRequest, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+
+        /// ----------- SELECT -----------
+        {
+            const std::string statement = stdext::string_builder() << "SELECT * FROM " << tableName;
+            parser_ns::SqlParser parser(statement);
+            parser.parse();
+
+            const auto selectRequest =
+                    parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+            siodb::iomgr_protocol::DatabaseEngineResponse response;
+            requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+            siodb::protobuf::readMessage(
+                    siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response,
+                    inputStream);
+
+            EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+            ASSERT_EQ(response.message_size(), 0);
+            EXPECT_FALSE(response.has_affected_row_count());
+            ASSERT_EQ(response.column_description_size(), 19);  // +1 for TRID
+            EXPECT_FALSE(response.has_affected_row_count());
+            // TRID
+            EXPECT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT64);
+            // INTEGER
+            EXPECT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_INT32);
+            // INT
+            EXPECT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_INT32);
+            // UINT
+            EXPECT_EQ(response.column_description(3).type(), siodb::COLUMN_DATA_TYPE_UINT32);
+            // TINYINT
+            EXPECT_EQ(response.column_description(4).type(), siodb::COLUMN_DATA_TYPE_INT8);
+            //  TINYUINT
+            EXPECT_EQ(response.column_description(5).type(), siodb::COLUMN_DATA_TYPE_UINT8);
+            // SMALLINT
+            EXPECT_EQ(response.column_description(6).type(), siodb::COLUMN_DATA_TYPE_INT16);
+            // SMALLUINT
+            EXPECT_EQ(response.column_description(7).type(), siodb::COLUMN_DATA_TYPE_UINT16);
+            // BIGINT
+            EXPECT_EQ(response.column_description(8).type(), siodb::COLUMN_DATA_TYPE_INT64);
+            // BIGUINT
+            EXPECT_EQ(response.column_description(9).type(), siodb::COLUMN_DATA_TYPE_UINT64);
+            // SMALLREAL
+            EXPECT_EQ(response.column_description(10).type(), siodb::COLUMN_DATA_TYPE_FLOAT);
+            // REAL
+            EXPECT_EQ(response.column_description(11).type(), siodb::COLUMN_DATA_TYPE_DOUBLE);
+            // FLOAT
+            EXPECT_EQ(response.column_description(12).type(), siodb::COLUMN_DATA_TYPE_FLOAT);
+            // DOUBLE
+            EXPECT_EQ(response.column_description(13).type(), siodb::COLUMN_DATA_TYPE_DOUBLE);
+            // TEXT
+            EXPECT_EQ(response.column_description(14).type(), siodb::COLUMN_DATA_TYPE_TEXT);
+            // CHAR
+            EXPECT_EQ(response.column_description(15).type(), siodb::COLUMN_DATA_TYPE_TEXT);
+            // VARCHAR
+            EXPECT_EQ(response.column_description(16).type(), siodb::COLUMN_DATA_TYPE_TEXT);
+            // BLOB
+            EXPECT_EQ(response.column_description(17).type(), siodb::COLUMN_DATA_TYPE_BINARY);
+            // TIMESTAMP
+            EXPECT_EQ(response.column_description(18).type(), siodb::COLUMN_DATA_TYPE_TIMESTAMP);
+
+            EXPECT_EQ(response.column_description(0).name(), "TRID");
+            EXPECT_EQ(response.column_description(1).name(), "TEST_INTEGER");
+            EXPECT_EQ(response.column_description(2).name(), "TEST_INT");
+            EXPECT_EQ(response.column_description(3).name(), "TEST_UINT");
+            EXPECT_EQ(response.column_description(4).name(), "TEST_TINYINT");
+            EXPECT_EQ(response.column_description(5).name(), "TEST_TINYUINT");
+            EXPECT_EQ(response.column_description(6).name(), "TEST_SMALLINT");
+            EXPECT_EQ(response.column_description(7).name(), "TEST_SMALLUINT");
+            EXPECT_EQ(response.column_description(8).name(), "TEST_BIGINT");
+            EXPECT_EQ(response.column_description(9).name(), "TEST_BIGUINT");
+            EXPECT_EQ(response.column_description(10).name(), "TEST_SMALLREAL");
+            EXPECT_EQ(response.column_description(11).name(), "TEST_REAL");
+            EXPECT_EQ(response.column_description(12).name(), "TEST_FLOAT");
+            EXPECT_EQ(response.column_description(13).name(), "TEST_DOUBLE");
+            EXPECT_EQ(response.column_description(14).name(), "TEST_TEXT");
+            EXPECT_EQ(response.column_description(15).name(), "TEST_CHAR");
+            EXPECT_EQ(response.column_description(16).name(), "TEST_VARCHAR");
+            EXPECT_EQ(response.column_description(17).name(), "TEST_BLOB");
+            EXPECT_EQ(response.column_description(18).name(), "TEST_TIMESTAMP");
+
+            siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
+            std::uint64_t rowLength = 0;
+            ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+            ASSERT_EQ(rowLength, 0U);
+        }
+    }
+}
+
 TEST(DDL, CreateTableWithDefaultValue)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
@@ -623,7 +789,8 @@ TEST(DDL, CreateTableWithNotNullAndDefaultValue)
 
     /// ----------- CREATE TABLE -----------
     const std::string statement(
-            "CREATE TABLE DEFAULT_VALUE_TEST(A integer not null default 100, B integer not null)");
+            "CREATE TABLE DEFAULT_VALUE_TEST(A integer not null default 100, B integer not "
+            "null)");
     parser_ns::SqlParser parser(statement);
     parser.parse();
 

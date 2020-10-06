@@ -16,20 +16,20 @@ import (
 )
 
 const (
-	CONSOLE = 1
-	FILE    = 2
+	logChannelTypeConsole = 1
+	logChannelTypeFile    = 2
 )
 
 const (
-	TRACE   = 1
-	DEBUG   = 2
-	INFO    = 3
-	WARNING = 4
-	ERROR   = 5
-	FATAL   = 6
+	logLevelTrace   = 1
+	logLevelDebug   = 2
+	logLevelInfo    = 3
+	logLevelWarning = 4
+	logLevelError   = 5
+	logLevelFatal   = 6
 )
 
-type SiodbLogger struct {
+type siodbLogger struct {
 	mutex                    sync.Mutex
 	out                      io.Writer // logFile, os.Stdout
 	file                     *os.File
@@ -42,8 +42,7 @@ type SiodbLogger struct {
 	severityLevel            uint
 }
 
-func (logger *SiodbLogger) initLogger() (err error) {
-
+func (logger *siodbLogger) initLogger() (err error) {
 	// Derive log destination
 	switch strings.TrimSpace(strings.ToLower(logger.destination)) {
 	case "stdout":
@@ -57,15 +56,15 @@ func (logger *SiodbLogger) initLogger() (err error) {
 	return nil
 }
 
-func (logger *SiodbLogger) closeLogFile() (err error) {
+func (logger *siodbLogger) closeLogFile() (err error) {
 	if err = logger.file.Close(); err != nil {
-		println(FormattedOutput(WARNING, "issue closing log file '%v': %v",
+		println(formattedOutput(logLevelWarning, "issue closing log file '%v': %v",
 			logger.destination, err))
 	}
 	return nil
 }
 
-func (logger *SiodbLogger) createNewLogFile() {
+func (logger *siodbLogger) createNewLogFile() {
 	var err error
 	logFileName := fmt.Sprintf("rest_%v_%v.log",
 		time.Now().UTC().Format("20060102_150405"), unix.Getpid())
@@ -73,7 +72,7 @@ func (logger *SiodbLogger) createNewLogFile() {
 	var logFile *os.File
 	if logFile, err = os.Create(
 		strings.TrimSpace(strings.ToLower(logger.destination)) + "/" + logFileName); err != nil {
-		siodbLoggerPool.FatalAndExit(FATAL_CANNOT_CREATE_LOG_FILE, "Can't create log file: %v", err)
+		log.FatalAndExit(fatalCannotCreateLogFile, "Can't create log file: %v", err)
 	}
 
 	logger.fileCreatedUnixTime = time.Now().Unix()
@@ -81,13 +80,12 @@ func (logger *SiodbLogger) createNewLogFile() {
 	logger.out = logFile
 }
 
-func (logger *SiodbLogger) Output(logLevel int, log string) error {
-
+func (logger *siodbLogger) Output(logLevel int, message string) error {
 	logger.mutex.Lock()
 	defer logger.mutex.Unlock()
 
 	//logger.logFileExpirationTimeout
-	if logger.channelType == FILE && logger.logFileExpirationTimeout >= 0 {
+	if logger.channelType == logChannelTypeFile && logger.logFileExpirationTimeout >= 0 {
 		if time.Now().Unix() > logger.fileCreatedUnixTime+int64(logger.logFileExpirationTimeout) {
 			logger.closeLogFile()
 			logger.createNewLogFile()
@@ -96,11 +94,11 @@ func (logger *SiodbLogger) Output(logLevel int, log string) error {
 
 	// Log
 	if logLevel >= int(logger.severityLevel) {
-		io.WriteString(logger.out, log)
+		io.WriteString(logger.out, message)
 	}
 
 	// logger.maxLogFileSize
-	if logger.channelType == FILE && logger.maxLogFileSize > 0 {
+	if logger.channelType == logChannelTypeFile && logger.maxLogFileSize > 0 {
 		fileStat, err := logger.file.Stat()
 		if err != nil {
 			return err

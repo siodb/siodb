@@ -7,6 +7,9 @@
 // Project headers
 #include "parser/expr/ConstantExpression.h"
 
+// Common project headers
+#include <siodb/common/config/SiodbDataFileDefs.h>
+
 namespace siodb::iomgr::dbengine {
 
 ColumnSpecification::ColumnSpecification(const SimpleColumnSpecification& src)

@@ -4,8 +4,11 @@
 
 #include "Compiler.h"
 
+// Project headers
+#include "Version.h"
+
 // Common project headers
-#include <siodb/common/utils/FDGuard.h>
+#include <siodb/common/stl_wrap/filesystem_wrapper.h>
 
 // STL headers
 #include <algorithm>
@@ -33,8 +36,9 @@ static const std::unordered_set<std::string> g_knownSeverities {
 
 int main(int argc, char** argv)
 {
-    std::cout << "Siodb Message Compiler v." << COMPILER_VERSION << ".\nCopyright (C) Siodb GmbH, "
-              << COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n"
+    std::cout << "Siodb Message Compiler v." << MESSAGE_COMPILER_VERSION
+              << ".\nCopyright (C) Siodb GmbH, " << MESSAGE_COMPILER_COPYRIGHT_YEARS
+              << ". All rights reserved.\n"
               << "Compiled on " << __DATE__ << ' ' << __TIME__ << std::endl;
 
     CompilerOptions options;
@@ -164,12 +168,15 @@ bool parseMessages(const CompilerOptions& options, MessageContainer& messages)
                     while (pos != std::string::npos) {
                         if (pos == msg.m_text.length() - 1)
                             throw std::runtime_error("Trailing % not closed");
+
                         const auto pos2 = msg.m_text.find_first_of('%', pos + 1);
                         if (pos2 == std::string::npos)
                             throw std::runtime_error("Last % not closed");
+
                         const auto len = pos2 - pos - 1;
                         if (len > 0) {
                             const auto parameterIndexStr = msg.m_text.substr(pos + 1, len);
+
                             int parameterIndex;
                             try {
                                 parameterIndex = std::stoi(parameterIndexStr);
@@ -181,11 +188,13 @@ bool parseMessages(const CompilerOptions& options, MessageContainer& messages)
                                     << (parameterIndices.size() + 1) << ": " << ex.what();
                                 throw std::runtime_error(err.str());
                             }
+
                             parameterIndices.push_back(parameterIndex);
                         }
                         if (pos2 == msg.m_text.length() - 1) break;
                         pos = msg.m_text.find_first_of('%', pos2 + 1);
                     }
+
                     if (!parameterIndices.empty()) {
                         std::sort(parameterIndices.begin(), parameterIndices.end());
                         parameterIndices.erase(
@@ -241,14 +250,7 @@ bool writeSymbolListFile(const MessageContainer& messages, const CompilerOptions
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), options.m_outputFileName.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << options.m_outputFileName << ": " << std::strerror(errorCode) << std::endl;
-        return false;
-    }
-
-    return true;
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeMessageListFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -274,14 +276,7 @@ bool writeMessageListFile(const MessageContainer& messages, const CompilerOption
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), options.m_outputFileName.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << options.m_outputFileName << ": " << std::strerror(errorCode) << std::endl;
-        return false;
-    }
-
-    return true;
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -303,7 +298,7 @@ bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& op
 
     ofs << "// THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n// Copyright (C) Siodb "
            "GmbH, "
-        << COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
+        << MESSAGE_COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
 
     if (options.m_guardWithPragmaOnce) {
         ofs << "#pragma once\n\n";
@@ -324,14 +319,7 @@ bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& op
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), options.m_outputFileName.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << options.m_outputFileName << ": " << std::strerror(errorCode) << std::endl;
-        return false;
-    }
-
-    return true;
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeTextFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -353,7 +341,7 @@ bool writeTextFile(const MessageContainer& messages, const CompilerOptions& opti
 
     ofs << "# THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n# Copyright (C) Siodb "
            "GmbH, "
-        << COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
+        << MESSAGE_COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
 
     for (const auto& message : messages)
         ofs << message.m_id << ", " << message.m_severity << ", " << message.m_text << '\n';
@@ -361,14 +349,26 @@ bool writeTextFile(const MessageContainer& messages, const CompilerOptions& opti
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), options.m_outputFileName.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << options.m_outputFileName << ": " << std::strerror(errorCode) << std::endl;
-        return false;
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
+}
+
+bool renameFile(const std::string& src, const std::string& to)
+{
+    boost::system::error_code ec;
+    fs::rename(src, to, ec);
+    if (!ec) return true;
+
+    if (ec.value() == EXDEV) {
+        fs::copy_file(src, to, ec);
+        if (!ec) {
+            fs::remove(src, ec);
+            if (!ec) return true;
+        }
     }
 
-    return true;
+    std::cerr << "Can't rename temporary file " << src << " into " << to << ": " << ec.message()
+              << std::endl;
+    return false;
 }
 
 std::tuple<std::string, int, int> makeTemporaryFile()

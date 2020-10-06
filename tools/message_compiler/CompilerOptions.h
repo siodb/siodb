@@ -27,5 +27,5 @@ struct CompilerOptions {
     std::string m_enumBaseType = "int";
     std::string m_enumName;
     bool m_validateMessageText = false;
-    bool m_guardWithPragmaOnce = false;
+    bool m_guardWithPragmaOnce = true;
 };

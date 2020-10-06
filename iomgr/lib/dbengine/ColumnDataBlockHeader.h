@@ -8,7 +8,7 @@
 #include "ColumnDataBlockState.h"
 
 // Common project headers
-#include <siodb/common/config/SiodbDefs.h>
+#include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/utils/Uuid.h>
 
 // CRT headers
