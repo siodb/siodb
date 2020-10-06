@@ -30,6 +30,8 @@ static constexpr const char* kSysDatabases_CipherId_ColumnName = "CIPHER_ID";
 static constexpr const char* kSysDatabases_CipherId_ColumnDescription = "Cipher identifier";
 static constexpr const char* kSysDatabases_Description_ColumnName = "DESCRIPTION";
 static constexpr const char* kSysDatabases_Description_ColumnDescription = "Database description";
+static constexpr const char* kSysDatabases_MaxTables_ColumnName = "MAX_TABLES";
+static constexpr const char* kSysDatabases_MaxTables_ColumnDescription = "Maximum number of tables";
 
 /** Table SYS_TABLES */
 static constexpr const char* kSysTablesTableName = "SYS_TABLES";

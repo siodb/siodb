@@ -7,6 +7,8 @@
 SRC_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 include ../../mk/Prolog.mk
 
-BIN_FILES:=run_all_tests.sh
+BIN_FILES:=\
+	run_all_tests.sh  \
+	test_many_tables.sh
 
 include $(MK)/Main.mk

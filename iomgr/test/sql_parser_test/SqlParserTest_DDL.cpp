@@ -8,6 +8,9 @@
 #include "dbengine/parser/EmptyExpressionEvaluationContext.h"
 #include "dbengine/parser/SqlParser.h"
 
+// Common project headers
+#include <siodb/common/config/SiodbDataFileDefs.h>
+
 // Google Test
 #include <gtest/gtest.h>
 
@@ -70,7 +73,7 @@ TEST(DDL, CreateDatabase)
     // Check request
     const auto& request = dynamic_cast<const requests::CreateDatabaseRequest&>(*dbeRequest);
     EXPECT_EQ(request.m_database, "MY_DATABASE");
-    EXPECT_FALSE(request.m_temporary);
+    EXPECT_FALSE(request.m_isTemporary);
     EXPECT_EQ(request.m_cipherId, nullptr);
     EXPECT_EQ(request.m_cipherKeySeed, nullptr);
 }
@@ -91,7 +94,7 @@ TEST(DDL, CreateTempDatabase)
     // Check request
     const auto& request = dynamic_cast<const requests::CreateDatabaseRequest&>(*dbeRequest);
     EXPECT_EQ(request.m_database, "MY_DATABASE");
-    EXPECT_TRUE(request.m_temporary);
+    EXPECT_TRUE(request.m_isTemporary);
     EXPECT_EQ(request.m_cipherId, nullptr);
     EXPECT_EQ(request.m_cipherKeySeed, nullptr);
 }
@@ -116,7 +119,7 @@ TEST(DDL, CreateDatabaseWithOptions)
 
     requests::EmptyExpressionEvaluationContext emptyContext;
     EXPECT_EQ(request.m_database, "MY_DATABASE");
-    EXPECT_FALSE(request.m_temporary);
+    EXPECT_FALSE(request.m_isTemporary);
     EXPECT_EQ(request.m_cipherId->evaluate(emptyContext), "aes128k128");
     EXPECT_EQ(request.m_cipherKeySeed->evaluate(emptyContext), "fksgksgjrekgjerkglerjg");
 }

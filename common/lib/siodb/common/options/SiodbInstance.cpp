@@ -6,6 +6,9 @@
 
 // Project headers
 #include "SiodbOptions.h"
+
+// Common peroject headers
+#include "../config/SiodbDefs.h"
 #include "../stl_wrap/filesystem_wrapper.h"
 #include "../utils/CheckOSUser.h"
 
@@ -48,7 +51,7 @@ namespace {
     if (::stat(file.c_str(), &st) < 0) {
         const int errorCode = errno;
         std::ostringstream err;
-        err << "Cannot stat file '" << file << "\': (" << errorCode << ") "
+        err << "Can't stat file '" << file << "\': (" << errorCode << ") "
             << std::strerror(errorCode);
         throw std::runtime_error(err.str());
     }

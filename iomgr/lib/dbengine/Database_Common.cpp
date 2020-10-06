@@ -114,7 +114,7 @@ ConstraintDefinitionPtr Database::findOrCreateConstraintDefinition(
             serializedExpression.data(), serializedExpression.size(), expression);
     auto constraintDefinition =
             std::make_shared<ConstraintDefinition>(system, *this, type, std::move(expression));
-    m_constraintDefinitionCache.emplace(constraintDefinition->getId(), constraintDefinition);
+    m_constraintDefinitions.emplace(constraintDefinition->getId(), constraintDefinition);
     m_constraintDefinitionRegistry.emplace(*constraintDefinition);
     return constraintDefinition;
 }
@@ -337,6 +337,7 @@ std::uint64_t Database::generateNextColumnDefinitionConstraintId(bool system)
                              : ++m_tmpTridCounters.m_lastColumnDefinitionConstraintId)
                   : m_sysColumnDefConstraintsTable->generateNextUserTrid();
 }
+
 std::uint64_t Database::generateNextIndexId(bool system)
 {
     return system ? (m_sysIndicesTable ? m_sysIndicesTable->generateNextSystemTrid()
@@ -609,7 +610,9 @@ void Database::checkTableBelongsToThisDatabase(const Table& table, const char* o
 TablePtr Database::createTableUnlocked(std::string&& name, TableType type,
         std::uint64_t firstUserTrid, std::optional<std::string>&& description)
 {
-    std::lock_guard lock(m_mutex);
+    if (m_tableRegistry.size() >= m_maxTableCount)
+        throwDatabaseError(IOManagerMessageId::kErrorTooManyTables, m_name);
+
     if (m_tableRegistry.byName().count(name) > 0)
         throwDatabaseError(IOManagerMessageId::kErrorTableAlreadyExists, m_name, name);
 
@@ -619,7 +622,7 @@ TablePtr Database::createTableUnlocked(std::string&& name, TableType type,
 
     // Register table
     registerTable(*table);
-    m_tableCache.emplace(table->getId(), table);
+    m_tables.emplace(table->getId(), table);
     return table;
 }
 
@@ -888,8 +891,8 @@ TablePtr Database::findTableUnlocked(const std::string& tableName)
     const auto& index = m_tableRegistry.byName();
     const auto it = index.find(tableName);
     if (it == index.cend()) return nullptr;
-    const auto cachedTable = m_tableCache.get(it->m_id);
-    if (cachedTable) return *cachedTable;
+    const auto itt = m_tables.find(it->m_id);
+    if (itt != m_tables.end()) return itt->second;
     return loadTableUnlocked(*it);
 }
 
@@ -898,15 +901,15 @@ TablePtr Database::findTableUnlocked(std::uint32_t tableId)
     const auto& index = m_tableRegistry.byId();
     const auto it = index.find(tableId);
     if (it == index.cend()) return nullptr;
-    const auto cachedTable = m_tableCache.get(tableId);
-    if (cachedTable) return *cachedTable;
+    const auto itt = m_tables.find(tableId);
+    if (itt != m_tables.end()) return itt->second;
     return loadTableUnlocked(*it);
 }
 
 TablePtr Database::loadTableUnlocked(const TableRecord& tableRecord)
 {
     auto table = std::make_shared<Table>(*this, tableRecord);
-    m_tableCache.emplace(table->getId(), table);
+    m_tables.emplace(table->getId(), table);
     return table;
 }
 
@@ -931,11 +934,10 @@ ConstraintDefinitionPtr Database::createConstraintDefinitionUnlocked(bool system
         if ((r.first->m_id < kFirstUserTableConstraintDefinitionId) == system
                 && r.first->isEqualDefinition(constraintDefinitionRecord)) {
             // Matching constraint definition found
-            const auto cachedConstraintDefinition =
-                    m_constraintDefinitionCache.get(constraintDefinitionRecord.m_id);
-            if (cachedConstraintDefinition) {
+            const auto it = m_constraintDefinitions.find(constraintDefinitionRecord.m_id);
+            if (it != m_constraintDefinitions.end()) {
                 existing = true;
-                return *cachedConstraintDefinition;
+                return it->second;
             }
             auto constraintDefinition = loadConstraintDefinitionUnlocked(*r.first);
             existing = true;
@@ -958,8 +960,8 @@ ConstraintDefinitionPtr Database::findConstraintDefinitionUnlocked(
     const auto& index = m_constraintDefinitionRegistry.byId();
     const auto it = index.find(constraintDefinitionId);
     if (it == index.cend()) return nullptr;
-    const auto cachedConstraintDefinition = m_constraintDefinitionCache.get(constraintDefinitionId);
-    if (cachedConstraintDefinition) return *cachedConstraintDefinition;
+    const auto itcd = m_constraintDefinitions.find(constraintDefinitionId);
+    if (itcd != m_constraintDefinitions.end()) return itcd->second;
     return loadConstraintDefinitionUnlocked(*it);
 }
 
@@ -968,7 +970,7 @@ ConstraintDefinitionPtr Database::loadConstraintDefinitionUnlocked(
 {
     auto constraintDefinition =
             std::make_shared<ConstraintDefinition>(*this, constraintDefinitionRecord);
-    m_constraintDefinitionCache.emplace(constraintDefinition->getId(), constraintDefinition);
+    m_constraintDefinitions.emplace(constraintDefinition->getId(), constraintDefinition);
     return constraintDefinition;
 }
 

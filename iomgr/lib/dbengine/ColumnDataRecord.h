@@ -108,7 +108,7 @@ public:
      * De-serializes object from a memory buffer using variable length encoding.
      * @param buffer Buffer address.
      * @param dataSize Available data size in buffer.
-     * @return Number of bytes consumed or zero if data cannot be read.
+     * @return Number of bytes consumed or zero if data can't be read.
      */
     std::size_t deserialize(const std::uint8_t* buffer, std::size_t dataSize) noexcept;
 

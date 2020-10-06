@@ -143,16 +143,16 @@ TEST(Serialization, ConstraintRecord_Filled)
 
 TEST(Serialization, DatabaseRecord_Empty)
 {
-    constexpr std::size_t kSerializedSize = 37;
+    constexpr std::size_t kSerializedSize = 38;
     checkEmptyRecord<dbengine::DatabaseRecord>(kSerializedSize);
 }
 
 TEST(Serialization, DatabaseRecord_Filled)
 {
-    constexpr std::size_t kSerializedSize = 59;
+    constexpr std::size_t kSerializedSize = 61;
     const dbengine::DatabaseRecord record(0x100,
             boost::lexical_cast<siodb::Uuid>("0dfee496-6700-4c73-abab-13ac0a154306"), "db1",
-            "aes128", "my database");
+            "aes128", "my database", 1234);
     checkRecord(record, kSerializedSize);
 }
 

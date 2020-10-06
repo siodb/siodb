@@ -18,7 +18,7 @@ namespace siodb::iomgr::dbengine {
 SystemDatabase::SystemDatabase(
         Instance& instance, const std::string& cipherId, BinaryValue&& cipherKey)
     : Database(instance, kSystemDatabaseName, cipherId, std::move(cipherKey),
-            m_allSystemTables.size() * 2, kSystemDatabaseDescription)
+            kSystemDatabaseDescription, kMaxTableCount)
 {
     // Initialize buffers
     std::vector<TablePtr> allTables;
@@ -66,6 +66,8 @@ SystemDatabase::SystemDatabase(
     m_sysUserAccessKeysTable = createTableUnlocked(
             kSysUserAccessKeysTableName, TableType::kDisk, 0, kSysUserAccessKeysTableDescription);
     allTables.push_back(m_sysUserAccessKeysTable);
+    // Skip one access key TRID for super user initial access key
+    m_sysUserAccessKeysTable->generateNextUserTrid();
 
     // Create table SYS_DATABASES
     m_sysDatabasesTable = createTableUnlocked(kSysDatabasesTableName, TableType::kDisk,
@@ -154,6 +156,11 @@ SystemDatabase::SystemDatabase(
             ColumnSpecification(kSysDatabases_Description_ColumnName, COLUMN_DATA_TYPE_TEXT,
                     kSystemTableDataFileDataAreaSize, stdext::copy(noConstraintsSpec),
                     kSysDatabases_Description_ColumnDescription)));
+
+    allColumns.push_back(m_sysDatabasesTable->createColumn(
+            ColumnSpecification(kSysDatabases_MaxTables_ColumnName, COLUMN_DATA_TYPE_UINT32,
+                    kSystemTableDataFileDataAreaSize, stdext::copy(notNullConstraintSpec),
+                    kSysDatabases_MaxTables_ColumnDescription)));
 
     // Create columns of the table SYS_USER_TOKENS
     allColumns.push_back(m_sysUserTokensTable->getMasterColumn());
@@ -246,10 +253,8 @@ SystemDatabase::SystemDatabase(
 }
 
 SystemDatabase::SystemDatabase(Instance& instance, const std::string& cipherId)
-    : Database(instance,
-            DatabaseRecord(kSystemDatabaseId, kSystemDatabaseUuid, kSystemDatabaseName,
-                    std::string(cipherId), kSystemDatabaseDescription),
-            m_allSystemTables.size() * 2)
+    : Database(instance, DatabaseRecord(kSystemDatabaseId, kSystemDatabaseUuid, kSystemDatabaseName,
+                                 std::string(cipherId), kSystemDatabaseDescription, kMaxTableCount))
     , m_sysUsersTable(loadSystemTable(kSysUsersTableName))
     , m_sysUserAccessKeysTable(loadSystemTable(kSysUserAccessKeysTableName))
     , m_sysUserTokensTable(loadSystemTable(kSysUserTokensTableName))

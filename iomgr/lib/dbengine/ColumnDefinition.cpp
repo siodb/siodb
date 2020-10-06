@@ -32,17 +32,6 @@ ColumnDefinition::ColumnDefinition(
 {
 }
 
-bool ColumnDefinition::hasConstraints() const noexcept
-{
-    return !m_constraints->empty();
-}
-
-std::size_t ColumnDefinition::getConstraintCount() const noexcept
-{
-    // NOTE: Cannot be moved to header due to compilation dependencies
-    return m_constraints ? m_constraints->size() : 0;
-}
-
 bool ColumnDefinition::isNotNull() const noexcept
 {
     if (!m_constraints) return false;

@@ -44,7 +44,7 @@ struct LobChunkHeader {
     /**
      * De-serializes object from a memory buffer.
      * @param buffer Buffer address.
-     * @return Address after the last read byte or nullptr if data cannot be read
+     * @return Address after the last read byte or nullptr if data can't be read
      *         (data size is too small or data corrupted).
      */
     const std::uint8_t* deserialize(const std::uint8_t* buffer) noexcept;

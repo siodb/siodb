@@ -216,7 +216,7 @@ public:
      * @param s A datetime or date only string.
      * @param tag A date/time creation tag.
      * @param format Date/time string format.
-     * @throw std::invalid_argument if @ref s cannot be parsed as date/time.
+     * @throw std::invalid_argument if @ref s can't be parsed as date/time.
      */
     Variant(const char* s, [[maybe_unused]] AsDateTime tag, const char* format = nullptr)
         : m_valueType(VariantType::kDateTime)
@@ -231,7 +231,7 @@ public:
      * @param s A datetime or date only string.
      * @param tag A date/time creation tag.
      * @param format Date/time string format.
-     * @throw std::invalid_argument if @ref s cannot be parsed as date/time.
+     * @throw std::invalid_argument if @ref s can't be parsed as date/time.
      */
     Variant(const std::string& s, [[maybe_unused]] AsDateTime tag, const char* format = nullptr)
         : m_valueType(VariantType::kDateTime)

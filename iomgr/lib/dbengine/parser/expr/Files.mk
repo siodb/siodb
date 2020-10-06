@@ -1,0 +1,99 @@
+# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Use of this source code is governed by a license that can be found
+# in the LICENSE file.
+
+CXX_SRC+= \
+	parser/expr/AddOperator.cpp  \
+	parser/expr/AllColumnsExpression.cpp  \
+	parser/expr/ArithmeticBinaryOperator.cpp  \
+	parser/expr/ArithmeticUnaryOperator.cpp  \
+	parser/expr/BetweenOperator.cpp  \
+	parser/expr/BinaryOperator.cpp  \
+	parser/expr/BitwiseAndOperator.cpp  \
+	parser/expr/BitwiseBinaryOperator.cpp  \
+	parser/expr/BitwiseOrOperator.cpp  \
+	parser/expr/BitwiseUnaryOperator.cpp  \
+	parser/expr/BitwiseXorOperator.cpp  \
+	parser/expr/CastOperator.cpp  \
+	parser/expr/ColumnExpressionBase.cpp  \
+	parser/expr/ComparisonBinaryOperator.cpp  \
+	parser/expr/ComplementOperator.cpp  \
+	parser/expr/ConcatenationOperator.cpp  \
+	parser/expr/ConstantExpression.cpp \
+	parser/expr/DivideOperator.cpp  \
+	parser/expr/EqualOperator.cpp  \
+	parser/expr/Expression.cpp  \
+	parser/expr/ExpressionFactory.cpp  \
+	parser/expr/ExpressionType.cpp  \
+	parser/expr/GreaterOperator.cpp  \
+	parser/expr/GreaterOrEqualOperator.cpp  \
+	parser/expr/InOperator.cpp  \
+	parser/expr/IsOperator.cpp  \
+	parser/expr/LeftShiftOperator.cpp  \
+	parser/expr/LessOperator.cpp \
+	parser/expr/LessOrEqualOperator.cpp  \
+	parser/expr/LikeOperator.cpp  \
+	parser/expr/ListExpression.cpp  \
+	parser/expr/LogicalAndOperator.cpp  \
+	parser/expr/LogicalBinaryOperator.cpp  \
+	parser/expr/LogicalUnaryOperator.cpp  \
+	parser/expr/LogicalOrOperator.cpp  \
+	parser/expr/LogicalNotOperator.cpp  \
+	parser/expr/ModuloOperator.cpp  \
+	parser/expr/MultiplyOperator.cpp  \
+	parser/expr/NotEqualOperator.cpp  \
+	parser/expr/RightShiftOperator.cpp  \
+	parser/expr/SingleColumnExpression.cpp  \
+	parser/expr/TernaryOperator.cpp  \
+	parser/expr/SubtractOperator.cpp  \
+	parser/expr/UnaryOperator.cpp  \
+	parser/expr/UnaryMinusOperator.cpp  \
+	parser/expr/UnaryPlusOperator.cpp
+
+CXX_HDR+= \
+	parser/expr/AllExpressions.h  \
+	parser/expr/AddOperator.h  \
+	parser/expr/ArithmeticBinaryOperator.h  \
+	parser/expr/ArithmeticUnaryOperator.h  \
+	parser/expr/BetweenOperator.h  \
+	parser/expr/BinaryOperator.h  \
+	parser/expr/BitwiseAndOperator.h  \
+	parser/expr/BitwiseBinaryOperator.h  \
+	parser/expr/BitwiseOrOperator.h  \
+	parser/expr/BitwiseUnaryOperator.h  \
+	parser/expr/BitwiseXorOperator.h  \
+	parser/expr/CastOperator.h  \
+	parser/expr/ColumnExpressionBase.h  \
+	parser/expr/ComparisonBinaryOperator.h  \
+	parser/expr/ComplementOperator.h  \
+	parser/expr/ConcatenationOperator.h  \
+	parser/expr/ConstantExpression.h \
+	parser/expr/EqualOperator.h  \
+	parser/expr/Expression.h  \
+	parser/expr/ExpressionEvaluationContext.h  \
+	parser/expr/ExpressionFactory.h  \
+	parser/expr/ExpressionType.h  \
+	parser/expr/GreaterOperator.h  \
+	parser/expr/GreaterOrEqualOperator.h  \
+	parser/expr/InOperator.h  \
+	parser/expr/IsOperator.h  \
+	parser/expr/LeftShiftOperator.h  \
+	parser/expr/LessOperator.h \
+	parser/expr/LessOrEqualOperator.h  \
+	parser/expr/LikeOperator.h  \
+	parser/expr/ListExpression.h  \
+	parser/expr/LogicalAndOperator.h  \
+	parser/expr/LogicalBinaryOperator.h  \
+	parser/expr/LogicalUnaryOperator.h  \
+	parser/expr/LogicalOrOperator.h  \
+	parser/expr/LogicalNotOperator.h  \
+	parser/expr/ModuloOperator.h  \
+	parser/expr/MultiplyOperator.h  \
+	parser/expr/NotEqualOperator.h  \
+	parser/expr/RightShiftOperator.h  \
+	parser/expr/SingleColumnExpression.h  \
+	parser/expr/SubtractOperator.h  \
+	parser/expr/TernaryOperator.h  \
+	parser/expr/UnaryOperator.h  \
+	parser/expr/UnaryMinusOperator.h  \
+	parser/expr/UnaryPlusOperator.h

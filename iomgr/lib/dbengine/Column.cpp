@@ -16,6 +16,7 @@
 #include "uli/UInt64UniqueLinearIndex.h"
 
 // Common project headers
+#include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
@@ -479,7 +480,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     }
 
     // If no data so far, take value from origin.
-    if (v.isNull()) v.swap(value);
+    if (v.isNull()) v = std::move(value);
 
     // Get available block
     auto block = selectAvailableBlock(requiredLength);
@@ -493,25 +494,27 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     }
 
     const auto pos = block->getNextDataPos();
-    std::uint32_t actualLength = requiredLength;
 
     // Store data
     switch (m_dataType) {
         case COLUMN_DATA_TYPE_BOOL: {
             const std::uint8_t value = v.getBool() ? 1 : 0;
             block->writeData(&value, sizeof(value));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
         case COLUMN_DATA_TYPE_INT8: {
             const std::int8_t value = v.getInt8();
             block->writeData(&value, sizeof(value));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
         case COLUMN_DATA_TYPE_UINT8: {
             const std::uint8_t value = v.getUInt8();
             block->writeData(&value, sizeof(value));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -519,6 +522,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             std::uint8_t buffer[2];
             ::pbeEncodeInt16(v.getInt16(), buffer);
             block->writeData(&buffer, sizeof(buffer));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -526,6 +530,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             std::uint8_t buffer[2];
             ::pbeEncodeUInt16(v.getUInt16(), buffer);
             block->writeData(&buffer, sizeof(buffer));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -533,6 +538,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             std::uint8_t buffer[4];
             ::pbeEncodeInt32(v.getInt32(), buffer);
             block->writeData(&buffer, sizeof(buffer));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -540,6 +546,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             std::uint8_t buffer[4];
             ::pbeEncodeUInt32(v.getUInt32(), buffer);
             block->writeData(&buffer, sizeof(buffer));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -547,6 +554,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             std::uint8_t buffer[8];
             ::pbeEncodeInt64(v.getInt64(), buffer);
             block->writeData(&buffer, sizeof(buffer));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -554,6 +562,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             std::uint8_t buffer[8];
             ::pbeEncodeUInt64(v.getUInt64(), buffer);
             block->writeData(&buffer, sizeof(buffer));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -561,6 +570,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             std::uint8_t buffer[4];
             ::pbeEncodeFloat(v.getFloat(), buffer);
             block->writeData(&buffer, sizeof(buffer));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -568,6 +578,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             std::uint8_t buffer[8];
             ::pbeEncodeDouble(v.getDouble(), buffer);
             block->writeData(&buffer, sizeof(buffer));
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -596,6 +607,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
         case COLUMN_DATA_TYPE_TIMESTAMP: {
             std::uint8_t buffer[RawDateTime::kMaxSerializedSize];
             block->writeData(&buffer, v.getDateTime().serialize(buffer) - buffer);
+            block->incNextDataPos(requiredLength);
             break;
         }
 
@@ -606,7 +618,6 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     }  // switch
 
     // Update block free space
-    block->incNextDataPos(actualLength);
     itBlock->second = block->getFreeDataSpace();
 
     //DBG_LOG_DEBUG("Column::writeRecord(): " << makeDisplayName() << " at "
@@ -664,11 +675,14 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
 
     switch (record.getOperationType()) {
         case DmlOperationType::kInsert: {
-            m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data, true);
+            if (!m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data)) {
+                throwDatabaseError(IOManagerMessageId::kErrorCannotInsertDuplicateTrid,
+                        getDatabaseName(), getTableName(), m_name, record.getTableRowId());
+            }
             break;
         }
         case DmlOperationType::kDelete: {
-            m_masterColumnData->m_mainIndex->markAsDeleted(indexKey, indexValue.m_data);
+            m_masterColumnData->m_mainIndex->erase(indexKey);
             break;
         }
         case DmlOperationType::kUpdate: {
@@ -1453,10 +1467,10 @@ std::uint32_t Column::loadLobChunkHeaderUnlocked(
 
 void Column::createMasterColumnMainIndex()
 {
-    // Create index
+    LOG_DEBUG << "Creating master column index for the table " << getDatabaseName() << '.'
+              << getTableName();
+
     auto indexName = composeMasterColumnMainIndexName();
-    // NOTE: We specify here index ID = 0, and this will be replaced by actual index ID,
-    // when index object is created.
     const IndexColumnSpecification indexColumnSpec(m_currentColumnDefinition, false);
     m_masterColumnData->m_mainIndex = std::make_shared<UInt64UniqueLinearIndex>(m_table,
             std::move(indexName), kMasterColumnNameMainIndexValueSize, indexColumnSpec,
@@ -1464,7 +1478,7 @@ void Column::createMasterColumnMainIndex()
                                     : kDefaultDataFileDataAreaSize,
             kMasterColumnMainIndexDescription);
 
-    // Prepare index ID file content
+    // Prepare main index ID file content
     std::uint64_t indexId = 0;
     ::pbeEncodeUInt64(
             m_masterColumnData->m_mainIndex->getId(), reinterpret_cast<std::uint8_t*>(&indexId));
@@ -1568,14 +1582,6 @@ void Column::createInitializationFlagFile() const
                 initFlagFile, getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(),
                 m_table.getId(), m_id, "write failed");
     }
-}
-
-int Column::compareEncodedTableRowId(const void* left, const void* right) noexcept
-{
-    std::uint64_t l = 0, r = 0;
-    ::pbeDecodeUInt64(reinterpret_cast<const uint8_t*>(left), &l);
-    ::pbeDecodeUInt64(reinterpret_cast<const uint8_t*>(right), &r);
-    return (l == r) ? 0 : ((l < r) ? -1 : 1);
 }
 
 std::unique_ptr<Column::MasterColumnData> Column::maybeCreateMasterColumnData(

@@ -11,6 +11,7 @@ import "CommonMessages.proto";
 package siodb.client_protocol;
 
 option optimize_for=SPEED;
+option go_package = ".;siodbproto";
 
 /** Command from client to server. */
 message Command {

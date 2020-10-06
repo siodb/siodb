@@ -4,81 +4,85 @@
 
 # Global Makefile for Siodb
 
-.PHONY: all clean full-clean common siodb conn_worker iomgr siocli restcli rest_server \
-	clean-common clean-siodb clean-conn_worker clean-iomgr clean-siocli \
-	clean-restcli clean-rest_server help debug debug-no-ut release release-no-ut
-
-REST_SERVER_DIR=fake_rest_server
+.PHONY: all clean full-clean tools common siodb conn_worker iomgr siocli restcli rest_server \
+	clean-tools clean-common clean-siodb clean-conn_worker clean-iomgr clean-siocli clean-restcli \
+	clean-rest_server help debug debug-no-ut release release-no-ut
 
 all:
 	@date
 	$(MAKE) $@ -C common
+	$(MAKE) $@ -C tools
 	$(MAKE) $@ -C siodb
 	$(MAKE) $@ -C conn_worker
 	$(MAKE) $@ -C iomgr
 	$(MAKE) $@ -C siocli
 	$(MAKE) $@ -C restcli
-	$(MAKE) $@ -C $(REST_SERVER_DIR)
+	$(MAKE) $@ -C rest_server
 	$(MAKE) $@ -C extra_files
 	@date
 
 debug:
 	@date
 	$(MAKE) all -C common
+	$(MAKE) all -C tools
 	$(MAKE) all -C siodb
 	$(MAKE) all -C conn_worker
 	$(MAKE) all -C iomgr
 	$(MAKE) all -C siocli
 	$(MAKE) all -C restcli
-	$(MAKE) all -C $(REST_SERVER_DIR)
+	$(MAKE) all -C rest_server
 	$(MAKE) all -C extra_files
 	@date
 
 debug-no-ut:
 	@date
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C common
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C tools
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C siodb
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C conn_worker
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C iomgr
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C siocli
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C restcli
-	$(MAKE) BUILD_UNIT_TESTS=0 all -C $(REST_SERVER_DIR)
+	$(MAKE) BUILD_UNIT_TESTS=0 all -C rest_server
 	$(MAKE) BUILD_UNIT_TESTS=0 all -C extra_files
 	@date
 
 release:
 	@date
 	$(MAKE) DEBUG=0 all -C common
+	$(MAKE) DEBUG=0 all -C tools
 	$(MAKE) DEBUG=0 all -C siodb
 	$(MAKE) DEBUG=0 all -C conn_worker
 	$(MAKE) DEBUG=0 all -C iomgr
 	$(MAKE) DEBUG=0 all -C siocli
 	$(MAKE) DEBUG=0 all -C restcli
-	$(MAKE) DEBUG=0 all -C $(REST_SERVER_DIR)
+	$(MAKE) DEBUG=0 all -C rest_server
 	$(MAKE) DEBUG=0 all -C extra_files
 	@date
 
 release-no-ut:
 	@date
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C common
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C tools
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C siodb
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C conn_worker
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C iomgr
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C siocli
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C restcli
-	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C $(REST_SERVER_DIR)
+	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C rest_server
 	$(MAKE) DEBUG=0 BUILD_UNIT_TESTS=0 all -C extra_files
 	@date
 
 clean:
 	@date
 	$(MAKE) $@ -C common
+	$(MAKE) $@ -C tools
 	$(MAKE) $@ -C siodb
 	$(MAKE) $@ -C conn_worker
 	$(MAKE) $@ -C iomgr
 	$(MAKE) $@ -C siocli
 	$(MAKE) $@ -C restcli
-	$(MAKE) $@ -C $(REST_SERVER_DIR)
+	$(MAKE) $@ -C rest_server
 	$(MAKE) $@ -C extra_files
 	@date
 
@@ -90,40 +94,48 @@ full-clean:
 check-headers:
 	@date
 	$(MAKE) $@ -C common
+	$(MAKE) $@ -C tools
 	$(MAKE) $@ -C siodb
 	$(MAKE) $@ -C conn_worker
 	$(MAKE) $@ -C iomgr
 	$(MAKE) $@ -C siocli
 	$(MAKE) $@ -C restcli
-	$(MAKE) $@ -C $(REST_SERVER_DIR)
+	$(MAKE) $@ -C rest_server
 	$(MAKE) $@ -C restcli
 	@date
 
 check-headers-debug:
 	@date
 	$(MAKE) check-headers DEBUG=1 -C common
+	$(MAKE) check-headers DEBUG=1 -C tools
 	$(MAKE) check-headers DEBUG=1 -C siodb
 	$(MAKE) check-headers DEBUG=1 -C conn_worker
 	$(MAKE) check-headers DEBUG=1 -C iomgr
 	$(MAKE) check-headers DEBUG=1 -C siocli
 	$(MAKE) check-headers DEBUG=1 -C restcli
-	$(MAKE) check-headers DEBUG=1 -C $(REST_SERVER_DIR)
+	$(MAKE) check-headers DEBUG=1 -C rest_server
 	$(MAKE) check-headers DEBUG=1 -C restcli
 	@date
 
 check-headers-release:
 	@date
 	$(MAKE) check-headers DEBUG=0 -C common
+	$(MAKE) check-headers DEBUG=0 -C tools
 	$(MAKE) check-headers DEBUG=0 -C siodb
 	$(MAKE) check-headers DEBUG=0 -C conn_worker
 	$(MAKE) check-headers DEBUG=0 -C iomgr
 	$(MAKE) check-headers DEBUG=0 -C siocli
 	$(MAKE) check-headers DEBUG=0 -C restcli
-	$(MAKE) check-headers DEBUG=0 -C $(REST_SERVER_DIR)
+	$(MAKE) check-headers DEBUG=0 -C rest_server
 	$(MAKE) check-headers DEBUG=0 -C restcli
 	@date
 
 common:
+	@date
+	$(MAKE) -C $@
+	@date
+
+tools:
 	@date
 	$(MAKE) -C $@
 	@date
@@ -155,12 +167,17 @@ restcli:
 
 rest_server:
 	@date
-	$(MAKE) -C $(REST_SERVER_DIR)
+	$(MAKE) -C rest_server
 	@date
 
 extra_files:
 	@date
 	$(MAKE) -C $@
+	@date
+
+clean-tools:
+	@date
+	$(MAKE) clean -C $(subst clean-,,$@)
 	@date
 
 clean-common:
@@ -193,7 +210,7 @@ clean-restcli:
 
 clean-rest_server:
 	@date
-	$(MAKE) clean -C $(REST_SERVER_DIR)
+	$(MAKE) clean -C rest_server
 	@date
 
 clean-extra_files:

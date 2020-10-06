@@ -46,6 +46,7 @@ bool CompilerOptions::parse(int argc, char** argv)
                 return false;
             }
             m_guardSymbol = argv[i];
+            m_guardWithPragmaOnce = false;
         } else if (std::strcmp(arg, "-gp") == 0
                    || std::strcmp(arg, "--guard-with-pragma-once") == 0) {
             m_guardWithPragmaOnce = true;
@@ -116,20 +117,21 @@ void CompilerOptions::showHelp(const char* argv0) const
 {
     const char* program = std::strrchr(argv0, '/');
     program = program ? program + 1 : argv0;
-    std::cout << "Usage: " << program << " OPTIONS ... \n"
-              << "\nOptions:\n"
-              << "-b,  --base TYPE                 C++ enumeration base type, default is int\n"
-              << "-e,  --enum NAME                 C++ enumeration name\n"
-              << "-g,  --guard SYMBOL              C++ header guard symbol\n"
-              << "-gp, --guard-with-pragma-once    Guard C++ header with #pragma once\n"
-              << "-h,  --help                      Show help and exit\n"
-              << "-H,  --header                    Produce header file\n"
-              << "-i,  --input FILE                Input file\n"
-              << "-LS, --symlist                   Produce symbol list\n"
-              << "-LM, --msglist                   Produce message list\n"
-              << "-n,  --namespace NAMESPACE       C++ namespace name\n"
-              << "-o,  --output FILE               Output file\n"
-              << "-T,  --text                      Produce text file\n"
-              << "-VM, --validate-message-text     Produce text file\n"
-              << std::endl;
+    std::cout
+            << "Usage: " << program << " OPTIONS ... \n"
+            << "\nOptions:\n"
+            << "-b,  --base TYPE                 C++ enumeration base type, default is int\n"
+            << "-e,  --enum NAME                 C++ enumeration name\n"
+            << "-g,  --guard SYMBOL              C++ header guard symbol\n"
+            << "-gp, --guard-with-pragma-once    Guard C++ header with \"#pragma once\" (default)\n"
+            << "-h,  --help                      Show help and exit\n"
+            << "-H,  --header                    Produce header file\n"
+            << "-i,  --input FILE                Input file\n"
+            << "-LS, --symlist                   Produce symbol list\n"
+            << "-LM, --msglist                   Produce message list\n"
+            << "-n,  --namespace NAMESPACE       C++ namespace name\n"
+            << "-o,  --output FILE               Output file\n"
+            << "-T,  --text                      Produce text file\n"
+            << "-VM, --validate-message-text     Produce text file\n"
+            << std::endl;
 }

@@ -8,9 +8,6 @@
 #include "ColumnConstraintSpecification.h"
 #include "SimpleColumnSpecification.h"
 
-// Common project headers
-#include <siodb/common/config/SiodbDefs.h>
-
 namespace siodb::iomgr::dbengine {
 
 /** Column specification */

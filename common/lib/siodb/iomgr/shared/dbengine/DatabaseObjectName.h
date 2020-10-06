@@ -15,7 +15,7 @@ constexpr std::size_t kMaxDatabaseObjectNameLength = 255;
 /**
  * Validates database object name.
  * Database object name must be at most 255 characters long, and allows only
- * ASCII letters, digits and underscore. Digit cannot be first character.
+ * ASCII letters, digits and underscore. Digit can't be first character.
  * @param objectName Object name to validate.
  * @return true if object name is valid, false otherwise.
  */

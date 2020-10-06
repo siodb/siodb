@@ -18,21 +18,19 @@ public:
      * @param name Database name.
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
-     * @param tableCacheCapacity Table cache capacity.
      * @param description Database description.
+     * @param maxTableCount Maximum number of tables.
      */
     UserDatabase(Instance& instance, std::string&& name, const std::string& cipherId,
-            BinaryValue&& cipherKey, std::size_t tableCacheCapacity,
-            std::optional<std::string>&& description);
+            BinaryValue&& cipherKey, std::optional<std::string>&& description,
+            std::uint32_t maxTableCount);
 
     /**
      * Initializes object of class UserDatabase for existing database.
      * @param instance Instance object.
      * @param dbRecord Database record.
-     * @param tableCacheCapacity Table cache capacity.
      */
-    UserDatabase(
-            Instance& instance, const DatabaseRecord& dbRecord, std::size_t tableCacheCapacity);
+    UserDatabase(Instance& instance, const DatabaseRecord& dbRecord);
 };
 
 }  // namespace siodb::iomgr::dbengine

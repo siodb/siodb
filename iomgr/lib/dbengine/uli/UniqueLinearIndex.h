@@ -6,7 +6,6 @@
 
 // Project headers
 #include "FileCache.h"
-#include "NodeCache.h"
 #include "../Index.h"
 #include "../IndexFileHeaderBase.h"
 
@@ -14,7 +13,6 @@
 #include <siodb/common/utils/FDGuard.h>
 
 // STL headers
-#include <atomic>
 #include <set>
 
 namespace siodb::iomgr::dbengine {
@@ -25,6 +23,19 @@ namespace siodb::iomgr::dbengine {
  * per key, therefore it is always unique.
  */
 class UniqueLinearIndex : public Index {
+public:
+    /** Data file header size */
+    static constexpr std::uint32_t kIndexFileHeaderSize = 1024;
+
+    /** Minimum data size in the file */
+    static constexpr std::uint32_t kMinDataSizePerFile = 4096;
+
+    /** Minimum data file size */
+    static constexpr std::uint32_t kMinDataFileSize = kIndexFileHeaderSize + kMinDataSizePerFile;
+
+    /** Maximum data file size */
+    static constexpr std::uint32_t kMaxDataFileSize = kIndexFileHeaderSize + (100 * 1024 * 1024);
+
 protected:
     /**
      * Initializes object of class UniqueLinearIndex.
@@ -56,12 +67,21 @@ protected:
 
 public:
     /**
-     * Returns number of nodes per file.
-     * @return Number of nodes per file.
+     * Returns record size.
+     * @return Record size.
      */
-    auto getNumberOfNodesPerFile() const noexcept
+    auto getRecordSize() const noexcept
     {
-        return m_numberOfNodesPerFile;
+        return m_recordSize;
+    }
+
+    /**
+     * Returns number of records per file.
+     * @return Number of records per file.
+     */
+    auto getNumberOfRecordsPerFile() const noexcept
+    {
+        return m_numberOfRecordsPerFile;
     }
 
     /**
@@ -74,10 +94,9 @@ public:
      * Inserts data into the index.
      * @param key A key buffer.
      * @param value A value buffer.
-     * @param replaceExisting flag that indicated if existing value to be replaced.
      * @return true if key was new one, false if key already existed.
      */
-    bool insert(const void* key, const void* value, bool replaceExisting = false) override;
+    bool insert(const void* key, const void* value) override;
 
     /**
      * Deletes data the index.
@@ -90,30 +109,21 @@ public:
      * Updates data in the index.
      * @param key A key buffer.
      * @param value A value buffer.
-     * @param replaceExisting flag that indicated if existing value to be replaced.
      * @return Number of updated values.
      */
     std::uint64_t update(const void* key, const void* value) override;
-
-    /**
-     * Marks existing key as deleted and updates value.
-     * @param key A key buffer.
-     * @param value A value buffer.
-     * @return true if key existed and changed, false otherwise.
-     */
-    bool markAsDeleted(const void* key, const void* value) override;
 
     /** Writes cached changes to disk. */
     void flush() override;
 
     /**
-     * Gets data from the index.
+     * Finds key and reads corresponding value.
      * @param key A key buffer.
      * @param value An output buffer.
      * @param count Number of values that can fit in the outout buffer.
      * @return Number of values actually copied.
      */
-    std::uint64_t findValue(const void* key, void* value, std::size_t count) override;
+    std::uint64_t find(const void* key, void* value, std::size_t count) override;
 
     /**
      * Counts how much values available for this key.
@@ -170,9 +180,34 @@ private:
     /** Index file header */
     struct IndexFileHeader : public IndexFileHeaderBase {
         /** Initialized object of class Header */
-        IndexFileHeader()
-            : IndexFileHeaderBase(IndexType::kBPlusTreeIndex)
+        IndexFileHeader(IndexType indexType) noexcept
+            : IndexFileHeaderBase(indexType)
         {
+        }
+
+        /**
+         * Initializes instance of class IndexFileHeaderBase.
+         * @param databaseUuid Database UUID.
+         * @param tableId Table ID.
+         * @param indexId Index ID.
+         * @param indexType Index type.
+         */
+        IndexFileHeader(const Uuid& databaseUuid, std::uint32_t tableId, std::uint64_t indexId,
+                IndexType indexType) noexcept
+            : IndexFileHeaderBase(databaseUuid, tableId, indexId, indexType)
+        {
+        }
+
+        /** Equality operator */
+        bool operator==(const IndexFileHeader& other) const noexcept
+        {
+            return IndexFileHeaderBase::operator==(other);
+        }
+
+        /** Non-equality operator */
+        bool operator!=(const IndexFileHeader& other) const noexcept
+        {
+            return !(*this == other);
         }
 
         /**
@@ -196,11 +231,19 @@ private:
     /** Value state */
     enum ValueState {
         kValueStateFree = 0,
-        kValueStateExists = 1,
-        kValueStateDeleted = 2,
+        kValueStateExists1 = 1,
+        kValueStateExists2 = 2,
     };
 
 private:
+    /**
+     * Validates data file size.
+     * @param size Data file size.
+     * @return Size if it is valid.
+     * @throw std::invalid_argument if size is invalid.
+     */
+    static std::uint32_t validateIndexFileSize(std::uint32_t size);
+
     /**
      * Creates and initializes new index data file.
      * @param fileId File ID.
@@ -216,26 +259,26 @@ private:
     io::FilePtr openIndexFile(std::uint64_t fileId) const;
 
     /**
-     * Returns node with given ID.
-     * @param nodeId A node Id.
-     * @return Node object if node found.
-     * @throw DatabaseError if node not found.
+     * Returns file with given ID.
+     * @param fileId File Id.
+     * @return File object if file found.
+     * @throw DatabaseError if file not found.
      */
-    uli::NodePtr findNodeChecked(std::uint64_t nodeId);
+    uli::FileDataPtr findFileChecked(std::uint64_t fileId);
 
     /**
-     * Returns node with given ID.
-     * @param nodeId A node Id.
-     * @return Node object or nullptr if not found.
+     * Returns file with given ID.
+     * @param fileId File Id.
+     * @return File object or nullptr if not found.
      */
-    uli::NodePtr findNode(std::uint64_t nodeId);
+    uli::FileDataPtr findFile(std::uint64_t fileId);
 
     /**
-     * Makes new physical node and corresponding node object.
-     * @param nodeId Node ID.
-     * @return Node object.
+     * Makes new physical file and corresponding file object.
+     * @param fileId File identifier.
+     * @return File object.
      */
-    uli::NodePtr makeNode(std::uint64_t nodeId);
+    uli::FileDataPtr makeFile(std::uint64_t fileId);
 
     /**
      * Encodes 8-bit signed integer for indexing.
@@ -332,23 +375,13 @@ private:
     void encodeKey(std::uint64_t numericKey, void* key) const noexcept;
 
     /**
-     * Returns node number which should contain the key.
+     * Returns file number which should contain the key.
      * @param key A key.
-     * @return A node number which should contain the key.
+     * @return File number which should contain the key.
      */
-    std::uint64_t getNodeIdForKey(std::uint64_t key) const noexcept
+    std::uint64_t getFileIdForKey(std::uint64_t key) const noexcept
     {
-        return (key / m_numberOfRecordsPerNode) + 1;
-    }
-
-    /**
-     * Returns file ID which should contain the node.
-     * @param nodeId Node ID.
-     * @return A file ID which should contain the key.
-     */
-    std::uint64_t getFileIdForNode(std::uint64_t nodeId) const noexcept
-    {
-        return ((nodeId - 1) / m_numberOfNodesPerFile) + 1;
+        return (key / m_numberOfRecordsPerFile) + 1;
     }
 
     /**
@@ -408,10 +441,10 @@ private:
     bool findKeyAfter(const void* key, void* keyAfter);
 
     /**
-     * Updates min and max keys after erasing/deletion.
-     * @param key A deleteable key.
+     * Updates min and max keys after deleting key from index.
+     * @param removedKey Removed key.
      */
-    void updateMinMaxKeysAfterRemoval(const void* key);
+    void updateMinAndMaxKeysAfterRemoval(const void* removedKey);
 
     /**
      * Scans index data directory for data files and returns list of data file IDs.
@@ -420,31 +453,46 @@ private:
     std::set<std::uint64_t> scanFiles() const;
 
     /**
-     * Returns minimum available node ID.
-     * @return Minimum available node ID.
+     * Returns minimum available file ID.
+     * @return Minimum available file ID.
      */
-    std::uint64_t getMinAvailableNodeId() const noexcept
+    std::uint64_t getMinAvailableFileId() const noexcept
     {
-        return SIODB_UNLIKELY(m_fileIds.empty())
-                       ? 0
-                       : m_numberOfNodesPerFile * (*m_fileIds.begin() - 1) + 1;
+        return SIODB_UNLIKELY(m_fileIds.empty()) ? 0 : *m_fileIds.begin();
     }
 
     /**
-     * Returns maximum available node ID.
-     * @return Maximum available node ID.
+     * Returns maximum available file ID.
+     * @return Maximum available file ID.
      */
-    std::uint64_t getMaxAvailableNodeId() const noexcept
+    std::uint64_t getMaxAvailableFileId() const noexcept
     {
-        return SIODB_UNLIKELY(m_fileIds.empty()) ? 0
-                                                 : m_numberOfNodesPerFile * (*m_fileIds.rbegin());
+        return SIODB_UNLIKELY(m_fileIds.empty()) ? 0 : *m_fileIds.rbegin();
     }
 
     /**
-     * Computes maximum possible node ID for this index.
-     * @return Maximum possible node ID.
+     * Computes maximum possible file ID for this index.
+     * @return Maximum possible file ID.
      */
-    std::uint64_t computeMaxPossibleNodeId() const noexcept;
+    std::uint64_t computeMaxPossibleFileId() const noexcept;
+
+    /**
+     * Computes index record size.
+     * @return Index record size.
+     */
+    std::size_t computeIndexRecordSize() const noexcept
+    {
+        return m_valueSize * 2 + 1;
+    }
+
+    /**
+     * Computes number of index records in the single file.
+     * @return Number of index records in the single file.
+     */
+    std::uint64_t computeNumberOfRecordsPerFile() const noexcept
+    {
+        return (m_dataFileSize - kIndexFileHeaderSize) / m_recordSize;
+    }
 
 private:
     /** Validated key size */
@@ -462,12 +510,6 @@ private:
     /** Value record size */
     const std::size_t m_recordSize;
 
-    /** Number of records per node */
-    const std::size_t m_numberOfRecordsPerNode;
-
-    /** Number of nodes per file */
-    const std::size_t m_numberOfNodesPerFile;
-
     /** Number of records per file */
     const std::size_t m_numberOfRecordsPerFile;
 
@@ -477,8 +519,8 @@ private:
     /** Maximum possible key */
     const BinaryValue m_maxPossibleKey;
 
-    /** Maximum possible node ID */
-    const std::uint64_t m_maxPossibleNodeId;
+    /** Maximum possible file ID */
+    const std::uint64_t m_maxPossibleFileId;
 
     /** Sorted list of file IDs */
     std::set<std::uint64_t> m_fileIds;
@@ -491,6 +533,12 @@ private:
 
     /** Actual maximum key */
     BinaryValue m_maxKey;
+
+    /** Actual minimum key - encoded */
+    std::uint64_t m_minNumericKey;
+
+    /** Actual maximum key - encoded */
+    std::uint64_t m_maxNumericKey;
 
     /** File cache capacity */
     static constexpr std::size_t kFileCacheCapacity = 20;

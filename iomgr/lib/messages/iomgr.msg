@@ -16,8 +16,8 @@ MSG:2 Error SyntaxError  Syntax error: %1%
 MSG:3 Error IOError  I/O error, message ID %1%. Exact details are available in the Siodb logs.
 MSG:4 Error InternalError  Internal error, message ID %1%. Exact details are available in the Siodb logs.
 MSG:5 Error MessageFormatError  Bad message format: %1%
-MSG:6 Error TooFewParameters    Too few parameters for the message #%1%: expected %2%, but got %3%
-MSG:7 Error TooManyParameters   Too many parameters for the message #%1%: expected %2%, but got %3%
+MSG:6 Error TooFewParameters    Too few parameters for the message #%1%: expected %2%, but received %3%
+MSG:7 Error TooManyParameters   Too many parameters for the message #%1%: expected %2%, but received %3%
 MSG:8 Error ParametersIndexOutOfRange   Parameter index is out of range for the message #%1%: index is %2%, but range is (%3%, %4%)
 MSG:10 Error Feature is not implemented yet
 MSG:11 Error Authentication error: %1%
@@ -123,15 +123,16 @@ MSG Error ValuesListNotMatchColumns     Length of '%1%'.'%2%' VALUES list doesn'
 MSG Error ValuesListLengthsNotSame      '%1%'.'%2%' VALUES lists must all have the same length %3%, but row %4% has %5% values
 MSG Error TableColumnIndexOutOfRange    Table column index '%3%' is out of range for the '%1%'.'%2%'
 MSG Error CannotInsertToSystemTable     Insert into system table '%1%'.'%2%' is not allowed
-MSG Error CannotInsertIntoMasterColumn  Cannot insert value into TRID, it is assigned automatically
+MSG Error CannotInsertIntoMasterColumn  Can't insert value into TRID, it is assigned automatically
 MSG Error CannotInsertNullValue         Can't insert NULL value to column '%1%'.'%2%'.'%3%'
+MSG Error CannotInsertDuplicateTrid     Can't insert duplicate value %4% into master column '%1%'.'%2%'.'%3%'
 
 # UPDATE
 MSG Error ValuesListIsEmpty             VALUES list type is empty 
 MSG Error ColumnsListIsEmpty            '%1%'.'%2%' columns list type is empty 
 MSG Error UpdateInvalidValueExpression  UPDATE SET expression is invalid: %1%
 MSG Error CannotUpdateSystemTable       Update system table '%1%'.'%2%' is not allowed
-MSG Error CannotUpdateMasterColumn      Cannot update master column in the table '%1%'.'%2%'
+MSG Error CannotUpdateMasterColumn      Can't update master column in the table '%1%'.'%2%'
 MSG Error ValueAndColumnTypeMismatch    Column '%1%' data type '%2%' isn't compatible with value type '%3%'
 MSG Error UpdateValuesDoesNotFitToPositions      '%1%'.'%2%' values count %3% not equal to positions count %4%
 MSG Error UpdateValuesCountGreaterThanAddresses  '%1%'.'%2%' values count %3% greater than column data addresses %4%
@@ -190,6 +191,10 @@ MSG Error ConstraintNotSupported2  Constraint type #%4% is not supported
 # INVALID ATTRIBUTES
 MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2%'
 
+# OBJECT LIMITS
+MSG Error TooManyUsers      Too many user accounts
+MSG Error TooManyDatabases  Too many databases
+MSG Error TooManyTables     Too many tables for the database %1%
 
 ##########################################
 # REST ERRORS
@@ -250,10 +255,11 @@ MSG Error CannotCreateTableInitializationFlagFile  Can't create initialization s
 MSG Error CannotCreateColumnInitializationFlagFile  Can't create initialization success data file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): %8%
 MSG Error CannotCreateIndexInitializationFlagFile  Can't create initialization success data file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): %8%
 
-MSG Error CannotCreateNewColumnDataBlockFile  Can't create new data block file '%1%' for the column '%2%'.'%3%'.'%4%'.%5% (%6%.%7%.%8%.%5%) : %9%: (%10%) %11%
-MSG Error CannotOpenColumnDataBlockFile       Can't open data block file '%1%' for '%2%'.'%3%'.'%4%'.%5% (%6%.%7%.%8%.%5%)
+MSG Error CannotCreateColumnDataBlockFile  Can't create new data block file '%8%' for the column '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%) : %9%: (%10%) %11%
+MSG Error CannotOpenColumnDataBlockFile       Can't open data block file '%8%' for the column '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%): (%10%) %11%
 MSG Error CannotReadColumnDataBlockFile       Can't read data block file '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%) offset %8% length %9%: (%10%) %11%
 MSG Error CannotWriteColumnDataBlockFile      Can't write data block file '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%) offset %8% %9%: (%10%) %11%
+MSG Error InvalidPositionForColumnDataBlock   Attempt to set invalid position for the data block '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%): offset %8%, while max allowed offset is %9%
 
 MSG Error InvalidDataFileHeaderSize Invalid block data file header size '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%)
 MSG Error InvalidDataFileHeader     Invalid block data header '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%), ver '%8%'
@@ -311,8 +317,6 @@ MSG Error CannotMoveSystemObjectsFile    Can't move system objects file for the 
 MSG Error CannotSerializeSystemObject    Can't serialize system object for the database '%1%' (%2%): %3%
 MSG Error CannotDeserializeSystemObject  Can't deserialize system object for the database '%1%' (%2%): %3%
 
-MSG Error UliFlushNodeCacheFailed  There were errors while flushing ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) node cache for the file #%7%: %8%
-
 MSG Error BptiFlushNodeCacheFailed  There were errors while flushing BPTI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) node cache to disk: %7%
 
 MSG Error CannotCreateTridCountersFile  Can't create TRID counter file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): (%8%) %9%
@@ -339,7 +343,7 @@ MSG Error TableDataFolderDoesNotExist       Table '%1%'.'%2%' data folder '%3%' 
 MSG Error ColumnDataFolderDoesNotExist      Column '%1%'.'%2%'.'%3%' data folder '%4%' doesn't exist
 MSG Error IndexDataFolderDoesNotExist       Index %1%'.'%2%'.'%3%' data folder '%4%' doesn't exist
 
-MSG Error kErrorDefaultValueDeserializationFailed  Failed deserialize default value for the constraint '%1%'.'%2%'.'%3%'.'%4%' (%5%.%6%.%7%.%8%)
+MSG Error kErrorDefaultValueDeserializationFailed  Failed to deserialize default value for the constraint '%1%'.'%2%'.'%3%'.'%4%' (%5%.%6%.%7%.%8%)
 
 ##########################################
 # Internal Errors
@@ -352,7 +356,7 @@ MSG Error UserCacheFull      User cache is full
 MSG Error DatabaseCacheFull  Database cache is full
 MSG Error TableCacheFull       Table cache of the database '%1%' is full
 MSG Error ConstraintCacheFull  Constraint cache of the database '%1%' is full
-MSG Error ConstraintDefinitionCacheFull  Constraint definition cache of the table '%1%'.'%2%' is full
+MSG Error ConstraintDefinitionCacheFull  Constraint definition cache of the database '%1%' is full
 
 MSG Error InvalidMasterColumnDataType    Invalid master column data type for the table '%1%'.'%2%' (%3%.%3%)
 MSG Error InvalidMasterColumnRecordSize  Invalid master column record size %6% in the table '%1%'.'%2%' column '%3%' (%4%.%5%.%6%) at address %7%.%8%: %9%
@@ -372,7 +376,9 @@ MSG Error MissingTableColumns  Missing columns information for the table '%1%'.'
 
 MSG Error UliMissingLessValueWhenExpected     ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) missing less value when it is expected to exist
 MSG Error UliMissingGreaterValueWhenExpected  ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) missing greater value when it is expected to exist
-MSG Error UliMissingNodeWhenExpected          ULI '%1%'.'%2%'.'%3%' (%5%.%6%.%7%) missing node %4% when it is expected to exist
+MSG Error UliMissingFileWhenExpected          ULI '%1%'.'%2%'.'%3%' (%5%.%6%.%7%) missing file #%4% when it is expected to exist
+MSG Error UliCorrupted                        ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) corrupted at key %7%
+MSG Error UliInvalidIndexFileName             ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) invalid index file name %7%
 
 MSG Error InvalidLobChunkHeader         Invalid LOB header at address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %9%
 MSG Error InvalidLobChunkHeaderAddress  Invalid LOB header address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %9%
@@ -407,7 +413,7 @@ MSG Error ExplicitConstraintsForMasterColumnProhibited  Explicit spcification of
 
 # Database
 ID -100000
-MSG Error CannotReleaseUnusedDatabase Cannot release database '%1%' (%2%) which is marked as unused
+MSG Error CannotReleaseUnusedDatabase Can't release database '%1%' (%2%) which is marked as unused
 MSG Error MissingSystemTable Missing system table '%1%'.'%2%' (%3%.'%4%')
 
 # Table

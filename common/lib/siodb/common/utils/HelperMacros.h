@@ -6,7 +6,7 @@
 
 /**
  * Helper macro to suppress compiler warning on unused parameters
- * where they cannot be avoided in the C code.
+ * where they can't be avoided in the C code.
  */
 #define UNUSED(x) (void) (x)
 

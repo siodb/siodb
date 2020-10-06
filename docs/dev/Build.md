@@ -24,7 +24,7 @@ cd $HOME
 
 # Required tools and libraries
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
-    graphviz gcc-8 g++-8 libboost1.65-dev libboost-log1.65-dev \
+    graphviz gcc-8 g++-8 libboost1.65-dev libboost-iostreams1.65-dev libboost-log1.65-dev \
     libboost-program-options1.65-dev libcurl4-openssl-dev libtool libssl-dev \
     lsb-release openjdk-11-jdk-headless python pkg-config uuid-dev \
     clang-format-10 ubuntu-dbgsym-keyring
@@ -50,7 +50,7 @@ cd $HOME
 
 # Required tools and libraries
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
-    graphviz libboost1.71-dev libboost-log1.71-dev \
+    graphviz libboost1.71-dev libboost-iostreams1.71-dev libboost-log1.71-dev \
     libboost-program-options1.71-dev libcurl4-openssl-dev libtool libssl-dev \
     lsb-release openjdk-11-jdk-headless pkg-config python2 uuid-dev \
     clang-format-10 ubuntu-dbgsym-keyring
@@ -78,7 +78,7 @@ cd $HOME
 
 # Required tools and libraries
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
-    graphviz libboost1.67-dev libboost-log1.67-dev \
+    graphviz libboost1.67-dev libboost-iostreams1.67-dev libboost-log1.67-dev \
     libboost-program-options1.67-dev libcurl4-openssl-dev libtool libssl-dev \
     lsb-release openjdk-11-jdk-headless pkg-config python2 uuid-dev wget
 
@@ -320,6 +320,20 @@ Now, proceed to the section [All Systems](#all-systems).
 
 ## All Systems
 
+### Install Go
+
+Run following commands:
+
+```bash
+cd /tmp
+wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
+tar xaf go1.15.2.linux-amd64.tar.gz
+mv go go-1.15
+sudo mv go-1.15 /usr/local
+```
+
+### Install boost-pretty-printer GDB Extension
+
 For better debugging experience, it is recommended to install
 [Boost Pretty Printers](https://github.com/ruediger/Boost-Pretty-Printer):
 
@@ -345,6 +359,8 @@ For better debugging experience, it is recommended to install
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
 ## Building Third-Party Libraries
+
+### C and C++ Libraries
 
 Change current directory to the root of siodb Git repository and execute following commands:
 
@@ -522,12 +538,16 @@ sudo make -j4
 sudo make install
 sudo ldconfig
 cd ../../..
+```
 
-# Build and install message compiler
-cd ../tools/message_compiler
-make -j4
-sudo make install
-cd ../..
+### Go Libraries
+
+Run following commands:
+
+```bash
+export GO_VERSION=1.15
+/usr/local/go-${GO_VERSION}/bin/go get -u github.com/golang/protobuf/protoc-gen-go
+/usr/local/go-${GO_VERSION}/bin/go get -u github.com/gin-gonic/gin
 ```
 
 ## System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)
@@ -623,8 +643,8 @@ allow_group_permissions_on_config_files = true
 - Build release version: `make -j4 DEBUG=0`. Build outputs will appear in the directory `release/bin`.
 - List all available build commands: `make help`.
 
-**NOTE:** Adjust `-jN` option in the above `make` commands according to available number of CPUs and memory
-  on the build host.
+**NOTE:** Adjust `-jN` option in the above `make` commands according to available number of CPUs
+  and memory on the your build host.
 
 ## Running Siodb
 

@@ -77,43 +77,51 @@ int StreamInputStream::close() noexcept
 
 std::ptrdiff_t StreamInputStream::read(void* buffer, std::size_t size) noexcept
 {
-    auto remaining = size;
-    while (remaining > 0) {
-        const void* p = nullptr;
-        int n = 0;
-        if (Next(&p, &n)) {
-            if (n == 0) continue;
-            if (remaining <= static_cast<std::size_t>(n)) {
-                std::memcpy(buffer, p, remaining);
-                if (remaining < static_cast<std::size_t>(n)) BackUp(n - remaining);
-                return size;
+    try {
+        auto remaining = size;
+        while (remaining > 0) {
+            const void* p = nullptr;
+            int n = 0;
+            if (Next(&p, &n)) {
+                if (n == 0) continue;
+                if (remaining <= static_cast<std::size_t>(n)) {
+                    std::memcpy(buffer, p, remaining);
+                    if (remaining < static_cast<std::size_t>(n)) BackUp(n - remaining);
+                    return size;
+                }
+                std::memcpy(buffer, p, n);
+                buffer = reinterpret_cast<std::uint8_t*>(buffer) + n;
+                remaining -= n;
+            } else {
+                if (GetErrno()) errno = GetErrno();
+                break;
             }
-            std::memcpy(buffer, p, n);
-            buffer = reinterpret_cast<std::uint8_t*>(buffer) + n;
-            remaining -= n;
-        } else {
-            if (GetErrno()) errno = GetErrno();
-            break;
         }
+        return size - remaining;
+    } catch (net::ConnectionError&) {
+        return -1;
     }
-    return size - remaining;
 }
 
 std::ptrdiff_t StreamInputStream::skip(std::size_t size) noexcept
 {
     constexpr std::size_t maxInt = std::numeric_limits<int>::max();
-    const auto initialByteCount = ByteCount();
-    auto remaining = size;
-    while (remaining > 0) {
-        const auto bytesToSkip = std::min(remaining, maxInt);
-        if (Skip(bytesToSkip))
-            remaining -= bytesToSkip;
-        else {
-            remaining -= ByteCount() - initialByteCount;
-            break;
+    try {
+        const auto initialByteCount = ByteCount();
+        auto remaining = size;
+        while (remaining > 0) {
+            const auto bytesToSkip = std::min(remaining, maxInt);
+            if (Skip(bytesToSkip))
+                remaining -= bytesToSkip;
+            else {
+                remaining -= ByteCount() - initialByteCount;
+                break;
+            }
         }
+        return size - remaining;
+    } catch (net::ConnectionError&) {
+        return -1;
     }
-    return size - remaining;
 }
 
 // ----- internals -----
@@ -173,6 +181,7 @@ int StreamInputStream::CopyingInputStream::Read(void* buffer, int size)
     } else if (errno == 0 && result == 0) {
         // For TCP connection 0 bytes read result without errno set
         // means connection was closed or aborted.
+        m_errno = EPIPE;
         throw net::ConnectionError("ProtobufInputStream: Connection closed");
     }
 

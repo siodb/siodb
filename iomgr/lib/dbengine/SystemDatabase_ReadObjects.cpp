@@ -73,7 +73,7 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysUsersTable->getName(), m_uuid, m_sysUsersTable->getId(), 2);
         }
@@ -135,6 +135,8 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
             m_sysDatabasesTable->findColumnChecked(kSysDatabases_CipherId_ColumnName);
     const auto descriptionColumn =
             m_sysDatabasesTable->findColumnChecked(kSysDatabases_Description_ColumnName);
+    const auto maxTablesColumn =
+            m_sysDatabasesTable->findColumnChecked(kSysDatabases_MaxTables_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -169,7 +171,7 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
         LOG_DEBUG << "readAllDatabases: Next key: " << trid;
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysDatabasesTable->getName(), m_uuid, m_sysDatabasesTable->getId(), 2);
         }
@@ -188,15 +190,17 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant uuidValue, nameValue, cipherIdValue, descriptionValue;
+        Variant uuidValue, nameValue, cipherIdValue, descriptionValue, maxTablesValue;
         std::size_t colIndex = 0;
         uuidColumn->readRecord(columnRecords.at(colIndex++).getAddress(), uuidValue);
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue);
         cipherIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), cipherIdValue);
         descriptionColumn->readRecord(columnRecords.at(colIndex++).getAddress(), descriptionValue);
+        maxTablesColumn->readRecord(columnRecords.at(colIndex++).getAddress(), maxTablesValue);
         DatabaseRecord databaseRecord(static_cast<std::uint32_t>(mcr.getTableRowId()),
                 boost::lexical_cast<Uuid>(*uuidValue.asString()), std::move(*nameValue.asString()),
-                std::move(*cipherIdValue.asString()), descriptionValue.asOptionalString());
+                std::move(*cipherIdValue.asString()), descriptionValue.asOptionalString(),
+                maxTablesValue.asUInt32());
         LOG_DEBUG << "Database " << m_name << ": readAllDatabases: Database #" << trid << " '"
                   << databaseRecord.m_name << '\'';
         reg.insert(std::move(databaseRecord));
@@ -257,7 +261,7 @@ SystemDatabase::UserAccessKeyRegistries SystemDatabase::readAllUserAccessKeys()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysUserAccessKeysTable->getName(), m_uuid, m_sysUserAccessKeysTable->getId(),
                     2);
@@ -350,7 +354,7 @@ SystemDatabase::UserTokenRegistries SystemDatabase::readAllUserTokens()
         std::swap(currentKey, nextKey);
         std::uint64_t trid = 0;
         ::pbeDecodeUInt64(currentKey, &trid);
-        if (index->findValue(currentKey, indexValue.m_data, 1) != 1) {
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
             throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
                     m_sysUserTokensTable->getName(), m_uuid, m_sysUserTokensTable->getId(), 2);
         }

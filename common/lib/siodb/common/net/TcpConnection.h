@@ -15,7 +15,7 @@ namespace siodb::net {
  * @params port Target port.
  * @param closeOnExecute Set FD_CLOEXEC flag on the resulting file descriptor.
  * @throw std::invalid_argument if host name or port number is invalid
- *                               or host cannot be resolved
+ *                               or host can't be resolved
  * @throw std::system_error if server socket could not be established.
  */
 int openTcpConnection(const std::string& host, int port, bool closeOnExecute = true);

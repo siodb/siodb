@@ -1039,7 +1039,7 @@ i = argc - 1;
 ```
 
 **Rule 4.3.2** Variables should be declares as `auto` or `const auto`, unless explicit type
-specification is required because type cannot be deduced or differs from initial value
+specification is required because type can't be deduced or differs from initial value
 expression type.
 
 **Exceptions:** Variables can use explicit type declaration if type name is shorter or equal length

@@ -2,19 +2,12 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-# Recursive makefile for fake_rest_server
+# Recursive makefile for tools
+# Only tools required for build are included in this Makefile
 
 include ../mk/Prolog.mk
 include $(MK)/MainTargets.mk
 
-ifeq ($(BUILD_UNIT_TESTS),1)
-
 $(MAIN_TARGETS):
-	$(MAKE) $(MAKECMDGOALS) -C app
-
-else
-
-$(MAIN_TARGETS):
-	$(MAKE) $(MAKECMDGOALS) -C fake_app
-
-endif
+	$(MAKE) $(MAKECMDGOALS) -C message_compiler
+	$(MAKE) $(MAKECMDGOALS) -C generate_version_go

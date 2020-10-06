@@ -54,6 +54,13 @@ bool FDStream::isValid() const noexcept
     return m_fd >= 0;
 }
 
+int FDStream::close() noexcept
+{
+    if (isValid()) return doClose();
+    errno = EIO;
+    return -1;
+}
+
 std::ptrdiff_t FDStream::read(void* buffer, std::size_t size) noexcept
 {
     // IMPORTANT: Use exactly read() system call
@@ -73,11 +80,9 @@ std::ptrdiff_t FDStream::skip(std::size_t size) noexcept
     return InputStream::skip(size);
 }
 
-int FDStream::close() noexcept
+bool FDStream::stat(struct stat& sb) const noexcept
 {
-    if (isValid()) return doClose();
-    errno = EIO;
-    return -1;
+    return ::fstat(m_fd, &sb) == 0;
 }
 
 void FDStream::swap(FDStream& other) noexcept

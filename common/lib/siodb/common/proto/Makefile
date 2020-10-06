@@ -9,6 +9,9 @@ include ../../../../../mk/Prolog.mk
 
 TARGET_COMMON_LIB:=siodb_common_proto
 
+PROTO_GO_PACKAGE:=siodbproto
+TARGET_PROTO_GO_PACKAGE:=siodb_common_proto
+
 PROTO_SRC:= \
 	ClientProtocol.proto  \
 	ColumnDataType.proto  \
@@ -25,8 +28,7 @@ $(THIS_OBJ_DIR)/ClientProtocol.pb.o: \
 	$(THIS_GENERATED_FILES_DIR)/CommonMessages.pb.h
 
 $(THIS_OBJ_DIR)/CommonProtocol.pb.o: \
-	$(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h  \
-	$(THIS_GENERATED_FILES_DIR)/CommonMessages.pb.h
+	$(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h
 
 $(THIS_OBJ_DIR)/CommonMessages.pb.o: \
 	$(THIS_GENERATED_FILES_DIR)/ColumnDataType.pb.h

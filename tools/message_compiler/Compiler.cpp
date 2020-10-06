@@ -4,6 +4,12 @@
 
 #include "Compiler.h"
 
+// Project headers
+#include "Version.h"
+
+// Common project headers
+#include <siodb/common/stl_wrap/filesystem_wrapper.h>
+
 // STL headers
 #include <algorithm>
 #include <fstream>
@@ -13,7 +19,9 @@
 #include <vector>
 
 // Boost headers
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/iostreams/device/file_descriptor.hpp>
+#include <boost/iostreams/stream.hpp>
 
 static constexpr const char* kAllWhitespaces = " \t\n\r\f\v";
 
@@ -28,9 +36,10 @@ static const std::unordered_set<std::string> g_knownSeverities {
 
 int main(int argc, char** argv)
 {
-    std::cout << "SIODB Message Compiler v." << SIODB_MESSAGE_COMPILER_VERSION
-              << ". Copyright (C) Siodb GmbH, " << SIODB_MESSAGE_COMPILER_COPYRIGHT_YEARS
-              << ". All rights reserved." << std::endl;
+    std::cout << "Siodb Message Compiler v." << MESSAGE_COMPILER_VERSION
+              << ".\nCopyright (C) Siodb GmbH, " << MESSAGE_COMPILER_COPYRIGHT_YEARS
+              << ". All rights reserved.\n"
+              << "Compiled on " << __DATE__ << ' ' << __TIME__ << std::endl;
 
     CompilerOptions options;
     if (!options.parse(argc, argv)) return 1;
@@ -159,12 +168,15 @@ bool parseMessages(const CompilerOptions& options, MessageContainer& messages)
                     while (pos != std::string::npos) {
                         if (pos == msg.m_text.length() - 1)
                             throw std::runtime_error("Trailing % not closed");
+
                         const auto pos2 = msg.m_text.find_first_of('%', pos + 1);
                         if (pos2 == std::string::npos)
                             throw std::runtime_error("Last % not closed");
+
                         const auto len = pos2 - pos - 1;
                         if (len > 0) {
                             const auto parameterIndexStr = msg.m_text.substr(pos + 1, len);
+
                             int parameterIndex;
                             try {
                                 parameterIndex = std::stoi(parameterIndexStr);
@@ -176,11 +188,13 @@ bool parseMessages(const CompilerOptions& options, MessageContainer& messages)
                                     << (parameterIndices.size() + 1) << ": " << ex.what();
                                 throw std::runtime_error(err.str());
                             }
+
                             parameterIndices.push_back(parameterIndex);
                         }
                         if (pos2 == msg.m_text.length() - 1) break;
                         pos = msg.m_text.find_first_of('%', pos2 + 1);
                     }
+
                     if (!parameterIndices.empty()) {
                         std::sort(parameterIndices.begin(), parameterIndices.end());
                         parameterIndices.erase(
@@ -217,9 +231,16 @@ bool writeSymbolListFile(const MessageContainer& messages, const CompilerOptions
 {
     std::cout << "Writing ID list: " << options.m_outputFileName << std::endl;
 
-    std::ofstream ofs(options.m_outputFileName);
+    const auto tmpFileInfo = makeTemporaryFile();
+    if (std::get<1>(tmpFileInfo) < 0) {
+        std::cerr << "Can't open temporary file: " << std::strerror(std::get<2>(tmpFileInfo))
+                  << std::endl;
+        return false;
+    }
+    boost::iostreams::stream<boost::iostreams::file_descriptor_sink> ofs(
+            std::get<1>(tmpFileInfo), boost::iostreams::close_handle);
     if (!ofs.is_open()) {
-        std::cerr << "Can't open output file " << options.m_outputFileName << std::endl;
+        std::cerr << "Can't open temporary file" << std::endl;
         return false;
     }
 
@@ -228,16 +249,24 @@ bool writeSymbolListFile(const MessageContainer& messages, const CompilerOptions
 
     ofs << std::flush;
     ofs.close();
-    return true;
+
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeMessageListFile(const MessageContainer& messages, const CompilerOptions& options)
 {
     std::cout << "Writing ID list file " << options.m_outputFileName << std::endl;
 
-    std::ofstream ofs(options.m_outputFileName);
+    const auto tmpFileInfo = makeTemporaryFile();
+    if (std::get<1>(tmpFileInfo) < 0) {
+        std::cerr << "Can't open temporary file: " << std::strerror(std::get<2>(tmpFileInfo))
+                  << std::endl;
+        return false;
+    }
+    boost::iostreams::stream<boost::iostreams::file_descriptor_sink> ofs(
+            std::get<1>(tmpFileInfo), boost::iostreams::close_handle);
     if (!ofs.is_open()) {
-        std::cerr << "Can't open output file " << options.m_outputFileName << std::endl;
+        std::cerr << "Can't open temporary file" << std::endl;
         return false;
     }
 
@@ -246,20 +275,30 @@ bool writeMessageListFile(const MessageContainer& messages, const CompilerOption
 
     ofs << std::flush;
     ofs.close();
-    return true;
+
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& options)
 {
     std::cout << "Writing header file " << options.m_outputFileName << std::endl;
 
-    std::ofstream ofs(options.m_outputFileName);
+    const auto tmpFileInfo = makeTemporaryFile();
+    if (std::get<1>(tmpFileInfo) < 0) {
+        std::cerr << "Can't open temporary file: " << std::strerror(std::get<2>(tmpFileInfo))
+                  << std::endl;
+        return false;
+    }
+    boost::iostreams::stream<boost::iostreams::file_descriptor_sink> ofs(
+            std::get<1>(tmpFileInfo), boost::iostreams::close_handle);
     if (!ofs.is_open()) {
-        std::cerr << "Can't open output file " << options.m_outputFileName << std::endl;
+        std::cerr << "Can't open temporary file" << std::endl;
         return false;
     }
 
-    ofs << "// THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n\n";
+    ofs << "// THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n// Copyright (C) Siodb "
+           "GmbH, "
+        << MESSAGE_COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
 
     if (options.m_guardWithPragmaOnce) {
         ofs << "#pragma once\n\n";
@@ -279,26 +318,70 @@ bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& op
 
     ofs << std::flush;
     ofs.close();
-    return true;
+
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeTextFile(const MessageContainer& messages, const CompilerOptions& options)
 {
     std::cout << "Writing message text file " << options.m_outputFileName << std::endl;
 
-    std::ofstream ofs(options.m_outputFileName);
+    const auto tmpFileInfo = makeTemporaryFile();
+    if (std::get<1>(tmpFileInfo) < 0) {
+        std::cerr << "Can't open temporary file: " << std::strerror(std::get<2>(tmpFileInfo))
+                  << std::endl;
+        return false;
+    }
+    boost::iostreams::stream<boost::iostreams::file_descriptor_sink> ofs(
+            std::get<1>(tmpFileInfo), boost::iostreams::close_handle);
     if (!ofs.is_open()) {
-        std::cerr << "Can't open output file " << options.m_outputFileName << std::endl;
+        std::cerr << "Can't open temporary file" << std::endl;
         return false;
     }
 
-    ofs << "# THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n";
-    ofs << "# Copyright (C) Siodb GmbH, " << SIODB_MESSAGE_COMPILER_COPYRIGHT_YEARS << "\n\n";
+    ofs << "# THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n# Copyright (C) Siodb "
+           "GmbH, "
+        << MESSAGE_COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
 
     for (const auto& message : messages)
         ofs << message.m_id << ", " << message.m_severity << ", " << message.m_text << '\n';
 
     ofs << std::flush;
     ofs.close();
-    return true;
+
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
+}
+
+bool renameFile(const std::string& src, const std::string& to)
+{
+    boost::system::error_code ec;
+    fs::rename(src, to, ec);
+    if (!ec) return true;
+
+    if (ec.value() == EXDEV) {
+        fs::copy_file(src, to, ec);
+        if (!ec) {
+            fs::remove(src, ec);
+            if (!ec) return true;
+        }
+    }
+
+    std::cerr << "Can't rename temporary file " << src << " into " << to << ": " << ec.message()
+              << std::endl;
+    return false;
+}
+
+std::tuple<std::string, int, int> makeTemporaryFile()
+{
+    std::string tmpFilePath;
+    const char* tmpDir = ::getenv("TMP");
+    if (tmpDir && *tmpDir) {
+        tmpFilePath = tmpDir;
+        if (tmpFilePath.back() != '/') tmpFilePath += '/';
+    } else
+        tmpFilePath = "/tmp/";
+    tmpFilePath += "siodb_message_compiler-XXXXXX";
+    const int fd = ::mkstemp(tmpFilePath.data());
+    const int errorCode = errno;
+    return std::make_tuple(std::move(tmpFilePath), fd, errorCode);
 }

@@ -7,7 +7,6 @@
 // Project headers
 #include "InvalidConfigurationError.h"
 #include "LogOptions.h"
-#include "../config/SiodbDefs.h"
 #include "../utils/BinaryValue.h"
 
 // STL headers
@@ -45,9 +44,9 @@ constexpr const char* kIOManagerOptionIpv4RestPort = "iomgr.rest.ipv4_port";
 constexpr const char* kIOManagerOptionIpv6RestPort = "iomgr.rest.ipv6_port";
 constexpr const char* kIOManagerOptionWorkerThreadNumber = "iomgr.worker_thread_number";
 constexpr const char* kIOManagerOptionWriterThreadNumber = "iomgr.writer_thread_number";
-constexpr const char* kIOManagerOptionUserCacheCapacity = "iomgr.user_cache_capacity";
-constexpr const char* kIOManagerOptionDatabaseCacheCapacity = "iomgr.database_cache_capacity";
-constexpr const char* kIOManagerOptionTableCacheCapacity = "iomgr.table_cache_capacity";
+constexpr const char* kIOManagerOptionMaxUsers = "iomgr.max_users";
+constexpr const char* kIOManagerOptionMaxDatabases = "iomgr.max_databases";
+constexpr const char* kIOManagerOptionMaxTablesPerDatabase = "iomgr.max_tables_per_db";
 constexpr const char* kIOManagerOptionBlockCacheCapacity = "iomgr.block_cache_capacity";
 constexpr const char* kIOManagerOptionDeadConnectionCleanupInterval =
         "iomgr.dead_connection_cleanup_interval";
@@ -116,18 +115,18 @@ constexpr auto kDefaultIOManagerIpv6SqlPortNumber = 0;
 constexpr auto kDefaultIOManagerIpv4RestPortNumber = 50002;
 constexpr auto kDefaultIOManagerIpv6RestPortNumber = 0;
 
-// IO Manager user cache capacity
-constexpr std::size_t kMinIOManagerUserCacheCapacity = 2;
-constexpr std::size_t kDefaultIOManagerUserCacheCapacity = 100;
+// IO Manager user number limit
+constexpr std::size_t kMinIOManagerMaxUsers = 2;
+constexpr std::size_t kDefaultIOManagerMaxUsers = 8192;
 
-// IO Manager database cache capacity
-constexpr std::size_t kMinIOManagerDatabaseCacheCapacity = 2;
-constexpr std::size_t kDefaultIOManagerDatabaseCacheCapacity = 100;
+// IO Manager database number limit
+constexpr std::size_t kMinIOManagerMaxDatabases = 2;
+constexpr std::size_t kDefaultIOManagerMaxDatabases = 65536;
 
-// IO Manager table cache capacity
+// IO Manager table number limit
 constexpr std::size_t kMaxNumberOfSystemTables = 99;
-constexpr std::size_t kMinIOManagerTableCacheCapacity = kMaxNumberOfSystemTables + 1;
-constexpr std::size_t kDefaultIOManagerTableCacheCapacity = kMinIOManagerTableCacheCapacity;
+constexpr std::size_t kMinIOManagerMaxTablesPerDatabase = kMaxNumberOfSystemTables + 1;
+constexpr std::size_t kDefaultIOManagerMaxTablesPerDatabase = 65536;
 
 // IO Manager block cache capacity
 constexpr std::size_t kMinIOManagerBlockCacheCapacity = 50;
@@ -222,14 +221,14 @@ struct IOManagerOptions {
     /** IPv6 TCP REST port number */
     int m_ipv6RestPort = kDefaultIOManagerIpv6SqlPortNumber;
 
-    /** User cache capacity */
-    std::size_t m_userCacheCapacity = kDefaultIOManagerUserCacheCapacity;
+    /** Maximum number of users */
+    std::uint32_t m_maxUsers = kDefaultIOManagerMaxUsers;
 
-    /** Database cache capacity */
-    std::size_t m_databaseCacheCapacity = kDefaultIOManagerDatabaseCacheCapacity;
+    /** Maximum number of databases */
+    std::uint32_t m_maxDatabases = kDefaultIOManagerMaxDatabases;
 
-    /** Table cache capacity */
-    std::size_t m_tableCacheCapacity = kDefaultIOManagerTableCacheCapacity;
+    /** Maximum number of tables per database */
+    std::uint32_t m_maxTableCountPerDatabase = kDefaultIOManagerMaxTablesPerDatabase;
 
     /** Block cache capacity */
     std::size_t m_blockCacheCapacity = kDefaultIOManagerBlockCacheCapacity;
@@ -320,7 +319,7 @@ struct SiodbOptions {
      * Reads options for given instance.
      * @param instanceName Siodb instance name.
      * @throw InvalidConfigurationError
-     *        - If configuration file cannot be read.
+     *        - If configuration file can't be read.
      *        - If value of some configuration options is invalid.
      */
     void load(const std::string& instanceName);
@@ -330,7 +329,7 @@ struct SiodbOptions {
      * @param instanceName Siodb instance name.
      * @param configPath Configuration file path.
      * @throw InvalidConfigurationError
-     *        - If configuration file cannot be read.
+     *        - If configuration file can't be read.
      *        - If value of some configuration options is invalid.
      */
     void load(const std::string& instanceName, const std::string& configPath);

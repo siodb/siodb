@@ -218,10 +218,9 @@ public:
      * Inserts data into the index.
      * @param key A key buffer.
      * @param value A value buffer.
-     * @param replaceExisting flag that indicated if existing value to be replaced.
      * @return true if key was new one, false if key already existed.
      */
-    virtual bool insert(const void* key, const void* value, bool replaceExisting = false) = 0;
+    virtual bool insert(const void* key, const void* value) = 0;
 
     /**
      * Deletes data the index.
@@ -234,18 +233,9 @@ public:
      * Updates data in the index.
      * @param key A key buffer.
      * @param value A value buffer.
-     * @param replaceExisting flag that indicated if existing value to be replaced.
      * @return Number of updated values.
      */
     virtual std::uint64_t update(const void* key, const void* value) = 0;
-
-    /**
-     * Marks existing key as deleted and updates value.
-     * @param key A key buffer.
-     * @param value A value buffer.
-     * @return true if key existed and changed, false otherwise.
-     */
-    virtual bool markAsDeleted(const void* key, const void* value) = 0;
 
     /**
      * Writes cached changes to disk.
@@ -253,13 +243,13 @@ public:
     virtual void flush() = 0;
 
     /**
-     * Gets data from the index.
+     * Finds key and reads corresponding value.
      * @param key A key buffer.
      * @param value An output buffer.
      * @param count Number of values that can fit in the outout buffer.
      * @return Number of values actually copied.
      */
-    virtual std::uint64_t findValue(const void* key, void* value, std::size_t count) = 0;
+    virtual std::uint64_t find(const void* key, void* value, std::size_t count) = 0;
 
     /**
      * Counts how much values available for this key.
@@ -402,7 +392,7 @@ protected:
     static constexpr const char* kIndexDataDirPrefix = "i";
 
     /** Initialization flag file name */
-    static constexpr const char* kInitializationFlagFile = "initialized";
+    static constexpr const char* kInitializationFlagFile = ".initialized";
 };
 
 }  // namespace siodb::iomgr::dbengine

@@ -71,3 +71,7 @@ LD:=clang++-10
 endif
 
 AR:=ar
+
+# Go
+GO_VERSION:=1.15
+GO:=/usr/local/go-$(GO_VERSION)/bin/go

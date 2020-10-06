@@ -10,12 +10,6 @@ DEBUG:=1
 # Build unit tests by default
 BUILD_UNIT_TESTS:=1
 
-# Message compiler version
-SIODBMC_VERSION:=0.1.4
-
-# Oat++ library version
-OATPP_VERSION:=1.1.0
-
 # Makefile dir
 MK:=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
@@ -95,7 +89,10 @@ GENERATED_FILES_ROOT:=$(BUILD_CFG_DIR)/generated-src
 GENERATED_FILES_DIR:=$(GENERATED_FILES_ROOT)/siodb-generated
 THIS_GENERATED_FILES_DIR:=$(GENERATED_FILES_DIR)$(SRC_DIR_OFFSET)
 GENERATED_FILES_COMMON_LIB_ROOT:=$(GENERATED_FILES_DIR)/$(COMMON_SUBDIR)/lib
+GENERATED_FILES_GOPATH:=$(GENERATED_FILES_ROOT)/go
+GENERATED_FILES_GO_VTARGET:=$(BUILD_CFG_DIR)/go-virtual-target
 
-SIODBMC:=siodbmc.$(SIODBMC_VERSION)
+MESSAGE_COMPILER_TOOL:=$(BIN_DIR)/message_compiler
+GENERATE_VERSION_GO_TOOL:=$(BIN_DIR)/generate_version_go
 
 include $(MK)/ThirdpartyLibVersions.mk

@@ -17,6 +17,8 @@ PROTO_CXX_SRC_N:=$(PROTO_SRC:.proto=.pb.cc)
 PROTO_CXX_HDR_N:=$(PROTO_SRC:.proto=.pb.h)
 PROTO_CXX_SRC:=$(addprefix $(THIS_GENERATED_FILES_DIR), $(PROTO_CXX_SRC_N))
 PROTO_CXX_HDR:=$(addprefix $(THIS_GENERATED_FILES_DIR), $(PROTO_CXX_HDR_N))
+PROTO_GO_SRC_N:=$(PROTO_SRC:.proto=.pb.go)
+PROTO_GO_SRC:=$(addprefix $(GENERATED_FILES_GOPATH)/src/$(PROTO_GO_PACKAGE)/, $(PROTO_GO_SRC_N))
 
 # Objects
 OBJ:=$(addprefix $(THIS_OBJ_DIR),$(PROTO_CXX_SRC_N:.pb.cc=.pb.o) $(C_SRC:.c=.o) $(CXX_SRC:.cpp=.o))
@@ -31,7 +33,7 @@ C_CHK:=$(addprefix $(THIS_OBJ_DIR), $(addsuffix .c-hdr-check, $(C_HDR)))
 CHK_DIRS:=$(addsuffix .,$(sort $(dir $(CXX_CHK)))) $(addsuffix .,$(sort $(dir $(C_CHK))))
 
 OBJ_DIRS:=$(addsuffix .,$(sort $(dir $(OBJ))))
-GENERATED_FILES_DIRS:=$(addsuffix .,$(sort $(dir $(PROTO_CXX_SRC))))
+GENERATED_FILES_DIRS:=$(addsuffix .,$(sort $(dir $(PROTO_CXX_SRC)) $(dir $(PROTO_GO_SRC))))
 
 INCLUDE+=-I$(COMMON_LIB_ROOT) -I$(GENERATED_FILES_COMMON_LIB_ROOT)
 C_INCLUDE+=
@@ -66,6 +68,14 @@ DEFAULT_CXXFLAGS:=-pthread -g3 \
 	-ffunction-sections -fdata-sections
 
 DEFAULT_LDFLAGS:=-pthread -g3 -rdynamic -Wl,--gc-sections
+
+
+DEFAULT_GOFLAGS:=-buildmode=pie -v
+ifeq ($(VERBOSE),1)
+DEFAULT_GOFLAGS:=-x
+endif
+DEFAULT_GOGCFLAGS=-L -dwarflocationlists -dwarf
+DEFAULT_GOLDFLAGS:=
 
 CHECK_HEADERS_CFLAGS:=-Wno-unused-function
 CHECK_HEADERS_CXXFLAGS:=-Wno-unused-function
@@ -125,6 +135,9 @@ CPPFLAGS+=$(DEFAULT_CPPFLAGS)
 CFLAGS+=$(DEFAULT_CFLAGS) $(RH_CFLAGS)
 CXXFLAGS+=$(DEFAULT_CXXFLAGS) $(RH_CXXFLAGS)
 LDFLAGS+=$(DEFAULT_LDFLAGS) $(RH_LDFLAGS)
+GOFLAGS+=$(DEFAULT_GOFLAGS)
+GOGCFLAGS+=$(DEFAULT_GOGCFLAGS)
+GOLDFLAGS+=$(DEFAULT_GOLDFLAGS)
 
 SYSTEM_LIBS:=-ldl -lrt
 OWN_LIBS:=-L$(LIB_DIR) $(addprefix -l,$(TARGET_OWN_LIBS))
@@ -138,13 +151,16 @@ COMMON_LIBS_DEP:=$(addprefix $(LIB_DIR)/libsiodb_common_, $(addsuffix .a, $(TARG
 ifeq ($(DEBUG),1)
 CFLAGS+=-DDEBUG -D_DEBUG -O0
 CXXFLAGS+=-DDEBUG -D_DEBUG -O0
+GOGCFLAGS+=-N -l
 else
+# Release build
 CFLAGS+=-O2 -fno-omit-frame-pointer
 CXXFLAGS+=-O2 -fno-omit-frame-pointer
 ifeq ($(ENABLE_LTO),1)
 CFLAGS+=-flto
 CXXFLAGS+=-flto
 LDFLAGS+=-flto
+GOGCFLAGS+=-spectre all
 endif
 endif
 
@@ -174,6 +190,10 @@ ifdef TARGET_EXE
 MAIN_TARGET:=$(BIN_DIR)/$(TARGET_EXE)
 endif
 
+ifdef TARGET_GO_EXE
+MAIN_TARGET:=$(BIN_DIR)/$(TARGET_GO_EXE)
+endif
+
 ifdef TARGET_SO
 ifdef TARGET_SO_VERSION
 MAIN_TARGET:=$(BIN_DIR)/lib$(TARGET_SO).so.$(TARGET_SO_VERSION)
@@ -190,6 +210,10 @@ ifdef TARGET_COMMON_LIB
 MAIN_TARGET:=$(LIB_DIR)/lib$(TARGET_COMMON_LIB).a
 endif
 
+ifdef TARGET_PROTO_GO_PACKAGE
+SUPPLEMENTARY_TARGETS+=$(GENERATED_FILES_GO_VTARGET)/$(TARGET_PROTO_GO_PACKAGE).pbgopackage
+endif
+
 ifdef TARGET_BIN_FILES
 SUPPLEMENTARY_TARGETS+=$(TARGET_BIN_FILES)
 endif
@@ -201,6 +225,7 @@ endif
 .PRECIOUS: \
 	$(PROTO_CXX_HDR)  \
 	$(PROTO_CXX_SRC)  \
+	$(PROTO_GO_SRC)  \
 	$(OBJ_DIRS)  \
 	$(CHK_DIRS)  \
 	$(GENERATED_FILES_DIRS)  \
@@ -250,37 +275,29 @@ full-clean:
 # http://ismail.badawi.io/blog/2017/03/28/automatic-directory-creation-in-make/
 .SECONDEXPANSION:
 
+
 # Directories
 
-$(OBJ_DIR)/.:
+$(BUILD_CFG_DIR)/.:
 	@echo MKDIR $@
 	$(NOECHO)mkdir -p $@
 
-$(OBJ_DIR)%/.:
-	@echo MKDIR $@
-	$(NOECHO)mkdir -p $@
-
-$(GENERATED_FILES_DIR)/.:
-	@echo MKDIR $@
-	$(NOECHO)mkdir -p $@
-
-$(GENERATED_FILES_DIR)%/.:
-	@echo MKDIR $@
-	$(NOECHO)mkdir -p $@
-
-$(BIN_DIR):
-	@echo MKDIR $@
-	$(NOECHO)mkdir -p $@
-
-$(LIB_DIR):
+$(BUILD_CFG_DIR)%/.:
 	@echo MKDIR $@
 	$(NOECHO)mkdir -p $@
 
 
-# Protobuf compilation
+# Protobuf to C++ compilation
 $(GENERATED_FILES_DIR)/%.pb.cc $(GENERATED_FILES_DIR)/%.pb.h: $(ROOT)/%.proto | $$(@D)/.
 	@echo PROTOC $@
 	$(NOECHO)$(PROTOC) -I$(COMMON_PROTO_DIR) $(PROTOC_INCLUDE) --cpp_out=$(realpath $(dir $@)) $(realpath $<)
+
+# Protobuf to Go compilation
+$(GENERATED_FILES_GOPATH)/src/$(PROTO_GO_PACKAGE)/%.pb.go: $(SRC_DIR)/%.proto | $$(@D)/.
+	@echo PROTOC $@
+	$(NOECHO)$(PROTOC) -I$(COMMON_PROTO_DIR) $(PROTOC_INCLUDE) \
+		--plugin=protoc-gen-go=${HOME}/go/bin/protoc-gen-go \
+		--go_out=$(realpath $(dir $@)) $(realpath $<)
 
 
 # Precompiled headers
@@ -368,7 +385,7 @@ endif
 
 ifdef TARGET_EXE
 
-$(MAIN_TARGET): $(OBJ) $(OWN_LIBS_DEP) $(COMMON_LIBS_DEP) | $(BIN_DIR)
+$(MAIN_TARGET): $(OBJ) $(OWN_LIBS_DEP) $(COMMON_LIBS_DEP) | $(BIN_DIR)/.
 	@echo LD $@
 	-$(NOECHO)rm -f $@.tmp1
 	$(NOECHO)$(LD) -o $@.tmp1 $(LDFLAGS) $(OBJ) $(LIBS)
@@ -384,9 +401,27 @@ $(MAIN_TARGET): $(OBJ) $(OWN_LIBS_DEP) $(COMMON_LIBS_DEP) | $(BIN_DIR)
 endif # TARGET_EXE
 
 
+ifdef TARGET_GO_EXE
+
+$(MAIN_TARGET): $(GO_SRC) | $(BIN_DIR)/.
+	@echo GO $@
+	$(NOECHO)( GOPATH=${HOME}/go:$(GENERATED_FILES_GOPATH) $(GO) build -o $@.tmp1 $(GOFLAGS) \
+		-gcflags="$(GOGCFLAGS)" -ldflags="$(GOLDFLAGS)" )
+	$(NOECHO)objcopy --only-keep-debug $@.tmp1 $@.tmp2
+	$(NOECHO)chmod -x $@.tmp2
+	$(NOECHO)mv -f $@.tmp2 $@.debug
+	-$(NOECHO)rm -f $@
+	$(NOECHO)strip --strip-debug --strip-unneeded $@.tmp1
+	$(NOECHO)objcopy --add-gnu-debuglink=$@.debug $@.tmp1
+	$(NOECHO)mv -f $@.tmp1 $@
+	@echo DONE $@
+
+endif # TAGET_GO_EXE
+
+
 ifdef TARGET_SO
 
-$(MAIN_TARGET): $(OBJ) $(OWN_LIBS_DEP) $(COMMON_LIBS_DEP) | $(BIN_DIR)
+$(MAIN_TARGET): $(OBJ) $(OWN_LIBS_DEP) $(COMMON_LIBS_DEP) | $(BIN_DIR)/.
 	@echo LDSO $@
 	-$(NOECHO)rm -f $@.tmp1
 	$(NOECHO)$(LD) -o $@.tmp1 $(LDFLAGS) $(OBJ) $(LIBS)
@@ -404,7 +439,7 @@ endif # TARGET_SO
 
 ifdef TARGET_LIB
 
-$(MAIN_TARGET): $(OBJ) | $(LIB_DIR)
+$(MAIN_TARGET): $(OBJ) | $(LIB_DIR)/.
 	@echo AR $@
 	-$(NOECHO)rm -f $@
 	$(NOECHO)$(AR) rcs $@ $^
@@ -415,13 +450,22 @@ endif # TARGET_LIB
 
 ifdef TARGET_COMMON_LIB
 
-$(MAIN_TARGET): $(OBJ) | $(LIB_DIR)
+$(MAIN_TARGET): $(OBJ) | $(LIB_DIR)/.
 	@echo AR $@
 	-$(NOECHO)rm -f $@
 	$(NOECHO)$(AR) rcs $@ $^
 	@echo DONE $@
 
 endif # TARGET_COMMON_LIB
+
+
+ifdef TARGET_PROTO_GO_PACKAGE
+
+$(GENERATED_FILES_GO_VTARGET)/$(TARGET_PROTO_GO_PACKAGE).pbgopackage: $(PROTO_GO_SRC) | $$(@D)/.
+	@echo TOUCH $@
+	@touch $@
+
+endif # TARGET_PROTO_GO_PACKAGE
 
 
 # For debug purposes
