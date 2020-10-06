@@ -23,6 +23,6 @@ BIN_FILES:=$(THIS_GENERATED_FILES_DIR)/iomgr_messages.txt
 
 include $(MK)/Main.mk
 
-$(THIS_GENERATED_FILES_DIR)/iomgr_messages.txt: ../lib/messages/iomgr.msg | $$(@D)/.
+$(THIS_GENERATED_FILES_DIR)/iomgr_messages.txt: ../lib/messages/iomgr.msg $(MESSAGE_COMPILER_TOOL) | $$(@D)/.
 	@echo MC $@
 	@$(MESSAGE_COMPILER_TOOL) -T -VM -i $< -o $@

@@ -30,6 +30,6 @@ GO_SRC:=\
 
 include $(MK)/Main.mk
 
-$(VERSION_GO_FILE): ../common/lib/siodb/common/config/SiodbVersion.h
+$(VERSION_GO_FILE): ../common/lib/siodb/common/config/SiodbVersion.h $(GENERATE_VERSION_GO_TOOL)
 	@echo GEN_VERSION_GO $@
 	$(NOECHO)$(GENERATE_VERSION_GO_TOOL) -i $< -o $@

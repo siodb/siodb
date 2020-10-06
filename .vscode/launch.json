@@ -163,7 +163,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=UM.CreateAccessKey"
+                "--gtest_filter=DDL.CreateManyTables"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

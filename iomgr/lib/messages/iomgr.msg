@@ -16,8 +16,8 @@ MSG:2 Error SyntaxError  Syntax error: %1%
 MSG:3 Error IOError  I/O error, message ID %1%. Exact details are available in the Siodb logs.
 MSG:4 Error InternalError  Internal error, message ID %1%. Exact details are available in the Siodb logs.
 MSG:5 Error MessageFormatError  Bad message format: %1%
-MSG:6 Error TooFewParameters    Too few parameters for the message #%1%: expected %2%, but got %3%
-MSG:7 Error TooManyParameters   Too many parameters for the message #%1%: expected %2%, but got %3%
+MSG:6 Error TooFewParameters    Too few parameters for the message #%1%: expected %2%, but received %3%
+MSG:7 Error TooManyParameters   Too many parameters for the message #%1%: expected %2%, but received %3%
 MSG:8 Error ParametersIndexOutOfRange   Parameter index is out of range for the message #%1%: index is %2%, but range is (%3%, %4%)
 MSG:10 Error Feature is not implemented yet
 MSG:11 Error Authentication error: %1%
@@ -191,6 +191,10 @@ MSG Error ConstraintNotSupported2  Constraint type #%4% is not supported
 # INVALID ATTRIBUTES
 MSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%2%'
 
+# OBJECT LIMITS
+MSG Error TooManyUsers      Too many user accounts
+MSG Error TooManyDatabases  Too many databases
+MSG Error TooManyTables     Too many tables for the database %1%
 
 ##########################################
 # REST ERRORS
@@ -251,10 +255,11 @@ MSG Error CannotCreateTableInitializationFlagFile  Can't create initialization s
 MSG Error CannotCreateColumnInitializationFlagFile  Can't create initialization success data file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): %8%
 MSG Error CannotCreateIndexInitializationFlagFile  Can't create initialization success data file '%1%' for the column '%2%'.'%3%'.'%4%' (%5%.%6%.%7%): %8%
 
-MSG Error CannotCreateNewColumnDataBlockFile  Can't create new data block file '%1%' for the column '%2%'.'%3%'.'%4%'.%5% (%6%.%7%.%8%.%5%) : %9%: (%10%) %11%
-MSG Error CannotOpenColumnDataBlockFile       Can't open data block file '%1%' for '%2%'.'%3%'.'%4%'.%5% (%6%.%7%.%8%.%5%)
+MSG Error CannotCreateColumnDataBlockFile  Can't create new data block file '%8%' for the column '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%) : %9%: (%10%) %11%
+MSG Error CannotOpenColumnDataBlockFile       Can't open data block file '%8%' for the column '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%): (%10%) %11%
 MSG Error CannotReadColumnDataBlockFile       Can't read data block file '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%) offset %8% length %9%: (%10%) %11%
 MSG Error CannotWriteColumnDataBlockFile      Can't write data block file '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%) offset %8% %9%: (%10%) %11%
+MSG Error InvalidPositionForColumnDataBlock   Attempt to set invalid position for the data block '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%): offset %8%, while max allowed offset is %9%
 
 MSG Error InvalidDataFileHeaderSize Invalid block data file header size '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%)
 MSG Error InvalidDataFileHeader     Invalid block data header '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%), ver '%8%'
@@ -338,7 +343,7 @@ MSG Error TableDataFolderDoesNotExist       Table '%1%'.'%2%' data folder '%3%' 
 MSG Error ColumnDataFolderDoesNotExist      Column '%1%'.'%2%'.'%3%' data folder '%4%' doesn't exist
 MSG Error IndexDataFolderDoesNotExist       Index %1%'.'%2%'.'%3%' data folder '%4%' doesn't exist
 
-MSG Error kErrorDefaultValueDeserializationFailed  Failed deserialize default value for the constraint '%1%'.'%2%'.'%3%'.'%4%' (%5%.%6%.%7%.%8%)
+MSG Error kErrorDefaultValueDeserializationFailed  Failed to deserialize default value for the constraint '%1%'.'%2%'.'%3%'.'%4%' (%5%.%6%.%7%.%8%)
 
 ##########################################
 # Internal Errors
@@ -351,7 +356,7 @@ MSG Error UserCacheFull      User cache is full
 MSG Error DatabaseCacheFull  Database cache is full
 MSG Error TableCacheFull       Table cache of the database '%1%' is full
 MSG Error ConstraintCacheFull  Constraint cache of the database '%1%' is full
-MSG Error ConstraintDefinitionCacheFull  Constraint definition cache of the table '%1%'.'%2%' is full
+MSG Error ConstraintDefinitionCacheFull  Constraint definition cache of the database '%1%' is full
 
 MSG Error InvalidMasterColumnDataType    Invalid master column data type for the table '%1%'.'%2%' (%3%.%3%)
 MSG Error InvalidMasterColumnRecordSize  Invalid master column record size %6% in the table '%1%'.'%2%' column '%3%' (%4%.%5%.%6%) at address %7%.%8%: %9%

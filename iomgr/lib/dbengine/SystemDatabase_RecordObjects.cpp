@@ -73,6 +73,7 @@ void SystemDatabase::recordDatabase(const Database& database, const TransactionP
     values.at(i++) = database.getName();
     values.at(i++) = database.getCipherId();
     values.at(i++) = database.getDescription();
+    values.at(i++) = database.getMaxTableCount();
     m_sysDatabasesTable->insertRow(std::move(values), tp, database.getId());
 }
 

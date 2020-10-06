@@ -68,7 +68,7 @@ public:
      */
     off_t getRecordOffsetInFile(std::uint64_t recordId) const noexcept
     {
-        return getRecordOffsetInMemory(recordId) + UniqueLinearIndex::kDataFileHeaderSize;
+        return getRecordOffsetInMemory(recordId) + UniqueLinearIndex::kIndexFileHeaderSize;
     }
 
     /**

@@ -124,7 +124,7 @@ void SystemObjectSerializer::serialize(
         if (p != m_buffer.data() + serializedSize) {
             std::ostringstream err;
             err << "object type '" << objectTypeName << "' id=" << obj.m_id
-                << ": expected serialized size " << (serializedSize - 4) << " bytes, but got "
+                << ": expected serialized size " << (serializedSize - 4) << " bytes, but received "
                 << ((p - m_buffer.data()) - 4) << " bytes actually. Memory may be corrupted.";
             throwDatabaseError(IOManagerMessageId::kErrorCannotSerializeSystemObject,
                     m_database.getName(), m_database.getUuid(), err.str());

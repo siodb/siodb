@@ -447,34 +447,33 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
         }
     }
 
-    // Parse user cache capacity
+    // Parse user limit
     {
-        tmpOptions.m_ioManagerOptions.m_userCacheCapacity =
-                config.get<unsigned>(constructOptionPath(kIOManagerOptionUserCacheCapacity),
-                        kDefaultIOManagerUserCacheCapacity);
-        if (tmpOptions.m_ioManagerOptions.m_userCacheCapacity < kMinIOManagerUserCacheCapacity) {
-            throw InvalidConfigurationError("IO Manager user cache capacity is too small");
+        tmpOptions.m_ioManagerOptions.m_maxUsers = config.get<unsigned>(
+                constructOptionPath(kIOManagerOptionMaxUsers), kDefaultIOManagerMaxUsers);
+        if (tmpOptions.m_ioManagerOptions.m_maxUsers < kMinIOManagerMaxUsers) {
+            throw InvalidConfigurationError("IO Manager maximum user number is too small");
         }
     }
 
     // Parse database cache capacity
     {
-        tmpOptions.m_ioManagerOptions.m_databaseCacheCapacity =
-                config.get<unsigned>(constructOptionPath(kIOManagerOptionDatabaseCacheCapacity),
-                        kDefaultIOManagerDatabaseCacheCapacity);
-        if (tmpOptions.m_ioManagerOptions.m_databaseCacheCapacity
-                < kMinIOManagerDatabaseCacheCapacity) {
-            throw InvalidConfigurationError("IO Manager database cache capacity is too small");
+        tmpOptions.m_ioManagerOptions.m_maxDatabases = config.get<unsigned>(
+                constructOptionPath(kIOManagerOptionMaxDatabases), kDefaultIOManagerMaxDatabases);
+        if (tmpOptions.m_ioManagerOptions.m_maxDatabases < kMinIOManagerMaxDatabases) {
+            throw InvalidConfigurationError("IO Manager maximum database number is too small");
         }
     }
 
     // Parse table cache capacity
     {
-        tmpOptions.m_ioManagerOptions.m_tableCacheCapacity =
-                config.get<unsigned>(constructOptionPath(kIOManagerOptionTableCacheCapacity),
-                        kDefaultIOManagerTableCacheCapacity);
-        if (tmpOptions.m_ioManagerOptions.m_tableCacheCapacity < kMinIOManagerTableCacheCapacity) {
-            throw InvalidConfigurationError("IO Manager table cache capacity is too small");
+        tmpOptions.m_ioManagerOptions.m_maxTableCountPerDatabase =
+                config.get<unsigned>(constructOptionPath(kIOManagerOptionMaxTablesPerDatabase),
+                        kDefaultIOManagerMaxTablesPerDatabase);
+        if (tmpOptions.m_ioManagerOptions.m_maxTableCountPerDatabase
+                < kMinIOManagerMaxTablesPerDatabase) {
+            throw InvalidConfigurationError(
+                    "IO Manager maximum number of tables per database is too small");
         }
     }
 

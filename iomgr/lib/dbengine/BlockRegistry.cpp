@@ -11,7 +11,7 @@
 #include "ThrowDatabaseError.h"
 
 // Common project headers
-#include <siodb/common/config/SiodbDefs.h>
+#include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>

@@ -13,7 +13,6 @@
 #include "../UpdateUserTokenParameters.h"
 
 // Common project headers
-#include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/proto/ColumnDataType.pb.h>
 #include <siodb/common/utils/Uuid.h>
 #include <siodb/iomgr/shared/dbengine/ConstraintType.h>
@@ -433,15 +432,19 @@ struct CreateDatabaseRequest : public DBEngineRequest {
     /** 
      * Initializes object of class CreateDatabaseRequest.
      * @param database Database name.
-     * @param temporary Indicates that this is temporary database.
+     * @param isTemporary Indicates that this is temporary database.
+     * @param cipherId Cipher identifier.
+     * @param cipherKeySeed Cipher key seed.
+     * @param maxTableCount Maximum table count.
      */
-    CreateDatabaseRequest(std::string&& database, bool temporary, ConstExpressionPtr&& cipherId,
-            ConstExpressionPtr&& cipherKeySeed) noexcept
+    CreateDatabaseRequest(std::string&& database, bool isTemporary, ConstExpressionPtr&& cipherId,
+            ConstExpressionPtr&& cipherKeySeed, std::uint32_t maxTableCount) noexcept
         : DBEngineRequest(DBEngineRequestType::kCreateDatabase)
         , m_database(database)
-        , m_temporary(temporary)
+        , m_isTemporary(isTemporary)
         , m_cipherId(std::move(cipherId))
         , m_cipherKeySeed(std::move(cipherKeySeed))
+        , m_maxTableCount(maxTableCount)
     {
     }
 
@@ -449,13 +452,16 @@ struct CreateDatabaseRequest : public DBEngineRequest {
     const std::string m_database;
 
     /** Indicates that this is temporary database. */
-    const bool m_temporary;
+    const bool m_isTemporary;
 
     /** Cipher id */
     const ConstExpressionPtr m_cipherId;
 
     /** Cipher key seed */
     const ConstExpressionPtr m_cipherKeySeed;
+
+    /** Maximum number of tables */
+    const std::uint32_t m_maxTableCount;
 };
 
 /** DROP DATABASE request */

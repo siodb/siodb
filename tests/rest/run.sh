@@ -45,10 +45,6 @@ _CheckLogFiles
 export RESTCLI_DEBUG=--debug
 ##export SIOCLI_DEBUG=--debug
 
-_log "INFO" "Creating test objects"
-_RunSqlScript "${SCRIPT_DIR}/create_objects.sql"
-_CheckLogFiles
-
 _log "INFO" "Creating ROOT token"
 _token_file=/tmp/siodbresttest-$(date +%s)-${RANDOM}
 _RunSql "ALTER USER root ADD TOKEN token1" | grep "token:" | cut -d ' ' -f 3 >${_token_file}
@@ -56,14 +52,6 @@ _CheckLogFiles
 root_token=$(cat ${_token_file})
 rm -f ${_token_file}
 echo "ROOT Token: ${root_token}"
-
-_log "INFO" "Creating USER1 token"
-_token_file=/tmp/siodbresttest-$(date +%s)-${RANDOM}
-_RunSql "ALTER USER user1 ADD TOKEN token1" | grep "token:" | cut -d ' ' -f 3 >${_token_file}
-_CheckLogFiles
-user1_token=$(cat ${_token_file})
-rm -f ${_token_file}
-echo "USER1 Token: ${user1_token}"
 
 if [[ "${SHORT_TEST}" == "1" ]]; then
 
@@ -77,6 +65,18 @@ if [[ "${SHORT_TEST}" == "1" ]]; then
 
 else
 
+  _log "INFO" "Creating test objects"
+  _RunSqlScript "${SCRIPT_DIR}/create_objects.sql"
+  _CheckLogFiles
+
+  _log "INFO" "Creating USER1 token"
+  _token_file=/tmp/siodbresttest-$(date +%s)-${RANDOM}
+  _RunSql "ALTER USER user1 ADD TOKEN token1" | grep "token:" | cut -d ' ' -f 3 >${_token_file}
+  _CheckLogFiles
+  user1_token=$(cat ${_token_file})
+  rm -f ${_token_file}
+  echo "USER1 Token: ${user1_token}"
+
   _log "INFO" "Running ROOT tests"
 
   _RunRestRequest1 get db root ${root_token}
@@ -86,6 +86,9 @@ else
   _CheckLogFiles
 
   _RunRestRequest2 get table sys root ${root_token}
+  _CheckLogFiles
+
+  _RunCurlGetTablesRequest sys root ${root_token}
   _CheckLogFiles
 
   _RunCurlGetTablesRequest sys root ${root_token}

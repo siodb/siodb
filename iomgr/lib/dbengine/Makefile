@@ -48,7 +48,7 @@ EXTRA_CXX_DEPS:= $(MESSAGES_HDR) $(ANTLR_GENERATED_CXX_HDR)
 
 include $(MK)/Main.mk
 
-$(MESSAGES_HDR): ../messages/iomgr.msg | $$(@D)/.
+$(MESSAGES_HDR): ../messages/iomgr.msg $(MESSAGE_COMPILER_TOOL) | $$(@D)/.
 	@echo MC $@
 	$(NOECHO)$(MESSAGE_COMPILER_TOOL) -H -b int -n siodb.iomgr -e IOManagerMessageId -i $< -o $@
 
