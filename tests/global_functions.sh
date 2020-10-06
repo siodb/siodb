@@ -4,12 +4,48 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-# Uncomment for debugging this script
-# set -x
-
+# --------------------------------------------------------------
+# set
+# --------------------------------------------------------------
+if [ "${SIOTEST_TRACE}" == "1" ]; then
+set -x
+fi
 set -e
+
+
+# --------------------------------------------------------------
+# External Parameters
+# --------------------------------------------------------------
+if [[ -z "${SIODB_BIN}" ]]; then
+    current_directory="$(dirname "$0")"
+    SIODB_BIN="${current_directory}/build/debug/bin"
+fi
+if [[ -z "${SIODB_INSTANCE}" ]]; then
+    SIODB_INSTANCE=siodb
+fi
+
+
+# --------------------------------------------------------------
+# Derive parameters
+# --------------------------------------------------------------
+DATA_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config | egrep '^data_dir' \
+    | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
+LOG_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config  | egrep '^log.file.destination' \
+    | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
+SCRIPT=$(realpath $0)
+SCRIPT_DIR=$(dirname $SCRIPT)
+startup_timeout=15
+
+
+# --------------------------------------------------------------
+# Trapping
+# --------------------------------------------------------------
 trap _testfails ERR
 
+
+# --------------------------------------------------------------
+# Global functions
+# --------------------------------------------------------------
 function _testfails {
   _killSiodb
 }
@@ -20,15 +56,6 @@ function _killSiodb {
   fi
 }
 
-
-## Parameters
-DATA_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config | egrep '^data_dir' \
-    | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
-LOG_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config  | egrep '^log.file.destination' \
-    | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
-SCRIPT=$(realpath $0)
-SCRIPT_DIR=$(dirname $SCRIPT)
-startup_timeout=15
 
 function _Prepare {
   _log "INFO" "Cleanup traces of previous default instance"
@@ -126,77 +153,3 @@ function _RunSql {
   ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin siodb -u root \
     -i ${SCRIPT_DIR}/../share/private_key -c ''"$1"''
 }
-
-function _TestExternalAbort {
-  _log "INFO" "Testing an external abort $1"
-  pkill -9 siodb
-}
-
-## Program
-
-if [[ -z "${SIODB_BIN}" ]]; then
-  if [ $# -ne 1 ]; then
-    _log "ERROR" "Please, indicate the path to Siodb bin directory as a parameter 1."
-  else
-    SIODB_BIN="$1"
-  fi
-fi
-
-if [[ "${SIODB_BIN}" == "debug" ]]; then
-  SIODB_BIN=build/debug/bin
-  SHORT_TEST=0
-elif [[ "${SIODB_BIN}" == "release" ]]; then
-  SIODB_BIN=build/release/bin
-  SHORT_TEST=0
-elif [[ "${SIODB_BIN}" == "sdebug" ]]; then
-  SIODB_BIN=build/debug/bin
-  SHORT_TEST=1
-elif [[ "${SIODB_BIN}" == "srelease" ]]; then
-  SIODB_BIN=build/release/bin
-  SHORT_TEST=1
-fi
-
-if [[ ! -d "${SIODB_BIN}" ]]; then
-  _log "ERROR" "Invalid Siodb binary directory."
-fi
-
-_log "INFO" "Tests start"
-_Prepare
-_StartSiodb
-_CheckLogFiles
-
-##export SIOCLI_DEBUG=--debug
-
-if [[ "${SHORT_TEST}" == "1" ]]; then
-
-  _RunSql "SELECT * FROM SYS.SYS_TABLES"
-  _CheckLogFiles
-
-  _RunSql "SELECT * FROM SYS.SYS_DATABASES"
-  _CheckLogFiles
-
-else
-
-  _RunSqlScript "${SCRIPT_DIR}/query_sys_tables.sql"
-  _CheckLogFiles
-
-  _RunSqlScript "${SCRIPT_DIR}/ddl_database.sql"
-  _CheckLogFiles
-
-  _RunSqlScript "${SCRIPT_DIR}/ddl_user.sql"
-  _CheckLogFiles
-
-  _RunSqlScript "${SCRIPT_DIR}/ddl_general.sql"
-  _CheckLogFiles
-
-  _RunSqlScript "${SCRIPT_DIR}/dml_general.sql"
-  _CheckLogFiles
-
-  _RunSqlScript "${SCRIPT_DIR}/dml_datetime.sql"
-  _CheckLogFiles
-
-fi
-
-_StopSiodb
-_CheckLogFiles
-_log "INFO" "All tests passed"

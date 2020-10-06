@@ -22,9 +22,9 @@ function _killSiodb {
 
 
 ## Parameters
-DATA_DIR=$(cat /etc/siodb/instances/siodb/config | egrep '^data_dir' \
+DATA_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config | egrep '^data_dir' \
     | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
-LOG_DIR=$(cat /etc/siodb/instances/siodb/config  | egrep '^log.file.destination' \
+LOG_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config  | egrep '^log.file.destination' \
     | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
 SCRIPT=$(realpath $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
@@ -33,7 +33,7 @@ startup_timeout=15
 function _Prepare {
   _log "INFO" "Cleanup traces of previous default instance"
 
-  if [ ! -f "/etc/siodb/instances/siodb/config" ]; then
+  if [ ! -f "/etc/siodb/instances/${SIODB_INSTANCE}/config" ]; then
     _log "ERROR" "Configuration file not found."
   fi
 
@@ -61,8 +61,8 @@ function _Prepare {
   sleep 5
 
   _log "INFO" "Preparing default Siodb instance"
-  dd if=/dev/urandom of=/etc/siodb/instances/siodb/master_key bs=16 count=1
-  cp -f ${SCRIPT_DIR}/../share/public_key /etc/siodb/instances/siodb/initial_access_key
+  dd if=/dev/urandom of=/etc/siodb/instances/${SIODB_INSTANCE}/master_key bs=16 count=1
+  cp -f ${SCRIPT_DIR}/../share/public_key /etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key
 }
 
 function _ShowSiodbProcesses {
@@ -73,7 +73,7 @@ function _ShowSiodbProcesses {
 
 function _StartSiodb {
   _log "INFO" "Starting default Siodb instance"
-  ${SIODB_BIN}/siodb --instance siodb --daemon
+  ${SIODB_BIN}/siodb --instance ${SIODB_INSTANCE} --daemon
   sleep ${startup_timeout}
   _ShowSiodbProcesses
   sleep 3
@@ -82,7 +82,7 @@ function _StartSiodb {
 function _StopSiodb {
   _log "INFO" "Stopping Siodb process on default instance"
   _ShowSiodbProcesses
-  SIODB_PROCESS_ID=$(ps -ef | grep 'siodb --instance siodb --daemon' | grep -v grep \
+  SIODB_PROCESS_ID=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" | grep -v grep \
     | awk '{print $2}')
   if [[ -z "${SIODB_PROCESS_ID}" ]]; then
     echo "Siodb is already not running."
@@ -222,7 +222,7 @@ else
   _log "INFO" "Creating test objects"
   _RunSqlScript "${SCRIPT_DIR}/create_objects.sql"
   _CheckLogFiles
-  
+
   _log "INFO" "Creating ROOT token"
   _token_file=/tmp/siodbresttest-$(date +%s)-${RANDOM}
   _RunSql "ALTER USER root ADD TOKEN token1" | grep "token:" | cut -d ' ' -f 3 >${_token_file}
