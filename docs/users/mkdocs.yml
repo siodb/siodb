@@ -31,6 +31,7 @@ nav:
     - Administration:
         - General: administration.md
         - Parameters: parameters.md
+        - Backup and restore: backup_restore.md
         - User access: users.md
         - Encryption: encryption.md
         - System tables: system_tables.md
