@@ -165,15 +165,17 @@ function _RunRestRequest7d {
 
 function _RunCurlGetDatabasesRequest {
   _log "INFO" "Executing CurlGetDatabasesRequest"
-  auth=$(echo -n "$1:$2" | base64)
+  auth=$(echo "$1:$2" | base64 -w0)
   _log "DEBUG" "auth=${auth}"
   curl -v -H "Authorization: Basic ${auth}" http://localhost:50080/databases
+  #echo "Running: curl -v http://$1:$2@localhost:50080/databases"
+  #curl -v http://$1:$2@localhost:50080/databases
   echo ""
 }
 
 function _RunCurlGetTablesRequest {
   _log "INFO" "Executing CurlGetTablesRequest: $1"
-  auth=$(echo -n "$2:$3" | base64)
+  auth=$(echo "$2:$3" | base64 -w0)
   _log "DEBUG" "auth=${auth}"
   curl -v -H "Authorization: Basic ${auth}" http://localhost:50080/databases/$1/tables
   echo ""

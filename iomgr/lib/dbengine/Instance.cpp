@@ -771,10 +771,11 @@ BinaryValue Instance::loadMasterCipherKey(const std::string& keyPath) const
                 key.size(), st.st_size);
     }
 
-    if (::readExact(fd.getFD(), key.data(), key.size(), kIgnoreSignals) != key.size()) {
+    const auto n = ::readExact(fd.getFD(), key.data(), key.size(), kIgnoreSignals);
+    if (n != key.size()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kFatalCannotReadMasterEncryptionKey, keyPath,
-                errorCode, std::strerror(errorCode));
+                errorCode, std::strerror(errorCode), key.size(), n);
     }
 
     return key;

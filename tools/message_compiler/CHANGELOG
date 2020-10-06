@@ -1,6 +1,11 @@
 Siodb Message Compile Change History
 ======================================
 
+Version 0.2.0 Oct 07 2020
+============================
+- PMSG command
+- Multiline messages
+
 Version 0.1.6 Oct 05 2020
 ============================
 - Fixed temporary files renaming.

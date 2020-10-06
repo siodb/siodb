@@ -470,7 +470,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             default: throw std::logic_error("invalid data type");
         }  // switch
     } catch (VariantTypeCastError& ex) {
-        throwDatabaseError(IOManagerMessageId::kErrorIncompatibleDataType, getDatabaseName(),
+        throwDatabaseError(IOManagerMessageId::kErrorIncompatibleDataType1, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id,
                 static_cast<int>(ex.getDestValueType()), static_cast<int>(ex.getSourceValueType()));
     } catch (std::logic_error&) {
@@ -886,11 +886,12 @@ int Column::openTridCountersFile()
                 std::strerror(errorCode));
     }
     TridCounters data(0);
-    if (readExact(fd.getFD(), &data, sizeof(data), kIgnoreSignals) != sizeof(data)) {
+    const auto n = ::readExact(fd.getFD(), &data, sizeof(data), kIgnoreSignals);
+    if (n != sizeof(data)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadTridCounterFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
-                std::strerror(errorCode));
+                std::strerror(errorCode), sizeof(data), n);
     }
     if (data.m_marker != TridCounters::kMarker) {
         if (boost::endian::endian_reverse(data.m_marker) != TridCounters::kMarker) {
@@ -902,7 +903,7 @@ int Column::openTridCountersFile()
                 tridCounterFilePath + kTridCounterMigrationFileExt;
         if (::rename(tridCounterFilePath.c_str(), tridCounterMigrationFilePath.c_str())) {
             const auto errorCode = errno;
-            throwDatabaseError(IOManagerMessageId::kErrorCannotReadTridCounterFile,
+            throwDatabaseError(IOManagerMessageId::kErrorCannotRenameTridCounterFile,
                     getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(),
                     m_table.getId(), m_id, errorCode, std::strerror(errorCode));
         }
@@ -911,7 +912,7 @@ int Column::openTridCountersFile()
         writeFullTridCounters(fd.getFD(), data);
         if (::rename(tridCounterMigrationFilePath.c_str(), tridCounterFilePath.c_str())) {
             const auto errorCode = errno;
-            throwDatabaseError(IOManagerMessageId::kErrorCannotReadTridCounterFile,
+            throwDatabaseError(IOManagerMessageId::kErrorCannotRenameTridCounterFile,
                     getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(),
                     m_table.getId(), m_id, errorCode, std::strerror(errorCode));
         }
@@ -940,11 +941,12 @@ void Column::loadMasterColumnMainIndex()
 
     // Read data
     std::uint64_t indexId0 = 0;
-    if (readExact(fd.getFD(), &indexId0, sizeof(indexId0), kIgnoreSignals) != sizeof(indexId0)) {
+    const auto n = ::readExact(fd.getFD(), &indexId0, sizeof(indexId0), kIgnoreSignals);
+    if (n != sizeof(indexId0)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadMainIndexIdFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
-                std::strerror(errorCode));
+                std::strerror(errorCode), sizeof(indexId0), n);
     }
     fd.reset();
 
@@ -1493,11 +1495,12 @@ void Column::createMasterColumnMainIndex()
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
                 std::strerror(errorCode));
     }
-    if (writeExact(fd.getFD(), &indexId, sizeof(indexId), kIgnoreSignals) != sizeof(indexId)) {
+    const auto n = ::writeExact(fd.getFD(), &indexId, sizeof(indexId), kIgnoreSignals);
+    if (n != sizeof(indexId)) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteMainIndexIdFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
-                std::strerror(errorCode));
+                std::strerror(errorCode), sizeof(indexId), n);
     }
 }
 
@@ -1510,11 +1513,12 @@ void Column::createMasterColumnConstraints()
 
 void Column::writeFullTridCounters(int fd, const TridCounters& data)
 {
-    if (::pwriteExact(fd, &data, sizeof(data), 0, kIgnoreSignals) != TridCounters::kDataSize) {
+    const auto n = ::pwriteExact(fd, &data, sizeof(data), 0, kIgnoreSignals);
+    if (n != TridCounters::kDataSize) {
         const auto errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteTridCounterFile, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id, errorCode,
-                std::strerror(errorCode));
+                std::strerror(errorCode), sizeof(data), n);
     }
 }
 

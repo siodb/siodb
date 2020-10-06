@@ -19,13 +19,14 @@ FileData::FileData(UniqueLinearIndex& index, std::uint64_t fileId, io::FilePtr&&
     , m_file(std::move(file))
     , m_data(m_index.getDataFileSize() - UniqueLinearIndex::kIndexFileHeaderSize)
 {
-    if (m_file->read(m_data.data(), m_data.size(), UniqueLinearIndex::kIndexFileHeaderSize)
-            != m_data.size()) {
+    const auto n =
+            m_file->read(m_data.data(), m_data.size(), UniqueLinearIndex::kIndexFileHeaderSize);
+    if (n != m_data.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadIndexFile,
                 m_index.makeIndexFilePath(m_fileId), m_index.getDatabaseName(),
                 m_index.getTableName(), m_index.getName(), m_index.getDatabaseUuid(),
                 m_index.getTableId(), m_index.getId(), UniqueLinearIndex::kIndexFileHeaderSize,
-                m_data.size(), m_file->getLastError(), std::strerror(m_file->getLastError()));
+                m_data.size(), m_file->getLastError(), std::strerror(m_file->getLastError()), n);
     }
 }
 
@@ -42,12 +43,13 @@ void FileData::update(std::size_t pos, const void* src, std::size_t size)
         }
         std::memcpy(addr, src, size);
         const auto offsetInFile = pos + UniqueLinearIndex::kIndexFileHeaderSize;
-        if (m_file->write(addr, size, offsetInFile) != size) {
+        const auto n = m_file->write(addr, size, offsetInFile);
+        if (n != size) {
             throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile,
                     m_index.makeIndexFilePath(m_fileId), m_index.getDatabaseName(),
                     m_index.getTableName(), m_index.getName(), m_index.getDatabaseUuid(),
                     m_index.getTableId(), m_index.getId(), offsetInFile, size,
-                    m_file->getLastError(), std::strerror(m_file->getLastError()));
+                    m_file->getLastError(), std::strerror(m_file->getLastError()), n);
         }
     }
 }

@@ -1,3 +1,7 @@
 #!/bin/bash
 
-./message_compiler -T -VM -i ../../iomgr/lib/messages/iomgr.msg -o iomgr.txt
+../../build/debug/bin/message_compiler -T -VM -i test.msg -o test.txt
+res=$?
+if [[ $res != 0 ]]; then exit $res; fi
+
+cat test.txt

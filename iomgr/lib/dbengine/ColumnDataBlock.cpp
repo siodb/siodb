@@ -106,12 +106,15 @@ void ColumnDataBlock::readData(void* data, std::size_t length, std::uint32_t pos
         throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
                 pos, length, -1,
                 "invalid offset or length, sum exceeds "
-                        + std::to_string(m_column.getDataBlockDataAreaSize() - 1));
+                        + std::to_string(m_column.getDataBlockDataAreaSize() - 1),
+                0);
     }
     const auto readOffset = pos + m_header.m_dataAreaOffset;
-    if (m_file->read(static_cast<std::uint8_t*>(data), length, readOffset) != length) {
+    const auto n = m_file->read(static_cast<std::uint8_t*>(data), length, readOffset);
+    if (n != length) {
         throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
-                readOffset, length, m_file->getLastError(), std::strerror(m_file->getLastError()));
+                readOffset, length, m_file->getLastError(), std::strerror(m_file->getLastError()),
+                n);
     }
 }
 
@@ -121,12 +124,15 @@ void ColumnDataBlock::writeData(const void* data, std::size_t length, std::uint3
         throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
                 pos, length, -1,
                 "invalid offset or length, sum exceeds "
-                        + std::to_string(m_column.getDataBlockDataAreaSize() - 1));
+                        + std::to_string(m_column.getDataBlockDataAreaSize() - 1),
+                0);
     }
     const auto writeOffset = pos + m_header.m_dataAreaOffset;
-    if (m_file->write(static_cast<const std::uint8_t*>(data), length, writeOffset) != length) {
+    const auto n = m_file->write(static_cast<const std::uint8_t*>(data), length, writeOffset);
+    if (n != length) {
         throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
-                writeOffset, length, m_file->getLastError(), std::strerror(m_file->getLastError()));
+                writeOffset, length, m_file->getLastError(), std::strerror(m_file->getLastError()),
+                n);
     }
     m_dataModified = true;
 }
@@ -165,10 +171,11 @@ void ColumnDataBlock::computeDigest(const ColumnDataBlockHeader::Digest& prevBlo
     ::SHA256_Update(&ctx, headerData, p - headerData);
     if (dataLength > 0) {
         std::vector<std::uint8_t> buffer(dataLength);
-        if (m_file->read(buffer.data(), dataLength, m_header.m_dataAreaOffset) != dataLength) {
+        const auto n = m_file->read(buffer.data(), dataLength, m_header.m_dataAreaOffset);
+        if (n != dataLength) {
             throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
                     m_header.m_dataAreaOffset, dataLength, m_file->getLastError(),
-                    std::strerror(m_file->getLastError()));
+                    std::strerror(m_file->getLastError()), n);
         }
         ::SHA256_Update(&ctx, buffer.data(), dataLength);
     }
@@ -209,18 +216,19 @@ io::FilePtr ColumnDataBlock::createDataFile() const
             s_dataFileHeaderProto.size() - ColumnDataBlockHeader::kSerializedSize;
     std::uint8_t buffer[ColumnDataBlockHeader::kSerializedSize];
     m_header.serialize(buffer);
-    if (file->write(buffer, sizeof(buffer), 0) != sizeof(buffer)) {
-        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotCreateColumnDataBlockFile,
-                m_dataFilePath, "Can't write header part 1", file->getLastError(),
-                std::strerror(file->getLastError()));
+    auto n = file->write(buffer, sizeof(buffer), 0);
+    if (n != sizeof(buffer)) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
+                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
+                file->getLastError(), sizeof(buffer), std::strerror(file->getLastError()), n);
     }
 
     // Write rest of header
-    if (file->write(s_dataFileHeaderProto.data(), remainingHeaderSize, sizeof(buffer))
-            != remainingHeaderSize) {
-        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotCreateColumnDataBlockFile,
-                m_dataFilePath, "Can't write header part 2", file->getLastError(),
-                std::strerror(file->getLastError()));
+    n = file->write(s_dataFileHeaderProto.data(), remainingHeaderSize, sizeof(buffer));
+    if (n != remainingHeaderSize) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
+                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), sizeof(buffer),
+                remainingHeaderSize, file->getLastError(), std::strerror(file->getLastError()), n);
     }
 
     if (tmpFilePath.empty()) {
@@ -269,12 +277,10 @@ void ColumnDataBlock::loadHeader()
 {
     // Read header
     std::uint8_t buffer[ColumnDataBlockHeader::kSerializedSize];
-    auto readBytes = m_file->read(buffer, sizeof(buffer), 0);
-    if (readBytes == 0) {
+    const auto n = m_file->read(buffer, sizeof(buffer), 0);
+    if (n != sizeof(buffer)) {
         throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile, 0,
-                sizeof(buffer), m_file->getLastError(), std::strerror(m_file->getLastError()));
-    } else if (readBytes != sizeof(buffer)) {
-        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorInvalidDataFileHeaderSize);
+                sizeof(buffer), m_file->getLastError(), std::strerror(m_file->getLastError()), n);
     }
 
     ColumnDataBlockHeader header;
@@ -294,9 +300,10 @@ void ColumnDataBlock::writeHeader() const
 {
     uint8_t header[ColumnDataBlockHeader::kSerializedSize];
     m_header.serialize(header);
-    if (m_file->write(header, sizeof(header), 0) != sizeof(header)) {
+    const auto n = m_file->write(header, sizeof(header), 0);
+    if (n != sizeof(header)) {
         throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile, 0,
-                sizeof(header), m_file->getLastError(), std::strerror(m_file->getLastError()));
+                sizeof(header), m_file->getLastError(), std::strerror(m_file->getLastError()), n);
     }
     m_headerModified = false;
 }

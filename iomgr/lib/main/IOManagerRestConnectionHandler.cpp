@@ -62,11 +62,13 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
             std::uint32_t userId;
             try {
                 const auto userName = boost::to_upper_copy(requestMsg.user_name());
+                //DBG_LOG_DEBUG(m_logContext << "Authenticating user " << userName << " via token '"
+                //                           << requestMsg.token() << "'");
                 userId = m_requestDispatcher.getInstance().authenticateUser(
                         userName, requestMsg.token());
             } catch (dbengine::UserVisibleDatabaseError& ex) {
-                LOG_ERROR << "Authentication error: " << '[' << ex.getErrorCode() << "] "
-                          << ex.what();
+                LOG_ERROR << m_logContext << "Authentication error: " << '[' << ex.getErrorCode()
+                          << "] " << ex.what();
                 LOG_DEBUG << m_logContext << "Sending authentication error";
                 sendErrorReponse(requestMsg.request_id(), ex.getErrorCode(), ex.what());
                 LOG_DEBUG << m_logContext << "Sent request parse error";

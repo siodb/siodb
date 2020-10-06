@@ -34,7 +34,6 @@ Table::Table(Database& database, TableType type, std::string&& name, std::uint64
               utils::constructPath(database.getDataDir(), kTableDataDirPrefix, m_id), true))
     , m_columnSetCache(kColumnSetCacheCapacity)
     , m_currentColumnSet(createColumnSetUnlocked())
-    , m_constraintCache(*this, kConstraintCacheCapacity)
     , m_firstUserTrid(firstUserTrid)
 {
     createMasterColumn(firstUserTrid);
@@ -52,7 +51,6 @@ Table::Table(Database& database, const TableRecord& tableRecord)
               utils::constructPath(database.getDataDir(), kTableDataDirPrefix, m_id), false))
     , m_columnSetCache(kColumnSetCacheCapacity)
     , m_currentColumnSet(findColumnSetChecked(tableRecord.m_currentColumnSetId))
-    , m_constraintCache(*this, kConstraintCacheCapacity)
     , m_firstUserTrid(tableRecord.m_firstUserTrid)
 {
     // Populate columns from the current column set
@@ -160,15 +158,15 @@ ConstraintPtr Table::createConstraint(std::string&& name,
     std::lock_guard lock(m_mutex);
     auto constraint = m_database.createConstraint(
             *this, column, std::move(name), constraintDefinition, std::move(description));
-    m_constraintCache.emplace(constraint->getId(), constraint);
+    m_constraints.emplace(constraint->getId(), constraint);
     return constraint;
 }
 
 ConstraintPtr Table::findConstraintChecked(Column* column, std::uint64_t constraintId)
 {
     std::lock_guard lock(m_mutex);
-    const auto cachedConstraint = m_constraintCache.get(constraintId);
-    if (cachedConstraint) return *cachedConstraint;
+    const auto it = m_constraints.find(constraintId);
+    if (it != m_constraints.end()) return it->second;
     return createConstraintUnlocked(column, m_database.findConstraintRecord(constraintId));
 }
 
@@ -566,7 +564,7 @@ ConstraintPtr Table::createConstraintUnlocked(Column* column, std::string&& name
 {
     auto constraint = m_database.createConstraint(
             *this, column, std::move(name), constraintDefinition, std::move(description));
-    m_constraintCache.emplace(constraint->getId(), constraint);
+    m_constraints.emplace(constraint->getId(), constraint);
     m_database.registerConstraint(*constraint);
     return constraint;
 }
@@ -575,7 +573,7 @@ ConstraintPtr Table::createConstraintUnlocked(
         Column* column, const ConstraintRecord& constraintRecord)
 {
     auto constraint = m_database.createConstraint(*this, column, constraintRecord);
-    m_constraintCache.emplace(constraint->getId(), constraint);
+    m_constraints.emplace(constraint->getId(), constraint);
     m_database.registerConstraint(*constraint);
     return constraint;
 }

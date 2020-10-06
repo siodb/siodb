@@ -94,6 +94,9 @@ else
   _RunCurlGetTablesRequest sys root ${root_token}
   _CheckLogFiles
 
+  _RunCurlGetTablesRequest sys root ${root_token}
+  _CheckLogFiles
+
   _RunRestRequest2 get rows sys.sys_tables root ${root_token}
   _CheckLogFiles
 

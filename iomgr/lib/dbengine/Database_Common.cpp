@@ -704,10 +704,11 @@ BinaryValue Database::loadCipherKey() const
 
     // Read cipher key file
     BinaryValue encryptedKey(fileSize);
-    if (::readExact(fd.getFD(), encryptedKey.data(), fileSize, kIgnoreSignals) != fileSize) {
+    const auto n = ::readExact(fd.getFD(), encryptedKey.data(), fileSize, kIgnoreSignals);
+    if (n != fileSize) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadDatabaseCipherKeyFile, m_name,
-                m_uuid, errorCode, std::strerror(errorCode));
+                m_uuid, errorCode, std::strerror(errorCode), fileSize, n);
     }
 
     // Decrypt and deserialize key
@@ -770,11 +771,12 @@ void Database::saveCurrentCipherKey() const
             m_instance.encryptWithMasterEncryption(serializedKey.data(), serializedKey.size());
 
     // Write encrypted key to file
-    const auto n = encryptedKey.size();
-    if (::writeExact(fd.getFD(), encryptedKey.data(), n, kIgnoreSignals) != n) {
+    const auto n =
+            ::writeExact(fd.getFD(), encryptedKey.data(), encryptedKey.size(), kIgnoreSignals);
+    if (n != encryptedKey.size()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteDatabaseCipherKeyFile, m_name,
-                m_uuid, errorCode, std::strerror(errorCode));
+                m_uuid, errorCode, std::strerror(errorCode), encryptedKey.size(), n);
     }
 }
 
@@ -798,11 +800,12 @@ std::unique_ptr<MemoryMappedFile> Database::createMetadataFile() const
 
     // Write initial metadata
     const DatabaseMetadata initialMetadata(User::kSuperUserId);
-    if (::writeExact(fd.getFD(), &initialMetadata, sizeof(initialMetadata), kIgnoreSignals)
-            != sizeof(initialMetadata)) {
+    const auto n =
+            ::writeExact(fd.getFD(), &initialMetadata, sizeof(initialMetadata), kIgnoreSignals);
+    if (n != sizeof(initialMetadata)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteDatabaseMetadataFile, m_name,
-                m_uuid, errorCode, std::strerror(errorCode));
+                m_uuid, errorCode, std::strerror(errorCode), sizeof(initialMetadata), n);
     }
 
     fd.reset();
