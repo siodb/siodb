@@ -37,12 +37,14 @@ LOG_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config  | egrep '^log.file.
     | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
 SCRIPT=$(realpath $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
-instanceStartupTimeout=4
+instanceStartupTimeout=45
 
 # --------------------------------------------------------------
 # Trapping
 # --------------------------------------------------------------
-trap _testfails ERR
+if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
+  trap _testfails ERR
+fi
 
 
 # --------------------------------------------------------------
@@ -94,7 +96,7 @@ function _Prepare {
 
 function _ShowSiodbProcesses {
   echo "===== Siodb Processes ====="
-  ps -aux | grep siodb
+  pgrep -a siodb
   echo "==========================="
 }
 
@@ -113,6 +115,7 @@ function _StartSiodb {
     sleep 1
   done
   _ShowSiodbProcesses
+  _CheckLogFiles
 }
 
 function _StopSiodb {
@@ -125,13 +128,26 @@ function _StopSiodb {
       echo "Siodb is already not running."
     else
       kill -SIGINT ${SIODB_PROCESS_ID}
-      sleep 10
+      counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" | grep -v grep \
+        | awk '{print $2}' | wc -l | bc)
+      counterTimeout=0
+      while [[ $counterSiodbProcesses -ne 0 ]]; do
+        _log "INFO" "Waiting for instance to be stopped..."
+        counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" | grep -v grep \
+        | awk '{print $2}' | wc -l | bc)
+        if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
+          _log "ERROR" "Timeout (${instanceStartupTimeout} seconds) reached while stopping the instance..."
+        fi
+        counterTimeout=$((counterTimeout+1))
+        sleep 1
+      done
     fi
     echo "After stopping:"
     _ShowSiodbProcesses
   else
-    _log "INFO" "Siodb process kept opened"
+    _log "INFO" "Siodb process kept in running state"
   fi
+  _CheckLogFiles
 }
 
 function _CheckLogFiles {
@@ -150,7 +166,9 @@ function _CheckLogFiles {
 function _log {
   echo "## `date "+%Y-%m-%dT%H:%M:%S"` | $1 | $2"
   if [[ "$1" == 'ERROR' ]]; then
-    _testfails
+    if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
+      _testfails
+    fi
     exit 1
   fi
 }
@@ -159,10 +177,26 @@ function _RunSqlScript {
   _log "INFO" "Executing SQL script $1"
   ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
     -i ${SCRIPT_DIR}/../share/private_key < $1
+  _CheckLogFiles
 }
 
 function _RunSql {
   _log "INFO" "Executing SQL: $1"
   ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
     -i ${SCRIPT_DIR}/../share/private_key <<< ''"$1"''
+  _CheckLogFiles
+}
+
+function _RunSqlAndValidateOutput {
+  _log "INFO" "Executing SQL: $1"
+  SIOCLI_OUTPUT=$(${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
+    -i ${SCRIPT_DIR}/../share/private_key <<< ''"${1}"'')
+  # Keep this operation in 2 variables to capture the output of the siocli execution in set -x mode
+  SIOCLI_OUTPUT=$(echo "${SIOCLI_OUTPUT}" | sed -n ${2}p | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+  if [[ "${SIOCLI_OUTPUT}" != "${3}" ]]; then
+    _log "ERROR" "Siocli output does not match expected output: OUTPUT=>${SIOCLI_OUTPUT}<= EXPECTED=>${3}<="
+  else
+    _log "INFO" "Siocli output matched expected output: OUTPUT=>${SIOCLI_OUTPUT}<= EXPECTED=>${3}<="
+  fi
+  _CheckLogFiles
 }
