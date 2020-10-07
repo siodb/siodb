@@ -149,14 +149,14 @@ function _StopSiodb {
 }
 
 function _CheckLogFiles {
-  # $1: exclude this pattern
+  # $1: exclude these patterns because expected
   _log "INFO" "Checking for errors in the log files"
-  ERROR_COUNT=$(cat ${LOG_DIR}/* | grep error | grep -v "${1}" | wc -l)
+  ERROR_COUNT=$(cat ${LOG_DIR}/* | grep error | egrep -v "${1}" | wc -l)
   if [ "${ERROR_COUNT}" == "0" ]; then
     _log "INFO" "No error detected the in log files"
   else
     echo "## ================================================="
-    echo "`cat ${LOG_DIR}/* | grep -n error | grep -v "${1}"`"
+    echo "`cat ${LOG_DIR}/* | grep -n error | egrep -v "${1}"`"
     echo "## ================================================="
     _log "ERROR" "I found an issue in the log files"
   fi
