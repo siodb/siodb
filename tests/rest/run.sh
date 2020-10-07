@@ -68,17 +68,6 @@ else
   _log "INFO" "Creating test objects"
   _RunSqlScript "${SCRIPT_DIR}/create_objects.sql"
   _CheckLogFiles
-<<<<<<< HEAD
-
-  _log "INFO" "Creating ROOT token"
-  _token_file=/tmp/siodbresttest-$(date +%s)-${RANDOM}
-  _RunSql "ALTER USER root ADD TOKEN token1" | grep "token:" | cut -d ' ' -f 3 >${_token_file}
-  _CheckLogFiles
-  root_token=$(cat ${_token_file})
-  rm -f ${_token_file}
-  echo "ROOT Token: ${root_token}"
-=======
->>>>>>> upstream/master
 
   _log "INFO" "Creating USER1 token"
   _token_file=/tmp/siodbresttest-$(date +%s)-${RANDOM}

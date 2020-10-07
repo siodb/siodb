@@ -5,8 +5,7 @@
 # in the LICENSE file.
 
 ## Global
-current_directory="$(dirname "$0")"
-. ${current_directory}/../global_functions.sh
+source $(dirname "$0")/../share/CommonFunctions.sh
 
 ## Specific test functions
 
