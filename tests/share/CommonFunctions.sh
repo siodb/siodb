@@ -37,7 +37,7 @@ LOG_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config  | egrep '^log.file.
     | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
 SCRIPT=$(realpath $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
-instanceStartupTimeout=45
+instanceStartupTimeout=4
 
 # --------------------------------------------------------------
 # Trapping
@@ -107,7 +107,7 @@ function _StartSiodb {
     _log "INFO" "Waiting for instance to be ready..."
     numberEntriesInLog=$(egrep 'Listening for (TCP|UNIX) connections' ${LOG_DIR}/siodb_*.log | wc -l | bc)
     if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
-      break
+    _log "ERROR" "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
     fi
     counterTimeout=$((counterTimeout+1))
     sleep 1
