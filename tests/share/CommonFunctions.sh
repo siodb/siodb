@@ -115,7 +115,6 @@ function _StartSiodb {
     sleep 1
   done
   _ShowSiodbProcesses
-  _CheckLogFiles
 }
 
 function _StopSiodb {
@@ -147,17 +146,17 @@ function _StopSiodb {
   else
     _log "INFO" "Siodb process kept in running state"
   fi
-  _CheckLogFiles
 }
 
 function _CheckLogFiles {
+  # $1: exclude this pattern
   _log "INFO" "Checking for errors in the log files"
-  ERROR_COUNT=$(cat ${LOG_DIR}/* | grep error | wc -l)
+  ERROR_COUNT=$(cat ${LOG_DIR}/* | grep error | grep -v "${1}" | wc -l)
   if [ "${ERROR_COUNT}" == "0" ]; then
     _log "INFO" "No error detected the in log files"
   else
     echo "## ================================================="
-    echo "`cat ${LOG_DIR}/* | grep -n error`"
+    echo "`cat ${LOG_DIR}/* | grep -n error | grep -v "${1}"`"
     echo "## ================================================="
     _log "ERROR" "I found an issue in the log files"
   fi
@@ -177,26 +176,30 @@ function _RunSqlScript {
   _log "INFO" "Executing SQL script $1"
   ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
     -i ${SCRIPT_DIR}/../share/private_key < $1
-  _CheckLogFiles
 }
 
 function _RunSql {
   _log "INFO" "Executing SQL: $1"
   ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
     -i ${SCRIPT_DIR}/../share/private_key <<< ''"$1"''
-  _CheckLogFiles
 }
 
 function _RunSqlAndValidateOutput {
+  # $1: the SQL to execute
+  # $2: the line the pickup to build the output
+  # $3: The offset to which truncate the output
+  # $4: The expected output
   _log "INFO" "Executing SQL: $1"
   SIOCLI_OUTPUT=$(${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
-    -i ${SCRIPT_DIR}/../share/private_key <<< ''"${1}"'')
+    --keep-going -i ${SCRIPT_DIR}/../share/private_key <<< ''"${1}"'')
   # Keep this operation in 2 variables to capture the output of the siocli execution in set -x mode
   SIOCLI_OUTPUT=$(echo "${SIOCLI_OUTPUT}" | sed -n ${2}p | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-  if [[ "${SIOCLI_OUTPUT}" != "${3}" ]]; then
-    _log "ERROR" "Siocli output does not match expected output: OUTPUT=>${SIOCLI_OUTPUT}<= EXPECTED=>${3}<="
-  else
-    _log "INFO" "Siocli output matched expected output: OUTPUT=>${SIOCLI_OUTPUT}<= EXPECTED=>${3}<="
+  if [[ ${3} -ne 0 ]]; then
+    SIOCLI_OUTPUT=$(echo ${SIOCLI_OUTPUT:0:${3}})
   fi
-  _CheckLogFiles
+  if [[ "${SIOCLI_OUTPUT}" != "${4}" ]]; then
+    _log "ERROR" "Siocli output does not match expected output: OUTPUT=>${SIOCLI_OUTPUT}<= EXPECTED=>${4}<="
+  else
+    _log "INFO" "Siocli output matched expected output: OUTPUT=>${SIOCLI_OUTPUT}<= EXPECTED=>${4}<="
+  fi
 }
