@@ -194,4 +194,4 @@ fi
 _StopSiodb
 _CheckLogFiles
 
-_log "INFO" "All tests passed"
+_log "INFO" "SUCCESS: All tests passed"
