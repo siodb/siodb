@@ -9,6 +9,9 @@ source $(dirname "$0")/../share/CommonFunctions.sh
 
 ## Specific test functions
 
+## Specific test parameters
+numberOfUsersToTest=10
+numberOfKeysToTest=100
 
 ## Tests
 _log "INFO" "Tests start"
@@ -21,74 +24,70 @@ _RunSqlAndValidateOutput "select NAME from SYS.SYS_USERS" 7 0 'ROOT'
 ### Users
 
 #### Create users
-for i in {4096..4106}; do
-_RunSql "create user nico${i}"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_1_${i}"
 done
-for i in {4107..4116}; do
-_RunSql "create user nico${i}
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_2_${i}
          with STATE = ACTIVE"
 done
-for i in {4117..4126}; do
-_RunSql "create user nico${i}
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_3_${i}
          with STATE = INACTIVE"
 done
-for i in {4127..4136}; do
-_RunSql "create user nico${i}
-         with REAL_NAME = 'Nicolas ${i} 😀'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_4_${i}
+         with REAL_NAME = 'TestUser ${i} 😀'"
 done
-for i in {4137..4146}; do
-_RunSql "create user nico${i}
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_5_${i}
          with DESCRIPTION = 'User for developer ${i} 😀'"
 done
-for i in {4147..4156}; do
-_RunSql "create user nico${i}
-         with STATE = ACTIVE, REAL_NAME = 'Nicolas ${i} 😀'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_6_${i}
+         with STATE = ACTIVE, REAL_NAME = 'TestUser ${i} 😀'"
 done
-for i in {4157..4166}; do
-_RunSql "create user nico${i}
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_7_${i}
          with STATE = ACTIVE, DESCRIPTION = 'User for developer ${i} 😀'"
 done
-for i in {4167..4186}; do
-_RunSql "create user nico${i}
-         with REAL_NAME = 'Nicolas ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_8_${i}
+         with REAL_NAME = 'TestUser ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
 done
-for i in {4187..4196}; do
-_RunSql "create user nico${i}
-         with STATE = ACTIVE, REAL_NAME = 'Nicolas ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "create user user_test_9_${i}
+         with STATE = ACTIVE, REAL_NAME = 'TestUser ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
 done
 #### Alter user
-for i in {4096..4116}; do
-_RunSql "alter user nico${i}
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i}
          set STATE = ACTIVE"
+_RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "1"
 done
-for i in {4117..4136}; do
-_RunSql "alter user nico${i}
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i}
          set STATE = INACTIVE"
+_RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "0"
 done
-for i in {4137..4156}; do
-_RunSql "alter user nico${i}
-         set STATE = ACTIVE, REAL_NAME = 'Nicolas ${i} 😀'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i}
+         set STATE = ACTIVE, REAL_NAME = 'TestUser updated 1 ${i} 😀'"
+_RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "1"
+_RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "TestUser updated 1 ${i} 😀"
 done
-for i in {4157..4176}; do
-_RunSql "alter user nico${i}
-         set STATE = ACTIVE, REAL_NAME = 'Nicolas ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i}
+         set STATE = ACTIVE, REAL_NAME = 'TestUser updated 2 ${i} 😀', DESCRIPTION = 'User for developer updated 2 ${i} 😀'"
+_RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "1"
+_RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "TestUser updated 2 ${i} 😀"
+_RunSqlAndValidateOutput "select DESCRIPTION from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "User for developer updated 2 ${i} 😀"
 done
-for i in {4177..4196}; do
-_RunSql "alter user nico${i}
-         set REAL_NAME = 'Nicolas ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
-done
-#### Check user data
-for i in {4096..4196}; do
-_RunSqlAndValidateOutput "select TRID from SYS.SYS_USERS where name = 'NICO${i}'" 7 0 "${i}"
-done
-for i in {4096..4196}; do
-_RunSqlAndValidateOutput "select NAME from SYS.SYS_USERS where name = 'NICO${i}'" 7 0 "NICO${i}"
-done
-for i in {4096..4196}; do
-_RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'NICO${i}'" 7 0 "Nicolas ${i} 😀"
-done
-for i in {4096..4196}; do
-_RunSqlAndValidateOutput "select DESCRIPTION from SYS.SYS_USERS where name = 'NICO${i}'" 7 0 "User for developer ${i} 😀"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i}
+         set REAL_NAME = 'TestUser updated 3 ${i} 😀', DESCRIPTION = 'User for developer updated 3 ${i} 😀'"
+_RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "TestUser updated 3 ${i} 😀"
+_RunSqlAndValidateOutput "select DESCRIPTION from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" 7 0 "User for developer updated 3 ${i} 😀"
 done
 
 #### Create user with wrong chars
@@ -101,43 +100,43 @@ _CheckLogFiles 'common parse error'
 ### Users keys
 SIOKEY1=$(cat $(dirname "$0")/../share/public_key)
 #### Add key
-for i in {4096..4196}; do
-_RunSql "alter user nico${i} add access key key1 '${SIOKEY1}'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i} add access key key1 '${SIOKEY1}'"
 done
 #### Add 2nd key
-for i in {4096..4196}; do
-_RunSql "alter user nico${i} add access key key2 '${SIOKEY1}'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i} add access key key2 '${SIOKEY1}'"
 done
 #### Add 100 keys to one user
-for i in {3..103}; do
-_RunSql "alter user nico4096 add access key key${i} '${SIOKEY1}'"
+for ((i = 3; i < $((3+${numberOfKeysToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_4096 add access key key${i} '${SIOKEY1}'"
 done
 #### Alter 2nd key
-for i in {4096..4196}; do
-_RunSql "alter user nico${i} alter access key key2 set STATE = INACTIVE, DESCRIPTION = 'TEST INACTIVE 😀'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i} alter access key key2 set STATE = INACTIVE, DESCRIPTION = 'TEST INACTIVE 😀'"
 done
-for i in {4096..4196}; do
-_RunSql "alter user nico${i} alter access key key2 set STATE = ACTIVE, DESCRIPTION = 'TEST ACTIVE 😀'"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i} alter access key key2 set STATE = ACTIVE, DESCRIPTION = 'TEST ACTIVE 😀'"
 done
-for i in {4096..4196}; do
-_RunSql "alter user nico${i} alter access key key1 set STATE = INACTIVE"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i} alter access key key1 set STATE = INACTIVE"
 done
-for i in {4096..4196}; do
-_RunSql "alter user nico${i} alter access key key1 set STATE = ACTIVE"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i} alter access key key1 set STATE = ACTIVE"
 done
 #### Drop access keys 1 for all users
-for i in {4096..4150}; do
-_RunSql "alter user nico${i} drop access key key1"
+for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i} drop access key key1"
 done
 # BELOW FAILS
-# for i in {4096..4196}; do
-# _RunSql "alter user nico${i} drop access key if exists key1"
+# for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+# _RunSql "alter user user_test_1_${i} drop access key if exists key1"
 # done
 
 #### Expected error with keys
-_RunSqlAndValidateOutput "alter user nico4096 alter access key key2 rename  to key3 " 6 29 'Status 6: Not implemented yet'
+_RunSqlAndValidateOutput "alter user user_test4096 alter access key key2 rename  to key3 " 6 29 'Status 6: Not implemented yet'
 _CheckLogFiles 'common parse error|Status 6: Not implemented yet'
-_RunSqlAndValidateOutput "alter user nico4096 alter access key key2 rename if exists to key3" 6 29 'Status 6: Not implemented yet'
+_RunSqlAndValidateOutput "alter user user_test4096 alter access key key2 rename if exists to key3" 6 29 'Status 6: Not implemented yet'
 _CheckLogFiles 'common parse error|Status 6: Not implemented yet'
 
 
