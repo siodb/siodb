@@ -67,3 +67,70 @@ insert into employees ( firstname, lastname, salary, hire_date)
 values
 ( 'John', 'Doe', 180000, '2016-02-29' ) ;
 ```
+
+### REST
+
+#### Add a token access to root user
+
+```bash
+TOKEN=$(siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server: token:' | awk '{print $3}')
+```
+
+### POST Request
+
+```bash
+curl -X POST \
+-d '[
+    { "firstname": "马","lastname": "云","salary": "249000.00","hire_date": "1964-09-10"},
+    { "firstname": "Ю́рий","lastname": "Алексе́евич Гага́рин","salary": "49000.00","hire_date": "1934-03-09"},
+    { "firstname": "Barack","lastname": "Obama","salary": "149000.00","hire_date": "1961-08-04"}
+]' \
+-k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
+```
+
+**Returns:**
+
+```json
+{
+	"status": 200,
+	"affectedRowCount": 3,
+	"trids": [1, 2, 3]
+}
+```
+
+### GET Request
+
+```bash
+curl -s -k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
+```
+
+**Returns:**
+
+```json
+{
+   "rows" : [
+      {
+         "FIRSTNAME" : "马",
+         "HIRE_DATE" : "1964-09-10",
+         "LASTNAME" : "云",
+         "SALARY" : 249000,
+         "TRID" : 1
+      },
+      {
+         "FIRSTNAME" : "Ю́рий",
+         "HIRE_DATE" : "1934-03-09",
+         "LASTNAME" : "Алексе́евич Гага́рин",
+         "SALARY" : 49000,
+         "TRID" : 2
+      },
+      {
+         "FIRSTNAME" : "Barack",
+         "HIRE_DATE" : "1961-08-04",
+         "LASTNAME" : "Obama",
+         "SALARY" : 149000,
+         "TRID" : 3
+      }
+   ],
+   "status" : 200
+}
+```
