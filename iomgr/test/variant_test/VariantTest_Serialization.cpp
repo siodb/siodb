@@ -3,7 +3,7 @@
 // in the LICENSE file.
 
 // Common project headers
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/StringUtils.h>
 #include <siodb/iomgr/shared/dbengine/Variant.h>
 #include <siodb/iomgr/shared/dbengine/lob/BinaryValueBlobStream.h>

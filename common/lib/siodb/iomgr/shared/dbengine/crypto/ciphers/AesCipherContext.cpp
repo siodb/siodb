@@ -5,7 +5,7 @@
 #include "AesCipherContext.h"
 
 // Common project headers
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 
 namespace siodb::iomgr::dbengine::crypto {
 

@@ -15,7 +15,7 @@
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/StartupActions.h>
 
 // STL headers

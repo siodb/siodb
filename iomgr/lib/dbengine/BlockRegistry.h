@@ -87,6 +87,47 @@ public:
     void addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockId);
 
 private:
+    /** Block list record */
+    struct BlockListRecord {
+        /**
+         * Serializes file header into buffer.
+         * @param buffer A buffer.
+         * @return Address of byte after a last written one.
+         */
+        std::uint8_t* serialize(std::uint8_t* buffer) const noexcept;
+
+        /**
+         * De-serializes file header from buffer.
+         * @param buffer A buffer.
+         * @return Address of byte after a last written one.
+         */
+        const std::uint8_t* deserialize(const std::uint8_t* buffer) noexcept;
+
+        /** Block ID */
+        std::uint64_t m_blockId;
+
+        /** Previous block ID or 0 for the first block in a chain */
+        std::uint64_t m_prevBlockId;
+
+        /** Block state */
+        ColumnDataBlockState m_blockState;
+
+        /** First next block file ID location: offset in the data file */
+        std::uint64_t m_firstNextBlockListFileOffset;
+
+        /** Last next block file ID location: offset in the data file */
+        std::uint64_t m_lastNextBlockListFileOffset;
+
+        /** Serialized size */
+        static constexpr std::size_t kSerializedSize = 25;
+
+        /** Offset of the serialized field "m_blockState" */
+        static constexpr std::size_t kBlockStateSerializedFieldOffset = 0;
+
+        /** Offset of the serialized field "m_prevBlockId" */
+        static constexpr std::size_t kPrevBlockIdSerializedFieldOffset = 1;
+    };
+
     /** Next block list record */
     struct NextBlockListRecord {
         /**
@@ -107,78 +148,26 @@ private:
         uint64_t m_blockId;
 
         /** Next block file ID location: offset in the data file */
-        uint32_t m_nextBlockListFileOffset;
-
-        /** Offset of block ID field */
-        static constexpr std::uint32_t kBlockIdSerializedFieldOffset = 0;
-
-        /** Offset of next block list file offset field */
-        static constexpr std::uint32_t kNextBlockListFileOffsetSerializedFieldOffset =
-                kBlockIdSerializedFieldOffset + sizeof(m_blockId);
+        uint64_t m_nextBlockListFileOffset;
 
         /** Serialized size */
-        static constexpr std::size_t kSerializedSize =
-                kNextBlockListFileOffsetSerializedFieldOffset + sizeof(m_nextBlockListFileOffset);
-    };
+        static constexpr std::size_t kSerializedSize = 16;
 
-    /** Block list record */
-    struct BlockListRecord {
-        /**
-         * Serializes file header into buffer.
-         * @param buffer A buffer.
-         * @return Address of byte after a last written one.
-         */
-        std::uint8_t* serialize(std::uint8_t* buffer) const noexcept;
-
-        /**
-         * De-serializes file header from buffer.
-         * @param buffer A buffer.
-         * @return Address of byte after a last written one.
-         */
-        const std::uint8_t* deserialize(const std::uint8_t* buffer) noexcept;
-
-        /** Block ID */
-        std::uint64_t m_blockId;
-
-        /** Block state */
-        ColumnDataBlockState m_blockState;
-
-        /** Previous block ID or 0 for the first block in a chain */
-        std::uint64_t m_prevBlockId;
-
-        /** First next block file ID location: offset in the data file */
-        std::uint32_t m_firstNextBlockListFileOffset;
-
-        /** Last next block file ID location: offset in the data file */
-        std::uint32_t m_lastNextBlockListFileOffset;
-
-        /** Offset of "active" field */
-        static constexpr std::uint32_t kBlockPresentSerializedFieldOffset = 0;
-
-        /** Offset of block state field */
-        static constexpr std::uint32_t kBlockStateSerializedFieldOffset =
-                kBlockPresentSerializedFieldOffset + 1;
-
-        /** Offset of previous block ID field */
-        static constexpr std::uint32_t kPrevBlockIdSerializedFieldOffset =
-                kBlockStateSerializedFieldOffset + 1;
-
-        /** Offset of first next block file offset field */
-        static constexpr std::uint32_t kFirstNextBlockListFileOffsetSerializedFieldOffset =
-                kPrevBlockIdSerializedFieldOffset + sizeof(m_prevBlockId);
-
-        /** Offset of last next block file offset field */
-        static constexpr std::uint32_t kLastNextBlockListFileOffsetSerializedFieldOffset =
-                kFirstNextBlockListFileOffsetSerializedFieldOffset
-                + sizeof(m_firstNextBlockListFileOffset);
-
-        /** Serialized size */
-        static constexpr std::size_t kSerializedSize =
-                kLastNextBlockListFileOffsetSerializedFieldOffset
-                + sizeof(m_lastNextBlockListFileOffset);
+        /** Offset of the serialized field "m_nextBlockListFileOffset" */
+        static constexpr std::size_t kNextBlockListFileOffsetSerializedFieldOffset = 8;
     };
 
 private:
+    /**
+     * Calculates block record offset.
+     * @param blockId Block identifier.
+     * @return Block record offset.
+     */
+    static std::uint64_t computeBlockRecordOffset(std::uint64_t blockId) noexcept
+    {
+        return blockId * BlockListRecord::kSerializedSize;
+    }
+
     /** Creates new data files */
     void createDataFiles();
 
@@ -235,20 +224,17 @@ private:
     /** Block registry subdirectory */
     static constexpr const char* kBlockRegistryDir = "breg";
 
-    /** Block list data file cache capacity */
-    static constexpr std::size_t kBlockListDataFileCacheSize = 64;
-
-    /** Next block list data file cache capacity */
-    static constexpr std::size_t kNextBlockListDataFileCacheSize = 64;
-
-    /** Initialization flag file name */
-    static constexpr const char* kInitializationFlagFile = ".initialized";
-
     /** Block list data file name prefix */
     static constexpr const char* kBlockListFileName = "blist";
 
     /** Next block list data file name prefix */
     static constexpr const char* kNextBlockListFileName = "nblist";
+
+    /** Block list data file cache capacity */
+    static constexpr std::size_t kBlockListDataFileCacheSize = 64;
+
+    /** Next block list data file cache capacity */
+    static constexpr std::size_t kNextBlockListDataFileCacheSize = 64;
 };
 
 }  // namespace siodb::iomgr::dbengine

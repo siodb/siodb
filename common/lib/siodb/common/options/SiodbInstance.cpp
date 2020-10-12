@@ -251,8 +251,7 @@ std::string composeInstanceInitializationLockFilePath(const std::string& instanc
 std::string composeIomgrInitializionFlagFilePath(const std::string& instanceName)
 {
     std::ostringstream str;
-    str << kIoManagerInitaliationFlagFileDir << instanceName
-        << kIomgrInitializationFlagFileExtension;
+    str << kIOManagerInitalizationFlagFileDir << instanceName << ".initialized";
     return str.str();
 }
 

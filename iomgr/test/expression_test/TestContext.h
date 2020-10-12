@@ -8,7 +8,7 @@
 #include "dbengine/parser/expr/Expression.h"
 
 // Common project headers
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 
 namespace dbengine = siodb::iomgr::dbengine;
 namespace requests = dbengine::requests;

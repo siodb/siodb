@@ -19,6 +19,9 @@ constexpr const char* kDataFileExtension = ".siodf";
 /** Temporary file extension */
 constexpr const char* kTempFileExtension = ".tmp";
 
+/** Initialization flag file */
+constexpr const char* kInitializationFlagFile = "initialized";
+
 /** Data file creation mode */
 constexpr mode_t kDataFileCreationMode = 0660;
 
@@ -29,8 +32,8 @@ constexpr std::size_t kDataFileHeaderSize = 1 * 1024;  // 1K
 constexpr std::size_t kDefaultDataFileDataAreaSize = 10 * 1024 * 1024;  // 10M
 
 /** System table data file data area size. Must be multiple of index node size (typically 8K). */
-//constexpr std::size_t kSystemTableDataFileDataAreaSize = 16 * 1024;  // 16K
-constexpr std::size_t kSystemTableDataFileDataAreaSize = 128 * 1024;  // 128K
+constexpr std::size_t kSystemTableDataFileDataAreaSize = 16 * 1024;  // 16K
+//constexpr std::size_t kSystemTableDataFileDataAreaSize = 128 * 1024;  // 128K
 
 /** Data file size */
 constexpr off_t kDefaultDataFileSize = kDataFileHeaderSize + kDefaultDataFileDataAreaSize;

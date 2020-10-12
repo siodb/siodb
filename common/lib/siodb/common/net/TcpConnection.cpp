@@ -9,7 +9,7 @@
 #include "detail/AddressInfoGuard.h"
 #include "../stl_ext/system_error_ext.h"
 #include "../stl_ext/utility_ext.h"
-#include "../utils/Debug.h"
+#include "../utils/DebugMacros.h"
 #include "../utils/FDGuard.h"
 
 // STL headers

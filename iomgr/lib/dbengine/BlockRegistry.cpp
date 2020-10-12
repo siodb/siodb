@@ -7,7 +7,7 @@
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "Column.h"
-#include "Debug.h"
+#include "DBEngineDebug.h"
 #include "ThrowDatabaseError.h"
 
 // Common project headers
@@ -16,6 +16,7 @@
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
+#include <siodb/common/utils/DebugUtils.h>
 #include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
@@ -119,23 +120,23 @@ void BlockRegistry::recordBlock(
     // Obtain block record location
     const auto blockRecordOffset = blockId * BlockListRecord::kSerializedSize;
 
-    BREG_DBG_LOG_DEBUG("BlockRegistry::recordBlock(): " << m_column.makeDisplayName() << '.'
-                                                        << blockId << ", parent " << parentBlockId
-                                                        << ", state " << static_cast<int>(state)
-                                                        << ", offset " << blockRecordOffset);
+    //BREG_DBG_LOG_DEBUG(
+    LOG_DEBUG << "BlockRegistry::recordBlock(): " << m_column.makeDisplayName() << '.' << blockId
+              << ", parent " << parentBlockId << ", state " << static_cast<int>(state)
+              << ", offset " << blockRecordOffset;
 
     // Prepare record
+    BlockListRecord blockRecord;
+    std::memset(&blockRecord, 0, sizeof(blockRecord));
+    blockRecord.m_blockId = blockId;
+    blockRecord.m_blockState = state;
+    blockRecord.m_prevBlockId = parentBlockId;
     std::uint8_t buffer[BlockListRecord::kSerializedSize];
-    {
-        BlockListRecord blockRecord;
-        std::memset(&blockRecord, 0, sizeof(blockRecord));
-        blockRecord.m_blockId = blockId;
-        blockRecord.m_blockState = state;
-        blockRecord.m_prevBlockId = parentBlockId;
-        blockRecord.serialize(buffer);
-    }
+    blockRecord.serialize(buffer);
 
-    // Write record
+    //LOG_DEBUG << "BlockRegistry: addBlock #" << blockId << ": Block dump:\n"
+    //          << utils::dumpMemoryToString(buffer, sizeof(buffer));
+
     const auto n = ::pwriteExact(
             m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals);
     if (n != sizeof(buffer)) {
@@ -158,8 +159,7 @@ void BlockRegistry::updateBlockState(std::uint64_t blockId, ColumnDataBlockState
     const auto blockRecordOffset = checkBlockRecordPresent(blockId);
 
     // Write new block state
-    std::uint8_t buffer[sizeof(std::uint32_t)];
-    ::pbeEncodeUInt32(static_cast<std::uint32_t>(state), buffer);
+    std::uint8_t buffer[1] = {static_cast<std::uint8_t>(state)};
     const auto writeOffset = blockRecordOffset + BlockListRecord::kBlockStateSerializedFieldOffset;
     const auto n = ::pwriteExact(
             m_blockListFile.getFD(), buffer, sizeof(buffer), writeOffset, kIgnoreSignals);
@@ -174,26 +174,11 @@ void BlockRegistry::updateBlockState(std::uint64_t blockId, ColumnDataBlockState
 
 void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockId)
 {
-    // Obtain block record location
-    const auto blockRecordOffset = checkBlockRecordPresent(blockId);
-
     BREG_DBG_LOG_DEBUG("BlockRegistry: Recording NEXT block: "
                        << m_column.makeDisplayName() << '.' << blockId << ", next " << nextBlockId);
 
-    // Load block record
-    std::uint8_t blockRecordBuffer[BlockListRecord::kSerializedSize];
-    auto n = ::preadExact(m_blockListFile.getFD(), blockRecordBuffer, sizeof(blockRecordBuffer),
-            blockRecordOffset, kIgnoreSignals);
-    if (n != sizeof(blockRecordBuffer)) {
-        const int errorCode = errno;
-        throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
-                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                blockRecordOffset, sizeof(blockRecordBuffer), errorCode, std::strerror(errorCode),
-                n);
-    }
     BlockListRecord blockRecord;
-    blockRecord.deserialize(blockRecordBuffer);
+    loadRecord(blockId, blockRecord);
 
     const auto newRecordLocation = m_nextBlockListFileSize;
 
@@ -205,7 +190,7 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
     record.serialize(buffer);
 
     // Write record
-    n = ::pwriteExact(
+    auto n = ::pwriteExact(
             m_nextBlockListFile.getFD(), buffer, sizeof(buffer), newRecordLocation, kIgnoreSignals);
     if (n != sizeof(buffer)) {
         const int errorCode = errno;
@@ -216,7 +201,7 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
     }
 
     struct LastRecordUpdate {
-        LastRecordUpdate(const Column& column, int fd, off_t offset, std::uint8_t* buffer,
+        LastRecordUpdate(const Column& column, int fd, std::uint64_t offset, std::uint8_t* buffer,
                 std::uint64_t blockId)
             : m_column(column)
             , m_fd(fd)
@@ -275,7 +260,7 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
 
         const Column& m_column;
         const int m_fd;
-        const off_t m_offset;
+        const std::uint64_t m_offset;
         std::uint8_t* const m_buffer;
         const std::uint64_t m_blockId;
         const std::size_t m_updateSize;
@@ -288,10 +273,13 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
         blockRecord.m_firstNextBlockListFileOffset = newRecordLocation;
     } else {
         // This is some subsequent one, therefore also update last record in the chain.
-
         // Load old last next block record
         n = ::preadExact(m_nextBlockListFile.getFD(), buffer, NextBlockListRecord::kSerializedSize,
                 blockRecord.m_lastNextBlockListFileOffset, kIgnoreSignals);
+        LOG_DEBUG << __func__ << ": Read next block list file " << m_column.getDatabaseUuid() << '.'
+                  << m_column.getTableId() << '.' << m_column.getId() << ": blockId " << blockId
+                  << " offset " << blockRecord.m_lastNextBlockListFileOffset << " length "
+                  << NextBlockListRecord::kSerializedSize << " result " << n << std::endl;
         if (n != NextBlockListRecord::kSerializedSize) {
             const int errorCode = errno;
             throwDatabaseError(IOManagerMessageId::kErrorCannotReadNextBlockListDataFile, __func__,
@@ -314,7 +302,9 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
 
     // Update block record
     blockRecord.m_lastNextBlockListFileOffset = newRecordLocation;
+    std::uint8_t blockRecordBuffer[BlockListRecord::kSerializedSize];
     blockRecord.serialize(blockRecordBuffer);
+    const auto blockRecordOffset = computeBlockRecordOffset(blockId);
     n = ::pwriteExact(m_blockListFile.getFD(), blockRecordBuffer, sizeof(blockRecordBuffer),
             blockRecordOffset, kIgnoreSignals);
     if (n != sizeof(blockRecordBuffer)) {
@@ -483,12 +473,12 @@ off_t BlockRegistry::checkBlockRecordPresent(std::uint64_t blockId) const
     }
 
     // Obtain block record location
-    const auto blockRecordOffset = blockId * BlockListRecord::kSerializedSize;
+    const auto blockRecordOffset = computeBlockRecordOffset(blockId);
 
     // Read block presence flag
     std::uint8_t buffer[1];
-    const auto n = ::preadExact(
-            m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals);
+    const auto n = ::preadExact(m_blockListFile.getFD(), buffer, sizeof(buffer),
+            blockRecordOffset + BlockListRecord::kBlockStateSerializedFieldOffset, kIgnoreSignals);
     if (n != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
@@ -498,7 +488,7 @@ off_t BlockRegistry::checkBlockRecordPresent(std::uint64_t blockId) const
     }
 
     // Check block presence
-    if (!*buffer) {
+    if (*buffer == 0) {
         throwDatabaseError(IOManagerMessageId::kErrorColumnDataBlockDoesNotExist,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), blockId,
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId());
@@ -571,7 +561,7 @@ void BlockRegistry::createInitializationFlagFile() const
 std::uint8_t* BlockRegistry::NextBlockListRecord::serialize(std::uint8_t* buffer) const noexcept
 {
     buffer = ::pbeEncodeUInt64(m_blockId, buffer);
-    buffer = ::pbeEncodeUInt32(m_nextBlockListFileOffset, buffer);
+    buffer = ::pbeEncodeUInt64(m_nextBlockListFileOffset, buffer);
     return buffer;
 }
 
@@ -579,7 +569,7 @@ const std::uint8_t* BlockRegistry::NextBlockListRecord::deserialize(
         const std::uint8_t* buffer) noexcept
 {
     buffer = ::pbeDecodeUInt64(buffer, &m_blockId);
-    buffer = ::pbeDecodeUInt32(buffer, &m_nextBlockListFileOffset);
+    buffer = ::pbeDecodeUInt64(buffer, &m_nextBlockListFileOffset);
     return buffer;
 }
 
@@ -587,22 +577,19 @@ const std::uint8_t* BlockRegistry::NextBlockListRecord::deserialize(
 
 std::uint8_t* BlockRegistry::BlockListRecord::serialize(std::uint8_t* buffer) const noexcept
 {
-    *buffer++ = 1;  // "active" flag
-    buffer = ::pbeEncodeUInt32(static_cast<std::uint32_t>(m_blockState), buffer);
+    *buffer++ = static_cast<std::uint8_t>(m_blockState);
     buffer = ::pbeEncodeUInt64(m_prevBlockId, buffer);
-    buffer = ::pbeEncodeUInt32(m_firstNextBlockListFileOffset, buffer);
-    buffer = ::pbeEncodeUInt32(m_lastNextBlockListFileOffset, buffer);
+    buffer = ::pbeEncodeUInt64(m_firstNextBlockListFileOffset, buffer);
+    buffer = ::pbeEncodeUInt64(m_lastNextBlockListFileOffset, buffer);
     return buffer;
 }
 
 const std::uint8_t* BlockRegistry::BlockListRecord::deserialize(const std::uint8_t* buffer) noexcept
 {
-    std::uint32_t v = 0;
-    buffer = ::pbeDecodeUInt32(buffer + 1, &v);
-    m_blockState = static_cast<ColumnDataBlockState>(v);
+    m_blockState = static_cast<ColumnDataBlockState>(*buffer++);
     buffer = ::pbeDecodeUInt64(buffer, &m_prevBlockId);
-    buffer = ::pbeDecodeUInt32(buffer, &m_firstNextBlockListFileOffset);
-    buffer = ::pbeDecodeUInt32(buffer, &m_lastNextBlockListFileOffset);
+    buffer = ::pbeDecodeUInt64(buffer, &m_firstNextBlockListFileOffset);
+    buffer = ::pbeDecodeUInt64(buffer, &m_lastNextBlockListFileOffset);
     return buffer;
 }
 

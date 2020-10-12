@@ -390,9 +390,6 @@ protected:
 
     /** Index data directory prefix */
     static constexpr const char* kIndexDataDirPrefix = "i";
-
-    /** Initialization flag file name */
-    static constexpr const char* kInitializationFlagFile = ".initialized";
 };
 
 }  // namespace siodb::iomgr::dbengine

@@ -14,7 +14,7 @@
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/FDGuard.h>
 
 // STL headers
