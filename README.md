@@ -2,9 +2,9 @@
 
 # Siodb
 
-A versioning database that gives you:
+A relational database that gives you:
 
-- Native data encryption 
+- Native data encryption
 - Native data versioning
 - Native data model versioning
 - Native data expiration
@@ -26,22 +26,9 @@ docker run -p 127.0.0.1:50000:50000/tcp --name siodb siodb/siodb
 
 *Free Trial. Only requires an email address.*
 
-### Connect to the instance in the container
+### Linux
 
-```bash
-$ siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
-Siodb client v.0.6.0
-Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
-
-siocli> show databases ;
-NAME                                     UUID
----------------------------------------- ----------------------------------------
-                                     SYS     68ba038e-b704-2cb9-1d0d-b91864c819cd
-```
-
-## Quick Start (Linux)
-
-### Get the bootstrap script and run it
+Get the bootstrap script and run it:
 
 ```bash
 wget https://siodb.io/packages/InstallSiodb.sh
@@ -49,38 +36,124 @@ chmod u+x ./InstallSiodb.sh
 sudo ./InstallSiodb.sh
 ```
 
-#### Connect to the instance
+### Connect to the instance
 
-- Connect to your server as `siodb`
+Connect to the Siodb instance as `siodb`:
 
 ```bash
 sudo su - siodb
 siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
 ```
 
-Reference [here](https://docs.siodb.io/quick_start/).
+More details in [the documentation here](https://docs.siodb.io).
 
-## Developer's Corner
+### Create your first database
 
-### Contributing
+```sql
+create database myapp ; -- Creates an encrypted database with the default cipher AES128
+```
+
+### Create your first table
+
+```sql
+use database myapp ;
+
+create table employees ( firstname text, lastname text, salary float, hire_date timestamp) ;
+
+insert into employees ( firstname, lastname, salary, hire_date)
+values
+( '马', '云', 249000.00, '1964-09-10' ),
+( 'Ю́рий', 'Алексе́евич Гага́рин', 49000.00, '1934-03-09' ),
+( 'Barack', 'Obama', 149000.00, '1961-08-04' )
+;
+```
+
+### POST Request
+
+Create a token for the `root` user:
+
+```bash
+TOKEN=$(siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server: token:' | awk '{print $3}')
+```
+
+Make a POST request with the `root` user and the created token:
+
+```bash
+curl -k -X POST \
+-d '[
+    { "firstname": "马","lastname": "云","salary": "249000.00","hire_date": "1964-09-10"},
+    { "firstname": "Ю́рий","lastname": "Алексе́евич Гага́рин","salary": "49000.00","hire_date": "1934-03-09"},
+    { "firstname": "Barack","lastname": "Obama","salary": "149000.00","hire_date": "1961-08-04"}
+]' \
+https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
+```
+
+**Returns:**
+
+```json
+{
+	"status": 200,
+	"affectedRowCount": 3,
+	"trids": [1, 2, 3]
+}
+```
+
+### GET Request
+
+```bash
+curl -s -k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
+```
+
+**Returns:**
+
+```json
+{
+   "rows" : [
+      {
+         "FIRSTNAME" : "马",
+         "HIRE_DATE" : "1964-09-10",
+         "LASTNAME" : "云",
+         "SALARY" : 249000,
+         "TRID" : 1
+      },
+      {
+         "FIRSTNAME" : "Ю́рий",
+         "HIRE_DATE" : "1934-03-09",
+         "LASTNAME" : "Алексе́евич Гага́рин",
+         "SALARY" : 49000,
+         "TRID" : 2
+      },
+      {
+         "FIRSTNAME" : "Barack",
+         "HIRE_DATE" : "1961-08-04",
+         "LASTNAME" : "Obama",
+         "SALARY" : 149000,
+         "TRID" : 3
+      }
+   ],
+   "status" : 200
+}
+```
+
+## Contributing
 
 Go to the contribution page 👉 [Here](CONTRIBUTING.md).
 
+## Development resources
+
+- REST API: https://docs.siodb.io/rest_api
+- SQL: https://docs.siodb.io/sql_drivers
+
 ### Drivers
 
-| Language | Link                                                 |
-| -------- | :--------------------------------------------------- |
-| Golang   | [Github](https://github.com/siodb/siodb-go-driver)   |
-| Rust     | [Github](https://github.com/siodb/siodb-rust-driver) |
-| Java     | [Github](https://github.com/siodb/siodb-jdbc-driver) |
+| Language | Link                                                   |
+| -------- | :----------------------------------------------------- |
+| Golang   | [Github](https://github.com/siodb/siodb-go-driver)     |
+| Rust     | [Github](https://github.com/siodb/siodb-rust-driver)   |
+| Java     | [Github](https://github.com/siodb/siodb-jdbc-driver)   |
 | Python   | [Github](https://github.com/siodb/siodb-python-driver) |
-| C++      | [Github](https://github.com/siodb/siodb-cxx-driver) |
+| C++      | [Github](https://github.com/siodb/siodb-cxx-driver)    |
 | .NET     | [Github](https://github.com/siodb/siodb-dotnet-driver) |
-
-### Development resources
-
-The resources to integrate Siodb in your development are
-available [here](https://docs.siodb.io/development).
 
 ## Building Siodb
 
@@ -103,7 +176,7 @@ Whatever you would like to share with us, we are always prepared to listen: code
 
 ## Support Siodb
 
-Do you like this project? Tell it by clicking the star 🟊 on the top right of this page ☝☝
+Do you like this project? Tell it by clicking the star 🟊 on the top right corner of this page ☝☝
 
 ## Follow Siodb
 

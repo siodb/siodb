@@ -74,12 +74,13 @@ pre {
   background-color: #000;
 }
 
-code.hljs {
-  margin: 20px;
-}
-
 #logo {
   width: 46.5px;
 }
 
-
+pre code {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  margin: 20px;
+}

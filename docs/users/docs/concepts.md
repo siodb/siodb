@@ -2,7 +2,7 @@
 
 ## REST + SQL
 
-The REST API allows you to push and retrieve data from tables you would do in SQL.
+The REST API allows you to push and retrieve data from tables as you would do in SQL.
 The benefit of the REST API is that you can start working without having to install
 drivers. It also allows you to work with JSON, which is handy in many cases.
 

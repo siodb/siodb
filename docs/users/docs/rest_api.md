@@ -5,56 +5,9 @@ protocol.
 
 ## Authentication
 
-The authentication through REST is done with [HTTP Basic authentication](https://tools.ietf.org/html/rfc2617).
-The username must be a user in the Siodb instance, and the password must be a token that belongs to this user.
-The URL to the REST API can be:
+See the [Authentication page](authentication.md).
 
-`https://<USER_NAME>:<USER_TOKEN>@<SIODB_SERVER>:<SIODB_INSTANCE_PORT>/<PATH>`
-
-### User and Token
-
-You can generate a token for a user using SQL command:
-
-```sql
-ALTER USER <user_name> ADD TOKEN <token_name>;
-```
-
-Generated tokens are guaranteed at least to be unique among all currently existing tokens for the
-mentioned used. Generated token is returned in the `DatabaseEngineReponse.freetext_message` in the
-following format: `token: xxxxxxxx...xx`, where `xx...` are hexadecimal digits. There must be an
-even number of hexadecimal digits. The token is not stored in the database in this cleartext form,
-and if the token is lost, there is no way to renew it. In such a case, you must generate a new token.
-
-Token can be assigned expiration time:
-
-```sql
-ALTER USER <user_name> ADD TOKEN <token_name> WITH EXPIRATION_TIME='yyyy-mm-dd hh:mm:ss';
-```
-
-It is possible to add token with supplied value:
-
-```sql
-ALTER USER <user_name> ADD TOKEN <token_name> x'xxxx...xx';
-```
-
-Supplied value must be unique among existing tokens for the designated user;
-otherwise, Siodb will not create the token.
-
-It is possible to delete a token with the following SQL commands:
-
-```sql
-ALTER USER <user_name> DROP TOKEN <token_name>;
-```
-
-### Example
-
-```bash
-curl \
--H "Content-Type: application/json" \
-https://root:0929b8e2f86a9c6c379a96cd8005072a09caf40affdf9b56098858f3d7188a1ab22bfcb4287b30b25aa1e7e8291a5605dc9b135ba2414e2c470a8ed7705d74d3@localhost:50443/databases/sys/tables/sys_tables/rows`
-```
-
-## Paths
+## REST Paths
 
 ### Databases
 

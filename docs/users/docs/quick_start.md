@@ -49,11 +49,10 @@ sudo su - siodb
 siocli --user root
 ```
 
-### Create your first database
+## Create your first database
 
 ```sql
--- Create an encrypted database with the default cipher AES128
-create database myapp ;
+create database myapp ; -- Creates an encrypted database with the default cipher AES128
 ```
 
 ### Create your first table
@@ -65,12 +64,15 @@ create table employees ( firstname text, lastname text, salary float, hire_date 
 
 insert into employees ( firstname, lastname, salary, hire_date)
 values
-( 'John', 'Doe', 180000, '2016-02-29' ) ;
+( '马', '云', 249000.00, '1964-09-10' ),
+( 'Ю́рий', 'Алексе́евич Гага́рин', 49000.00, '1934-03-09' ),
+( 'Barack', 'Obama', 149000.00, '1961-08-04' )
+;
 ```
 
-### REST
+## REST API
 
-#### Add a token access to root user
+### Add a token access to root user
 
 ```bash
 TOKEN=$(siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server: token:' | awk '{print $3}')
@@ -79,13 +81,13 @@ TOKEN=$(siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server
 ### POST Request
 
 ```bash
-curl -X POST \
+curl -k -X POST \
 -d '[
     { "firstname": "马","lastname": "云","salary": "249000.00","hire_date": "1964-09-10"},
     { "firstname": "Ю́рий","lastname": "Алексе́евич Гага́рин","salary": "49000.00","hire_date": "1934-03-09"},
     { "firstname": "Barack","lastname": "Obama","salary": "149000.00","hire_date": "1961-08-04"}
 ]' \
--k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
+https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
 ```
 
 **Returns:**

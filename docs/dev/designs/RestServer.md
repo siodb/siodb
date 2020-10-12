@@ -2,7 +2,7 @@
 
 ## Overview
 
-Siodb must to provide an integrated REST Server that can work in parallel with theSQL front-end.
+Siodb must to provide an integrated REST Server that can work in parallel with the SQL front-end.
 It would only work per table and allow users to push/retrieve data through REST. The server will
 operate as a distinct process called `siodb_rest_server`. The server will convert REST queries
 into the IOMgr engine requests, send them to IOMgr, receive response, convert it to JSON and send

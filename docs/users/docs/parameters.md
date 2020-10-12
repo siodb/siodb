@@ -84,7 +84,7 @@ encryption.default_cipher_id = aes128
 ## encryption.master_key
 
 Encryption key used to encrypt and decrypt instance level data
-/etc/siodb/instances/<instance-name>/master_key is used if not set.
+/etc/siodb/instances/{INSTANCE_NAME}/master_key is used if not set.
 
 **Example:**
 
