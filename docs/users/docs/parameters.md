@@ -10,6 +10,16 @@ Backlog value for the admin connection listener.
 admin_connection_listener_backlog = 10
 ```
 
+## allow_group_permissions_on_config_files
+
+Allow group permissions on the config files
+
+**Example:**
+
+```init
+allow_group_permissions_on_config_files = True
+```
+
 ## client.enable_encryption
 
 Should encrypted connection be used for client (yes(default)/no).
@@ -61,6 +71,16 @@ Data storage directory.
 data_dir = /var/lib/siodb/siodb000/data
 ```
 
+## dead_connection_cleanup_interval
+
+Interval in seconds between the dead connection cleanups in the Siodb process
+
+**Example:**
+
+```init
+dead_connection_cleanup_interval = 15
+```
+
 ## enable_rest_server
 
 Enables or disables REST Server service.
@@ -81,10 +101,21 @@ Encryption default cipher id (aes128 is used if not set).
 encryption.default_cipher_id = aes128
 ```
 
+## encryption.master_cipher_id
+
+Encryption algorithm used to encrypt instance level data
+(encryption.default_cipher_id is used if not set)
+
+**Example:**
+
+```init
+encryption.master_cipher_id = aes128
+```
+
 ## encryption.master_key
 
 Encryption key used to encrypt and decrypt instance level data
-/etc/siodb/instances/{INSTANCE_NAME}/master_key is used if not set.
+/etc/siodb/instances/<instance-name>/master_key is used if not set.
 
 **Example:**
 
@@ -113,14 +144,14 @@ Capacity of the block cache (in 10M blocks).
 iomgr.block_cache_capacity = 103
 ```
 
-## iomgr.database_cache_capacity
+## iomgr.dead_connection_cleanup_interval
 
-Database cache capacity.
+Interval in seconds between the dead connection cleanups in the IO Manager process
 
 **Example:**
 
 ```init
-iomgr.database_cache_capacity = 100
+iomgr.dead_connection_cleanup_interval = 15
 ```
 
 ## iomgr.ipv4_port
@@ -145,6 +176,16 @@ IO Manager listening port for IPv6 client connections.
 iomgr.ipv6_port = 0
 ```
 
+## iomgr.max_databases
+
+Maximum number of databases
+
+**Example:**
+
+```init
+iomgr.max_databases = 65536
+```
+
 ## iomgr.max_json_payload_size
 
 Maximum JSON payload size in the REST request in kilobytes.
@@ -154,6 +195,27 @@ Suffixes k, K, m, M, g, G switch measure unit to KiB, MiB and GiB respectively.
 
 ```init
 iomgr.max_json_payload_size = 1024
+```
+
+## iomgr.max_tables_per_db
+
+Maximum number of tables per database
+(used when database is created)
+
+**Example:**
+
+```init
+iomgr.max_tables_per_db = 65536
+```
+
+## iomgr.max_users
+
+Maximum number of users
+
+**Example:**
+
+```init
+iomgr.max_users = 8192
 ```
 
 ## iomgr.rest.ipv4_port
@@ -176,16 +238,6 @@ IO Manager listening port for IPv6 REST connections.
 
 ```init
 iomgr.rest.ipv6_port = 0
-```
-
-## iomgr.table_cache_capacity
-
-Table cache capacity.
-
-**Example:**
-
-```init
-iomgr.table_cache_capacity = 100
 ```
 
 ## iomgr.worker_thread_number

@@ -65,7 +65,7 @@ create table employees ( firstname text, lastname text, salary float, hire_date 
 insert into employees ( firstname, lastname, salary, hire_date)
 values
 ( '马', '云', 249000.00, '1964-09-10' ),
-( 'Ю́рий', 'Алексе́евич Гага́рин', 49000.00, '1934-03-09' ),
+( 'Ю́рий', 'Гага́рин', 49000.00, '1934-03-09' ),
 ( 'Barack', 'Obama', 149000.00, '1961-08-04' )
 ;
 ```
@@ -84,7 +84,7 @@ TOKEN=$(siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server
 curl -k -X POST \
 -d '[
     { "firstname": "马","lastname": "云","salary": "249000.00","hire_date": "1964-09-10"},
-    { "firstname": "Ю́рий","lastname": "Алексе́евич Гага́рин","salary": "49000.00","hire_date": "1934-03-09"},
+    { "firstname": "Ю́рий","lastname": "Гага́рин","salary": "49000.00","hire_date": "1934-03-09"},
     { "firstname": "Barack","lastname": "Obama","salary": "149000.00","hire_date": "1961-08-04"}
 ]' \
 https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
@@ -121,7 +121,7 @@ curl -s -k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employee
       {
          "FIRSTNAME" : "Ю́рий",
          "HIRE_DATE" : "1934-03-09",
-         "LASTNAME" : "Алексе́евич Гага́рин",
+         "LASTNAME" : "Гага́рин",
          "SALARY" : 49000,
          "TRID" : 2
       },

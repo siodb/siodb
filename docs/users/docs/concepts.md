@@ -7,8 +7,6 @@ The benefit of the REST API is that you can start working without having to inst
 drivers. It also allows you to work with JSON, which is handy in many cases.
 
 You can even combine the utilization of SQL and REST. Both can work at the same time.
-Both SQL and REST pass through the same locking mechanism to gives you consistency
-regardless of the protocol used.
 
 ## Instance
 

@@ -555,9 +555,9 @@ sudo chmod 0600 /etc/siodb/instances/siodb/config
 sudo chown siodb:siodb /etc/siodb/instances/siodb/config
 sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/master_key bs=16 count=1
 sudo chmod 0600 /etc/siodb/instances/siodb/master_key
-sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/encryption.master_key
-sudo chmod 0600 /etc/siodb/instances/siodb/encryption.master_key
-sudo chown siodb:siodb /etc/siodb/instances/siodb/encryption.master_key
+sudo cp config/sample_keys/rsa.pub /etc/siodb/instances/siodb/initial_access_key
+sudo chmod 0600 /etc/siodb/instances/siodb/initial_access_key
+sudo chown siodb:siodb /etc/siodb/instances/siodb/initial_access_key
 
 # Create default data directory
 sudo mkdir -p /var/lib/siodb
@@ -611,7 +611,7 @@ To allow running SQL tests under your own user (may be required on the CentOS an
 # 2. Adjust Siodb defult instance configuration file permissions
 sudo chmod 0660 /etc/siodb/instances/siodb/config
 sudo chmod 0660 /etc/siodb/instances/siodb/master_key
-sudo chmod 0660 /etc/siodb/instances/siodb/encryption.master_key
+sudo chmod 0660 /etc/siodb/instances/siodb/initial_access_key
 
 # 3. Edit default instance configuration file /etc/siodb/instances/siodb/config
 #    set following parameter to "true"

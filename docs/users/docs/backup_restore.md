@@ -14,6 +14,35 @@ as not having a backup procedure.
 
 ## Logical backup (export)
 
+### Export one table
+
+```bash
+siocli --user root --export <DATABASE NAME>.<TABLE NAME>
+```
+
+**Example:**
+
+```bash
+siocli --user root --export TEST_DB1.EMPLOYEES
+```
+
+**Output:**
+
+```sql
+siocli --user root -i tests/share/private_key --export TEST_DB1.EMPLOYEES
+-- Siodb SQL Dump
+-- Hostname: localhost
+-- Instance:
+-- Timestamp: 2020-10-13 06:30:25
+-- Timestamp (UTC): 2020-10-13 06:30:25
+
+-- Table: TEST_DB1.EMPLOYEES
+CREATE TABLE TEST_DB1.EMPLOYEES (FIRSTNAME TEXT, LASTNAME TEXT, SALARY FLOAT, HIRE_DATE TIMESTAMP, DEPARTMENT_ID INT32);
+INSERT INTO TEST_DB1.EMPLOYEES VALUES ('马', '云', 249000.000000, '1964-09-10', 1);
+INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Ю́рий', 'Гага́рин', 49000.000000, '1934-03-09', 2);
+INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-08-04', 4);
+```
+
 ### Export one database
 
 ```bash
@@ -29,20 +58,29 @@ siocli --user root --export TEST_DB1
 **Output:**
 
 ```sql
+siocli --user root -i tests/share/private_key --export TEST_DB1
 -- Siodb SQL Dump
 -- Hostname: localhost
 -- Instance:
--- Timestamp: 2020-10-12 09:14:59
--- Timestamp (UTC): 2020-10-12 09:14:59
+-- Timestamp: 2020-10-13 06:26:56
+-- Timestamp (UTC): 2020-10-13 06:26:56
 
 -- Database: TEST_DB1
 CREATE DATABASE TEST_DB1 WITH CIPHER_ID = 'aes128';
 
+-- Table: TEST_DB1.DEPARTMENTS
+CREATE TABLE TEST_DB1.DEPARTMENTS (NAME TEXT);
+INSERT INTO TEST_DB1.DEPARTMENTS VALUES ('Finance');
+INSERT INTO TEST_DB1.DEPARTMENTS VALUES ('Information technology');
+INSERT INTO TEST_DB1.DEPARTMENTS VALUES ('Marketing');
+INSERT INTO TEST_DB1.DEPARTMENTS VALUES ('Human resources');
+INSERT INTO TEST_DB1.DEPARTMENTS VALUES ('Sales');
+
 -- Table: TEST_DB1.EMPLOYEES
-CREATE TABLE TEST_DB1.EMPLOYEES (FIRSTNAME TEXT, LASTNAME TEXT, SALARY FLOAT, HIRE_DATE TIMESTAMP);
-INSERT INTO TEST_DB1.EMPLOYEES VALUES ('马', '云', 249000.000000, '1964-09-10');
-INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Ю́рий', 'Алексе́евич Гага́рин', 49000.000000, '1934-03-09');
-INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-08-04');
+CREATE TABLE TEST_DB1.EMPLOYEES (FIRSTNAME TEXT, LASTNAME TEXT, SALARY FLOAT, HIRE_DATE TIMESTAMP, DEPARTMENT_ID INT32);
+INSERT INTO TEST_DB1.EMPLOYEES VALUES ('马', '云', 249000.000000, '1964-09-10', 1);
+INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Ю́рий', 'Гага́рин', 49000.000000, '1934-03-09', 2);
+INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-08-04', 4);
 ```
 
 
@@ -73,7 +111,7 @@ CREATE DATABASE TEST_DB1 WITH CIPHER_ID = 'aes128';
 -- Table: TEST_DB1.EMPLOYEES
 CREATE TABLE TEST_DB1.EMPLOYEES (FIRSTNAME TEXT, LASTNAME TEXT, SALARY FLOAT, HIRE_DATE TIMESTAMP);
 INSERT INTO TEST_DB1.EMPLOYEES VALUES ('马', '云', 249000.000000, '1964-09-10');
-INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Ю́рий', 'Алексе́евич Гага́рин', 49000.000000, '1934-03-09');
+INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Ю́рий', 'Гага́рин', 49000.000000, '1934-03-09');
 INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-08-04');
 
 
@@ -83,7 +121,7 @@ CREATE DATABASE TEST_DB2 WITH CIPHER_ID = 'aes256';
 -- Table: TEST_DB2.EMPLOYEES
 CREATE TABLE TEST_DB2.EMPLOYEES (FIRSTNAME TEXT, LASTNAME TEXT, SALARY FLOAT, HIRE_DATE TIMESTAMP);
 INSERT INTO TEST_DB2.EMPLOYEES VALUES ('马', '云', 249000.000000, '1964-09-10');
-INSERT INTO TEST_DB2.EMPLOYEES VALUES ('Ю́рий', 'Алексе́евич Гага́рин', 49000.000000, '1934-03-09');
+INSERT INTO TEST_DB2.EMPLOYEES VALUES ('Ю́рий', 'Гага́рин', 49000.000000, '1934-03-09');
 INSERT INTO TEST_DB2.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-08-04');
 
 
@@ -93,7 +131,7 @@ CREATE DATABASE TEST_DB3 WITH CIPHER_ID = 'none';
 -- Table: TEST_DB3.EMPLOYEES
 CREATE TABLE TEST_DB3.EMPLOYEES (FIRSTNAME TEXT, LASTNAME TEXT, SALARY FLOAT, HIRE_DATE TIMESTAMP);
 INSERT INTO TEST_DB3.EMPLOYEES VALUES ('马', '云', 249000.000000, '1964-09-10');
-INSERT INTO TEST_DB3.EMPLOYEES VALUES ('Ю́рий', 'Алексе́евич Гага́рин', 49000.000000, '1934-03-09');
+INSERT INTO TEST_DB3.EMPLOYEES VALUES ('Ю́рий', 'Гага́рин', 49000.000000, '1934-03-09');
 INSERT INTO TEST_DB3.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-08-04');
 ```
 
@@ -102,25 +140,25 @@ INSERT INTO TEST_DB3.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-0
 1. Stop the siodb instance:
 
 ```bash
-systemctl stop siodb<SIODB_VERSION>
+sudo systemctl stop siodb<SIODB_VERSION>
 ```
 
 2. Copy the datafiles to the backup location:
 
 ```bash
-tar -zcvf <BACKUP ARCHIVE NAME>.tar.gz <INSTANCE DATA FILE DIRECTORY>
+sudo -u siodb tar -zcvf <BACKUP ARCHIVE NAME>.tar.gz <INSTANCE DATA FILE DIRECTORY>
 ```
 
 **Example:**
 
 ```bash
-tar -pcvzf backup_siodb_instance_siodb000_`date +"%y-%m-%d_%H-%M-%s"`.tar.gz /var/lib/siodb/siodb000/data
+sudo -u siodb tar -pcvzf backup_siodb_instance_siodb000_`date +"%y-%m-%d_%H-%M-%s"`.tar.gz /var/lib/siodb/siodb000/data
 ```
 
 3. Start the siodb instance:
 
 ```bash
-systemctl stop siodb<SIODB_VERSION>
+sudo systemctl stop siodb<SIODB_VERSION>
 ```
 
 ## Restore
@@ -156,7 +194,7 @@ INSERT INTO TEST_DB4.EMPLOYEES VALUES ('马', '云', 249000.000000, '1964-09-10'
 1 rows affected
 Command execution time: 4169 ms.
 
-INSERT INTO TEST_DB4.EMPLOYEES VALUES ('Ю́рий', 'Алексе́евич Гага́рин', 49000.000000, '1934-03-09');
+INSERT INTO TEST_DB4.EMPLOYEES VALUES ('Ю́рий', 'Гага́рин', 49000.000000, '1934-03-09');
 
 1 rows affected
 Command execution time: 31 ms.
@@ -172,7 +210,7 @@ Command execution time: 34 ms.
 1. Stop the siodb instance:
 
 ```bash
-systemctl stop siodb<SIODB_VERSION>
+sudo systemctl stop siodb<SIODB_VERSION>
 ```
 
 2. Restore the data file into the Siodb data directory:
@@ -188,17 +226,17 @@ tar -ptvzf <BACKUP ARCHIVE NAME>.tar.gz
 If the files are listed in the desired location, you can restore them with this command:
 
 ```bash
-tar -pxvzf <BACKUP ARCHIVE NAME>.tar.gz
+sudo -u siodb tar -pxvzf <BACKUP ARCHIVE NAME>.tar.gz
 ```
 
 **Example:**
 
 ```bash
-tar -pxvzf backup_siodb_instance_siodb000_20-10-12_09-29-1602494985.tar.gz
+sudo -u siodb tar -pxvzf backup_siodb_instance_siodb000_20-10-12_09-29-1602494985.tar.gz
 ```
 
 1. Start the siodb instance:
 
 ```bash
-systemctl stop siodb<SIODB_VERSION>
+sudo systemctl stop siodb<SIODB_VERSION>
 ```
