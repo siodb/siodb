@@ -196,7 +196,7 @@ sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.
 sudo dnf -y update
 
 # Install required tools and libraries
-sudo dnf install -y autoconf automake boost169-devel clang cmake curl gcc gcc-c++ \
+sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
     git-clang-format java-11-openjdk-headless libatomic libcurl-devel libtool \
     libuuid-devel openssl-devel python2 pkgconfig redhat-lsb wget which \
     zlib-devel

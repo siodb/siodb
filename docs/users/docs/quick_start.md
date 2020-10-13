@@ -35,18 +35,16 @@ sudo ./InstallSiodb.sh
 
 ### Connect to the instance
 
-- Connect to your server as `siodb`
+Connect to the Siodb instance as `siodb`:
 
 ```bash
-sudo su - siodb
-siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
+sudo -u siodb siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
 ```
 
 - or (simplified)
 
 ```bash
-sudo su - siodb
-siocli --user root
+sudo -u siodb siocli --user root
 ```
 
 ## Create your first database
@@ -65,7 +63,7 @@ create table employees ( firstname text, lastname text, salary float, hire_date 
 insert into employees ( firstname, lastname, salary, hire_date)
 values
 ( '马', '云', 249000.00, '1964-09-10' ),
-( 'Ю́рий', 'Гага́рин', 49000.00, '1934-03-09' ),
+( 'Юрий', 'Гагарин', 49000.00, '1934-03-09' ),
 ( 'Barack', 'Obama', 149000.00, '1961-08-04' )
 ;
 ```
@@ -84,7 +82,7 @@ TOKEN=$(siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server
 curl -k -X POST \
 -d '[
     { "firstname": "马","lastname": "云","salary": "249000.00","hire_date": "1964-09-10"},
-    { "firstname": "Ю́рий","lastname": "Гага́рин","salary": "49000.00","hire_date": "1934-03-09"},
+    { "firstname": "Юрий","lastname": "Гагарин","salary": "49000.00","hire_date": "1934-03-09"},
     { "firstname": "Barack","lastname": "Obama","salary": "149000.00","hire_date": "1961-08-04"}
 ]' \
 https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
@@ -119,9 +117,9 @@ curl -s -k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employee
          "TRID" : 1
       },
       {
-         "FIRSTNAME" : "Ю́рий",
+         "FIRSTNAME" : "Юрий",
          "HIRE_DATE" : "1934-03-09",
-         "LASTNAME" : "Гага́рин",
+         "LASTNAME" : "Гагарин",
          "SALARY" : 49000,
          "TRID" : 2
       },
