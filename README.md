@@ -154,29 +154,6 @@ Go to the contribution page 👉 [Here](CONTRIBUTING.md).
 | C++      | [Github](https://github.com/siodb/siodb-cxx-driver)    |
 | .NET     | [Github](https://github.com/siodb/siodb-dotnet-driver) |
 
-## Performance
-
-Bombardier performance test result:
-
-```bash
-# 1,000,000 rows | Connections: 4
-# GET: /databases/sys/tables/sys_tables/rows/500000
-# Memory: 3.1Gi | CPU: 2 cores (Intel(R) Core(TM) i7-7600U CPU @ 2.80GHz)
-Statistics        Avg      Stdev        Max
-  Reqs/sec       300.68     151.69     899.79
-  Latency       13.41ms    16.95ms   362.74ms
-  Latency Distribution
-     50%     5.65ms
-     75%    11.38ms
-     90%    47.12ms
-     95%    49.98ms
-     99%    56.98ms
-  HTTP codes:
-    1xx - 0, 2xx - 10000, 3xx - 0, 4xx - 0, 5xx - 0
-    others - 0
-  Throughput:    53.44KB/s
-```
-
 ## Building Siodb
 
 To build Siodb from the source code, please follow the guidelines according to your Linux
