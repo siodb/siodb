@@ -1,5 +1,13 @@
 # Concepts
 
+## REST + SQL
+
+The REST API allows you to push and retrieve data from tables as you would do in SQL.
+The benefit of the REST API is that you can start working without having to install
+drivers. It also allows you to work with JSON, which is handy in many cases.
+
+You can even combine the utilization of SQL and REST. Both can work at the same time.
+
 ## Instance
 
 Siodb starts an instance to access a set of databases.
