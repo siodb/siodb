@@ -15,7 +15,7 @@
 - Build: Build instructions for Debian 10
 - Installation: Standartized locations of the 3rd party libraries
 - Thirdparty: Upgrade to protobuf-3.12.3
-- Thrrdparty: Upgrade to ut8cpp-3.1.1
+- Thirdparty: Upgrade to ut8cpp-3.1.1
 
 2020-06-18 version 0.7.1
 
