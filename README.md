@@ -41,7 +41,7 @@ sudo ./InstallSiodb.sh
 Connect to the Siodb instance as `siodb`:
 
 ```bash
-sudo -u siodb siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
+sudo -i -u siodb siocli --user root
 ```
 
 More details in [the documentation here](https://docs.siodb.io).
@@ -72,7 +72,7 @@ values
 Create a token for the `root` user:
 
 ```bash
-TOKEN=$(siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server: token:' | awk '{print $3}')
+TOKEN=$(sudo -i -u siodb siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server: token:' | awk '{print $3}')
 ```
 
 Make a POST request with the `root` user and the created token:
