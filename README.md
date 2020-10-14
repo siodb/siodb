@@ -49,7 +49,8 @@ More details in [the documentation here](https://docs.siodb.io).
 ### Create your first database
 
 ```sql
-create database myapp ; -- Creates an encrypted database with the default cipher AES128
+create database myapp ;
+---> Creates an encrypted database with the default cipher AES128
 ```
 
 ### Create your first table
@@ -100,7 +101,8 @@ https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
 ### GET Request
 
 ```bash
-curl -s -k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
+curl -s -k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows \
+| json_pp -json_opt pretty,utf8
 ```
 
 **Returns:**
