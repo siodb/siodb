@@ -309,8 +309,7 @@ Run following commands:
 cd /tmp
 wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
 tar xaf go1.15.2.linux-amd64.tar.gz
-mv go go-1.15
-sudo mv go-1.15 /usr/local
+sudo mv go /usr/local/go-1.15
 ```
 
 ### Install boost-pretty-printer GDB Extension
@@ -611,7 +610,7 @@ To allow running SQL tests under your own user (may be required on the CentOS an
 # 2. Adjust Siodb defult instance configuration file permissions
 sudo chmod 0660 /etc/siodb/instances/siodb/config
 sudo chmod 0660 /etc/siodb/instances/siodb/master_key
-sudo chmod 0660 /etc/siodb/instances/siodb/encryption.master_key
+sudo chmod 0660 /etc/siodb/instances/siodb/initial_access_key
 
 # 3. Edit default instance configuration file /etc/siodb/instances/siodb/config
 #    set following parameter to "true"

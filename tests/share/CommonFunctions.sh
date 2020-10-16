@@ -199,6 +199,16 @@ function _RunSqlAndValidateOutput {
   fi
 }
 
+function _RunRestRequest1 {
+  _log "INFO" "Executing REST request: $1 $2"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -u $3 -T $4
+}
+
+function _RunRestRequest2 {
+  _log "INFO" "Executing REST request: $1 $2 $3"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -u $4 -T $5
+}
+
 function _RunRestRequest3 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
   ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -u $5 -T $6
