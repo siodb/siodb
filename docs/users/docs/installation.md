@@ -43,8 +43,8 @@ Siodb aims to support the following operating systems:
 | ---------------------------- | ------------ | ------- | ----------------- |
 | Ubuntu                       | x86_64       | >=18.04 | Supported         |
 | Debian                       | x86_64       | >=10    | Supported         |
-| CentOS                       | x86_64       | >=7.5   | Supported         |
-| RHEL                         | x86_64       | >=7.5   | Supported         |
+| CentOS                       | x86_64       | >=7.8   | Supported         |
+| RHEL                         | x86_64       | >=7.8   | Supported         |
 | Alpine                       | x86_64       | >=3.10  | Not Supported yet |
 | openSUSE (Leap)              | x86_64       | >=15    | Not Supported yet |
 | SUSE Linux Enterprise Server | x86_64       | >=15    | Not Supported yet |

@@ -230,11 +230,12 @@ io::FilePtr BPlusTreeIndex::createIndexFile() const
     // Write index header
     IndexFileHeader indexFileHeader;
     indexFileHeader.serialize(buffer.data());
-    if (file->write(buffer.data(), buffer.size(), 0) != buffer.size()) {
+    auto n = file->write(buffer.data(), buffer.size(), 0);
+    if (n != buffer.size()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, m_indexFilePath,
                 m_table.getDatabaseName(), m_table.getName(), m_name, m_table.getDatabaseUuid(),
-                m_table.getId(), m_id, 0, buffer.size(), errorCode, std::strerror(errorCode));
+                m_table.getId(), m_id, 0, buffer.size(), errorCode, std::strerror(errorCode), n);
     }
 
     // Write root node
@@ -248,23 +249,25 @@ io::FilePtr BPlusTreeIndex::createIndexFile() const
     std::memset(buffer.data(), 0, IndexFileHeader::kSerializedSize);
     rootNodeHeader.serialize(buffer.data());
     auto nodeOffset = Node::getOffset(1);
-    if (file->write(buffer.data(), buffer.size(), nodeOffset) != buffer.size()) {
+    n = file->write(buffer.data(), buffer.size(), nodeOffset);
+    if (n != buffer.size()) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, m_indexFilePath,
                 m_table.getDatabaseName(), m_table.getName(), m_name, m_table.getDatabaseUuid(),
                 m_table.getId(), m_id, nodeOffset, buffer.size(), errorCode,
-                std::strerror(errorCode));
+                std::strerror(errorCode), n);
     }
 
     // Write root node ID
     ::pbeEncodeUInt64(kInitialRootNodeId, buffer.data());
     nodeOffset = Node::getOffset(0);
-    if (file->write(buffer.data(), sizeof(std::uint64_t), nodeOffset) != sizeof(std::uint64_t)) {
+    n = file->write(buffer.data(), sizeof(std::uint64_t), nodeOffset);
+    if (n != sizeof(std::uint64_t)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, m_indexFilePath,
                 m_table.getDatabaseName(), m_table.getName(), m_name, m_table.getDatabaseUuid(),
                 m_table.getId(), m_id, nodeOffset, sizeof(std::uint64_t), errorCode,
-                std::strerror(errorCode));
+                std::strerror(errorCode), n);
     }
 
     if (tmpFilePath.empty()) {
@@ -338,11 +341,12 @@ std::size_t BPlusTreeIndex::findRootNode()
     // Read root node ID
     std::uint8_t buffer[sizeof(uint64_t)];
     const auto readOffset = Node::getOffset(0);
-    if (m_file->read(buffer, sizeof(std::uint64_t), readOffset) != sizeof(std::uint64_t)) {
+    const auto n = m_file->read(buffer, sizeof(std::uint64_t), readOffset);
+    if (n != sizeof(std::uint64_t)) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadIndexFile, m_indexFilePath,
                 m_table.getDatabaseName(), m_table.getName(), m_name, m_table.getDatabaseUuid(),
                 m_table.getId(), m_id, readOffset, sizeof(std::uint64_t), m_file->getLastError(),
-                std::strerror(m_file->getLastError()));
+                std::strerror(m_file->getLastError()), n);
     }
     std::uint64_t rootNodeId = 0;
     ::pbeDecodeUInt64(buffer, &rootNodeId);
@@ -467,12 +471,13 @@ BPlusTreeIndex::NodePtr BPlusTreeIndex::readNode(io::File& file, std::uint64_t n
 
     // Read node data
     const auto nodeOffset = Node::getOffset(nodeId);
-    if (file.read(node->m_data, Node::kSize, nodeOffset) != Node::kSize) {
+    const auto n = file.read(node->m_data, Node::kSize, nodeOffset);
+    if (n != Node::kSize) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadIndexFile, m_indexFilePath,
                 m_table.getDatabaseName(), m_table.getName(), m_name, m_table.getDatabaseUuid(),
-                m_table.getId(), m_id, nodeOffset, Node::kSize, errorCode,
-                std::strerror(errorCode));
+                m_table.getId(), m_id, nodeOffset, Node::kSize, errorCode, std::strerror(errorCode),
+                n);
     }
 
     // Validate node type
@@ -584,13 +589,14 @@ bool BPlusTreeIndex::NodeCache::on_last_chance_cleanup()
         if (!e.second.first->m_modified) continue;
         // Save node to data file
         const auto nodeOffset = Node::getOffset(e.first);
-        if (m_owner.m_file->write(e.second.first->m_data, Node::kSize, nodeOffset) != Node::kSize) {
+        const auto n = m_owner.m_file->write(e.second.first->m_data, Node::kSize, nodeOffset);
+        if (n != Node::kSize) {
             const int errorCode = errno;
             throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile,
                     m_owner.getIndexFilePath(), m_owner.getTable().getDatabaseName(),
                     m_owner.m_table.getName(), m_owner.m_name, m_owner.getTable().getDatabaseUuid(),
                     m_owner.m_table.getId(), m_owner.m_id, nodeOffset, Node::kSize, errorCode,
-                    std::strerror(errorCode));
+                    std::strerror(errorCode), n);
         }
         e.second.first->m_modified = false;
         ++savedCount;

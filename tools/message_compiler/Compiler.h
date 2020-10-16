@@ -10,6 +10,8 @@
 #include <tuple>
 
 bool parseMessages(const CompilerOptions& options, MessageContainer& messages);
+void validateMessageText(const std::string& text);
+
 bool writeSymbolListFile(const MessageContainer& messages, const CompilerOptions& options);
 bool writeMessageListFile(const MessageContainer& messages, const CompilerOptions& options);
 bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& options);

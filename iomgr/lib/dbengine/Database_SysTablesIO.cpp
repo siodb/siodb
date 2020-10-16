@@ -139,7 +139,8 @@ void SystemObjectSerializer::serialize(
             err << "object type '" << objectTypeName << "' id=" << obj.m_id << ": "
                 << ex.getErrorCode() << ' ' << ex.what();
             throwDatabaseError(IOManagerMessageId::kErrorCannotWriteSystemObjectsFile,
-                    m_database.getName(), m_database.getUuid(), err.str());
+                    m_database.getName(), m_database.getUuid(), err.str(), serializedSize,
+                    ex.getActuallyWritten());
         }
     }
 }
@@ -168,7 +169,7 @@ void SystemObjectSerializer::deserialize(const char* objectTypeName, Collection&
                 err << "object type '" << objectTypeName << "' #" << (i + 1) << " of "
                     << objectCount << ": size is too big: " << objectSize;
                 throwDatabaseError(IOManagerMessageId::kErrorCannotReadSystemObjectsFile,
-                        m_database.getName(), m_database.getUuid(), err.str());
+                        m_database.getName(), m_database.getUuid(), err.str(), objectSize, 0);
             }
 
             // Prepare buffer
@@ -182,7 +183,8 @@ void SystemObjectSerializer::deserialize(const char* objectTypeName, Collection&
             err << "object type '" << objectTypeName << "' #" << (i + 1) << " of " << objectCount
                 << ": " << ex.getErrorCode() << ' ' << ex.what();
             throwDatabaseError(IOManagerMessageId::kErrorCannotReadSystemObjectsFile,
-                    m_database.getName(), m_database.getUuid(), err.str());
+                    m_database.getName(), m_database.getUuid(), err.str(), objectSize,
+                    ex.getActuallyRead());
         }
 
         // Deserialize object

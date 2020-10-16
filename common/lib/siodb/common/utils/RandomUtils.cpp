@@ -28,10 +28,12 @@ void getRandomBytesImpl(const char* devicePath, std::uint8_t* buffer, std::size_
         err << "Can't open " << devicePath << " for reading: " << std::strerror(errorCode);
         throw std::runtime_error(err.str());
     }
-    if (::readExact(fd.getFD(), buffer, length, kIgnoreSignals) != length) {
+    const auto n = ::readExact(fd.getFD(), buffer, length, kIgnoreSignals);
+    if (n != length) {
         int errorCode = errno;
         std::ostringstream err;
-        err << "Can't read from the " << devicePath << ": " << std::strerror(errorCode);
+        err << "Can't read from the " << devicePath << ": " << std::strerror(errorCode)
+            << ", was about to read " << length << ", but received " << n;
         throw std::runtime_error(err.str());
     }
 }

@@ -10,7 +10,6 @@
 #include "ColumnDefinitionPtr.h"
 #include "ColumnPtr.h"
 #include "ColumnSetCache.h"
-#include "ConstraintCache.h"
 #include "Database.h"
 #include "IndexPtr.h"
 #include "TableColumns.h"
@@ -695,7 +694,7 @@ private:
     TableColumns m_currentColumns;
 
     /** Constraint cache */
-    ConstraintCache m_constraintCache;
+    std::unordered_map<std::uint64_t, ConstraintPtr> m_constraints;
 
     /** Master column reference */
     ColumnPtr m_masterColumn;
@@ -714,9 +713,6 @@ private:
 
     /** Column set cache capacity */
     static constexpr std::size_t kColumnSetCacheCapacity = 10;
-
-    /** Constraint cache capacity */
-    static constexpr std::size_t kConstraintCacheCapacity = 256;
 };
 
 }  // namespace siodb::iomgr::dbengine

@@ -45,14 +45,14 @@ File::File(const std::string& path, int extraFlags)
 
 void File::readChecked(std::uint8_t* buffer, std::size_t size, off_t offset)
 {
-    if (read(buffer, size, offset) != size)
-        throw FileReadError(m_lastError, std::strerror(m_lastError));
+    const auto n = read(buffer, size, offset);
+    if (n != size) throw FileReadError(m_lastError, std::strerror(m_lastError), n);
 }
 
 void File::writeChecked(const std::uint8_t* buffer, std::size_t size, off_t offset)
 {
-    if (write(buffer, size, offset) != size)
-        throw FileWriteError(m_lastError, std::strerror(m_lastError));
+    const auto n = write(buffer, size, offset);
+    if (n != size) throw FileWriteError(m_lastError, std::strerror(m_lastError), n);
 }
 
 off_t File::getRawFileSize() noexcept

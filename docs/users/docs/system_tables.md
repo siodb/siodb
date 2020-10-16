@@ -5,123 +5,160 @@ Siodb adds an internal column `TRID`. Siodb uses that column as a primary key fo
 rows in a table. Siodb increment the `TRID` at each `INSERT` operation.
 The number is 64-bit unsigned integer that can grow up to 18446744073709551615.
 
-## sys_tables
+## SYS_TABLES
 
-- trid
-- type
-- name
-- first_user_trid
-- current_column_set_id
-- description
+Stores information about known tables.
 
-## sys_dummy
+- TRID: The unique ID of the row
+- TYPE: Table storage type
+- NAME: Table name
+- FIRST_USER_TRID: First user record row identifier
+- CURRENT_COLUMN_SET_ID: Current column set
+- DESCRIPTION: Table description
 
-- trid
-- dummy
+## SYS_DUMMY
 
-## sys_column_sets
+Helper table for computing constant expressions.
 
-- trid
-- column_count
+- TRID: The unique ID of the row
+- DUMMY: Dummy column
 
-## sys_columns
+## SYS_COLUMN_SETS
 
-- trid
-- data_type
-- name
-- state
-- block_data_area_size
-- description
+Stores information about column sets.
 
-## sys_column_defs
+- TRID: The unique ID of the row
+- TABLE_ID: Table identifier
+- COLUMN_COUNT: Number of columns in this column set
 
-- trid
-- column_id
-- constraint_count
+## SYS_COLUMNS
 
-## sys_column_set_columns
+Stores information about table columns.
 
-- trid
-- column_set_id
-- column_def_id
+- TRID: The unique ID of the row
+- TABLE_ID: Table identifier
+- DATA_TYPE: Column data type
+- NAME: Column name
+- STATE: Column state
+- BLOCK_DATA_AREA_SIZE: Data area size in the block file
+- DESCRIPTION: Column description
 
-## sys_constraint_defs
+## SYS_COLUMN_DEFS
 
-- trid
-- type
-- expr
+Stores information about column definitions.
 
-## sys_constraints
+- TRID: The unique ID of the row
+- COLUMN_ID: Column identifier
+- CONSTRAINT_COUNT: Number of constraints associated with this column definition
 
-- trid
-- name
-- state
-- column_id
-- def_id
-- description
+## SYS_COLUMN_SET_COLUMNS
 
-## sys_column_def_constraints
+Stores information about inclusion of column definitions into column sets.
 
-- trid
-- column_def_id
-- constraint_id
+- TRID: The unique ID of the row
+- COLUMN_SET_ID: Column set identifier
+- COLUMN_DEF_ID: Associated column definition identifier
 
-## sys_indices
+## SYS_CONSTRAINT_DEFS
 
-- trid
-- type
-- unique
-- name
-- data_file_size
-- description
+Stores information about unique constraint definitions.
 
-## sys_index_columns
+- TRID: The unique ID of the row
+- TYPE: Constraint type
+- EXPR: Constraint expression
 
-- trid
-- index_id
-- column_def_id
-- sort_desc
+## SYS_CONSTRAINTS
 
-## sys_users
+Stores information about constraints.
 
-- trid
-- name
-- real_name
-- state
-- description
+- TRID: The unique ID of the row
+- NAME: Constraint name
+- STATE: Constraint state
+- TABLE_ID: Table identifier, to which this constraint belongs
+- COLUMN_ID: Column identifier, to which this constraint belongs
+- DEF_ID: Constraint definition identifier
+- DESCRIPTION: Constraint description
 
-## sys_user_access_keys
+## SYS_COLUMN_DEF_CONSTRAINTS
 
-- trid
-- user_id
-- name
-- text
-- state
-- description
+Stores information about constraints associated with column definitions.
 
-## sys_user_tokens
+- TRID: The unique ID of the row
+- COLUMN_DEF_ID: Column definition identifier
+- CONSTRAINT_ID: Associated constraint identifier
 
-- trid
-- user_id
-- name
-- value
-- expiration_timestamp
-- description
+## SYS_INDICES
 
-## sys_databases
+Stores information about indices.
 
-- trid
-- uuid
-- name
-- cipher_id
-- description
+- TRID: The unique ID of the row
+- TYPE: Index type
+- UNIQUE: Indication that index is unique
+- NAME: Index name
+- TABLE_ID: Table identifier, to which index applies
+- DATA_FILE_SIZE: Data file size
+- DESCRIPTION: Index description
 
-## sys_user_permissions
+## SYS_INDEX_COLUMNS
 
-- trid
-- user_id
-- database_id
-- object_type
-- object_id
-- permissions
-- grant_options
+Stores information about indexed columns.
+
+- TRID: The unique ID of the row
+- INDEX_ID: Index identifier
+- COLUMN_DEF_ID: Associated column defintion identifier
+- SORT_DESC: Indication of descending sort order by this column
+
+## SYS_USERS
+
+Stores information about users.
+
+- TRID: The unique ID of the row
+- NAME: User name
+- REAL_NAME: User's real name
+- STATE: User state
+- DESCRIPTION: User description
+
+## SYS_USER_ACCESS_KEYS
+
+Stores information about user's access keys.
+
+- TRID: The unique ID of the row
+- USER_ID: User identifier
+- NAME: Access key name
+- TEXT: Access key text
+- STATE: Access key state
+- DESCRIPTION: Access key description
+
+## SYS_DATABASES
+
+Stores information about known databases.
+
+- TRID: The unique ID of the row
+- UUID: Database UUID
+- NAME: Database name
+- CIPHER_ID: Cipher identifier
+- DESCRIPTION: Database description
+- MAX_TABLES: Maximum number of tables
+
+## SYS_USER_PERMISSIONS
+
+Stores information about user permissions.
+
+- TRID: The unique ID of the row
+- USER_ID: User identifier
+- DATABASE_ID: Database identifier
+- OBJECT_TYPE: Database object type
+- OBJECT_ID: Database object identifier
+- PERMISSIONS: Permission mask
+- GRANT_OPTIONS: Grant option mask
+
+## SYS_USER_TOKENS
+
+Stores authentication tokens.
+
+- TRID: The unique ID of the row
+- USER_ID: User identifier
+- NAME: Token name
+- VALUE: Token value
+- EXPIRATION_TIMESTAMP: Token expiration timestamp
+- DESCRIPTION: Token description

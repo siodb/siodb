@@ -27,11 +27,8 @@ CXX_SRC+= \
 	ColumnSetColumn.cpp  \
 	ColumnSpecification.cpp  \
 	Constraint.cpp  \
-	ConstraintCache.cpp  \
 	ConstraintDefinition.cpp  \
-	ConstraintDefinitionCache.cpp  \
 	DataSet.cpp  \
-	DatabaseCache.cpp  \
 	DatabaseMetadata.cpp  \
 	Database_Common.cpp  \
 	Database_Init.cpp  \
@@ -50,13 +47,11 @@ CXX_SRC+= \
 	SystemDatabase_ReadObjects.cpp  \
 	SystemDatabase_RecordObjects.cpp  \
 	Table.cpp  \
-	TableCache.cpp  \
 	TableColumns.cpp  \
 	TableDataSet.cpp  \
 	TransactionParameters.cpp  \
 	User.cpp  \
 	UserAccessKey.cpp  \
-	UserCache.cpp  \
 	UserDatabase.cpp  \
 	UserPermission.cpp  \
 	UserToken.cpp
@@ -89,14 +84,11 @@ CXX_HDR+= \
 	ColumnSetPtr.h  \
 	ColumnSpecification.h  \
 	Constraint.h  \
-	ConstraintCache.h  \
 	ConstraintDefinition.h  \
-	ConstraintDefinitionCache.h  \
 	ConstraintDefinitionPtr.h  \
 	ConstraintPtr.h  \
 	DataSet.h  \
 	Database.h  \
-	DatabaseCache.h  \
 	DatabaseError.h  \
 	DatabaseMetadata.h  \
 	DatabasePtr.h  \
@@ -118,7 +110,6 @@ CXX_HDR+= \
 	SimpleColumnSpecification.h  \
 	SystemDatabase.h  \
 	Table.h  \
-	TableCache.h  \
 	TableDataSet.h  \
 	TablePtr.h  \
 	ThrowDatabaseError.h  \
@@ -130,7 +121,6 @@ CXX_HDR+= \
 	User.h  \
 	UserAccessKey.h  \
 	UserAccessKeyPtr.h  \
-	UserCache.h  \
 	UserDatabase.h  \
 	UserIdGenerator.h  \
 	UserPermission.h  \

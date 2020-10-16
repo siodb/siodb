@@ -1,10 +1,21 @@
-<open date> version 0.8.0
+2020-10-14 version 0.8.0
 
-- Build: Standartized locations of the 3rd party libraries
-- User token management
-- User authentication with token
-- REST server
-- Encryption model with master key
+- New feature: Data export functionality in the siocli
+- New feature: User authentication with token
+- New feature: User token management statements
+- New feature: REST Server
+- New feature: Use master key to encrypt individual database keys
+- New feature: Database schema version
+- New feature: New configuration option for limiting maximum number of databases
+- New feature: New configuration option for limiting maximum number of tables
+- Change: Removed configuration options for database and table cache sizes
+- Fix: Database encryption key removed from table SYS_DATABASES
+- Fix: Multiple stability fixes
+- Build: Build instructions for Ubuntu 20.04 LTS
+- Build: Build instructions for Debian 10
+- Installation: Standartized locations of the 3rd party libraries
+- Thirdparty: Upgrade to protobuf-3.12.3
+- Thirdparty: Upgrade to ut8cpp-3.1.1
 
 2020-06-18 version 0.7.1
 
@@ -18,7 +29,8 @@
 - #54 Fixed failing tests on the CentOS 7
 - #47 Fixed CentOS 7 build
 - #38 Published intial coding guidelines
-- #31 Added "description" column for databases, tables, columns, indices, users, access keys
+- #31 Added "description" column for databases,tables, columns,
+  indices, users, access keys
 
 2020-05-19 version 0.6.0
 

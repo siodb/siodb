@@ -2,7 +2,7 @@
 
 ## Overview
 
-Siodb must to provide an integrated REST Server that can work in parallel with theSQL front-end.
+Siodb must to provide an integrated REST Server that can work in parallel with the SQL front-end.
 It would only work per table and allow users to push/retrieve data through REST. The server will
 operate as a distinct process called `siodb_rest_server`. The server will convert REST queries
 into the IOMgr engine requests, send them to IOMgr, receive response, convert it to JSON and send
@@ -30,7 +30,7 @@ Generated tokens are guaranteed at least to be unique among all currently existi
 mentioned used. Generated token is returned in the `DatabaseEngineReponse.freetext_message` in the
 following format: `token: xxxxxxxx...xx`, where `xx...` are hexadecimal digits. There must be even
 number of hexadecimal digits. Token is not stored in the database in this cleartext form, and if
-token lost there is no way to renew it. In such case new token should be generated.
+token lost there is no way to restore it. In such case new token should be generated.
 
 Token can be assigned expiration time:
 

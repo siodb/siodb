@@ -130,9 +130,10 @@ func (ioMgrConn *ioMgrConnection) writeIOMgrRequest(
 	if objectID > 0 {
 		databaseEngineRestRequest.ObjectId = objectID
 	}
-	log.Debug("writeIOMgrRequest | databaseEngineRestRequest: %v", &databaseEngineRestRequest)
+
+	// WARNING: Do not log databaseEngineRestRequest here, because it contains secret token,
+	// which should never be logged
 	log.Debug("writeIOMgrRequest | ioMgrConn.RequestID: %v", requestID)
-	log.Debug("writeIOMgrRequest | ioMgrConn.RequestID++: %v", ioMgrConn.RequestID)
 
 	if _, err := ioMgrConn.writeMessage(messageTypeDatabaseEngineRequest, &databaseEngineRestRequest); err != nil {
 		return requestID, fmt.Errorf("Can't write message to IOMgr: %v", err)

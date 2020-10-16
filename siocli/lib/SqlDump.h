@@ -24,10 +24,21 @@ void dumpAllDatabases(siodb::io::InputOutputStream& connection, std::ostream& os
  * Dumps table definitions and data from the specified database.
  * @param connection Connection.
  * @param os Output stream.
- * @param databaseName Database to dump.
+ * @param databaseName Database name.
  * @throw std::runtime_error if I/O error occurs.
  */
 void dumpDatabase(siodb::io::InputOutputStream& connection, std::ostream& os,
         const std::string& databaseName);
+
+/**
+ * Dumps table definitions and data from the specified table.
+ * @param connection Connection.
+ * @param os Output stream.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @throw std::runtime_error if I/O error occurs.
+ */
+void dumpTable(siodb::io::InputOutputStream& connection, std::ostream& os,
+        const std::string& databaseName, const std::string& tableName);
 
 }  // namespace siodb::siocli

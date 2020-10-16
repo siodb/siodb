@@ -54,6 +54,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -105,11 +106,11 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()(
                 "command,c", boost::program_options::value<std::string>(), "Command to execute");
         desc.add_options()("export,e", boost::program_options::value<std::string>(),
-                "Export selected database SQL dump");
-        desc.add_options()("export-all,E", "Export all databases SQL dump");
-        desc.add_options()("help,h", "Produce help message");
+                "Export single database or table");
+        desc.add_options()("export-all,E", "Export all databases");
+        desc.add_options()("help,h", "Print help message");
         desc.add_options()("nologo", "Do not print logo");
-        desc.add_options()("debug,d", "Prin debug messages");
+        desc.add_options()("debug,d", "Print debug messages");
 
         // Parse options
         boost::program_options::variables_map vm;
@@ -385,25 +386,33 @@ int exportSqlDump(const ClientParameters& params)
     try {
         const auto currentTime =
                 std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        std::cout << "-- Siodb SQL dump\n"
+        std::cout << "-- Siodb SQL Dump\n"
                   << "-- Hostname: " << params.m_host << '\n'
-                  << "-- Instance: " << params.m_instance << '\n';
-
-        if (!params.m_exportDatabaseName.empty())
-            std::cout << "-- Database: " << params.m_exportDatabaseName << '\n';
-
-        std::cout << "-- Timestamp: "
-                  << std::put_time(std::localtime(&currentTime), "%Y.%m.%d %H:%M:%S") << '\n';
+                  << "-- Instance: " << params.m_instance << '\n'
+                  << "-- Timestamp: "
+                  << std::put_time(std::localtime(&currentTime), "%Y-%m-%d %H:%M:%S") << '\n'
+                  << "-- Timestamp (UTC): "
+                  << std::put_time(std::gmtime(&currentTime), "%Y-%m-%d %H:%M:%S") << '\n';
 
         if (params.m_exportDatabaseName.empty())
             siodb::siocli::dumpAllDatabases(*connection, std::cout);
-        else
-            siodb::siocli::dumpDatabase(*connection, std::cout, params.m_exportDatabaseName);
+        else {
+            std::vector<std::string> components;
+            boost::split(components, params.m_exportDatabaseName, boost::is_any_of("."));
+            if (components.size() == 1)
+                siodb::siocli::dumpDatabase(*connection, std::cout, components.front());
+            else if (components.size() == 2)
+                siodb::siocli::dumpTable(*connection, std::cout, components[0], components[1]);
+            else {
+                std::cerr << "Invalid database or table name: " << params.m_exportDatabaseName
+                          << std::endl;
+                return 2;
+            }
+        }
     } catch (const siodb::SqlQueryException& sqlQueryException) {
         std::cerr << sqlQueryException.what() << ":\n";
         for (const auto& errMsg : sqlQueryException.getErrors())
             std::cerr << "code: " << errMsg.status_code() << ", message: " << errMsg.text() << '\n';
-
         std::cerr << std::flush;
         return 2;
     }

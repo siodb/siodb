@@ -306,21 +306,24 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
     // Write header
     IndexFileHeader indexFileHeader(getDatabaseUuid(), getTableId(), m_id, m_type);
     indexFileHeader.serialize(buffer.data());
-    if (file->write(buffer.data(), buffer.size(), 0) != buffer.size()) {
+    auto n = file->write(buffer.data(), buffer.size(), 0);
+    if (n != buffer.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, indexFilePath,
                 getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
-                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()));
+                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()),
+                n);
     }
 
     // Write initial data
     const off_t dataOffset = buffer.size();
     buffer.resize(m_dataFileSize - kIndexFileHeaderSize);
     buffer.fill(0);
-    if (file->write(buffer.data(), buffer.size(), dataOffset) != buffer.size()) {
+    n = file->write(buffer.data(), buffer.size(), dataOffset);
+    if (n != buffer.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, indexFilePath,
                 getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
                 m_id, dataOffset, buffer.size(), file->getLastError(),
-                std::strerror(file->getLastError()));
+                std::strerror(file->getLastError()), n);
     }
 
     if (tmpFilePath.empty()) {
@@ -377,10 +380,12 @@ io::FilePtr UniqueLinearIndex::openIndexFile(std::uint64_t fileId) const
 
     // Check header
     stdext::buffer<std::uint8_t> buffer(kIndexFileHeaderSize);
-    if (file->read(buffer.data(), buffer.size(), 0) != buffer.size()) {
+    const auto n = file->read(buffer.data(), buffer.size(), 0);
+    if (n != buffer.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadIndexFile, indexFilePath,
                 getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
-                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()));
+                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()),
+                n);
     }
     IndexFileHeader actualHeader(m_type);
     actualHeader.deserialize(buffer.data());

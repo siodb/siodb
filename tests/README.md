@@ -2,26 +2,25 @@
 
 You must run those tests successfully in your environment before creating a pull request.
 
-## Run the tests
+## Configure the test
 
-You must specify at test runtime where compiled Siodb binaries are.
-You can do that by either setting a value to the environment variable `SIODB_PATH`
-or by indicating the path as the first argument of the script. For instance:
+You may modify the test behavior with the following environment variables:
+
+- `SIODB_PATH` (default `build/debug/bin`): The directory of the Siodb executables you want to test.
+- `SIODB_INSTANCE` (default `siodb`): The local instance name you want to test.
+- `SIOTEST_KEEP_INSTANCE_UP` (default `0`): `1` will keep the instance up and skip the cleaning.
+- `SIOTEST_TRACE` (default `0`): `1` will enable bash traces (`set -x`).
+
+## Execute test
 
 ```bash
-export SIODB_PATH=/opt/siodb/bin
+cd siodb
 ./tests/sql/run.sh
-```
-
-Or:
-
-```bash
-./tests/sql/run.sh /opt/siodb/bin
 ```
 
 ## Troubleshooting
 
-If the test fails (it does not return 0), then the instance is killed.
+If the test fails (it does not return 0) and by default, the instance is killed.
 The log files, data files are kept at their location specified by the configuration file.
 
 ### Coredump
@@ -31,10 +30,3 @@ If it is not the case, check that you have correctly configured the coredump beh
 
 - On [Ubuntu](https://askubuntu.com/questions/966407/where-do-i-find-the-core-dump-in-ubuntu-16-04lts/1181036#1181036)
 - On [CentOS](https://www.thegeekdiary.com/how-to-enable-core-dump-for-applications-on-centos-rhel)
-
-## Contribute
-
-Should we improve those tests? Please don't hesitate to:
-
-- Open an [issue](https://github.com/siodb/siodb/issues)
-- Fork this repository and submit a pull request

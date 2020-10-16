@@ -17,8 +17,7 @@ set -e
 # External Parameters
 # --------------------------------------------------------------
 if [[ -z "${SIODB_BIN}" ]]; then
-    current_directory="$(dirname "$0")"
-    SIODB_BIN="${current_directory}/build/debug/bin"
+    SIODB_BIN="build/debug/bin"
 fi
 if [[ -z "${SIODB_INSTANCE}" ]]; then
     SIODB_INSTANCE=siodb
@@ -96,7 +95,9 @@ function _Prepare {
 
 function _ShowSiodbProcesses {
   echo "===== Siodb Processes ====="
-  pgrep -a siodb
+  if [[ $(pgrep -c siodb) -gt 0 ]]; then
+    pgrep -a siodb
+  fi
   echo "==========================="
 }
 
@@ -184,7 +185,6 @@ function _RunSql {
     -i ${SCRIPT_DIR}/../share/private_key <<< ''"$1"''
 }
 
-
 function _RunSqlAndValidateOutput {
   # $1: the SQL to execute
   # $2: The expected output
@@ -197,4 +197,62 @@ function _RunSqlAndValidateOutput {
   else
     _log "INFO" "Siocli output matched expected output."
   fi
+}
+
+function _RunRestRequest3 {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -u $5 -T $6
+}
+
+function _RunRestRequest4 {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -P ''"$4"'' -u $5 -T $6
+}
+
+function _RunRestRequest5 {
+  _log "INFO" "Executing REST request: $1 $2 $3 @$4"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -f "$4" -u $5 -T $6
+}
+
+function _RunRestRequest6 {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' -u $6 -T $7
+}
+
+function _RunRestRequest6d {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' -u $6 -T $7 --drop
+}
+
+function _RunRestRequest7 {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 -T $7
+}
+
+function _RunRestRequest7d {
+  _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
+  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 -T $7 --drop
+}
+
+function _RunCurlGetDatabasesRequest {
+  _log "INFO" "Executing CurlGetDatabasesRequest"
+  auth=$(echo "$1:$2" | base64 -w0)
+  _log "DEBUG" "auth=${auth}"
+  curl -v -H "Authorization: Basic ${auth}" http://localhost:50080/databases
+  #echo "Running: curl -v http://$1:$2@localhost:50080/databases"
+  #curl -v http://$1:$2@localhost:50080/databases
+  echo ""
+}
+
+function _RunCurlGetTablesRequest {
+  _log "INFO" "Executing CurlGetTablesRequest: $1"
+  auth=$(echo "$2:$3" | base64 -w0)
+  _log "DEBUG" "auth=${auth}"
+  curl -v -H "Authorization: Basic ${auth}" http://localhost:50080/databases/$1/tables
+  echo ""
+}
+
+function _TestExternalAbort {
+  _log "INFO" "Testing an external abort $1"
+  pkill -9 siodb
 }
