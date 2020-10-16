@@ -6,6 +6,9 @@
 
 // Project headers
 #include "SiodbOptions.h"
+
+// Common peroject headers
+#include "../config/SiodbDefs.h"
 #include "../stl_wrap/filesystem_wrapper.h"
 #include "../utils/CheckOSUser.h"
 

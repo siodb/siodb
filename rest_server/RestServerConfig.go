@@ -9,67 +9,66 @@ import (
 )
 
 var (
-	HTTPChunkSizeMinSize        uint32 = 1 * 1024
-	HTTPChunkSizeMaxSize        uint32 = 1 * 1024 * 1024
-	RequestPayloadMinBufferSize uint32 = 1 * 1024
-	RequestPayloadMaxBufferSize uint32 = 10 * 1024 * 1024
+	httpChunkSizeMinSize        uint32 = 1 * 1024
+	httpChunkSizeMaxSize        uint32 = 1 * 1024 * 1024
+	requestPayloadMinBufferSize uint32 = 1 * 1024
+	requestPayloadMaxBufferSize uint32 = 10 * 1024 * 1024
 )
 
-type RestServerConfig struct {
-	Ipv4HTTPPort             uint32
-	Ipv4HTTPSPort            uint32
-	Ipv6HTTPPort             uint32
-	Ipv6HTTPSPort            uint32
-	TLSCertificate           string
-	TLSPrivateKey            string
-	HTTPChunkSize            uint32
-	RequestPayloadBufferSize uint32
+type restServerConfig struct {
+	ipv4HTTPPort             uint32
+	ipv4HTTPSPort            uint32
+	ipv6HTTPPort             uint32
+	ipv6HTTPSPort            uint32
+	tlsCertificate           string
+	tlsPrivateKey            string
+	httpChunkSize            uint32
+	requestPayloadBufferSize uint32
 }
 
-func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbConfigFile *SiodbConfigFile) (err error) {
-
+func (restServerConfig *restServerConfig) ParseAndValidateConfiguration(siodbConfigFile *siodbConfigFile) (err error) {
 	var value string
 
 	// REST Ports
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.ipv4_http_port"); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.ipv4_http_port': %v", err)
 	}
-	if restServerConfig.Ipv4HTTPPort, err = StringToPortNumber(value); err != nil {
+	if restServerConfig.ipv4HTTPPort, err = stringToPortNumber(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.ipv4_http_port': %v", err)
 	}
 
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.ipv4_https_port"); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.ipv4_https_port': %v", err)
 	}
-	if restServerConfig.Ipv4HTTPSPort, err = StringToPortNumber(value); err != nil {
+	if restServerConfig.ipv4HTTPSPort, err = stringToPortNumber(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.ipv4_https_port': %v", err)
 	}
 
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.ipv6_http_port"); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.ipv6_http_port': %v", err)
 	}
-	if restServerConfig.Ipv6HTTPPort, err = StringToPortNumber(value); err != nil {
+	if restServerConfig.ipv6HTTPPort, err = stringToPortNumber(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.ipv6_http_port': %v", err)
 	}
 
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.ipv6_https_port"); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.ipv6_https_port': %v", err)
 	}
-	if restServerConfig.Ipv6HTTPSPort, err = StringToPortNumber(value); err != nil {
+	if restServerConfig.ipv6HTTPSPort, err = stringToPortNumber(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.ipv6_https_port': %v", err)
 	}
 
 	// TLS
-	if restServerConfig.Ipv4HTTPSPort != 0 || restServerConfig.Ipv6HTTPSPort != 0 {
+	if restServerConfig.ipv4HTTPSPort != 0 || restServerConfig.ipv6HTTPSPort != 0 {
 		if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate_chain"); err != nil {
 			if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate"); err != nil {
 				return fmt.Errorf("Can't find parameter for TLS certificate '%v'", err)
 			}
-			if restServerConfig.TLSCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
+			if restServerConfig.tlsCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
 				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate': %v", err)
 			}
 		} else {
-			if restServerConfig.TLSCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
+			if restServerConfig.tlsCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
 				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate': %v", err)
 			}
 		}
@@ -77,7 +76,7 @@ func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbCon
 		if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_private_key"); err != nil {
 			return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
 		}
-		if restServerConfig.TLSPrivateKey, err = verifyPath(siodbConfigFile.path, value); err != nil {
+		if restServerConfig.tlsPrivateKey, err = verifyPath(siodbConfigFile.path, value); err != nil {
 			return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
 		}
 	}
@@ -86,24 +85,24 @@ func (restServerConfig *RestServerConfig) ParseAndValidateConfiguration(siodbCon
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.chunk_size"); err != nil {
 		return err
 	}
-	if restServerConfig.HTTPChunkSize, err = StringToByteSize(value); err != nil {
+	if restServerConfig.httpChunkSize, err = stringToByteSize(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.chunk_size': %v", err)
 	}
-	if restServerConfig.HTTPChunkSize < HTTPChunkSizeMinSize || restServerConfig.HTTPChunkSize > HTTPChunkSizeMaxSize {
+	if restServerConfig.httpChunkSize < httpChunkSizeMinSize || restServerConfig.httpChunkSize > httpChunkSizeMaxSize {
 		return fmt.Errorf("Invalid parameter: 'rest_server.chunk_size' (%v) is out of range (%v-%v)",
-			value, HTTPChunkSizeMinSize, HTTPChunkSizeMaxSize)
+			value, httpChunkSizeMinSize, httpChunkSizeMaxSize)
 	}
 
 	// request_payload_buffer_size
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.request_payload_buffer_size"); err != nil {
 		return err
 	}
-	if restServerConfig.RequestPayloadBufferSize, err = StringToByteSize(value); err != nil {
+	if restServerConfig.requestPayloadBufferSize, err = stringToByteSize(value); err != nil {
 		return fmt.Errorf("Invalid parameter 'rest_server.request_payload_buffer_size': %v", err)
 	}
-	if restServerConfig.RequestPayloadBufferSize < RequestPayloadMinBufferSize || restServerConfig.RequestPayloadBufferSize > RequestPayloadMaxBufferSize {
+	if restServerConfig.requestPayloadBufferSize < requestPayloadMinBufferSize || restServerConfig.requestPayloadBufferSize > requestPayloadMaxBufferSize {
 		return fmt.Errorf("Invalid parameter: 'rest_server.request_payload_buffer_size' (%v) is out of range (%v-%v)",
-			value, RequestPayloadMinBufferSize, RequestPayloadMaxBufferSize)
+			value, requestPayloadMinBufferSize, requestPayloadMaxBufferSize)
 	}
 
 	return nil

@@ -14,6 +14,7 @@ C_HDR:= \
 	SiodbVersion.h
 
 CXX_HDR:= \
+	SiodbDataFileDefs.h  \
 	SiodbDefs.h
 
 include $(MK)/Main.mk

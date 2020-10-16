@@ -10,7 +10,6 @@
 #include "ColumnDataBlockPtr.h"
 
 // Common project headers
-#include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 
@@ -128,12 +127,12 @@ public:
     }
 
     /**
-     * Returns next data position.
-     * @return Next data item position.
+     * Returns data file size.
+     * @return Data file size.
      */
-    std::uint32_t getNextDataPos() const noexcept
+    std::uint32_t getDataFileSize() const noexcept
     {
-        return m_header.m_nextDataOffset;
+        return m_column.getDataBlockDataAreaSize() + ColumnDataBlockHeader::kDefaultDataAreaOffset;
     }
 
     /**
@@ -146,28 +145,27 @@ public:
     }
 
     /**
-     * Sets next data position.
-     * @param nextDataPos Next data item position.
+     * Returns next data position.
+     * @return Next data item position.
      */
-    void setNextDataPos(std::uint32_t nextDataPos) noexcept
+    std::uint32_t getNextDataPos() const noexcept
     {
-        m_header.m_nextDataOffset = nextDataPos;
+        return m_header.m_nextDataOffset;
     }
 
-    std::uint32_t getDataFileSize() const noexcept
-    {
-        return m_column.getDataBlockDataAreaSize() + ColumnDataBlockHeader::kDefaultDataAreaOffset;
-    }
+    /**
+     * Sets next data position.
+     * @param pos Next data item position.
+     */
+    void setNextDataPos(std::uint32_t pos);
 
     /**
      * Increase next data position by specified number of bytes.
      * @param n Number of bytes.
-     * @return New next data item position.
      */
-    std::uint32_t incNextDataPos(std::uint32_t n) noexcept
+    void incNextDataPos(std::uint32_t n)
     {
-        m_header.m_nextDataOffset += n;
-        return m_header.m_nextDataOffset;
+        setNextDataPos(m_header.m_nextDataOffset + n);
     }
 
     /** Resets fill timestemp to zero */
@@ -264,6 +262,15 @@ private:
 
     /** Loads header */
     void loadHeader();
+
+    /**
+     * Throws database exception with message formatted using given arguments.
+     * Looks up message in the default message catalog.
+     * @param messageId Message ID.
+     * @param args Message formatting arguments.
+     */
+    template<class MessageId, class... Args>
+    [[noreturn]] void throwDatabaseErrorForThisObject(MessageId messageId, Args&&... args) const;
 
 private:
     /** Column to which this data block belongs */

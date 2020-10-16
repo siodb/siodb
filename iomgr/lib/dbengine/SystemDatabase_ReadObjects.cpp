@@ -135,6 +135,8 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
             m_sysDatabasesTable->findColumnChecked(kSysDatabases_CipherId_ColumnName);
     const auto descriptionColumn =
             m_sysDatabasesTable->findColumnChecked(kSysDatabases_Description_ColumnName);
+    const auto maxTablesColumn =
+            m_sysDatabasesTable->findColumnChecked(kSysDatabases_MaxTables_ColumnName);
 
     // Obtain min and max TRID
     const auto index = masterColumn->getMasterColumnMainIndex();
@@ -188,15 +190,17 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
 
         // Read data from columns
         const auto& columnRecords = mcr.getColumnRecords();
-        Variant uuidValue, nameValue, cipherIdValue, descriptionValue;
+        Variant uuidValue, nameValue, cipherIdValue, descriptionValue, maxTablesValue;
         std::size_t colIndex = 0;
         uuidColumn->readRecord(columnRecords.at(colIndex++).getAddress(), uuidValue);
         nameColumn->readRecord(columnRecords.at(colIndex++).getAddress(), nameValue);
         cipherIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), cipherIdValue);
         descriptionColumn->readRecord(columnRecords.at(colIndex++).getAddress(), descriptionValue);
+        maxTablesColumn->readRecord(columnRecords.at(colIndex++).getAddress(), maxTablesValue);
         DatabaseRecord databaseRecord(static_cast<std::uint32_t>(mcr.getTableRowId()),
                 boost::lexical_cast<Uuid>(*uuidValue.asString()), std::move(*nameValue.asString()),
-                std::move(*cipherIdValue.asString()), descriptionValue.asOptionalString());
+                std::move(*cipherIdValue.asString()), descriptionValue.asOptionalString(),
+                maxTablesValue.asUInt32());
         LOG_DEBUG << "Database " << m_name << ": readAllDatabases: Database #" << trid << " '"
                   << databaseRecord.m_name << '\'';
         reg.insert(std::move(databaseRecord));

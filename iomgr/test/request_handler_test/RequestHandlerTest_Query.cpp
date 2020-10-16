@@ -22,7 +22,7 @@ TEST(Query, SelectFromSys_Databases)
     ASSERT_NE(instance, nullptr);
 
     instance->createDatabase(
-            "TEST", "none", siodb::BinaryValue(), {}, dbengine::User::kSuperUserId);
+            "TEST", "none", siodb::BinaryValue(), {}, 0, dbengine::User::kSuperUserId);
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 

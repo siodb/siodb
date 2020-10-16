@@ -2,7 +2,7 @@
 
 ## Overview
 
-Siodb must to provide an integrated REST Server that can work in parallel with theSQL front-end.
+Siodb must to provide an integrated REST Server that can work in parallel with the SQL front-end.
 It would only work per table and allow users to push/retrieve data through REST. The server will
 operate as a distinct process called `siodb_rest_server`. The server will convert REST queries
 into the IOMgr engine requests, send them to IOMgr, receive response, convert it to JSON and send
@@ -11,37 +11,37 @@ back to HTTP client. REST Server will support both HTTP and HTTPS protocols.
 ## Authentication
 
 Siodb must provide a new table `sys_user_tokens` with following columns:
-|Column Name|Data type|Mandatory|Description|
-|---|---|---|---|
-|TRID|UINT64|Yes|Token ID|
-|USER_ID|UINT64|Yes|User ID|
-|NAME|TEXT|Yes|Token name|
-|VALUE|BINARY|Yes|Token value|
-|EXPIRATION_TIMESTAMP|TIMESTAMP|No|Token expiration timestamp|
-|DESCRIPTION|TEXT|No|Token description|
+| Column Name          | Data type | Mandatory | Description                |
+| -------------------- | --------- | --------- | -------------------------- |
+| TRID                 | UINT64    | Yes       | Token ID                   |
+| USER_ID              | UINT64    | Yes       | User ID                    |
+| NAME                 | TEXT      | Yes       | Token name                 |
+| VALUE                | BINARY    | Yes       | Token value                |
+| EXPIRATION_TIMESTAMP | TIMESTAMP | No        | Token expiration timestamp |
+| DESCRIPTION          | TEXT      | No        | Token description          |
 
 New token is generated using SQL command:
 
 ```sql
-ALTER USER <user_name> CREATE TOKEN <token_name>;
+ALTER USER <user_name> ADD TOKEN <token_name>;
 ```
 
 Generated tokens are guaranteed at least to be unique among all currently existing tokens for the
 mentioned used. Generated token is returned in the `DatabaseEngineReponse.freetext_message` in the
 following format: `token: xxxxxxxx...xx`, where `xx...` are hexadecimal digits. There must be even
 number of hexadecimal digits. Token is not stored in the database in this cleartext form, and if
-token lost there is no way to renew it. In such case new token should be generated.
+token lost there is no way to restore it. In such case new token should be generated.
 
 Token can be assigned expiration time:
 
 ```sql
-ALTER USER <user_name> CREATE TOKEN <token_name> WITH EXPIRATION_TIME='yyyy-mm-dd hh:mm:ss';
+ALTER USER <user_name> ADD TOKEN <token_name> WITH EXPIRATION_TIME='yyyy-mm-dd hh:mm:ss';
 ```
 
 It is possible to add token with supplied value:
 
 ```sql
-ALTER USER <user_name> CREATE TOKEN <token_name> x'xxxx...xx';
+ALTER USER <user_name> ADD TOKEN <token_name> x'xxxx...xx';
 ```
 
 Supplied value must be unique among existing tokens for the designated user,

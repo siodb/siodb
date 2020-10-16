@@ -48,7 +48,7 @@ void Cipher::validateKeyLength(const BinaryValue& key) const
     if (key.size() != expectedKeySize) {
         std::ostringstream err;
         err << "Invalid cipher key size for the cipher " << getCipherId() << ": expecting "
-            << expectedKeySize << " bytes, but got " << key.size() << " bytes";
+            << expectedKeySize << " bytes, but received " << key.size() << " bytes";
         throw std::runtime_error(err.str());
     }
     //        throwDatabaseError(IOManagerMessageId::kErrorInvalidCipherKey, getCipherId());

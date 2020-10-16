@@ -35,25 +35,22 @@ sudo ./InstallSiodb.sh
 
 ### Connect to the instance
 
-- Connect to your server as `siodb`
+Connect to the Siodb instance as `siodb`:
 
 ```bash
-sudo su - siodb
-siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
+sudo -u siodb siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
 ```
 
 - or (simplified)
 
 ```bash
-sudo su - siodb
-siocli --user root
+sudo -u siodb siocli --user root
 ```
 
-### Create your first database
+## Create your first database
 
 ```sql
--- Create an encrypted database with the default cipher AES128
-create database myapp ;
+create database myapp ; -- Creates an encrypted database with the default cipher AES128
 ```
 
 ### Create your first table
@@ -65,5 +62,75 @@ create table employees ( firstname text, lastname text, salary float, hire_date 
 
 insert into employees ( firstname, lastname, salary, hire_date)
 values
-( 'John', 'Doe', 180000, '2016-02-29' ) ;
+( '马', '云', 249000.00, '1964-09-10' ),
+( 'Юрий', 'Гагарин', 49000.00, '1934-03-09' ),
+( 'Barack', 'Obama', 149000.00, '1961-08-04' )
+;
+```
+
+## REST API
+
+### Add a token access to root user
+
+```bash
+TOKEN=$(siocli --user root <<< 'alter user root add token TOKEN1' | grep 'Server: token:' | awk '{print $3}')
+```
+
+### POST Request
+
+```bash
+curl -k -X POST \
+-d '[
+    { "firstname": "马","lastname": "云","salary": "249000.00","hire_date": "1964-09-10"},
+    { "firstname": "Юрий","lastname": "Гагарин","salary": "49000.00","hire_date": "1934-03-09"},
+    { "firstname": "Barack","lastname": "Obama","salary": "149000.00","hire_date": "1961-08-04"}
+]' \
+https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
+```
+
+**Returns:**
+
+```json
+{
+	"status": 200,
+	"affectedRowCount": 3,
+	"trids": [1, 2, 3]
+}
+```
+
+### GET Request
+
+```bash
+curl -s -k https://root:${TOKEN}@localhost:50443/databases/myapp/tables/employees/rows
+```
+
+**Returns:**
+
+```json
+{
+   "rows" : [
+      {
+         "FIRSTNAME" : "马",
+         "HIRE_DATE" : "1964-09-10",
+         "LASTNAME" : "云",
+         "SALARY" : 249000,
+         "TRID" : 1
+      },
+      {
+         "FIRSTNAME" : "Юрий",
+         "HIRE_DATE" : "1934-03-09",
+         "LASTNAME" : "Гагарин",
+         "SALARY" : 49000,
+         "TRID" : 2
+      },
+      {
+         "FIRSTNAME" : "Barack",
+         "HIRE_DATE" : "1961-08-04",
+         "LASTNAME" : "Obama",
+         "SALARY" : 149000,
+         "TRID" : 3
+      }
+   ],
+   "status" : 200
+}
 ```

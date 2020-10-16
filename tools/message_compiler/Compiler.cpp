@@ -4,8 +4,11 @@
 
 #include "Compiler.h"
 
+// Project headers
+#include "Version.h"
+
 // Common project headers
-#include <siodb/common/utils/FDGuard.h>
+#include <siodb/common/stl_wrap/filesystem_wrapper.h>
 
 // STL headers
 #include <algorithm>
@@ -33,8 +36,9 @@ static const std::unordered_set<std::string> g_knownSeverities {
 
 int main(int argc, char** argv)
 {
-    std::cout << "Siodb Message Compiler v." << COMPILER_VERSION << ".\nCopyright (C) Siodb GmbH, "
-              << COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n"
+    std::cout << "Siodb Message Compiler v." << MESSAGE_COMPILER_VERSION
+              << ".\nCopyright (C) Siodb GmbH, " << MESSAGE_COMPILER_COPYRIGHT_YEARS
+              << ". All rights reserved.\n"
               << "Compiled on " << __DATE__ << ' ' << __TIME__ << std::endl;
 
     CompilerOptions options;
@@ -72,6 +76,17 @@ int main(int argc, char** argv)
     return result ? 0 : 2;
 }
 
+enum class Directive {
+    Unknown,
+    Msg,
+    MsgWithNumber,
+    PMsg,
+    PMsgWithNumber,
+    MsgContinued,
+    ID,
+    Step,
+};
+
 bool parseMessages(const CompilerOptions& options, MessageContainer& messages)
 {
     std::cout << "Parsing " << options.m_inputFileName << std::endl;
@@ -91,6 +106,9 @@ bool parseMessages(const CompilerOptions& options, MessageContainer& messages)
     const auto& messagesById = messages.get<ByIdTag>();
     const auto& messagesBySymbol = messages.get<BySymbolTag>();
 
+    Message msg;
+    bool continueMessage = false;
+
     while (true) {
         try {
             ++lineNo;
@@ -98,115 +116,182 @@ bool parseMessages(const CompilerOptions& options, MessageContainer& messages)
 
             // Skip empty lines and comments
             boost::trim(line);
-            if (line.empty() || line[0] == '#') continue;
+            if (!continueMessage && (line.empty() || line[0] == '#')) continue;
 
             std::istringstream iss(line);
-            std::string cmd;
-            iss >> cmd;
+            std::string directiveText;
+            auto directive = Directive::Unknown;
 
-            if (cmd == "ID") {
-                iss >> id;
-                if (!iss) throw std::runtime_error("Invalid ID");
-                step = 1;
-            } else if (cmd == "STEP") {
-                iss >> step;
-                if (!iss) throw std::runtime_error("Invalid step");
-            } else if (cmd == "MSG" || cmd.find("MSG:") == 0) {
-                Message msg;
+            if (!continueMessage) {
+                iss >> directiveText;
+                if (directiveText == "MSG")
+                    directive = Directive::Msg;
+                else if (directiveText == "PMSG")
+                    directive = Directive::PMsg;
+                else if (directiveText.find("MSG:") == 0)
+                    directive = Directive::MsgWithNumber;
+                else if (directiveText.find("PMSG:") == 0)
+                    directive = Directive::PMsgWithNumber;
+                else if (directiveText == "ID")
+                    directive = Directive::ID;
+                else if (directiveText == "STEP")
+                    directive = Directive::Step;
+            } else
+                directive = Directive::MsgContinued;
 
-                // Get explicit message ID of specified.
-                if (cmd != "MSG") {
-                    if (cmd.length() == 4) throw std::runtime_error("Missing explicit message ID");
-                    const auto idStr = cmd.substr(4);
-                    try {
-                        id = std::stoll(idStr);
-                    } catch (std::exception& ex) {
-                        throw std::runtime_error("Invalid explicit message ID " + idStr);
-                    }
-                }
+            switch (directive) {
+                case Directive::Msg:
+                case Directive::MsgWithNumber:
+                case Directive::PMsg:
+                case Directive::PMsgWithNumber:
+                case Directive::MsgContinued: {
+                    if (!continueMessage) {
+                        msg = Message();
 
-                // Check message ID duplication
-                if (messagesById.count(id) > 0)
-                    throw std::runtime_error("Duplicate message ID " + std::to_string(id));
-
-                msg.m_id = id;
-                id += step;
-
-                // Get severity
-                while (iss.good() && msg.m_severity.empty())
-                    iss >> msg.m_severity;
-                if (msg.m_severity.empty()) throw std::runtime_error("Severity not specified");
-
-                // Validate severity
-                if (g_knownSeverities.count(msg.m_severity) == 0) {
-                    std::ostringstream err;
-                    err << "Unknown severity '" << msg.m_severity << "'";
-                    throw std::runtime_error(err.str());
-                }
-
-                // Get symbol
-                while (iss.good() && msg.m_symbol.empty())
-                    iss >> msg.m_symbol;
-                if (msg.m_symbol.empty()) throw std::runtime_error("Symbol not specified");
-
-                if (messagesBySymbol.count(msg.m_symbol) > 0)
-                    throw std::runtime_error("Duplicate symbol '" + msg.m_symbol + "'");
-
-                // Get text
-                std::getline(iss, msg.m_text);
-                boost::trim(msg.m_text);
-                if (msg.m_text.empty()) throw std::runtime_error("Text not specified");
-
-                if (options.m_validateMessageText) {
-                    // Validate text
-                    std::vector<int> parameterIndices;
-                    auto pos = msg.m_text.find_first_of('%');
-                    while (pos != std::string::npos) {
-                        if (pos == msg.m_text.length() - 1)
-                            throw std::runtime_error("Trailing % not closed");
-                        const auto pos2 = msg.m_text.find_first_of('%', pos + 1);
-                        if (pos2 == std::string::npos)
-                            throw std::runtime_error("Last % not closed");
-                        const auto len = pos2 - pos - 1;
-                        if (len > 0) {
-                            const auto parameterIndexStr = msg.m_text.substr(pos + 1, len);
-                            int parameterIndex;
-                            try {
-                                parameterIndex = std::stoi(parameterIndexStr);
-                                if (parameterIndex < 1)
-                                    throw std::invalid_argument("Non-positive parameter index");
-                            } catch (std::exception& ex) {
-                                std::ostringstream err;
-                                err << "Invalid parameter index in the parameter expansion #"
-                                    << (parameterIndices.size() + 1) << ": " << ex.what();
-                                throw std::runtime_error(err.str());
-                            }
-                            parameterIndices.push_back(parameterIndex);
+                        // Get explicit message ID of specified.
+                        if ((directive == Directive::MsgWithNumber && directiveText.length() == 4)
+                                || (directive == Directive::PMsgWithNumber
+                                        && directiveText.length() == 5)) {
+                            throw std::runtime_error("Missing explicit message ID");
                         }
-                        if (pos2 == msg.m_text.length() - 1) break;
-                        pos = msg.m_text.find_first_of('%', pos2 + 1);
-                    }
-                    if (!parameterIndices.empty()) {
-                        std::sort(parameterIndices.begin(), parameterIndices.end());
-                        parameterIndices.erase(
-                                std::unique(parameterIndices.begin(), parameterIndices.end()),
-                                parameterIndices.end());
-                        for (std::size_t i = 0, n = parameterIndices.size(); i < n; ++i) {
-                            const auto v = static_cast<int>(i + 1);
-                            if (parameterIndices[i] == v) continue;
+
+                        if (directive == Directive::MsgWithNumber
+                                || directive == Directive::PMsgWithNumber) {
+                            const auto idStr = directiveText.substr(
+                                    directive == Directive::MsgWithNumber ? 4 : 5);
+                            try {
+                                id = std::stoll(idStr);
+                            } catch (std::exception& ex) {
+                                throw std::runtime_error("Invalid explicit message ID " + idStr);
+                            }
+                        }
+
+                        // Check message ID duplication
+                        if (messagesById.count(id) > 0)
+                            throw std::runtime_error("Duplicate message ID " + std::to_string(id));
+
+                        msg.m_id = id;
+                        id += step;
+
+                        // Get severity
+                        while (iss.good() && msg.m_severity.empty())
+                            iss >> msg.m_severity;
+                        if (msg.m_severity.empty())
+                            throw std::runtime_error("Severity not specified");
+
+                        // Validate severity
+                        if (g_knownSeverities.count(msg.m_severity) == 0) {
                             std::ostringstream err;
-                            err << "Missing usage of parameter #" << v;
+                            err << "Unknown severity '" << msg.m_severity << "'";
                             throw std::runtime_error(err.str());
                         }
-                    }
-                }
 
-                // Add message to map
-                messages.insert(std::move(msg));
-            } else {
-                std::ostringstream err;
-                err << "Unknown command '" << cmd << "'";
-                throw std::runtime_error(err.str());
+                        // Get symbol
+                        while (iss.good() && msg.m_symbol.empty())
+                            iss >> msg.m_symbol;
+                        if (msg.m_symbol.empty()) throw std::runtime_error("Symbol not specified");
+
+                        if (messagesBySymbol.count(msg.m_symbol) > 0)
+                            throw std::runtime_error("Duplicate symbol '" + msg.m_symbol + "'");
+                    }
+
+                    // Get text
+                    std::string text;
+                    std::getline(iss, text);
+                    boost::trim(text);
+                    if (text.empty()) {
+                        if (continueMessage) {
+                            continueMessage = false;
+                            throw std::runtime_error("Text not continued");
+                        } else {
+                            throw std::runtime_error("Text not specified");
+                        }
+                    }
+
+                    bool newContinueMessage = false;
+                    if (text.back() == '\\'
+                            && !(text.length() > 1 && text[text.length() - 2] == '\\')) {
+                        text.pop_back();
+                        boost::trim_left(text);
+                        newContinueMessage = true;
+                    }
+
+                    msg.m_text += text;
+
+                    continueMessage = newContinueMessage;
+                    if (continueMessage) continue;
+
+                    if (msg.m_text.empty()) throw std::runtime_error("Text not specified");
+
+                    if (options.m_validateMessageText) {
+                        // Validate text
+                        std::vector<int> parameterIndices;
+                        auto pos = msg.m_text.find_first_of('%');
+                        while (pos != std::string::npos) {
+                            if (pos == msg.m_text.length() - 1)
+                                throw std::runtime_error("Trailing % not closed");
+
+                            const auto pos2 = msg.m_text.find_first_of('%', pos + 1);
+                            if (pos2 == std::string::npos)
+                                throw std::runtime_error("Last % not closed");
+
+                            const auto len = pos2 - pos - 1;
+                            if (len > 0) {
+                                const auto parameterIndexStr = msg.m_text.substr(pos + 1, len);
+
+                                int parameterIndex;
+                                try {
+                                    parameterIndex = std::stoi(parameterIndexStr);
+                                    if (parameterIndex < 1)
+                                        throw std::invalid_argument("Non-positive parameter index");
+                                } catch (std::exception& ex) {
+                                    std::ostringstream err;
+                                    err << "Invalid parameter index in the parameter expansion #"
+                                        << (parameterIndices.size() + 1) << ": " << ex.what();
+                                    throw std::runtime_error(err.str());
+                                }
+
+                                parameterIndices.push_back(parameterIndex);
+                            }
+                            if (pos2 == msg.m_text.length() - 1) break;
+                            pos = msg.m_text.find_first_of('%', pos2 + 1);
+                        }
+
+                        if (!parameterIndices.empty()) {
+                            std::sort(parameterIndices.begin(), parameterIndices.end());
+                            parameterIndices.erase(
+                                    std::unique(parameterIndices.begin(), parameterIndices.end()),
+                                    parameterIndices.end());
+                            for (std::size_t i = 0, n = parameterIndices.size(); i < n; ++i) {
+                                const auto v = static_cast<int>(i + 1);
+                                if (parameterIndices[i] == v) continue;
+                                std::ostringstream err;
+                                err << "Missing usage of parameter #" << v;
+                                throw std::runtime_error(err.str());
+                            }
+                        }
+                    }
+
+                    // Add message to map
+                    messages.insert(std::move(msg));
+                    break;
+                }
+                case Directive::ID: {
+                    iss >> id;
+                    if (!iss) throw std::runtime_error("Invalid ID");
+                    step = 1;
+                    break;
+                }
+                case Directive::Step: {
+                    iss >> step;
+                    if (!iss) throw std::runtime_error("Invalid step");
+                    break;
+                }
+                default: {
+                    std::ostringstream err;
+                    err << "Unknown directive '" << directiveText << "'";
+                    throw std::runtime_error(err.str());
+                }
             }
         } catch (std::exception& ex) {
             std::cerr << options.m_inputFileName << ':' << lineNo << ":1: error: " << ex.what()
@@ -241,14 +326,7 @@ bool writeSymbolListFile(const MessageContainer& messages, const CompilerOptions
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), options.m_outputFileName.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << options.m_outputFileName << ": " << std::strerror(errorCode) << std::endl;
-        return false;
-    }
-
-    return true;
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeMessageListFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -274,14 +352,7 @@ bool writeMessageListFile(const MessageContainer& messages, const CompilerOption
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), options.m_outputFileName.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << options.m_outputFileName << ": " << std::strerror(errorCode) << std::endl;
-        return false;
-    }
-
-    return true;
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -301,9 +372,10 @@ bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& op
         return false;
     }
 
-    ofs << "// THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n// Copyright (C) Siodb "
+    ofs << "// THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n// Copyright (C) "
+           "Siodb "
            "GmbH, "
-        << COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
+        << MESSAGE_COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
 
     if (options.m_guardWithPragmaOnce) {
         ofs << "#pragma once\n\n";
@@ -324,14 +396,7 @@ bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& op
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), options.m_outputFileName.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << options.m_outputFileName << ": " << std::strerror(errorCode) << std::endl;
-        return false;
-    }
-
-    return true;
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
 }
 
 bool writeTextFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -353,7 +418,7 @@ bool writeTextFile(const MessageContainer& messages, const CompilerOptions& opti
 
     ofs << "# THIS FILE IS GENERATED AUTOMATICALLY. PLEASE DO NOT EDIT.\n# Copyright (C) Siodb "
            "GmbH, "
-        << COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
+        << MESSAGE_COMPILER_COPYRIGHT_YEARS << ". All rights reserved.\n\n";
 
     for (const auto& message : messages)
         ofs << message.m_id << ", " << message.m_severity << ", " << message.m_text << '\n';
@@ -361,14 +426,26 @@ bool writeTextFile(const MessageContainer& messages, const CompilerOptions& opti
     ofs << std::flush;
     ofs.close();
 
-    if (::rename(std::get<0>(tmpFileInfo).c_str(), options.m_outputFileName.c_str())) {
-        const int errorCode = errno;
-        std::cerr << "Can't rename temporary file " << std::get<0>(tmpFileInfo) << " into "
-                  << options.m_outputFileName << ": " << std::strerror(errorCode) << std::endl;
-        return false;
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
+}
+
+bool renameFile(const std::string& src, const std::string& to)
+{
+    boost::system::error_code ec;
+    fs::rename(src, to, ec);
+    if (!ec) return true;
+
+    if (ec.value() == EXDEV) {
+        fs::copy_file(src, to, ec);
+        if (!ec) {
+            fs::remove(src, ec);
+            if (!ec) return true;
+        }
     }
 
-    return true;
+    std::cerr << "Can't rename temporary file " << src << " into " << to << ": " << ec.message()
+              << std::endl;
+    return false;
 }
 
 std::tuple<std::string, int, int> makeTemporaryFile()

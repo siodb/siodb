@@ -7,12 +7,12 @@
 // Project headers
 #include "AuthenticationResult.h"
 #include "ClientSession.h"
-#include "DatabaseCache.h"
+#include "DatabasePtr.h"
 #include "InstancePtr.h"
 #include "UpdateUserAccessKeyParameters.h"
 #include "UpdateUserParameters.h"
 #include "UpdateUserTokenParameters.h"
-#include "UserCache.h"
+#include "UserPtr.h"
 #include "reg/DatabaseRegistry.h"
 #include "reg/UserRegistry.h"
 
@@ -79,15 +79,6 @@ public:
     std::string makeDisplayCode() const
     {
         return boost::uuids::to_string(m_uuid);
-    }
-
-    /**
-     * Return table cache capacity.
-     * @return Table cache capacity.
-     */
-    auto getTableCacheCapacity() const noexcept
-    {
-        return m_tableCacheCapacity;
     }
 
     /**
@@ -167,13 +158,14 @@ public:
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
      * @param description Database description.
+     * @param maxTableCount Maximum table count.
      * @param currentUserId Current user ID.
      * @return New database object.
      * @throw DatabaseError if some error has occurrred.
      */
     DatabasePtr createDatabase(std::string&& name, const std::string& cipherId,
             BinaryValue&& cipherKey, std::optional<std::string>&& description,
-            std::uint32_t currentUserId);
+            std::uint32_t maxTableCount, std::uint32_t currentUserId);
 
     /**
      * Deletes existing database.
@@ -534,7 +526,19 @@ private:
     const std::string m_systemDatabaseCipherId;
 
     /** Superuser's initial access key */
-    std::string m_superUserInitialAccessKey;
+    const std::string m_superUserInitialAccessKey;
+
+    /** Maximum number of users */
+    const std::size_t m_maxUsers;
+
+    /** Maximum number of databases */
+    const std::size_t m_maxDatabases;
+
+    /** Maximum tables per database */
+    const std::size_t m_maxTableCountPerDatabase;
+
+    /** Block cache capacity */
+    const std::size_t m_blockCacheCapacity;
 
     /** Metadata access synchronization object */
     mutable std::mutex m_mutex;
@@ -545,26 +549,20 @@ private:
     /** User registry. Contains information about all known users. */
     UserRegistry m_userRegistry;
 
-    /** User cache. Contains recently used user objects. */
-    UserCache m_userCache;
+    /** User objects. */
+    std::unordered_map<std::uint32_t, UserPtr> m_users;
 
     /** Database registry. Contains information about all known databases. */
     DatabaseRegistry m_databaseRegistry;
 
-    /** Database cache. Contains recently used database objects. */
-    DatabaseCache m_databaseCache;
+    /** Database objects. */
+    std::unordered_map<std::uint32_t, DatabasePtr> m_databases;
 
     /** Superuser */
     UserPtr m_superUser;
 
     /** System database */
     std::shared_ptr<SystemDatabase> m_systemDatabase;
-
-    /** Table cache capacity */
-    const std::size_t m_tableCacheCapacity;
-
-    /** Block cache capacity */
-    const std::size_t m_blockCacheCapacity;
 
     /* Metadata file descriptor */
     FDGuard m_metadataFile;

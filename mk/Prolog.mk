@@ -66,7 +66,7 @@ DEFS+=-DSIODB_FORCE_PROCESSOR_NEUTRAL_CODE
 override BUILDCFG:=$(BUILDCFG)-pn
 endif
 
-SRC_DIR_OFFSET:=$(subst $(ROOT),,$(SRC_DIR))
+SRC_DIR_OFFSET:=$(patsubst %/,%,$(subst $(ROOT),,$(SRC_DIR)))
 
 ifeq ("$(BUILD_NAME)","")
 BUILD_DIR:=build

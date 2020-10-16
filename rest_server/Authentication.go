@@ -12,31 +12,33 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func loadAuthenticationData(c *gin.Context) (UserName string, Token string, err error) {
+func loadAuthenticationData(c *gin.Context) (userName string, token string, err error) {
+	var userPassStr string
+	var header = c.Request.Header.Get("Authorization")
+	var headerFields = strings.Fields(header)
 
-	var userPassBase64 string
-
-	// Get Token
-	if len(c.Request.Header.Get("Authorization")) > 0 {
-		if c.Request.Header.Get("Authorization")[0:5] != "Basic" {
-			return UserName, Token, fmt.Errorf("Invalid authorization scheme, expecting basic authorization scheme")
-		}
-		userPassBase64 = c.Request.Header.Get("Authorization")[6:]
-	} else {
-		return UserName, Token, fmt.Errorf("Invalid authorization information provided")
+	if len(headerFields) != 2 {
+		return userName, token, fmt.Errorf("Invalid authorization information provided")
+	}
+	if headerFields[0] != "Basic" {
+		return userName, token, fmt.Errorf("Invalid authorization scheme, expecting 'Basic' authorization scheme")
 	}
 
-	userPass, err := base64.StdEncoding.DecodeString(userPassBase64)
+	userPassBytes, err := base64.StdEncoding.DecodeString(headerFields[1])
 	if err != nil {
-		return UserName, Token, fmt.Errorf("Invalid authorization information provided")
+		return userName, token, fmt.Errorf("Invalid authorization information provided")
 	}
 
-	if strings.Count(string(userPass), ":") != 1 {
-		return UserName, Token, fmt.Errorf("Invalid authorization information provided")
-	}
-	splittedUserPass := strings.Split(string(userPass), ":")
-	UserName = splittedUserPass[0]
-	Token = splittedUserPass[1]
+	// Important: Remove trailing newline from token, otherwise authentication fails
+	userPassStr = strings.TrimSuffix(string(userPassBytes), "\n")
 
-	return UserName, Token, nil
+	if strings.Count(userPassStr, ":") != 1 {
+		return userName, token, fmt.Errorf("Invalid authorization information provided")
+	}
+
+	splittedUserPass := strings.Split(userPassStr, ":")
+	userName = splittedUserPass[0]
+	token = splittedUserPass[1]
+
+	return userName, token, nil
 }

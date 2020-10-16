@@ -22,6 +22,7 @@ struct DatabaseRecord {
     DatabaseRecord() noexcept
         : m_id(0)
         , m_uuid(utils::getZeroUuid())
+        , m_maxTableCount(0)
     {
     }
 
@@ -32,14 +33,16 @@ struct DatabaseRecord {
      * @param name Database name.
      * @param cipherId Cipher identifier.
      * @param description Database description.
+     * @param maxTableCount Maximum number of tables.
      */
     DatabaseRecord(std::uint32_t id, const Uuid& uuid, std::string&& name, std::string&& cipherId,
-            std::optional<std::string>&& description)
+            std::optional<std::string>&& description, std::uint32_t maxTableCount)
         : m_id(id)
         , m_uuid(uuid)
         , m_name(std::move(name))
         , m_cipherId(std::move(cipherId))
         , m_description(std::move(description))
+        , m_maxTableCount(maxTableCount)
     {
     }
 
@@ -57,7 +60,8 @@ struct DatabaseRecord {
     bool operator==(const DatabaseRecord& other) const noexcept
     {
         return m_id == other.m_id && m_uuid == other.m_uuid && m_name == other.m_name
-               && m_cipherId == other.m_cipherId && m_description == other.m_description;
+               && m_cipherId == other.m_cipherId && m_description == other.m_description
+               && m_maxTableCount == other.m_maxTableCount;
     }
 
     /**
@@ -98,6 +102,9 @@ struct DatabaseRecord {
 
     /** Database description */
     std::optional<std::string> m_description;
+
+    /** Maximum number of tables */
+    std::uint32_t m_maxTableCount;
 
     /** Structure UUID */
     static const Uuid s_classUuid;

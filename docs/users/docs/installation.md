@@ -43,8 +43,8 @@ Siodb aims to support the following operating systems:
 | ---------------------------- | ------------ | ------- | ----------------- |
 | Ubuntu                       | x86_64       | >=18.04 | Supported         |
 | Debian                       | x86_64       | >=10    | Supported         |
-| CentOS                       | x86_64       | >=7.5   | Not Supported yet |
-| RHEL                         | x86_64       | >=7.5   | Not Supported yet |
+| CentOS                       | x86_64       | >=7.8   | Supported         |
+| RHEL                         | x86_64       | >=7.8   | Supported         |
 | Alpine                       | x86_64       | >=3.10  | Not Supported yet |
 | openSUSE (Leap)              | x86_64       | >=15    | Not Supported yet |
 | SUSE Linux Enterprise Server | x86_64       | >=15    | Not Supported yet |
@@ -74,37 +74,106 @@ Only user belonging to the `siodb` OS group should be able to read, write and li
 
 ## Linux Packages
 
-Download your distribution package on the official [website](https://siodb.io/getsiodb/).
-There is also a script that installs everything properly for you with the last
-version of Siodb available. To use that automation script, please go to [the
+Download your the packages for your distribution here
+[website](https://www.siodb.io/packages/siodb_linux_packages.html).
+There is also an automation script that installs everything for you with the last
+version of Siodb available. To use the automation script, please go to [the
 Quick start page](./../quick_start).
 
-## Installation: Ubuntu 18.04
+## Installation per OS
 
-### Install dependencies
+### Ubuntu 18.04
 
-- Connect to your server as `root` or any privileged user
-- Install the Debian packages:
+#### Install dependencies as root
 
 ```bash
-apt-get update
 apt install -y openssh-client openssl rlwrap
+apt install -y ./siodb-protobuf_<VERSION>-ubuntu1804_amd64.deb
+apt install -y ./siodb-antlr4-runtime_<VERSION>-ubuntu1804_amd64.deb
+apt install -y ./siodb-xxhash_<VERSION>-ubuntu1804_amd64.deb
 ```
 
-- Then, install the Siodb's dependency packages (available [here](https://siodb.io/getsiodb/)):
+Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
+
+#### Siodb installation
 
 ```bash
-apt install -y ./antlr4_<VERSION>_x86_64.deb
-apt install -y ./protobuf_<VERSION>_x86_64.deb
-apt install -y ./boost_<VERSION>_x86_64.deb
-apt install -y ./xxhash_<VERSION>_x86_64.deb
+apt install -y ./siodb_<VERSION>-ubuntu1804_amd64.deb
 ```
 
-### Siodb installation
+### Ubuntu 20.04
 
-- Connect to your server as `root` or any privileged user
-- Install the Debian package:
+#### Install dependencies as root
 
 ```bash
-apt install -y ./siodb_<VERSION>_x86_64.deb
+apt install -y openssh-client openssl rlwrap
+apt install -y ./siodb-protobuf_<VERSION>-ubuntu2004_amd64.deb
+apt install -y ./siodb-antlr4-runtime_<VERSION>-ubuntu2004_amd64.deb
+apt install -y ./siodb-xxhash_<VERSION>-ubuntu2004_amd64.deb
+```
+
+Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
+
+#### Siodb installation
+
+```bash
+apt install -y ./siodb_<VERSION>-ubuntu2004_amd64.deb
+```
+
+### Debian 10
+
+#### Install dependencies as root
+
+```bash
+apt install -y openssh-client openssl rlwrap
+apt install -y ./siodb-protobuf_<VERSION>-debian10_amd64.deb
+apt install -y ./siodb-antlr4-runtime_<VERSION>-debian10_amd64.deb
+apt install -y ./siodb-xxhash_<VERSION>-debian10_amd64.deb
+```
+
+Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
+
+#### Siodb installation
+
+```bash
+apt install -y ./siodb_<VERSION>-debian10_amd64.deb
+```
+
+### Centos 7 / RHEL 7
+
+#### Install dependencies as root
+
+```bash
+yum install -y openssh-clients rlwrap
+yum install -y ./siodb-openssl-<VERSION>-1.el7.x86_64.rpm
+yum install -y ./siodb-protobuf-<VERSION>-1.el7.x86_64.rpm
+yum install -y ./siodb-antlr4-runtime-<VERSION>.el7.x86_64.rpm
+yum install -y ./siodb-xxhash-<VERSION>-1.el7.x86_64.rpm
+```
+
+Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
+
+#### Siodb installation
+
+```bash
+yum install -y ./siodb-<VERSION>-1.el7.x86_64.rpm
+```
+
+### Centos 8 / RHEL 8
+
+#### Install dependencies as root
+
+```bash
+yum install -y openssh-clients openssl rlwrap
+yum install -y ./siodb-protobuf-<VERSION>-1.el8.x86_64.rpm
+yum install -y ./siodb-antlr4-runtime-<VERSION>.el8.x86_64.rpm
+yum install -y ./siodb-xxhash-<VERSION>-1.el8.x86_64.rpm
+```
+
+Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
+
+#### Siodb installation
+
+```bash
+yum install -y ./siodb-<VERSION>-1.el8.x86_64.rpm
 ```

@@ -8,7 +8,12 @@
   - [CentOS 8](#centos-8)
   - [RHEL 7](#rhel-7)
   - [RHEL 8](#rhel-8)
+- [All Systems](#all-systems)
+  - [Install Go](#install-go)
+  - [Install boost-pretty-printer GDB Extension](#install-boost-pretty-printer-gdb-extension)
 - [Building Third-Party Libraries](#building-third-party-libraries)
+  - [C and C++ Libraries](#c-and-c-libraries)
+  - [Go Libraries](#go-libraries)
 - [System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)](#system-setup-debian-ubuntu-centos-rhel-suse-sles)
 - [Compiling Siodb](#compiling-siodb)
 - [Running Siodb](#running-siodb)
@@ -574,7 +579,7 @@ sudo chmod 0600 /etc/siodb/instances/siodb/config
 sudo chown siodb:siodb /etc/siodb/instances/siodb/config
 sudo -u siodb dd if=/dev/random of=/etc/siodb/instances/siodb/master_key bs=16 count=1
 sudo chmod 0600 /etc/siodb/instances/siodb/master_key
-sudo cp config/sample_keys/rsa /etc/siodb/instances/siodb/initial_access_key
+sudo cp config/sample_keys/rsa.pub /etc/siodb/instances/siodb/initial_access_key
 sudo chmod 0600 /etc/siodb/instances/siodb/initial_access_key
 sudo chown siodb:siodb /etc/siodb/instances/siodb/initial_access_key
 

@@ -14,68 +14,64 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (restWorker RestWorker) getDatabases(c *gin.Context) {
-
-	siodbLoggerPool.Debug("getDatabases")
-	restWorker.get(c, siodbproto.DatabaseObjectType_DATABASE, "", 0)
+func (worker restWorker) getDatabases(c *gin.Context) {
+	log.Debug("getDatabases")
+	worker.get(c, siodbproto.DatabaseObjectType_DATABASE, "", 0)
 }
 
-func (restWorker RestWorker) getTables(c *gin.Context) {
-
-	siodbLoggerPool.Debug("getTables")
-	restWorker.get(c, siodbproto.DatabaseObjectType_TABLE, c.Param("database_name"), 0)
+func (worker restWorker) getTables(c *gin.Context) {
+	log.Debug("getTables")
+	worker.get(c, siodbproto.DatabaseObjectType_TABLE, c.Param("database_name"), 0)
 }
 
-func (restWorker RestWorker) getRows(c *gin.Context) {
-
-	siodbLoggerPool.Debug("getRows")
-	restWorker.get(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
+func (worker restWorker) getRows(c *gin.Context) {
+	log.Debug("getRows")
+	worker.get(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), 0)
 }
 
-func (restWorker RestWorker) getRow(c *gin.Context) {
-
-	siodbLoggerPool.Debug("handler: getRow")
+func (worker restWorker) getRow(c *gin.Context) {
+	log.Debug("handler: getRow")
 	var rowID uint64
 	var err error
 	if rowID, err = strconv.ParseUint(c.Param("row_id"), 10, 64); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "Invalid row_id"})
-		siodbLoggerPool.Error("%v", err)
+		log.Error("%v", err)
 	} else {
-		restWorker.get(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
+		worker.get(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
 	}
 }
 
-func (restWorker RestWorker) get(
+func (worker restWorker) get(
 	c *gin.Context, ObjectType siodbproto.DatabaseObjectType, ObjectName string, ObjectID uint64) (err error) {
 
 	start := time.Now()
-	IOMgrConn, _ := IOMgrCPool.GetTrackedNetConn()
-	defer CloseRequest(c, IOMgrConn, start)
-	siodbLoggerPool.Debug("IOMgrConn: %v", IOMgrConn)
+	ioMgrConn, _ := ioMgrCPool.GetTrackedNetConn()
+	defer closeRequest(c, ioMgrConn, start)
+	log.Debug("ioMgrConn: %v", ioMgrConn)
 
-	var UserName, Token string
-	if UserName, Token, err = loadAuthenticationData(c); err != nil {
-		siodbLoggerPool.Error("%v", err)
+	var userName, token string
+	if userName, token, err = loadAuthenticationData(c); err != nil {
+		log.Error("%v", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	var requestID uint64
-	if requestID, err = IOMgrConn.writeIOMgrRequest(
-		siodbproto.RestVerb_GET, ObjectType, UserName, Token, ObjectName, ObjectID); err != nil {
-		siodbLoggerPool.Error("%v", err)
+	if requestID, err = ioMgrConn.writeIOMgrRequest(
+		siodbproto.RestVerb_GET, ObjectType, userName, token, ObjectName, ObjectID); err != nil {
+		log.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
-	if err := IOMgrConn.readIOMgrResponse(requestID); err != nil {
-		siodbLoggerPool.Error("%v", err)
+	if err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
+		log.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 	// Read and stream chunked JSON
-	if err := IOMgrConn.readChunkedJSON(c); err != nil {
-		siodbLoggerPool.Error("%v", err)
+	if err := ioMgrConn.readChunkedJSON(c); err != nil {
+		log.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}

@@ -5,6 +5,7 @@
 #include "ConnWorkerConnectionHandler.h"
 
 // Common project headers
+#include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/io/FDStream.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/ConnectionError.h>

@@ -65,9 +65,11 @@ public:
      * Initializes object of class FileReadError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
+     * @param actuallyRead Number of bytes actually read.
      */
-    FileReadError(int errorCode, const char* errorMessage)
+    FileReadError(int errorCode, const char* errorMessage, std::ptrdiff_t actuallyRead)
         : FileIOError(errorCode, errorMessage)
+        , m_actuallyRead(actuallyRead)
     {
     }
 
@@ -75,11 +77,26 @@ public:
      * Initializes object of class FileReadError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
+     * @param actuallyRead Number of bytes actually read.
      */
-    FileReadError(int errorCode, const std::string& errorMessage)
+    FileReadError(int errorCode, const std::string& errorMessage, std::ptrdiff_t actuallyRead)
         : FileIOError(errorCode, errorMessage)
+        , m_actuallyRead(actuallyRead)
     {
     }
+
+    /**
+     * Returns number of bytes actually read.
+     * @return Number of bytes actually read.
+     */
+    auto getActuallyRead() const noexcept
+    {
+        return m_actuallyRead;
+    }
+
+private:
+    /** Number of bytes actually read */
+    const std::ptrdiff_t m_actuallyRead;
 };
 
 class FileWriteError : public FileIOError {
@@ -88,9 +105,11 @@ public:
      * Initializes object of class FileWriteError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
+     * @param actuallyWritten Number of bytes actually written.
      */
-    FileWriteError(int errorCode, const char* errorMessage)
+    FileWriteError(int errorCode, const char* errorMessage, std::ptrdiff_t actuallyWritten)
         : FileIOError(errorCode, errorMessage)
+        , m_actuallyWritten(actuallyWritten)
     {
     }
 
@@ -98,11 +117,26 @@ public:
      * Initializes object of class FileWriteError.
      * @param errorCode Error code.
      * @param errorMessage Error message.
+     * @param actuallyWritten Number of bytes actually written.
      */
-    FileWriteError(int errorCode, const std::string& errorMessage)
+    FileWriteError(int errorCode, const std::string& errorMessage, std::ptrdiff_t actuallyWritten)
         : FileIOError(errorCode, errorMessage)
+        , m_actuallyWritten(actuallyWritten)
     {
     }
+
+    /**
+     * Returns number of bytes actually written.
+     * @return Number of bytes actually written.
+     */
+    auto getActuallyWritten() const noexcept
+    {
+        return m_actuallyWritten;
+    }
+
+private:
+    /** Number of bytes actually written */
+    const std::ptrdiff_t m_actuallyWritten;
 };
 
 /** Provides file I/O. */

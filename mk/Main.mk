@@ -15,20 +15,20 @@ include $(MK)/Utils.mk
 # Sources
 PROTO_CXX_SRC_N:=$(PROTO_SRC:.proto=.pb.cc)
 PROTO_CXX_HDR_N:=$(PROTO_SRC:.proto=.pb.h)
-PROTO_CXX_SRC:=$(addprefix $(THIS_GENERATED_FILES_DIR), $(PROTO_CXX_SRC_N))
-PROTO_CXX_HDR:=$(addprefix $(THIS_GENERATED_FILES_DIR), $(PROTO_CXX_HDR_N))
+PROTO_CXX_SRC:=$(addprefix $(THIS_GENERATED_FILES_DIR)/, $(PROTO_CXX_SRC_N))
+PROTO_CXX_HDR:=$(addprefix $(THIS_GENERATED_FILES_DIR)/, $(PROTO_CXX_HDR_N))
 PROTO_GO_SRC_N:=$(PROTO_SRC:.proto=.pb.go)
 PROTO_GO_SRC:=$(addprefix $(GENERATED_FILES_GOPATH)/src/$(PROTO_GO_PACKAGE)/, $(PROTO_GO_SRC_N))
 
 # Objects
-OBJ:=$(addprefix $(THIS_OBJ_DIR),$(PROTO_CXX_SRC_N:.pb.cc=.pb.o) $(C_SRC:.c=.o) $(CXX_SRC:.cpp=.o))
+OBJ:=$(addprefix $(THIS_OBJ_DIR)/,$(PROTO_CXX_SRC_N:.pb.cc=.pb.o) $(C_SRC:.c=.o) $(CXX_SRC:.cpp=.o))
 
 # Generated dependencies
 DEP:=$(OBJ:.o=.d)
 
 # Header check
-CXX_CHK:=$(addprefix $(THIS_OBJ_DIR), $(addsuffix .cxx-hdr-check, $(CXX_HDR)))
-C_CHK:=$(addprefix $(THIS_OBJ_DIR), $(addsuffix .c-hdr-check, $(C_HDR)))
+CXX_CHK:=$(addprefix $(THIS_OBJ_DIR)/, $(addsuffix .cxx-hdr-check, $(CXX_HDR)))
+C_CHK:=$(addprefix $(THIS_OBJ_DIR)/, $(addsuffix .c-hdr-check, $(C_HDR)))
 
 CHK_DIRS:=$(addsuffix .,$(sort $(dir $(CXX_CHK)))) $(addsuffix .,$(sort $(dir $(C_CHK))))
 
@@ -240,7 +240,7 @@ all: \
 
 print-config:
 	@echo $(ECHO_E_OPTION) "\n================================================================================\n"\
-	"Build Settings:\n"\
+	"Build Settings:\n\nSrcDir Offset: $(SRC_DIR_OFFSET)\n\n"\
 	"\nDistro: $(DISTRO) $(DISTRO_VERSION)\n"\
 	"Debug build: $(DEBUG)\n"\
 	"Build unit tests: $(BUILD_UNIT_TESTS)\n"\

@@ -7,16 +7,15 @@
 // Project headers
 #include "ColumnSetPtr.h"
 #include "ColumnSpecification.h"
-#include "ConstraintDefinitionCache.h"
+#include "ConstraintDefinitionPtr.h"
 #include "ConstraintPtr.h"
 #include "DatabaseMetadata.h"
 #include "DatabasePtr.h"
 #include "FirstUserObjectId.h"
 #include "Instance.h"
 #include "MasterColumnRecordPtr.h"
-#include "TableCache.h"
+#include "TablePtr.h"
 #include "TransactionParameters.h"
-#include "User.h"
 #include "parser/expr/Expression.h"
 #include "reg/ColumnDefinitionRegistry.h"
 #include "reg/ColumnRegistry.h"
@@ -73,12 +72,12 @@ protected:
      * @param name Database name.
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
-     * @param tableCacheCapacity Table cache capacity.
      * @param description Database description.
+     * @param maxTableCount Maximum table count.
      */
     Database(Instance& instance, std::string&& name, const std::string& cipherId,
-            BinaryValue&& cipherKey, std::size_t tableCacheCapacity,
-            std::optional<std::string>&& description);
+            BinaryValue&& cipherKey, std::optional<std::string>&& description,
+            std::uint32_t maxTableCount);
 
     /**
      * Initializes object of class Database for an existing non-system database.
@@ -86,9 +85,8 @@ protected:
      * @param dbRecord Database record.
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
-     * @param tableCacheCapacity Table cache capacity.
      */
-    Database(Instance& instance, const DatabaseRecord& dbRecord, std::size_t tableCacheCapacity);
+    Database(Instance& instance, const DatabaseRecord& dbRecord);
 
 public:
     /** De-initializes object of class Database */
@@ -145,6 +143,15 @@ public:
     const auto& getDescription() const noexcept
     {
         return m_description;
+    }
+
+    /**
+     * Returns maximum table count.
+     * @return Maximum table count.
+     */
+    const auto getMaxTableCount() const noexcept
+    {
+        return m_maxTableCount;
     }
 
     /**
@@ -1069,6 +1076,9 @@ protected:
     /** Decryption context */
     crypto::CipherContextPtr m_decryptionContext;
 
+    /** Maximum number of tables */
+    std::uint32_t m_maxTableCount;
+
     /** Database internals access synchronization object */
     mutable std::recursive_mutex m_mutex;
 
@@ -1105,11 +1115,11 @@ protected:
     /** Index registry. Contains information about all known indices */
     IndexRegistry m_indexRegistry;
 
-    /** Table cache. Contains recently used tables. */
-    TableCache m_tableCache;
+    /** Table objects. */
+    std::unordered_map<std::uint32_t, TablePtr> m_tables;
 
-    /** Constraint definition cache. Contains recently used constaint definitions. */
-    ConstraintDefinitionCache m_constraintDefinitionCache;
+    /** Constaint definition objects. */
+    std::unordered_map<std::uint64_t, ConstraintDefinitionPtr> m_constraintDefinitions;
 
     /** Temporart TRID counters, used until appropriate table is created. */
     TemporaryTridCounters m_tmpTridCounters;
@@ -1182,12 +1192,6 @@ protected:
 
     /** First transaction ID */
     static constexpr std::uint64_t kFirstTransationId = 1;
-
-    /** Capacity of the constraint definition cache */
-    static constexpr std::size_t kConstraintDefinitionCacheCapacity = 256;
-
-    /** Capacity of the constraint cache */
-    static constexpr std::size_t kConstraintCacheCapacity = 1024;
 };
 
 /** Database use guard */

@@ -6,6 +6,7 @@
 
 // Project headers
 #include "UserAccessKeyPtr.h"
+#include "UserIdGenerator.h"
 #include "UserPtr.h"
 #include "UserTokenPtr.h"
 #include "reg/UserRecord.h"
@@ -16,19 +17,6 @@
 namespace siodb::iomgr::dbengine {
 
 class UserPermission;
-
-/** User ID generator */
-class UserIdGenerator {
-public:
-    /** De-initializes object of class UserIdSource */
-    virtual ~UserIdGenerator() = default;
-
-    /**
-     * Generates new unique user ID.
-     * @return New user ID.
-     */
-    virtual std::uint32_t generateNextUserId() = 0;
-};
 
 /** Database user */
 class User {

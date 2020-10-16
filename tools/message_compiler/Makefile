@@ -21,6 +21,6 @@ TARGET_OWN_LIBS:=
 
 TARGET_COMMON_LIBS:=
 
-TARGET_LIBS:=-lboost_iostreams
+TARGET_LIBS:=-lboost_iostreams -lboost_system -lboost_filesystem
 
 include $(MK)/Main.mk

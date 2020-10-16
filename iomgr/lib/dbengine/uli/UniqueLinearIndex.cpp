@@ -13,7 +13,7 @@
 
 // Common project headers
 #include <siodb/common/config/Config.h>
-#include <siodb/common/config/SiodbDefs.h>
+#include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
@@ -301,26 +301,29 @@ io::FilePtr UniqueLinearIndex::createIndexFile(std::uint64_t fileId) const
                 m_id, ex.code().value(), std::strerror(ex.code().value()));
     }
 
-    stdext::buffer<std::uint8_t> buffer(kDataFileHeaderSize, 0);
+    stdext::buffer<std::uint8_t> buffer(kIndexFileHeaderSize, 0);
 
     // Write header
     IndexFileHeader indexFileHeader(getDatabaseUuid(), getTableId(), m_id, m_type);
     indexFileHeader.serialize(buffer.data());
-    if (file->write(buffer.data(), buffer.size(), 0) != buffer.size()) {
+    auto n = file->write(buffer.data(), buffer.size(), 0);
+    if (n != buffer.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, indexFilePath,
                 getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
-                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()));
+                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()),
+                n);
     }
 
     // Write initial data
     const off_t dataOffset = buffer.size();
-    buffer.resize(m_dataFileSize - kDataFileHeaderSize);
+    buffer.resize(m_dataFileSize - kIndexFileHeaderSize);
     buffer.fill(0);
-    if (file->write(buffer.data(), buffer.size(), dataOffset) != buffer.size()) {
+    n = file->write(buffer.data(), buffer.size(), dataOffset);
+    if (n != buffer.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteIndexFile, indexFilePath,
                 getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
                 m_id, dataOffset, buffer.size(), file->getLastError(),
-                std::strerror(file->getLastError()));
+                std::strerror(file->getLastError()), n);
     }
 
     if (tmpFilePath.empty()) {
@@ -376,11 +379,13 @@ io::FilePtr UniqueLinearIndex::openIndexFile(std::uint64_t fileId) const
     }
 
     // Check header
-    stdext::buffer<std::uint8_t> buffer(kDataFileHeaderSize);
-    if (file->read(buffer.data(), buffer.size(), 0) != buffer.size()) {
+    stdext::buffer<std::uint8_t> buffer(kIndexFileHeaderSize);
+    const auto n = file->read(buffer.data(), buffer.size(), 0);
+    if (n != buffer.size()) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadIndexFile, indexFilePath,
                 getDatabaseName(), m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(),
-                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()));
+                m_id, 0, buffer.size(), file->getLastError(), std::strerror(file->getLastError()),
+                n);
     }
     IndexFileHeader actualHeader(m_type);
     actualHeader.deserialize(buffer.data());

@@ -23,18 +23,24 @@ extra_css:
 nav:
     - Home: index.md
     - Quick start: quick_start.md
-    - Developer's Guide: development.md
+    - Developer's Guide:
+        - REST API: rest_api.md
+        - SQL Drivers: sql_drivers.md
     - Concepts: concepts.md
     - Installation: installation.md
     - Administration:
         - General: administration.md
-        - User management: users.md
+        - Parameters: parameters.md
+        - Backup and restore: backup_restore.md
+        - User access:
+            - Users : users.md
+            - Authentication : authentication.md
         - Encryption: encryption.md
         - System tables: system_tables.md
 
 markdown_extensions:
     - toc:
-        permalink:
+        permalink: ⚓︎
     - admonition
     - def_list
 

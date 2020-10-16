@@ -42,15 +42,15 @@ ANTLR_GENERATED_FILES:= \
 	$(ANTLR_GENERATED_CXX_HDR)  \
 	$(ANTLR_GENERATED_SUPPLEMENTARY_FILES)
 
-MESSAGES_HDR:=$(THIS_GENERATED_FILES_DIR)../messages/IOManagerMessageId.h
+MESSAGES_HDR:=$(THIS_GENERATED_FILES_DIR)/../messages/IOManagerMessageId.h
 
 EXTRA_CXX_DEPS:= $(MESSAGES_HDR) $(ANTLR_GENERATED_CXX_HDR)
 
 include $(MK)/Main.mk
 
-$(MESSAGES_HDR): ../messages/iomgr.msg | $$(@D)/.
+$(MESSAGES_HDR): ../messages/iomgr.msg $(MESSAGE_COMPILER_TOOL) | $$(@D)/.
 	@echo MC $@
-	$(NOECHO)$(MESSAGE_COMPILER_TOOL) -H -b int -n siodb.iomgr -e IOManagerMessageId -gp -i $< -o $@
+	$(NOECHO)$(MESSAGE_COMPILER_TOOL) -H -b int -n siodb.iomgr -e IOManagerMessageId -i $< -o $@
 
 .PRECIOUS: $(MESSAGES_HDR) $(ANTLR_GENERATED_FILES)
 

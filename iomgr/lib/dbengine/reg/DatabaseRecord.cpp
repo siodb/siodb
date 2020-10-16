@@ -22,6 +22,7 @@ DatabaseRecord::DatabaseRecord(const Database& database)
     , m_name(database.getName())
     , m_cipherId(database.getCipherId())
     , m_description(database.getDescription())
+    , m_maxTableCount(database.getMaxTableCount())
 {
 }
 
@@ -29,7 +30,7 @@ std::size_t DatabaseRecord::getSerializedSize(unsigned version) const noexcept
 {
     return Uuid::static_size() + ::getVarIntSize(version) + ::getVarIntSize(m_id)
            + Uuid::static_size() + ::getSerializedSize(m_name) + ::getSerializedSize(m_cipherId)
-           + ::getSerializedSize(m_description);
+           + ::getSerializedSize(m_description) + ::getVarIntSize(m_maxTableCount);
 }
 
 std::uint8_t* DatabaseRecord::serializeUnchecked(
@@ -44,6 +45,7 @@ std::uint8_t* DatabaseRecord::serializeUnchecked(
     buffer = ::serializeUnchecked(m_name, buffer);
     buffer = ::serializeUnchecked(m_cipherId, buffer);
     buffer = ::serializeUnchecked(m_description, buffer);
+    buffer = ::encodeVarInt(m_maxTableCount, buffer);
     return buffer;
 }
 
@@ -89,6 +91,10 @@ std::size_t DatabaseRecord::deserialize(const std::uint8_t* buffer, std::size_t 
     } catch (std::exception& ex) {
         helpers::reportDeserializationFailure(kClassName, field, ex.what());
     }
+
+    consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, m_maxTableCount);
+    if (consumed < 1) helpers::reportInvalidOrNotEnoughData(kClassName, "maxTableCount", consumed);
+    totalConsumed += consumed;
 
     return totalConsumed;
 }

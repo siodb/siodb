@@ -11,7 +11,7 @@
 #include "ThrowDatabaseError.h"
 
 // Common project headers
-#include <siodb/common/config/SiodbDefs.h>
+#include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
@@ -59,13 +59,14 @@ std::uint64_t BlockRegistry::findPrevBlockId(std::uint64_t blockId) const
     // Read previous block ID
     std::uint8_t buffer[sizeof(std::uint64_t)];
     const auto readOffset = blockRecordOffset + BlockListRecord::kPrevBlockIdSerializedFieldOffset;
-    if (::preadExact(m_blockListFile.getFD(), buffer, sizeof(buffer), readOffset, kIgnoreSignals)
-            != sizeof(buffer)) {
+    const auto n = ::preadExact(
+            m_blockListFile.getFD(), buffer, sizeof(buffer), readOffset, kIgnoreSignals);
+    if (n != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), readOffset,
-                sizeof(buffer), errorCode, std::strerror(errorCode));
+                sizeof(buffer), errorCode, std::strerror(errorCode), n);
     }
     std::uint64_t prevBlockId = 0;
     ::pbeDecodeUInt64(buffer, &prevBlockId);
@@ -87,15 +88,15 @@ std::vector<std::uint64_t> BlockRegistry::findNextBlockIds(std::uint64_t blockId
     while (nextBlockRecord.m_nextBlockListFileOffset != 0) {
         // Read next block list record
         std::uint8_t buffer[NextBlockListRecord::kSerializedSize];
-        if (::preadExact(m_nextBlockListFile.getFD(), buffer, sizeof(buffer),
-                    nextBlockRecord.m_nextBlockListFileOffset, kIgnoreSignals)
-                != sizeof(buffer)) {
+        const auto n = ::preadExact(m_nextBlockListFile.getFD(), buffer, sizeof(buffer),
+                nextBlockRecord.m_nextBlockListFileOffset, kIgnoreSignals);
+        if (n != sizeof(buffer)) {
             const int errorCode = errno;
             throwDatabaseError(IOManagerMessageId::kErrorCannotReadNextBlockListDataFile, __func__,
                     m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                     m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
                     nextBlockRecord.m_nextBlockListFileOffset, sizeof(buffer), errorCode,
-                    std::strerror(errorCode));
+                    std::strerror(errorCode), n);
         }
         nextBlockRecord.deserialize(buffer);
         // Save block ID
@@ -135,14 +136,14 @@ void BlockRegistry::recordBlock(
     }
 
     // Write record
-    if (::pwriteExact(
-                m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
-            != sizeof(buffer)) {
+    const auto n = ::pwriteExact(
+            m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals);
+    if (n != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteBlockListDataFile, __func__,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                blockRecordOffset, sizeof(buffer), errorCode, std::strerror(errorCode));
+                blockRecordOffset, sizeof(buffer), errorCode, std::strerror(errorCode), n);
     }
 
     if (blockId > m_lastBlockId) m_lastBlockId = blockId;
@@ -160,13 +161,14 @@ void BlockRegistry::updateBlockState(std::uint64_t blockId, ColumnDataBlockState
     std::uint8_t buffer[sizeof(std::uint32_t)];
     ::pbeEncodeUInt32(static_cast<std::uint32_t>(state), buffer);
     const auto writeOffset = blockRecordOffset + BlockListRecord::kBlockStateSerializedFieldOffset;
-    if (::pwriteExact(m_blockListFile.getFD(), buffer, sizeof(buffer), writeOffset, kIgnoreSignals)
-            != sizeof(buffer)) {
+    const auto n = ::pwriteExact(
+            m_blockListFile.getFD(), buffer, sizeof(buffer), writeOffset, kIgnoreSignals);
+    if (n != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteBlockListDataFile, __func__,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), writeOffset,
-                sizeof(buffer), errorCode, std::strerror(errorCode));
+                sizeof(buffer), errorCode, std::strerror(errorCode), n);
     }
 }
 
@@ -180,14 +182,15 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
 
     // Load block record
     std::uint8_t blockRecordBuffer[BlockListRecord::kSerializedSize];
-    if (::preadExact(m_blockListFile.getFD(), blockRecordBuffer, sizeof(blockRecordBuffer),
-                blockRecordOffset, kIgnoreSignals)
-            != sizeof(blockRecordBuffer)) {
+    auto n = ::preadExact(m_blockListFile.getFD(), blockRecordBuffer, sizeof(blockRecordBuffer),
+            blockRecordOffset, kIgnoreSignals);
+    if (n != sizeof(blockRecordBuffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                blockRecordOffset, sizeof(blockRecordBuffer), errorCode, std::strerror(errorCode));
+                blockRecordOffset, sizeof(blockRecordBuffer), errorCode, std::strerror(errorCode),
+                n);
     }
     BlockListRecord blockRecord;
     blockRecord.deserialize(blockRecordBuffer);
@@ -202,14 +205,14 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
     record.serialize(buffer);
 
     // Write record
-    if (::pwriteExact(m_nextBlockListFile.getFD(), buffer, sizeof(buffer), newRecordLocation,
-                kIgnoreSignals)
-            != sizeof(buffer)) {
+    n = ::pwriteExact(
+            m_nextBlockListFile.getFD(), buffer, sizeof(buffer), newRecordLocation, kIgnoreSignals);
+    if (n != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteNextBlockListDataFile, __func__,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                newRecordLocation, sizeof(buffer), errorCode, std::strerror(errorCode));
+                newRecordLocation, sizeof(buffer), errorCode, std::strerror(errorCode), n);
     }
 
     struct LastRecordUpdate {
@@ -226,17 +229,15 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
             // Update last record
             const auto writeOffset =
                     offset + NextBlockListRecord::kNextBlockListFileOffsetSerializedFieldOffset;
-            if (::pwriteExact(m_fd,
-                        m_buffer
-                                + NextBlockListRecord::
-                                        kNextBlockListFileOffsetSerializedFieldOffset,
-                        m_updateSize, writeOffset, kIgnoreSignals)
-                    != m_updateSize) {
+            const auto n = ::pwriteExact(m_fd,
+                    m_buffer + NextBlockListRecord::kNextBlockListFileOffsetSerializedFieldOffset,
+                    m_updateSize, writeOffset, kIgnoreSignals);
+            if (n != m_updateSize) {
                 const int errorCode = errno;
                 throwDatabaseError(IOManagerMessageId::kErrorCannotWriteNextBlockListDataFile,
                         __func__, m_column.getDatabaseName(), m_column.getDatabaseUuid(),
                         m_column.getTableId(), m_column.getId(), writeOffset, m_updateSize,
-                        errorCode, std::strerror(errorCode));
+                        errorCode, std::strerror(errorCode), n);
             }
         }
 
@@ -253,18 +254,16 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
             // Update last record
             const auto writeOffset =
                     m_offset + NextBlockListRecord::kNextBlockListFileOffsetSerializedFieldOffset;
-            if (::pwriteExact(m_fd,
-                        m_buffer
-                                + NextBlockListRecord::
-                                        kNextBlockListFileOffsetSerializedFieldOffset,
-                        m_updateSize, writeOffset, kIgnoreSignals)
-                    != m_updateSize) {
+            const auto n = ::pwriteExact(m_fd,
+                    m_buffer + NextBlockListRecord::kNextBlockListFileOffsetSerializedFieldOffset,
+                    m_updateSize, writeOffset, kIgnoreSignals);
+            if (n != m_updateSize) {
                 if (std::uncaught_exceptions() == 0) {
                     const int errorCode = errno;
                     throwDatabaseError(IOManagerMessageId::kErrorCannotWriteNextBlockListDataFile,
                             __func__, m_column.getDatabaseName(), m_column.getDatabaseUuid(),
                             m_column.getTableId(), m_column.getId(), writeOffset, m_updateSize,
-                            errorCode, std::strerror(errorCode));
+                            errorCode, std::strerror(errorCode), n);
                 }
             }
         }
@@ -291,15 +290,15 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
         // This is some subsequent one, therefore also update last record in the chain.
 
         // Load old last next block record
-        if (::preadExact(m_nextBlockListFile.getFD(), buffer, NextBlockListRecord::kSerializedSize,
-                    blockRecord.m_lastNextBlockListFileOffset, kIgnoreSignals)
-                != NextBlockListRecord::kSerializedSize) {
+        n = ::preadExact(m_nextBlockListFile.getFD(), buffer, NextBlockListRecord::kSerializedSize,
+                blockRecord.m_lastNextBlockListFileOffset, kIgnoreSignals);
+        if (n != NextBlockListRecord::kSerializedSize) {
             const int errorCode = errno;
             throwDatabaseError(IOManagerMessageId::kErrorCannotReadNextBlockListDataFile, __func__,
                     m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                     m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
                     blockRecord.m_lastNextBlockListFileOffset, NextBlockListRecord::kSerializedSize,
-                    errorCode, std::strerror(errorCode));
+                    errorCode, std::strerror(errorCode), n);
         }
 
         // Prepare record
@@ -316,16 +315,17 @@ void BlockRegistry::addNextBlock(std::uint64_t blockId, std::uint64_t nextBlockI
     // Update block record
     blockRecord.m_lastNextBlockListFileOffset = newRecordLocation;
     blockRecord.serialize(blockRecordBuffer);
-    if (::pwriteExact(m_blockListFile.getFD(), blockRecordBuffer, sizeof(blockRecordBuffer),
-                blockRecordOffset, kIgnoreSignals)
-            != sizeof(blockRecordBuffer)) {
+    n = ::pwriteExact(m_blockListFile.getFD(), blockRecordBuffer, sizeof(blockRecordBuffer),
+            blockRecordOffset, kIgnoreSignals);
+    if (n != sizeof(blockRecordBuffer)) {
         // Save error code
         const int errorCode = errno;
         // Report error
         throwDatabaseError(IOManagerMessageId::kErrorCannotWriteBlockListDataFile, __func__,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                blockRecordOffset, sizeof(blockRecordBuffer), errorCode, std::strerror(errorCode));
+                blockRecordOffset, sizeof(blockRecordBuffer), errorCode, std::strerror(errorCode),
+                n);
     }
 
     // Update next data offset in the next record file
@@ -455,14 +455,14 @@ void BlockRegistry::loadRecord(std::uint64_t blockId, BlockListRecord& record) c
 
     // Load block record
     std::uint8_t buffer[BlockListRecord::kSerializedSize];
-    if (::preadExact(
-                m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
-            != sizeof(buffer)) {
+    const auto n = ::preadExact(
+            m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals);
+    if (n != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                blockRecordOffset, sizeof(buffer), errorCode, std::strerror(errorCode));
+                blockRecordOffset, sizeof(buffer), errorCode, std::strerror(errorCode), n);
     }
 
     // Decode block record
@@ -487,14 +487,14 @@ off_t BlockRegistry::checkBlockRecordPresent(std::uint64_t blockId) const
 
     // Read block presence flag
     std::uint8_t buffer[1];
-    if (::preadExact(
-                m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals)
-            != sizeof(buffer)) {
+    const auto n = ::preadExact(
+            m_blockListFile.getFD(), buffer, sizeof(buffer), blockRecordOffset, kIgnoreSignals);
+    if (n != sizeof(buffer)) {
         const int errorCode = errno;
         throwDatabaseError(IOManagerMessageId::kErrorCannotReadBlockListDataFile, __func__,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                blockRecordOffset, sizeof(buffer), errorCode, std::strerror(errorCode));
+                blockRecordOffset, sizeof(buffer), errorCode, std::strerror(errorCode), n);
     }
 
     // Check block presence

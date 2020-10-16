@@ -9,7 +9,7 @@
 #include "ThrowDatabaseError.h"
 
 // Common project headers
-#include <siodb/common/config/SiodbDefs.h>
+#include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/stl_ext/string_builder.h>
@@ -90,37 +90,49 @@ std::string ColumnDataBlock::makeDisplayCode() const
     return oss.str();
 }
 
+void ColumnDataBlock::setNextDataPos(std::uint32_t pos)
+{
+    // Note: Allow setting position to block size, thus we get zero free space.
+    if (pos > m_column.getDataBlockDataAreaSize()) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorInvalidPositionForColumnDataBlock,
+                pos, m_column.getDataBlockDataAreaSize());
+    }
+    m_header.m_nextDataOffset = pos;
+}
+
 void ColumnDataBlock::readData(void* data, std::size_t length, std::uint32_t pos) const
 {
     if (pos + length > m_column.getDataBlockDataAreaSize()) {
-        std::ostringstream err;
-        throw std::runtime_error(stdext::string_builder()
-                                 << makeDisplayName() << ": Invalid offset or length: " << pos
-                                 << ", " << length);
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
+                pos, length, -1,
+                "invalid offset or length, sum exceeds "
+                        + std::to_string(m_column.getDataBlockDataAreaSize() - 1),
+                0);
     }
     const auto readOffset = pos + m_header.m_dataAreaOffset;
-    if (m_file->read(static_cast<std::uint8_t*>(data), length, readOffset) != length) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
-                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), readOffset,
-                length, m_file->getLastError(), std::strerror(m_file->getLastError()));
+    const auto n = m_file->read(static_cast<std::uint8_t*>(data), length, readOffset);
+    if (n != length) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
+                readOffset, length, m_file->getLastError(), std::strerror(m_file->getLastError()),
+                n);
     }
 }
 
 void ColumnDataBlock::writeData(const void* data, std::size_t length, std::uint32_t pos)
 {
     if (pos + length > m_column.getDataBlockDataAreaSize()) {
-        std::ostringstream err;
-        throw std::runtime_error(stdext::string_builder()
-                                 << makeDisplayName() << ": Invalid offset or length: " << pos
-                                 << ", " << length);
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
+                pos, length, -1,
+                "invalid offset or length, sum exceeds "
+                        + std::to_string(m_column.getDataBlockDataAreaSize() - 1),
+                0);
     }
     const auto writeOffset = pos + m_header.m_dataAreaOffset;
-    if (m_file->write(static_cast<const std::uint8_t*>(data), length, writeOffset) != length) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
-                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), writeOffset,
-                length, m_file->getLastError(), std::strerror(m_file->getLastError()));
+    const auto n = m_file->write(static_cast<const std::uint8_t*>(data), length, writeOffset);
+    if (n != length) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
+                writeOffset, length, m_file->getLastError(), std::strerror(m_file->getLastError()),
+                n);
     }
     m_dataModified = true;
 }
@@ -159,12 +171,11 @@ void ColumnDataBlock::computeDigest(const ColumnDataBlockHeader::Digest& prevBlo
     ::SHA256_Update(&ctx, headerData, p - headerData);
     if (dataLength > 0) {
         std::vector<std::uint8_t> buffer(dataLength);
-        if (m_file->read(buffer.data(), dataLength, m_header.m_dataAreaOffset) != dataLength) {
-            throwDatabaseError(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
-                    m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
-                    getId(), m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
+        const auto n = m_file->read(buffer.data(), dataLength, m_header.m_dataAreaOffset);
+        if (n != dataLength) {
+            throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
                     m_header.m_dataAreaOffset, dataLength, m_file->getLastError(),
-                    std::strerror(m_file->getLastError()));
+                    std::strerror(m_file->getLastError()), n);
         }
         ::SHA256_Update(&ctx, buffer.data(), dataLength);
     }
@@ -195,10 +206,8 @@ io::FilePtr ColumnDataBlock::createDataFile() const
                     tmpFilePath, kBaseExtraOpenFlags, kDataFileCreationMode, getDataFileSize());
         }
     } catch (std::system_error& ex) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateNewColumnDataBlockFile,
-                m_dataFilePath, m_column.getDatabaseName(), m_column.getTableName(),
-                m_column.getName(), getId(), m_column.getDatabaseUuid(), m_column.getTableId(),
-                m_column.getId(), "Can't create new file", ex.code().value(),
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotCreateColumnDataBlockFile,
+                m_dataFilePath, "Can't create new file", ex.code().value(),
                 std::strerror(ex.code().value()));
     }
 
@@ -207,22 +216,19 @@ io::FilePtr ColumnDataBlock::createDataFile() const
             s_dataFileHeaderProto.size() - ColumnDataBlockHeader::kSerializedSize;
     std::uint8_t buffer[ColumnDataBlockHeader::kSerializedSize];
     m_header.serialize(buffer);
-    if (file->write(buffer, sizeof(buffer), 0) != sizeof(buffer)) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateNewColumnDataBlockFile,
-                m_dataFilePath, m_column.getDatabaseName(), m_column.getTableName(),
-                m_column.getName(), getId(), m_column.getDatabaseUuid(), m_column.getTableId(),
-                m_column.getId(), "Can't write header part 1", file->getLastError(),
-                std::strerror(file->getLastError()));
+    auto n = file->write(buffer, sizeof(buffer), 0);
+    if (n != sizeof(buffer)) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
+                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
+                file->getLastError(), sizeof(buffer), std::strerror(file->getLastError()), n);
     }
 
     // Write rest of header
-    if (file->write(s_dataFileHeaderProto.data(), remainingHeaderSize, sizeof(buffer))
-            != remainingHeaderSize) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateNewColumnDataBlockFile,
-                m_dataFilePath, m_column.getDatabaseName(), m_column.getTableName(),
-                m_column.getName(), getId(), m_column.getDatabaseUuid(), m_column.getTableId(),
-                m_column.getId(), "Can't write header part 2", file->getLastError(),
-                std::strerror(file->getLastError()));
+    n = file->write(s_dataFileHeaderProto.data(), remainingHeaderSize, sizeof(buffer));
+    if (n != remainingHeaderSize) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
+                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), sizeof(buffer),
+                remainingHeaderSize, file->getLastError(), std::strerror(file->getLastError()), n);
     }
 
     if (tmpFilePath.empty()) {
@@ -231,20 +237,17 @@ io::FilePtr ColumnDataBlock::createDataFile() const
         if (::linkat(AT_FDCWD, fdPath.c_str(), AT_FDCWD, m_dataFilePath.c_str(), AT_SYMLINK_FOLLOW)
                 < 0) {
             const int errorCode = errno;
-            throwDatabaseError(IOManagerMessageId::kErrorCannotCreateNewColumnDataBlockFile,
-                    m_dataFilePath, m_column.getDatabaseName(), m_column.getTableName(),
-                    m_column.getName(), getId(), m_column.getDatabaseUuid(), m_column.getTableId(),
-                    m_column.getId(), "Can't link new file to the filesystem", errorCode,
-                    std::strerror(errorCode));
+            throwDatabaseErrorForThisObject(
+                    IOManagerMessageId::kErrorCannotCreateColumnDataBlockFile, m_dataFilePath,
+                    "Can't link new file to the filesystem", errorCode, std::strerror(errorCode));
         }
     } else {
         // Rename temporary file to the regular one
         if (::rename(tmpFilePath.c_str(), m_dataFilePath.c_str()) < 0) {
             const int errorCode = errno;
-            throwDatabaseError(IOManagerMessageId::kErrorCannotCreateNewColumnDataBlockFile,
-                    m_dataFilePath, m_column.getDatabaseName(), m_column.getTableName(),
-                    m_column.getName(), getId(), m_column.getDatabaseUuid(), m_column.getTableId(),
-                    m_column.getId(), "Can't rename temporary file to the regular one", errorCode,
+            throwDatabaseErrorForThisObject(
+                    IOManagerMessageId::kErrorCannotCreateColumnDataBlockFile, m_dataFilePath,
+                    "Can't rename temporary file to the regular one", errorCode,
                     std::strerror(errorCode));
         }
     }
@@ -258,9 +261,8 @@ io::FilePtr ColumnDataBlock::openDataFile() const
     try {
         file = m_column.getDatabase().openFile(m_dataFilePath, O_DSYNC);
     } catch (std::system_error& ex) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotOpenColumnDataBlockFile, m_dataFilePath,
-                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId());
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotOpenColumnDataBlockFile,
+                m_dataFilePath, ex.code().value(), ex.what());
     }
     return file;
 }
@@ -275,16 +277,10 @@ void ColumnDataBlock::loadHeader()
 {
     // Read header
     std::uint8_t buffer[ColumnDataBlockHeader::kSerializedSize];
-    auto readBytes = m_file->read(buffer, sizeof(buffer), 0);
-    if (readBytes == 0) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile,
-                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), 0,
-                sizeof(buffer), m_file->getLastError(), std::strerror(m_file->getLastError()));
-    } else if (readBytes != sizeof(buffer)) {
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDataFileHeaderSize,
-                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId());
+    const auto n = m_file->read(buffer, sizeof(buffer), 0);
+    if (n != sizeof(buffer)) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotReadColumnDataBlockFile, 0,
+                sizeof(buffer), m_file->getLastError(), std::strerror(m_file->getLastError()), n);
     }
 
     ColumnDataBlockHeader header;
@@ -293,10 +289,8 @@ void ColumnDataBlock::loadHeader()
     // Validate header
     if (header.m_version > ColumnDataBlockHeader::kCurrentVersion
             || header.m_fullColumnDataBlockId != m_header.m_fullColumnDataBlockId) {
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidDataFileHeader,
-                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
-                header.m_version);
+        throwDatabaseErrorForThisObject(
+                IOManagerMessageId::kErrorInvalidDataFileHeader, header.m_version);
     }
 
     m_header = header;
@@ -306,13 +300,21 @@ void ColumnDataBlock::writeHeader() const
 {
     uint8_t header[ColumnDataBlockHeader::kSerializedSize];
     m_header.serialize(header);
-    if (m_file->write(header, sizeof(header), 0) != sizeof(header)) {
-        throwDatabaseError(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile,
-                m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(), getId(),
-                m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), 0,
-                sizeof(header), m_file->getLastError(), std::strerror(m_file->getLastError()));
+    const auto n = m_file->write(header, sizeof(header), 0);
+    if (n != sizeof(header)) {
+        throwDatabaseErrorForThisObject(IOManagerMessageId::kErrorCannotWriteColumnDataBlockFile, 0,
+                sizeof(header), m_file->getLastError(), std::strerror(m_file->getLastError()), n);
     }
     m_headerModified = false;
+}
+
+template<class MessageId, class... Args>
+[[noreturn]] void ColumnDataBlock::throwDatabaseErrorForThisObject(
+        MessageId messageId, Args&&... args) const
+{
+    throwDatabaseError(messageId, m_column.getDatabaseName(), m_column.getTableName(),
+            m_column.getName(), getId(), m_column.getDatabaseUuid(), m_column.getTableId(),
+            m_column.getId(), std::forward<Args>(args)...);
 }
 
 }  // namespace siodb::iomgr::dbengine
