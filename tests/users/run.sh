@@ -138,7 +138,7 @@ done
 for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} drop access key key1"
 done
-#### Drop access key 1 if exist for all users | FAILS - WAITING FOR FIX
+#### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/95
 # for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
 # _RunSql "alter user user_test_1_${i} drop access key if exists key1"
 # done
@@ -213,14 +213,14 @@ _RunSqlAndValidateOutput "alter user user_test_1_4096 alter token user_token_1_1
                           rename to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
 _RunSqlAndValidateOutput "alter user user_test_1_4096 alter token user_token_1_1
                           rename if exists to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
-##### BELOW FAILS (WAITING FOR FIX)
+##### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/96
 # _RunSqlAndValidateOutput "alter user user_test_1_4096 drop token IF EXISTS NOEXISTS" 6 'Status 6: Not implemented yet'
 _RunSql "alter user user_test_1_4096 add token user_token_8_1"
 _RunSqlAndValidateOutput "alter user user_test_1_4096 add token user_token_8_1" 'Status 2029: User token'
 USERTOKEN=$(openssl rand -hex 64)
 _RunSql "alter user user_test_1_4096 add token user_token_9_2 x'${USERTOKEN}'"
 _RunSqlAndValidateOutput "alter user user_test_1_4096 add token user_token_9_3 x'${USERTOKEN}'" 'Status 2091: Duplicate user token'
-##### BELOW FAILS (WAITING FOR FIX)
+##### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/97
 # _RunSql "alter user user_test_1_4096 add token user_token_2_4096 x'FAKE'"
 _RunSqlAndValidateOutput "alter user user_test_1_4096 add token user_token_2_4096 'FAKE'" 'Status 2: at .*: extraneous input'
 _CheckLogFiles 'common parse error
