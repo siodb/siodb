@@ -16,8 +16,9 @@ set -e
 # --------------------------------------------------------------
 # External Parameters
 # --------------------------------------------------------------
+    pwd
 if [[ -z "${SIODB_BIN}" ]]; then
-    SIODB_BIN="build/debug/bin"
+    SIODB_BIN="../../build/debug/bin"
 fi
 if [[ -z "${SIODB_INSTANCE}" ]]; then
     SIODB_INSTANCE=siodb

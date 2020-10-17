@@ -425,9 +425,9 @@ sudo cp -Rf include "${SIODB_GTEST_PREFIX}"
 cd ../../../..
 
 # Build and install JSON library
-cd date
-tar --no-same-owner -xaf date-${SIODB_JSON_VERSION}.tar.xz
-cd date-${SIODB_JSON_VERSION}
+cd json
+tar --no-same-owner -xaf json-${SIODB_JSON_VERSION}.tar.xz
+cd json-${SIODB_JSON_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
