@@ -10,9 +10,11 @@ source $(dirname "$0")/../share/CommonFunctions.sh
 ## Specific test functions
 
 ## Specific test parameters
+siodbUserTridStartingAt=4096
 numberOfUsersToTest=10
 numberOfUsersToTestMax=1000
 numberOfKeysToTest=1000
+numberOfTokensToTest=1000
 
 ## Tests
 _log "INFO" "Tests start"
@@ -27,76 +29,78 @@ _RunSqlAndValidateOutput "select NAME from SYS.SYS_USERS" 'ROOT'
 ## -------------------------------------------------------------------------
 
 #### Create users
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_1_${i}"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_2_${i}
          with STATE = ACTIVE"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_3_${i}
          with STATE = INACTIVE"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_4_${i}
          with REAL_NAME = 'TestUser ${i} 😀'"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_5_${i}
          with DESCRIPTION = 'User for developer ${i} 😀'"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_6_${i}
          with STATE = ACTIVE, REAL_NAME = 'TestUser ${i} 😀'"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_7_${i}
          with STATE = ACTIVE, DESCRIPTION = 'User for developer ${i} 😀'"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_8_${i}
          with REAL_NAME = 'TestUser ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "create user user_test_9_${i}
          with STATE = ACTIVE, REAL_NAME = 'TestUser ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
 done
 #### Create max users
-for ((i = $((4096+${numberOfUsersToTest}+1)); i < $(($((4096+${numberOfUsersToTest}+1))+${numberOfUsersToTestMax}+1)); ++i)); do
+for ((i = $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); i < $(($((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1))+${numberOfUsersToTestMax}+1)); ++i)); do
 _RunSql "create user user_test_10_${i}
          with STATE = ACTIVE, REAL_NAME = 'TestUser ${i} 😀', DESCRIPTION = 'User for developer ${i} 😀'"
 done
 #### Alter user
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i}
          set STATE = ACTIVE"
 _RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "1"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i}
          set STATE = INACTIVE"
 _RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "0"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i}
          set STATE = ACTIVE, REAL_NAME = 'TestUser updated 1 ${i} 😀'"
 _RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "1"
 _RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "TestUser updated 1 ${i} 😀"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i}
          set STATE = ACTIVE, REAL_NAME = 'TestUser updated 2 ${i} 😀', DESCRIPTION = 'User for developer updated 2 ${i} 😀'"
 _RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "1"
 _RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "TestUser updated 2 ${i} 😀"
 _RunSqlAndValidateOutput "select DESCRIPTION from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "User for developer updated 2 ${i} 😀"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+echo "================> ${siodbUserTridStartingAt}"
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i}
          set REAL_NAME = 'TestUser updated 3 ${i} 😀', DESCRIPTION = 'User for developer updated 3 ${i} 😀'"
 _RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "TestUser updated 3 ${i} 😀"
 _RunSqlAndValidateOutput "select DESCRIPTION from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "User for developer updated 3 ${i} 😀"
 done
+echo "================> ${siodbUserTridStartingAt}"
 
 #### Create user with wrong chars
 _RunSqlAndValidateOutput "create user 😀😀😀😀😀😀😀" 'Status 2: at .*: mismatched input'
@@ -109,44 +113,45 @@ _CheckLogFiles 'common parse error'
 ## Users keys
 ## -------------------------------------------------------------------------
 SIOKEY1=$(cat $(dirname "$0")/../share/public_key)
+echo "================> ${siodbUserTridStartingAt}"
 #### Add key
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add access key key1 '${SIOKEY1}'"
 done
 #### Add 2nd key
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add access key key2 '${SIOKEY1}'"
 done
 #### Add 100 keys to one user
 for ((i = 3; i < $((3+${numberOfKeysToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_4096 add access key key${i} '${SIOKEY1}'"
+_RunSql "alter user user_test_1_${siodbUserTridStartingAt} add access key key${i} '${SIOKEY1}'"
 done
 #### Alter 2nd key
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} alter access key key2 set STATE = INACTIVE, DESCRIPTION = 'TEST INACTIVE 😀'"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} alter access key key2 set STATE = ACTIVE, DESCRIPTION = 'TEST ACTIVE 😀'"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} alter access key key1 set STATE = INACTIVE"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} alter access key key1 set STATE = ACTIVE"
 done
 #### Drop access key 1 for all users
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} drop access key key1"
 done
 #### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/95
-# for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+# for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 # _RunSql "alter user user_test_1_${i} drop access key if exists key1"
 # done
 
 #### Expected error with keys
-_RunSqlAndValidateOutput "alter user user_test4096 alter access key key2 rename  to key3 " 'Status 6: Not implemented yet'
+_RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename  to key3 " 'Status 6: Not implemented yet'
 _CheckLogFiles 'common parse error|Status 6: Not implemented yet'
-_RunSqlAndValidateOutput "alter user user_test4096 alter access key key2 rename if exists to key3" 'Status 6: Not implemented yet'
+_RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename if exists to key3" 'Status 6: Not implemented yet'
 _CheckLogFiles 'common parse error|Status 6: Not implemented yet'
 
 ## -------------------------------------------------------------------------
@@ -154,39 +159,39 @@ _CheckLogFiles 'common parse error|Status 6: Not implemented yet'
 ## -------------------------------------------------------------------------
 
 #### Add Token to all users
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add token user_token_1_${i}"
 done
 #### Add Token with value to all users | FAILS - WAITING FOR FIX
 USERTOKEN=$(openssl rand -hex 64)
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add token user_token_2_${i} x'${USERTOKEN}'"
 done
 #### Add Token with attribute to all users
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add token user_token_3_${i}
          with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23' "
 done
 #### Add Token with attribute to all users
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add token user_token_4_${i}
          with DESCRIPTION = 'user token 4 ${i}' "
 done
 #### Add Token with value and token attribute to all users
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add token user_token_5_${i}
          with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 5 ${i}' "
 done
 #### Add Token with value and token attribute to all users
 USERTOKEN=$(openssl rand -hex 64)
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add token user_token_6_${i} x'${USERTOKEN}'
          with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 6 ${i}' "
 done
-#### Add many Tokens to user 4096
-for ((i = ${numberOfKeysToTest}; i < $((${numberOfKeysToTest}+1)); ++i)); do
+#### Add many Tokens to user ${siodbUserTridStartingAt}
+for ((i = ${numberOfTokensToTest}; i < $((${numberOfTokensToTest}+1)); ++i)); do
 USERTOKEN=$(openssl rand -hex 64)
-_RunSql "alter user user_test_1_4096 add token user_token_7_${i} x'${USERTOKEN}'
+_RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_7_${i} x'${USERTOKEN}'
          with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 7 ${i}' "
 done
 
@@ -195,34 +200,34 @@ done
 ## Users Token Alteration
 ## -------------------------------------------------------------------------
 #### Alter all tokens SET
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
          set DESCRIPTION = 'user token 1 altered 1 ${i}'"
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
          set EXPIRATION_TIMESTAMP = '2045-02-23 12:34:23' "
 done
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
          set DESCRIPTION = 'user token 1 altered 2 ${i}', EXPIRATION_TIMESTAMP = '2055-02-23 12:34:23'"
 done
 
 #### Expected error with Token
-_RunSqlAndValidateOutput "alter user user_test_1_4096 alter token user_token_1_1
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
                           rename to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
-_RunSqlAndValidateOutput "alter user user_test_1_4096 alter token user_token_1_1
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
                           rename if exists to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
 ##### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/96
-# _RunSqlAndValidateOutput "alter user user_test_1_4096 drop token IF EXISTS NOEXISTS" 6 'Status 6: Not implemented yet'
-_RunSql "alter user user_test_1_4096 add token user_token_8_1"
-_RunSqlAndValidateOutput "alter user user_test_1_4096 add token user_token_8_1" 'Status 2029: User token'
+# _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} drop token IF EXISTS NOEXISTS" 6 'Status 6: Not implemented yet'
+_RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1"
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1" 'Status 2029: User token'
 USERTOKEN=$(openssl rand -hex 64)
-_RunSql "alter user user_test_1_4096 add token user_token_9_2 x'${USERTOKEN}'"
-_RunSqlAndValidateOutput "alter user user_test_1_4096 add token user_token_9_3 x'${USERTOKEN}'" 'Status 2091: Duplicate user token'
+_RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_2 x'${USERTOKEN}'"
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_3 x'${USERTOKEN}'" 'Status 2091: Duplicate user token'
 ##### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/97
-# _RunSql "alter user user_test_1_4096 add token user_token_2_4096 x'FAKE'"
-_RunSqlAndValidateOutput "alter user user_test_1_4096 add token user_token_2_4096 'FAKE'" 'Status 2: at .*: extraneous input'
+# _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_2_${siodbUserTridStartingAt} x'FAKE'"
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_2_${siodbUserTridStartingAt} 'FAKE'" 'Status 2: at .*: extraneous input'
 _CheckLogFiles 'common parse error
 |Status 6: Not implemented yet
 |Status 2: at .*: extraneous input
@@ -233,7 +238,7 @@ _CheckLogFiles 'common parse error
 ## Users Token deletion
 ## -------------------------------------------------------------------------
 #### Drop all tokens
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} drop token IF EXISTS user_token_1_${i}"
 _RunSql "alter user user_test_1_${i} drop token user_token_2_${i}"
 _RunSql "alter user user_test_1_${i} drop token IF EXISTS user_token_3_${i}"
@@ -246,10 +251,10 @@ done
 ## Check Users Token
 ## -------------------------------------------------------------------------
 USERTOKEN=$(openssl rand -hex 64)
-_RunSql "alter user user_test_1_4096 add token user_token_10_1 x'${USERTOKEN}'"
-_RunSql "check token user_test_1_4096.user_token_10_1 x'${USERTOKEN}'"
+_RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_10_1 x'${USERTOKEN}'"
+_RunSql "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'"
 USERTOKEN=$(openssl rand -hex 64)
-_RunSqlAndValidateOutput "check token user_test_1_4096.user_token_10_1 x'${USERTOKEN}'" 'Status 2107: User token .* check failed'
+_RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'" 'Status 2107: User token .* check failed'
 _CheckLogFiles 'common parse error
 |Status 6: Not implemented yet
 |Status 2: at .*: extraneous input
@@ -262,11 +267,11 @@ _CheckLogFiles 'common parse error
 ## Users deletion
 ## -------------------------------------------------------------------------
 #### Delete User of test 1
-for ((i = 4096; i < $((4096+${numberOfUsersToTest}+1)); ++i)); do
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "drop user user_test_1_${i}"
 done
 #### Delete max users
-for ((i = $((4096+${numberOfUsersToTest}+1)); i < $(($((4096+${numberOfUsersToTest}+1))+${numberOfUsersToTestMax}+1)); ++i)); do
+for ((i = $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); i < $(($((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1))+${numberOfUsersToTestMax}+1)); ++i)); do
 _RunSql "drop user user_test_10_${i}"
 done
 
