@@ -19,6 +19,10 @@ set -e
 if [[ -z "${SIODB_BIN}" ]]; then
     SIODB_BIN="../../build/debug/bin"
 fi
+if [[ ! -d "${SIODB_BIN}" ]]; then
+  echo "## `date "+%Y-%m-%dT%H:%M:%S"` | ERROR | Invalid Siodb binary directory."
+  exit 2
+fi
 if [[ -z "${SIODB_INSTANCE}" ]]; then
     SIODB_INSTANCE=siodb
 fi
@@ -38,6 +42,7 @@ SCRIPT=$(realpath $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
 instanceStartupTimeout=45
 previousTestStartedAtTimestamp=0
+previousInstanceStartTimestamp=0
 
 # --------------------------------------------------------------
 # Trapping
@@ -61,11 +66,19 @@ function _killSiodb {
 }
 
 
+function _SetInstanceParameter {
+  _log "INFO" "setting parameter '${1}' to '${2}'"
+  sed -i -e "s/${1}.*/${1} = ${2}/g" \
+  /etc/siodb/instances/${SIODB_INSTANCE}/config
+  cat /etc/siodb/instances/${SIODB_INSTANCE}/config | grep "${1}"
+}
+
 function _Prepare {
   _log "INFO" "Cleanup traces of previous default instance"
 
   if [ ! -f "/etc/siodb/instances/${SIODB_INSTANCE}/config" ]; then
     _log "ERROR" "Configuration file not found."
+    _failExit
   fi
 
   _killSiodb
@@ -110,13 +123,28 @@ function _StartSiodb {
   counterTimeout=0
   while [[ $numberEntriesInLog -eq 0 ]]; do
     _log "INFO" "Waiting for instance to be ready..."
-    numberEntriesInLog=$(egrep 'Listening for (TCP|UNIX) connections' ${LOG_DIR}/siodb_*.log | wc -l | bc)
+    LOG_STARTUP=$(cat ${LOG_DIR}/*.log \
+    | awk -v previousInstanceStartTimestamp=${previousInstanceStartTimestamp} \
+    '
+    function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
+    function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
+    function trim(s)  { return rtrim(ltrim(s)); }
+    {
+      lineTimestamp = substr($1,1,4)substr($1,6,2)substr($1,9,2)substr($2,1,2)substr($2,4,2)substr($2,7,2)trim(substr($2,10,6))
+      if (lineTimestamp > previousInstanceStartTimestamp) {
+        print $0;
+      }
+    }')
+    numberEntriesInLog=$(echo "${LOG_STARTUP}" | egrep 'Listening for (TCP|UNIX) connections' | wc -l | bc)
     if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
     _log "ERROR" "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
+    _failExit
     fi
     counterTimeout=$((counterTimeout+1))
+    _CheckLogFiles
     sleep 1
   done
+  previousInstanceStartTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   _ShowSiodbProcesses
 }
 
@@ -140,6 +168,7 @@ function _StopSiodb {
         | awk '{print $2}' | wc -l | bc)
         if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
           _log "ERROR" "Timeout (${instanceStartupTimeout} seconds) reached while stopping the instance..."
+          _failExit
         fi
         counterTimeout=$((counterTimeout+1))
         sleep 1
@@ -179,17 +208,19 @@ function _CheckLogFiles {
     echo "${LOG_ERROR}"
     echo "## ================================================="
     _log "ERROR" "I found an issue in the log files"
+    _failExit
   fi
 }
 
 function _log {
-  echo "## `date "+%Y-%m-%dT%H:%M:%S"` | $1 | $2"
-  if [[ "$1" == 'ERROR' ]]; then
+    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | $1 | $2"
+}
+
+function _failExit {
     if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
       _testfails
     fi
-    exit 1
-  fi
+    exit 3
 }
 
 function _RunSqlScript {
@@ -216,6 +247,7 @@ function _RunSqlAndValidateOutput {
   EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
+    _failExit
   else
     _log "INFO" "Siocli output matched expected output."
   fi
