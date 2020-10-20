@@ -25,7 +25,7 @@
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/sys/Syscalls.h>
 #include <siodb/common/utils/CheckOSUser.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/StartupActions.h>
 

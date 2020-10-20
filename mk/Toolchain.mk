@@ -73,5 +73,5 @@ endif
 AR:=ar
 
 # Go
-GO_VERSION:=1.15
+GO_VERSION:=1.15.3
 GO:=/usr/local/go-$(GO_VERSION)/bin/go

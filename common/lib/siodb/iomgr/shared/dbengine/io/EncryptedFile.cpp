@@ -6,7 +6,7 @@
 
 // Common project headers
 #include <siodb/common/io/FileIO.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 
 // CRT headers

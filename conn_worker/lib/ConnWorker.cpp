@@ -12,7 +12,7 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/utils/CheckOSUser.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/SignalHandlers.h>

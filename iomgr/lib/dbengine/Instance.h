@@ -585,9 +585,6 @@ private:
     /** Serialized metadata size */
     static constexpr std::size_t kSerializedMetadataSize = sizeof(kCurrentMetadataVersion);
 
-    /** Instance initialization completion flag file name */
-    static constexpr const char* kInitializationFlagFile = ".initialized";
-
     /** Metadata file name */
     static constexpr const char* kMetadataFileName = "instance_metadata";
 

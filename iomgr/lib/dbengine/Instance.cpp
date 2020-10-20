@@ -22,7 +22,7 @@
 #include <siodb/common/stl_ext/algorithm_ext.h>
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>

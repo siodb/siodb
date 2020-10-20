@@ -522,7 +522,7 @@ MSG Error UliMissingFileWhenExpected  \
 MSG Error UliCorrupted  \
     ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) corrupted at key %7%
 MSG Error UliInvalidIndexFileName  \
-    ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) invalid index file name %7%
+    ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) invalid index file name '%7%'
 
 MSG Error InvalidLobChunkHeader  \
     Invalid LOB header at address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %9%

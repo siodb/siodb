@@ -7,7 +7,7 @@
 #include "TestContext.h"
 
 // Common project headers
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 
 // Google Test
 #include <gtest/gtest.h>

@@ -9,7 +9,7 @@
 #include <siodb/common/net/ConnectionError.h>
 #include <siodb/common/net/SocketDomain.h>
 #include <siodb/common/net/TcpServer.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/FDGuard.h>
 
 // System headers

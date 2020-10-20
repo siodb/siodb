@@ -1172,9 +1172,6 @@ protected:
     /** System database specific system table name list */
     static const std::unordered_set<std::string> m_systemDatabaseOnlySystemTables;
 
-    /** Initialization flag file name */
-    static constexpr const char* kInitializationFlagFile = ".initialized";
-
     /** Cipher key file name */
     static constexpr const char* kCipherKeyFileName = "key";
 

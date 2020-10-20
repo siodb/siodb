@@ -11,6 +11,7 @@ TARGET_COMMON_LIB:=siodb_common_utils
 
 CXX_SRC:= \
 	CheckOSUser.cpp  \
+	DebugUtils.cpp  \
 	EmptyString.cpp  \
 	ErrorCodeChecker.cpp  \
 	FSUtils.cpp \
@@ -34,7 +35,8 @@ CXX_HDR:= \
 	Constants.h  \
 	ComparisonMacros.h  \
 	ComparisonOperations.h  \
-	Debug.h  \
+	DebugMacros.h  \
+	DebugUtils.h  \
 	DeserializationError.h  \
 	EmptyString.h  \
 	ErrorCodeChecker.h  \

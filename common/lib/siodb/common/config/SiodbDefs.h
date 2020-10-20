@@ -23,7 +23,7 @@ constexpr const char* kInstanceInitializationLockFileDir = "/run/lock/siodb/";
 constexpr const char* kInstanceSocketPrefix = "/run/siodb/";
 
 /** IO manager initialization flag file directory */
-constexpr const char* kIoManagerInitaliationFlagFileDir = "/run/siodb/";
+constexpr const char* kIOManagerInitalizationFlagFileDir = "/run/siodb/";
 
 /** Siodb default master encryption key file name */
 constexpr const char* kDefaultMasterEncryptionKeyFileName = "master_key";
@@ -57,9 +57,6 @@ constexpr auto kIomgrInitializationCheckPeriod = std::chrono::seconds(1);
 
 /** Maximum instance name size */
 constexpr std::size_t kMaxInstanceNameLength = 63;
-
-/** IO Manager initialization file extension */
-constexpr const char* kIomgrInitializationFlagFileExtension = ".initialized";
 
 /** Instance lock file extension */
 constexpr const char* kInstanceLockFileExtension = ".lock";

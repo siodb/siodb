@@ -6,7 +6,7 @@
 #include "RequestHandlerTest_TestEnv.h"
 
 // Common project headers
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/StartupActions.h>
 
 int main(int argc, char** argv)
