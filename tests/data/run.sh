@@ -10,19 +10,6 @@ source $(dirname "$0")/../share/CommonFunctions.sh
 ## Specific test functions
 
 ## Specific test parameters
-siodbUserTridStartingAt=4096
-if [[ -z "${numberOfUsersToTest}" ]]; then
-    numberOfUsersToTest=10
-fi
-if [[ -z "${numberOfUsersToTestMax}" ]]; then
-    numberOfUsersToTestMax=10
-fi
-if [[ -z "${numberOfKeysToTest}" ]]; then
-    numberOfKeysToTest=10
-fi
-if [[ -z "${numberOfTokensToTest}" ]]; then
-    numberOfTokensToTest=10
-fi
 
 ## Tests
 _log "INFO" "Tests start"
