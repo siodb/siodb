@@ -80,8 +80,12 @@ function _SetInitialInstanceConfig {
   # Overload default config file
   _SetInstanceParameter "data_dir" "/var/lib/siodb/${SIODB_INSTANCE}/data"
   DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
+  mkdir -p ${DATA_DIR}
+  chmod 770 ${DATA_DIR}
   _SetInstanceParameter "log.file.destination" "/var/log/siodb/${SIODB_INSTANCE}"
   LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
+  mkdir -p ${LOG_DIR}
+  chmod 770 ${LOG_DIR}
   _SetInstanceParameter "enable_rest_server" "yes"
   _SetInstanceParameter "client.enable_encryption" "yes"
   _SetInstanceParameter "client.tls_certificate" "cert.pem"

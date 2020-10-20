@@ -17,5 +17,4 @@ fi
 ./rest/run.sh
 ./sql/run.sh
 ./users/run.sh
-
- echo "## `date "+%Y-%m-%dT%H:%M:%S"` | SUCCESS | All test scenarios passed."
+./data/run.sh
