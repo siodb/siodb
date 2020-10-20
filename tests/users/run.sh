@@ -93,27 +93,23 @@ _RunSqlAndValidateOutput "select STATE from SYS.SYS_USERS where name = 'USER_TES
 _RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "TestUser updated 2 ${i} 😀"
 _RunSqlAndValidateOutput "select DESCRIPTION from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "User for developer updated 2 ${i} 😀"
 done
-echo "================> ${siodbUserTridStartingAt}"
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i}
          set REAL_NAME = 'TestUser updated 3 ${i} 😀', DESCRIPTION = 'User for developer updated 3 ${i} 😀'"
 _RunSqlAndValidateOutput "select REAL_NAME from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "TestUser updated 3 ${i} 😀"
 _RunSqlAndValidateOutput "select DESCRIPTION from SYS.SYS_USERS where name = 'USER_TEST_1_${i}'" "User for developer updated 3 ${i} 😀"
 done
-echo "================> ${siodbUserTridStartingAt}"
 
 #### Create user with wrong chars
 _RunSqlAndValidateOutput "create user 😀😀😀😀😀😀😀" 'Status 2: at .*: mismatched input'
-_CheckLogFiles 'common parse error'
+_CheckLogFiles
 _RunSqlAndValidateOutput "create user 123456789" 'Status 2: at .*: mismatched input'
-_CheckLogFiles 'common parse error'
-
+_CheckLogFiles
 
 ## -------------------------------------------------------------------------
 ## Users keys
 ## -------------------------------------------------------------------------
 SIOKEY1=$(cat $(dirname "$0")/../share/public_key)
-echo "================> ${siodbUserTridStartingAt}"
 #### Add key
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add access key key1 '${SIOKEY1}'"
@@ -149,10 +145,10 @@ done
 # done
 
 #### Expected error with keys
-_RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename  to key3 " 'Status 6: Not implemented yet'
-_CheckLogFiles 'common parse error|Status 6: Not implemented yet'
+_RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename to key3 " 'Status 6: Not implemented yet'
+_CheckLogFiles
 _RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename if exists to key3" 'Status 6: Not implemented yet'
-_CheckLogFiles 'common parse error|Status 6: Not implemented yet'
+_CheckLogFiles
 
 ## -------------------------------------------------------------------------
 ### Users Token creation
@@ -216,23 +212,23 @@ done
 #### Expected error with Token
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
                           rename to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
+_CheckLogFiles
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
                           rename if exists to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
+_CheckLogFiles
 ##### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/96
 # _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} drop token IF EXISTS NOEXISTS" 6 'Status 6: Not implemented yet'
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1"
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1" 'Status 2029: User token'
+_CheckLogFiles 'User token .* already exists'
 USERTOKEN=$(openssl rand -hex 64)
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_2 x'${USERTOKEN}'"
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_3 x'${USERTOKEN}'" 'Status 2091: Duplicate user token'
+_CheckLogFiles 'Duplicate user token'
 ##### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/97
 # _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_2_${siodbUserTridStartingAt} x'FAKE'"
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_2_${siodbUserTridStartingAt} 'FAKE'" 'Status 2: at .*: extraneous input'
-_CheckLogFiles 'common parse error
-|Status 6: Not implemented yet
-|Status 2: at .*: extraneous input
-|Duplicate user token
-|User token .* already exists'
+_CheckLogFiles
 
 ## -------------------------------------------------------------------------
 ## Users Token deletion
@@ -255,12 +251,7 @@ _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_
 _RunSql "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'"
 USERTOKEN=$(openssl rand -hex 64)
 _RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'" 'Status 2107: User token .* check failed'
-_CheckLogFiles 'common parse error
-|Status 6: Not implemented yet
-|Status 2: at .*: extraneous input
-|Duplicate user token
-|User token .* already exists
-|User token .* check failed'
+_CheckLogFiles 'User token .* check failed'
 
 
 ## -------------------------------------------------------------------------
@@ -275,12 +266,7 @@ for ((i = $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); i < $(($((${
 _RunSql "drop user user_test_10_${i}"
 done
 
-_CheckLogFiles 'common parse error
-|Status 6: Not implemented yet
-|Status 2: at .*: extraneous input
-|Duplicate user token
-|User token .* already exists
-|User token .* check failed'
+_CheckLogFiles
 
 ### Stop test
 _StopSiodb
