@@ -309,7 +309,8 @@ Run following commands:
 cd /tmp
 wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
 tar xaf go1.15.2.linux-amd64.tar.gz
-sudo mv go /usr/local/go-1.15
+mv go go-1.15
+sudo mv go-1.15 /usr/local
 ```
 
 ### Install boost-pretty-printer GDB Extension
