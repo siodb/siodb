@@ -93,6 +93,7 @@ function _SetInitialInstanceConfig {
   _SetInstanceParameter "rest_server.tls_certificate" "cert.pem"
   _SetInstanceParameter "rest_server.tls_private_key" "key.pem"
   _SetInstanceParameter "rest_server.iomgr_read_timeout" "60"
+  _SetInstanceParameter "log.file.severity" "debug"
 
   cp ${SCRIPT_DIR}/../../config/sample_cert/cert.pem /etc/siodb/instances/${SIODB_INSTANCE}/cert.pem
   chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/cert.pem
@@ -254,6 +255,12 @@ function _RunSqlScript {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
     -i ${SCRIPT_DIR}/../share/private_key < $1
+}
+
+function _RunSqlThroughUser {
+  _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
+  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
+  ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo -u ${1} -i ${2} <<< ''"${3}"''
 }
 
 function _RunSql {
