@@ -32,12 +32,10 @@ fi
 
 
 # --------------------------------------------------------------
-# Derive parameters
+# Global parameters
 # --------------------------------------------------------------
-DATA_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config | egrep '^data_dir' \
-    | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
-LOG_DIR=$(cat /etc/siodb/instances/${SIODB_INSTANCE}/config  | egrep '^log.file.destination' \
-    | awk -F "=" '{print $2}' | sed -e 's/^[[:space:]]*//')
+DATA_DIR=""
+LOG_DIR=""
 SCRIPT=$(realpath $0)
 SCRIPT_DIR=$(dirname $SCRIPT)
 instanceStartupTimeout=45
@@ -68,18 +66,40 @@ function _killSiodb {
 
 function _SetInstanceParameter {
   _log "INFO" "setting parameter '${1}' to '${2}'"
-  sed -i -e "s/${1}.*/${1} = ${2}/g" \
+  sed -i -e "s#.*${1}[ ]*=.*#${1} = ${2}#g" \
   /etc/siodb/instances/${SIODB_INSTANCE}/config
   cat /etc/siodb/instances/${SIODB_INSTANCE}/config | grep "${1}"
+}
+
+function _SetInitialInstanceConfig {
+  # Copy default config file
+  mkdir -p /etc/siodb/instances/${SIODB_INSTANCE}
+  cp ${SCRIPT_DIR}/../../config/siodb.conf /etc/siodb/instances/${SIODB_INSTANCE}/config
+  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/config
+
+  # Overload default config file
+  _SetInstanceParameter "data_dir" "/var/lib/siodb/${SIODB_INSTANCE}/data"
+  DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
+  _SetInstanceParameter "log.file.destination" "/var/log/siodb/${SIODB_INSTANCE}"
+  LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
+  _SetInstanceParameter "enable_rest_server" "yes"
+  _SetInstanceParameter "client.enable_encryption" "yes"
+  _SetInstanceParameter "client.tls_certificate" "cert.pem"
+  _SetInstanceParameter "client.tls_private_key" "key.pem"
+  _SetInstanceParameter "rest_server.tls_certificate" "cert.pem"
+  _SetInstanceParameter "rest_server.tls_private_key" "key.pem"
+  _SetInstanceParameter "rest_server.iomgr_read_timeout" "60"
+
+  cp ${SCRIPT_DIR}/../../config/sample_cert/cert.pem /etc/siodb/instances/${SIODB_INSTANCE}/cert.pem
+  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/cert.pem
+  cp ${SCRIPT_DIR}/../../config/sample_cert/key.pem /etc/siodb/instances/${SIODB_INSTANCE}/key.pem
+  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/key.pem
 }
 
 function _Prepare {
   _log "INFO" "Cleanup traces of previous default instance"
 
-  if [ ! -f "/etc/siodb/instances/${SIODB_INSTANCE}/config" ]; then
-    _log "ERROR" "Configuration file not found."
-    _failExit
-  fi
+  _SetInitialInstanceConfig
 
   _killSiodb
 
@@ -104,7 +124,9 @@ function _Prepare {
 
   _log "INFO" "Preparing default Siodb instance"
   dd if=/dev/urandom of=/etc/siodb/instances/${SIODB_INSTANCE}/master_key bs=16 count=1
+  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/master_key
   cp -f ${SCRIPT_DIR}/../share/public_key /etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key
+  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key
 }
 
 function _ShowSiodbProcesses {
