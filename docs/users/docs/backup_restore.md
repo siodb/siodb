@@ -83,7 +83,6 @@ INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Юрий', 'Гагарин', 49000.00000
 INSERT INTO TEST_DB1.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-08-04', 4);
 ```
 
-
 ### Export all databases of an instance
 
 ```bash

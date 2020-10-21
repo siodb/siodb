@@ -14,6 +14,7 @@ source $(dirname "$0")/../share/CommonFunctions.sh
 if [[ -z "${SIODB_BIN}" ]]; then
   if [ $# -ne 1 ]; then
     _log "ERROR" "Please, indicate the path to Siodb bin directory as a parameter 1."
+    _failExit
   else
     SIODB_BIN="$1"
   fi
@@ -31,10 +32,6 @@ elif [[ "${SIODB_BIN}" == "sdebug" ]]; then
 elif [[ "${SIODB_BIN}" == "srelease" ]]; then
   SIODB_BIN=build/release/bin
   SHORT_TEST=1
-fi
-
-if [[ ! -d "${SIODB_BIN}" ]]; then
-  _log "ERROR" "Invalid Siodb binary directory."
 fi
 
 _log "INFO" "Tests start"
@@ -197,4 +194,4 @@ fi
 _StopSiodb
 _CheckLogFiles
 
-_log "INFO" "All tests passed"
+_log "INFO" "SUCCESS: All tests passed"

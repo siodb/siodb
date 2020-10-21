@@ -1,20 +1,11 @@
 # Siodb Documentation
 
-## Release note
+## Changelogs
 
-This documentation provided for Siodb Alpha 6 release.
-
-### Current features
-
-- Data encryption at rest
-- Data encryption in transit
-- Users management
-- Public access key management
-- Stronger checks on data files
-- Multiple bugs fixed
-- Database creation
-- Stronger code tests
-- Varios minor improvements
+- [v0.8.0](https://github.com/siodb/siodb/releases/tag/v0.8.0)
+- [v0.7.1](https://github.com/siodb/siodb/releases/tag/v0.7.1)
+- [v0.7.0](https://github.com/siodb/siodb/releases/tag/v0.7.0)
+- [v0.6.0](https://github.com/siodb/siodb/releases/tag/v0.6.0)
 
 ## Contribution
 
