@@ -5,7 +5,6 @@
 -- Create some data to export
 
 -- DB1
-
 CREATE DATABASE db1;
 USE DATABASE db1;
 

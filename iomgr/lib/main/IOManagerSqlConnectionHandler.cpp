@@ -95,9 +95,17 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                     dbEngineRequest = dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
                             parser.findStatement(i));
                 } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
-                    LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
+                    LOG_ERROR << m_logContext << "SQL parse error: " << ex.what();
                     sendErrorReponse(requestMsg.request_id(), kSqlParseError, ex.what());
-                    LOG_DEBUG << m_logContext << "Sent request parse error";
+                    // Stop loop  after error response
+                    break;
+                } catch (std::exception& ex) {
+                    const auto uuid = boost::uuids::random_generator()();
+                    LOG_ERROR << m_logContext << "SQL parse error: internal error: '" << ex.what()
+                              << "' (MSG_UUID " << uuid << ')';
+                    const auto msg = "Internal error, see log for details, message UUID "
+                                     + boost::uuids::to_string(uuid);
+                    sendErrorReponse(requestMsg.request_id(), kSqlParseError, msg.c_str());
                     // Stop loop  after error response
                     break;
                 }

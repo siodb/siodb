@@ -78,18 +78,18 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 const auto uuid = boost::uuids::random_generator()();
                 LOG_ERROR << m_logContext << '[' << ex.getErrorCode() << "] " << ex.what()
                           << " (MSG_UUID " << uuid << ')';
-                auto msg = "Internal error, see log for details, message UUID "
-                           + boost::uuids::to_string(uuid);
-                sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError, ex.what());
+                const auto msg = "Internal error, see log for details, message UUID "
+                                 + boost::uuids::to_string(uuid);
+                sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError, msg.c_str());
                 LOG_DEBUG << m_logContext << "Sent authentication error";
                 continue;
             } catch (std::exception& ex) {
                 LOG_DEBUG << m_logContext << "Sending authentication error";
                 const auto uuid = boost::uuids::random_generator()();
                 LOG_ERROR << m_logContext << ex.what() << " (MSG_UUID " << uuid << ')';
-                auto msg = "Internal error, see log for details, message UUID "
-                           + boost::uuids::to_string(uuid);
-                sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError, ex.what());
+                const auto msg = "Internal error, see log for details, message UUID "
+                                 + boost::uuids::to_string(uuid);
+                sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError, msg.c_str());
                 LOG_DEBUG << m_logContext << "Sent authentication error";
                 continue;
             }
@@ -116,9 +116,17 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
             try {
                 dbEngineRequest = m_requestFactory.createRestRequest(requestMsg, &input);
             } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
-                LOG_DEBUG << m_logContext << "Sending request parse error " << ex.what();
+                LOG_DEBUG << m_logContext << "REST request parse error " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), kRestParseError, ex.what());
                 LOG_DEBUG << m_logContext << "Sent request parse error";
+                continue;
+            } catch (std::exception& ex) {
+                const auto uuid = boost::uuids::random_generator()();
+                LOG_ERROR << m_logContext << "REST request parse error: internal error: '"
+                          << ex.what() << "' (MSG_UUID " << uuid << ')';
+                const auto msg = "Internal error, see log for details, message UUID "
+                                 + boost::uuids::to_string(uuid);
+                sendErrorReponse(requestMsg.request_id(), kRestParseError, msg.c_str());
                 continue;
             }
 
