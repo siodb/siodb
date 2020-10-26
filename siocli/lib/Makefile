@@ -16,6 +16,7 @@ CXX_SRC:= \
 
 CXX_HDR:= \
 	internal/SqlClientInternal.h  \
+	internal/SqlDumpInternal.h  \
 	Siocli.h  \
 	SqlClient.h  \
 	SqlDump.h  \

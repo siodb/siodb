@@ -290,7 +290,7 @@ void authenticate(const std::string& identityKey, const std::string& userName,
             protobuf::ProtocolMessageType::kClientAuthenticationResponse, authResponse, input);
 
     if (authResponse.has_message()) {
-        std::cerr << "Authentication error: " << authResponse.message().status_code() << " "
+        std::cerr << "Authentication error: " << authResponse.message().status_code() << ' '
                   << authResponse.message().text();
     }
 
