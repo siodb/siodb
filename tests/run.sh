@@ -8,3 +8,4 @@
 ./sql/run.sh
 ./users/run.sh
 ./data/run.sh
+./export/run.sh
