@@ -7,33 +7,10 @@
 # Uncomment for debugging this script
 # set -x
 
-source $(dirname "$0")/../share/CommonFunctions.sh
-
 ## Program
 
-if [[ -z "${SIODB_BIN}" ]]; then
-  if [ $# -ne 1 ]; then
-    _log "ERROR" "Please, indicate the path to Siodb bin directory as a parameter 1."
-    _failExit
-  else
-    SIODB_BIN="$1"
-  fi
-fi
-
-if [[ "${SIODB_BIN}" == "debug" ]]; then
-  SIODB_BIN=build/debug/bin
-  SHORT_TEST=0
-elif [[ "${SIODB_BIN}" == "release" ]]; then
-  SIODB_BIN=build/release/bin
-  SHORT_TEST=0
-elif [[ "${SIODB_BIN}" == "sdebug" ]]; then
-  SIODB_BIN=build/debug/bin
-  SHORT_TEST=1
-elif [[ "${SIODB_BIN}" == "srelease" ]]; then
-  SIODB_BIN=build/release/bin
-  SHORT_TEST=1
-fi
-
+SCRIPT_DIR=$(dirname "$0")
+source "${SCRIPT_DIR}/../share/CommonFunctions.sh"
 
 _log "INFO" "Tests start"
 _Prepare

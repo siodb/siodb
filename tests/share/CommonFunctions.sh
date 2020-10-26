@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
@@ -12,35 +10,78 @@ set -x
 fi
 set -e
 
+# --------------------------------------------------------------
+# Global parameters
+# --------------------------------------------------------------
+export SCRIPT=$(realpath $0)
+export SCRIPT_DIR=$(dirname $SCRIPT)
+instanceStartupTimeout=45
+previousTestStartedAtTimestamp=0
+previousInstanceStartTimestamp=0
+doInstanceConfiguration=1
+
+# --------------------------------------------------------------
+# Command line
+# --------------------------------------------------------------
+while [[ $# -gt 0 ]];
+do
+  if [[ "$1" == "--" ]]; then
+    break
+  fi
+  if [[ "$1" == "-b" ]]; then
+    SIODB_BIN=$2
+    shift 2
+    continue
+  fi
+  if [[ "$1" == "-x" ]]; then
+    instanceStartupTimeout=15
+    doInstanceConfiguration=0
+    shift 1
+    continue
+  fi
+  if [[ "$1" == "-e" ]]; then
+    declare "$2"="$3"
+    shift 3
+    continue
+  fi
+  echo "Unrecognized option: $1" >&2
+  exit 1
+done
 
 # --------------------------------------------------------------
 # External Parameters
 # --------------------------------------------------------------
 if [[ -z "${SIODB_BIN}" ]]; then
-    SIODB_BIN="../../build/debug/bin"
+    SIODB_BIN=debug
+fi
+if [[ "${SIODB_BIN}" == "debug" ]]; then
+  SIODB_BIN="${SCRIPT_DIR}/../../build/debug/bin"
+  SHORT_TEST=0
+elif [[ "${SIODB_BIN}" == "release" ]]; then
+  SIODB_BIN="${SCRIPT_DIR}/../../build/release/bin"
+  SHORT_TEST=0
+elif [[ "${SIODB_BIN}" == "sdebug" ]]; then
+  SIODB_BIN="${SCRIPT_DIR}/../../build/debug/bin"
+  SHORT_TEST=1
+elif [[ "${SIODB_BIN}" == "srelease" ]]; then
+  SIODB_BIN="${SCRIPT_DIR}/../../build/release/bin"
+  SHORT_TEST=1
 fi
 if [[ ! -d "${SIODB_BIN}" ]]; then
   echo "## `date "+%Y-%m-%dT%H:%M:%S"` | ERROR | Invalid Siodb binary directory."
   exit 2
 fi
+
 if [[ -z "${SIODB_INSTANCE}" ]]; then
     SIODB_INSTANCE=siodb
 fi
+DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}"
+LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
+
 if [[ -z "${SIOTEST_KEEP_INSTANCE_UP}" ]]; then
     SIOTEST_KEEP_INSTANCE_UP=0
 fi
 
-
-# --------------------------------------------------------------
-# Global parameters
-# --------------------------------------------------------------
-DATA_DIR=""
-LOG_DIR=""
-SCRIPT=$(realpath $0)
-SCRIPT_DIR=$(dirname $SCRIPT)
-instanceStartupTimeout=45
-previousTestStartedAtTimestamp=0
-previousInstanceStartTimestamp=0
 
 # --------------------------------------------------------------
 # Trapping
@@ -48,7 +89,6 @@ previousInstanceStartTimestamp=0
 if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
   trap _testfails ERR
 fi
-
 
 # --------------------------------------------------------------
 # Global functions
@@ -63,7 +103,6 @@ function _killSiodb {
   fi
 }
 
-
 function _SetInstanceParameter {
   _log "INFO" "setting parameter '${1}' to '${2}'"
   sed -i -e "s#.*${1}[ ]*=.*#${1} = ${2}#g" \
@@ -71,11 +110,18 @@ function _SetInstanceParameter {
   cat /etc/siodb/instances/${SIODB_INSTANCE}/config | grep "${1}"
 }
 
-function _SetInitialInstanceConfig {
+function _ConfigureInstance {
+  if [[ "${doInstanceConfiguration}" != "1" ]]; then 
+    _log "INFO" "Instance configuration skipped."
+    return
+  fi
+
+  _log "INFO" "Configuring instance ${SIODB_INSTANCE}..."
+
   # Copy default config file
-  mkdir -p /etc/siodb/instances/${SIODB_INSTANCE}
-  cp ${SCRIPT_DIR}/../../config/siodb.conf /etc/siodb/instances/${SIODB_INSTANCE}/config
-  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/config
+  mkdir -p "/etc/siodb/instances/${SIODB_INSTANCE}"
+  cp "${SCRIPT_DIR}/../../config/siodb.conf" "/etc/siodb/instances/${SIODB_INSTANCE}/config"
+  chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/config"
 
   # Overload default config file
   _SetInstanceParameter "data_dir" "/var/lib/siodb/${SIODB_INSTANCE}/data"
@@ -95,43 +141,47 @@ function _SetInitialInstanceConfig {
   _SetInstanceParameter "rest_server.iomgr_read_timeout" "60"
   _SetInstanceParameter "log.file.severity" "debug"
 
-  cp ${SCRIPT_DIR}/../../config/sample_cert/cert.pem /etc/siodb/instances/${SIODB_INSTANCE}/cert.pem
-  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/cert.pem
-  cp ${SCRIPT_DIR}/../../config/sample_cert/key.pem /etc/siodb/instances/${SIODB_INSTANCE}/key.pem
-  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/key.pem
+  cp "${SCRIPT_DIR}/../../config/sample_cert/cert.pem" \
+      "/etc/siodb/instances/${SIODB_INSTANCE}/cert.pem"
+  chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/cert.pem"
+  cp "${SCRIPT_DIR}/../../config/sample_cert/key.pem" \
+      "/etc/siodb/instances/${SIODB_INSTANCE}/key.pem"
+  chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/key.pem"
+
+  dd if=/dev/urandom of="/etc/siodb/instances/${SIODB_INSTANCE}/master_key" bs=16 count=1
+  chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/master_key"
+  cp -f "${SCRIPT_DIR}/../share/public_key" \
+    "/etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key"
+  chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key"
 }
 
 function _Prepare {
   _log "INFO" "Cleanup traces of previous default instance"
 
-  _SetInitialInstanceConfig
+  _ConfigureInstance
 
   _killSiodb
 
   if [ -d "${DATA_DIR}" ]; then
     _log "INFO"  "Purging directory '${DATA_DIR}'"
-    rm -rf ${DATA_DIR}/*
-    rm -rf ${DATA_DIR}/.initialized
+    rm -rf "${DATA_DIR}"/*
+    rm -rf "${DATA_DIR}/.initialized"
     echo "Contents of the ${DATA_DIR}  after cleanup"
-    ls -la ${DATA_DIR}
+    ls -la "${DATA_DIR}"
   else
-    _log "INFO" "Directory '${DATA_DIR}' must exist."
+    _log "ERROR" "Data directory '${DATA_DIR}' doesn't exist or not a directory."
+    _failExit
   fi
 
   if [ -d "${LOG_DIR}" ]; then
     _log "INFO" "Purging directory '${LOG_DIR}'"
-    rm -rf ${LOG_DIR}/*
+    rm -rf "${LOG_DIR}"/*
     echo "Contents of the ${LOG_DIR} after cleanup"
-    ls -la ${LOG_DIR}
+    ls -la "${LOG_DIR}"
   else
-    _log "INFO" "Directory '${LOG_DIR}' must exist."
+    _log "ERROR" "Log directory '${LOG_DIR}' doesn't exist or not a directory."
+    _failExit
   fi
-
-  _log "INFO" "Preparing default Siodb instance"
-  dd if=/dev/urandom of=/etc/siodb/instances/${SIODB_INSTANCE}/master_key bs=16 count=1
-  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/master_key
-  cp -f ${SCRIPT_DIR}/../share/public_key /etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key
-  chmod 660 /etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key
 }
 
 function _ShowSiodbProcesses {
@@ -143,32 +193,35 @@ function _ShowSiodbProcesses {
 }
 
 function _StartSiodb {
-  _log "INFO" "Starting default Siodb instance"
+  _log "INFO" "Starting Siodb instance '${SIODB_INSTANCE}'"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/siodb --instance ${SIODB_INSTANCE} --daemon
+  "${SIODB_BIN}/siodb" --instance ${SIODB_INSTANCE} --daemon
   numberEntriesInLog=0
   counterTimeout=0
+  _log "INFO" "Waiting for Siodb instance to start..."
   while [[ $numberEntriesInLog -eq 0 ]]; do
-    _log "INFO" "Waiting for instance to be ready..."
     LOG_STARTUP=$(cat ${LOG_DIR}/*.log \
-    | awk -v previousInstanceStartTimestamp=${previousInstanceStartTimestamp} \
-    '
-    function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
-    function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
-    function trim(s)  { return rtrim(ltrim(s)); }
-    {
-      lineTimestamp = substr($1,1,4)substr($1,6,2)substr($1,9,2)substr($2,1,2)substr($2,4,2)substr($2,7,2)trim(substr($2,10,6))
-      if (lineTimestamp > previousInstanceStartTimestamp) {
-        print $0;
-      }
-    }')
-    numberEntriesInLog=$(echo "${LOG_STARTUP}" | egrep 'Listening for (TCP|UNIX) connections' | wc -l | bc)
+        | awk -v previousInstanceStartTimestamp=${previousInstanceStartTimestamp} \
+        '
+          function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
+          function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
+          function trim(s)  { return rtrim(ltrim(s)); }
+          {
+            lineTimestamp = substr($1,1,4)substr($1,6,2)substr($1,9,2)substr($2,1,2)substr($2,4,2)substr($2,7,2)trim(substr($2,10,6))
+            if (lineTimestamp > previousInstanceStartTimestamp) {
+              print $0;
+            }
+          }
+        ')
+    numberEntriesInLog=$(echo "${LOG_STARTUP}" | egrep 'Listening for (TCP|UNIX) connections' \
+        | wc -l | bc)
     if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
-    _log "ERROR" "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
+    _log "ERROR" \
+        "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
     _failExit
     fi
     counterTimeout=$((counterTimeout+1))
-    _CheckLogFiles
+    _CheckLogFiles 1>/dev/null
     sleep 1
   done
   previousInstanceStartTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
@@ -180,21 +233,22 @@ function _StopSiodb {
   if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
     _log "INFO" "Stopping Siodb process on default instance"
     _ShowSiodbProcesses
-    SIODB_PROCESS_ID=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" | grep -v grep \
-      | awk '{print $2}')
+    SIODB_PROCESS_ID=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+        | grep -v grep | awk '{print $2}')
     if [[ -z "${SIODB_PROCESS_ID}" ]]; then
       echo "Siodb is already not running."
     else
       kill -SIGINT ${SIODB_PROCESS_ID}
-      counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" | grep -v grep \
-        | awk '{print $2}' | wc -l | bc)
+      counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+          | grep -v grep | awk '{print $2}' | wc -l | bc)
       counterTimeout=0
+      _log "INFO" "Waiting for Siodb instance to stop..."
       while [[ $counterSiodbProcesses -ne 0 ]]; do
-        _log "INFO" "Waiting for instance to be stopped..."
-        counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" | grep -v grep \
-        | awk '{print $2}' | wc -l | bc)
+        counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+            | grep -v grep | awk '{print $2}' | wc -l | bc)
         if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
-          _log "ERROR" "Timeout (${instanceStartupTimeout} seconds) reached while stopping the instance..."
+          _log "ERROR" \
+              "Timeout (${instanceStartupTimeout} seconds) reached while stopping the instance..."
           _failExit
         fi
         counterTimeout=$((counterTimeout+1))
@@ -253,21 +307,21 @@ function _failExit {
 function _RunSqlScript {
   _log "INFO" "Executing SQL script $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
-    -i ${SCRIPT_DIR}/../share/private_key < $1
+  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
+    -i "${SCRIPT_DIR}/../share/private_key" < $1
 }
 
 function _RunSqlThroughUser {
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo -u ${1} -i ${2} <<< ''"${3}"''
 }
 
 function _RunSql {
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
-    -i ${SCRIPT_DIR}/../share/private_key <<< ''"$1"''
+  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
+    -i "${SCRIPT_DIR}/../share/private_key" <<< ''"$1"''
 }
 
 function _RunSqlAndValidateOutput {
@@ -275,8 +329,8 @@ function _RunSqlAndValidateOutput {
   # $2: The expected output
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  SIOCLI_OUTPUT=$(${SIODB_BIN}/siocli ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
-    --keep-going -i ${SCRIPT_DIR}/../share/private_key <<< ''"${1}"'')
+  SIOCLI_OUTPUT=$("${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} \
+    -u root --keep-going -i "${SCRIPT_DIR}/../share/private_key" <<< ''"${1}"'')
   EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
@@ -289,55 +343,60 @@ function _RunSqlAndValidateOutput {
 function _RunRestRequest1 {
   _log "INFO" "Executing REST request: $1 $2"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -u $3 -T $4
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -u $3 -T $4
 }
 
 function _RunRestRequest2 {
   _log "INFO" "Executing REST request: $1 $2 $3"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -u $4 -T $5
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -u $4 -T $5
 }
 
 function _RunRestRequest3 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -u $5 -T $6
 }
 
 function _RunRestRequest4 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -P ''"$4"'' -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -P ''"$4"'' \
+    -u $5 -T $6
 }
 
 function _RunRestRequest5 {
   _log "INFO" "Executing REST request: $1 $2 $3 @$4"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -f "$4" -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -f "$4" -u $5 -T $6
 }
 
 function _RunRestRequest6 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' -u $6 -T $7
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' \
+    -u $6 -T $7
 }
 
 function _RunRestRequest6d {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' -u $6 -T $7 --drop
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' \
+    -u $6 -T $7 --drop
 }
 
 function _RunRestRequest7 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 -T $7
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 \
+    -T $7
 }
 
 function _RunRestRequest7d {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  ${SIODB_BIN}/restcli ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 -T $7 --drop
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 \
+    -T $7 --drop
 }
 
 function _RunCurlGetDatabasesRequest {
@@ -346,8 +405,6 @@ function _RunCurlGetDatabasesRequest {
   auth=$(echo "$1:$2" | base64 -w0)
   _log "DEBUG" "auth=${auth}"
   curl -v -H "Authorization: Basic ${auth}" http://localhost:50080/databases
-  #echo "Running: curl -v http://$1:$2@localhost:50080/databases"
-  #curl -v http://$1:$2@localhost:50080/databases
   echo ""
 }
 
