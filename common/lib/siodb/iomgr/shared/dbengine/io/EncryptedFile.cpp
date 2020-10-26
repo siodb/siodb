@@ -341,7 +341,7 @@ bool EncryptedFile::updateBlock(const std::uint8_t* buffer, std::size_t size, of
             != m_blockSize) {
         m_lastError = errno;
         DEBUG_TRACE("updateBlock: READ block failed: at " << blockOffset << ": " << m_lastError
-                                                          << " " << std::strerror(m_lastError));
+                                                          << ' ' << std::strerror(m_lastError));
         return false;
     }
     DEBUG_TRACE("updateBlock: read block at " << blockOffset);
@@ -354,7 +354,7 @@ bool EncryptedFile::updateBlock(const std::uint8_t* buffer, std::size_t size, of
             != m_blockSize) {
         m_lastError = errno;
         DEBUG_TRACE("updateBlock: WRITE block failed: at " << blockOffset << ": " << m_lastError
-                                                           << " " << std::strerror(m_lastError));
+                                                           << ' ' << std::strerror(m_lastError));
         return false;
     }
 

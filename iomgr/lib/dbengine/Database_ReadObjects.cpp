@@ -1094,7 +1094,7 @@ void Database::readAllIndices()
     } else {
         LOG_WARNING << "Database " << m_name
                     << ": readAllIndices: sysIndexColumnsIndex: No records. Additional info: "
-                    << p.first << " " << p.second;
+                    << p.first << ' ' << p.second;
     }
 
     // Check min and max TRID
