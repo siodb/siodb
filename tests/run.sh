@@ -4,8 +4,8 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-./rest/run.sh
-./sql/run.sh
-./users/run.sh
-./data/run.sh
-./export/run.sh
+./rest/run.sh "$*"
+./sql/run.sh "$*"
+./users/run.sh "$*"
+./export/run.sh "$*"
+./issues/run.sh "$*"
