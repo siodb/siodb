@@ -7,7 +7,7 @@
 CLANG_FORMAT=clang-format
 
 STYLE=$(git config --get hooks.clangformat.style)
-if [ -n "${STYLE}" ] ; then
+if [[ -n "${STYLE}" ]]; then
     STYLEARG="-style=${STYLE}"
 else
     STYLEARG=""
