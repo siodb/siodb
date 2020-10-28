@@ -5,7 +5,7 @@
 # --------------------------------------------------------------
 # set
 # --------------------------------------------------------------
-if [ "${SIOTEST_TRACE}" == "1" ]; then
+if [[ "${SIOTEST_TRACE}" == "1" ]]; then
 set -x
 fi
 set -e
@@ -13,8 +13,14 @@ set -e
 # --------------------------------------------------------------
 # Global parameters
 # --------------------------------------------------------------
-export SCRIPT=$(realpath $0)
-export SCRIPT_DIR=$(dirname $SCRIPT)
+SCRIPT=$(realpath "$0")
+SCRIPT_DIR=$(dirname "$SCRIPT")
+ROOT_DIR=($realpath "${SCRIPT_DIR}")
+while [[ ! -f "${ROOT_DIR}/.rootdir" ]]; do
+  ROOT_DIR=($realpath "${ROOT_DIR}/..")
+done
+UNIQUE_SUFFIX=$(date +%s)_$$
+
 instanceStartupTimeout=45
 previousTestStartedAtTimestamp=0
 previousInstanceStartTimestamp=0
@@ -34,8 +40,8 @@ do
     continue
   fi
   if [[ "$1" == "-x" ]]; then
-    instanceStartupTimeout=15
     doInstanceConfiguration=0
+    instanceStartupTimeout=15
     shift 1
     continue
   fi
@@ -55,16 +61,16 @@ if [[ -z "${SIODB_BIN}" ]]; then
     SIODB_BIN=debug
 fi
 if [[ "${SIODB_BIN}" == "debug" ]]; then
-  SIODB_BIN="${SCRIPT_DIR}/../../build/debug/bin"
+  SIODB_BIN="${ROOT_DIR}/build/debug/bin"
   SHORT_TEST=0
 elif [[ "${SIODB_BIN}" == "release" ]]; then
-  SIODB_BIN="${SCRIPT_DIR}/../../build/release/bin"
+  SIODB_BIN="${ROOT_DIR}/build/release/bin"
   SHORT_TEST=0
 elif [[ "${SIODB_BIN}" == "sdebug" ]]; then
-  SIODB_BIN="${SCRIPT_DIR}/../../build/debug/bin"
+  SIODB_BIN="${ROOT_DIR}/build/debug/bin"
   SHORT_TEST=1
 elif [[ "${SIODB_BIN}" == "srelease" ]]; then
-  SIODB_BIN="${SCRIPT_DIR}/../../build/release/bin"
+  SIODB_BIN="${ROOT_DIR}/build/release/bin"
   SHORT_TEST=1
 fi
 if [[ ! -d "${SIODB_BIN}" ]]; then
@@ -73,13 +79,16 @@ if [[ ! -d "${SIODB_BIN}" ]]; then
 fi
 
 if [[ -z "${SIODB_INSTANCE}" ]]; then
-    SIODB_INSTANCE=siodb
+  SIODB_INSTANCE=siodb
 fi
-DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}"
-LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
-
+if [[ -z "${SIODB_DATA_DIR}" ]]; then
+  SIODB_DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}"
+fi
+if [[ -z "${SIODB_LOG_DIR}" ]]; then
+  SIODB_LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
+fi
 if [[ -z "${SIOTEST_KEEP_INSTANCE_UP}" ]]; then
-    SIOTEST_KEEP_INSTANCE_UP=0
+  SIOTEST_KEEP_INSTANCE_UP=0
 fi
 
 
@@ -120,18 +129,18 @@ function _ConfigureInstance {
 
   # Copy default config file
   mkdir -p "/etc/siodb/instances/${SIODB_INSTANCE}"
-  cp "${SCRIPT_DIR}/../../config/siodb.conf" "/etc/siodb/instances/${SIODB_INSTANCE}/config"
+  cp "${ROOT_DIR}/config/siodb.conf" "/etc/siodb/instances/${SIODB_INSTANCE}/config"
   chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/config"
 
   # Overload default config file
   _SetInstanceParameter "data_dir" "/var/lib/siodb/${SIODB_INSTANCE}/data"
-  DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
-  mkdir -p ${DATA_DIR}
-  chmod 770 ${DATA_DIR}
+  SIODB_DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
+  mkdir -p ${SIODB_DATA_DIR}
+  chmod 770 ${SIODB_DATA_DIR}
   _SetInstanceParameter "log.file.destination" "/var/log/siodb/${SIODB_INSTANCE}"
-  LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
-  mkdir -p ${LOG_DIR}
-  chmod 770 ${LOG_DIR}
+  SIODB_LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
+  mkdir -p ${SIODB_LOG_DIR}
+  chmod 770 ${SIODB_LOG_DIR}
   _SetInstanceParameter "enable_rest_server" "yes"
   _SetInstanceParameter "client.enable_encryption" "yes"
   _SetInstanceParameter "client.tls_certificate" "cert.pem"
@@ -141,16 +150,16 @@ function _ConfigureInstance {
   _SetInstanceParameter "rest_server.iomgr_read_timeout" "60"
   _SetInstanceParameter "log.file.severity" "debug"
 
-  cp "${SCRIPT_DIR}/../../config/sample_cert/cert.pem" \
+  cp "${ROOT_DIR}/config/sample_cert/cert.pem" \
       "/etc/siodb/instances/${SIODB_INSTANCE}/cert.pem"
   chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/cert.pem"
-  cp "${SCRIPT_DIR}/../../config/sample_cert/key.pem" \
+  cp "${ROOT_DIR}/config/sample_cert/key.pem" \
       "/etc/siodb/instances/${SIODB_INSTANCE}/key.pem"
   chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/key.pem"
 
   dd if=/dev/urandom of="/etc/siodb/instances/${SIODB_INSTANCE}/master_key" bs=16 count=1
   chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/master_key"
-  cp -f "${SCRIPT_DIR}/../share/public_key" \
+  cp -f "${ROOT_DIR}/tests/share/public_key" \
     "/etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key"
   chmod 660 "/etc/siodb/instances/${SIODB_INSTANCE}/initial_access_key"
 }
@@ -162,24 +171,24 @@ function _Prepare {
 
   _killSiodb
 
-  if [ -d "${DATA_DIR}" ]; then
-    _log "INFO"  "Purging directory '${DATA_DIR}'"
-    rm -rf "${DATA_DIR}"/*
-    rm -rf "${DATA_DIR}/.initialized"
-    echo "Contents of the ${DATA_DIR}  after cleanup"
-    ls -la "${DATA_DIR}"
+  if [[ -d "${SIODB_DATA_DIR}" ]]; then
+    _log "INFO"  "Purging directory '${SIODB_DATA_DIR}'"
+    rm -rf "${SIODB_DATA_DIR}"/*
+    rm -rf "${SIODB_DATA_DIR}/.initialized"
+    echo "Contents of the ${SIODB_DATA_DIR}  after cleanup"
+    ls -la "${SIODB_DATA_DIR}"
   else
-    _log "ERROR" "Data directory '${DATA_DIR}' doesn't exist or not a directory."
+    _log "ERROR" "Data directory '${SIODB_DATA_DIR}' doesn't exist or not a directory."
     _failExit
   fi
 
-  if [ -d "${LOG_DIR}" ]; then
-    _log "INFO" "Purging directory '${LOG_DIR}'"
-    rm -rf "${LOG_DIR}"/*
-    echo "Contents of the ${LOG_DIR} after cleanup"
-    ls -la "${LOG_DIR}"
+  if [[ -d "${SIODB_LOG_DIR}" ]]; then
+    _log "INFO" "Purging directory '${SIODB_LOG_DIR}'"
+    rm -rf "${SIODB_LOG_DIR}"/*
+    echo "Contents of the ${SIODB_LOG_DIR} after cleanup"
+    ls -la "${SIODB_LOG_DIR}"
   else
-    _log "ERROR" "Log directory '${LOG_DIR}' doesn't exist or not a directory."
+    _log "ERROR" "Log directory '${SIODB_LOG_DIR}' doesn't exist or not a directory."
     _failExit
   fi
 }
@@ -200,7 +209,7 @@ function _StartSiodb {
   counterTimeout=0
   _log "INFO" "Waiting for Siodb instance to start..."
   while [[ $numberEntriesInLog -eq 0 ]]; do
-    LOG_STARTUP=$(cat ${LOG_DIR}/*.log \
+    LOG_STARTUP=$(cat ${SIODB_LOG_DIR}/*.log \
         | awk -v previousInstanceStartTimestamp=${previousInstanceStartTimestamp} \
         '
           function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
@@ -265,32 +274,43 @@ function _StopSiodb {
 function _CheckLogFiles {
   # $1: exclude these patterns because expected
   _log "INFO" "Checking for errors in the log files"
-  LOG_ERROR=$(cat ${LOG_DIR}/*.log \
-  | awk -v previousTestStartedAtTimestamp=${previousTestStartedAtTimestamp} \
-  '
-  function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
-  function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
-  function trim(s)  { return rtrim(ltrim(s)); }
-  {
-    lineTimestamp = substr($1,1,4)substr($1,6,2)substr($1,9,2)substr($2,1,2)substr($2,4,2)substr($2,7,2)trim(substr($2,10,6))
-    if (lineTimestamp > previousTestStartedAtTimestamp && $3 == "error") {
-      print $0;
-    }
-  }')
-  if [[ "${1}" == "" ]]; then
-    ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | wc -l)
-  else
-    ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | egrep -v "${1}" | wc -l)
-  fi
-  if [ "${ERROR_COUNT}" == "0" ]; then
-    _log "INFO" "No error detected the in log files"
-  else
-    echo "## ================================================="
-    echo "${LOG_ERROR}"
-    echo "## ================================================="
-    _log "ERROR" "I found an issue in the log files"
+  foundErrors=0
+  for logFile in $(ls "${SIODB_LOG_DIR}"); do
+    LOG_ERROR=$(cat "${SIODB_LOG_DIR}/${logFile}" \
+    | awk -v previousTestStartedAtTimestamp=${previousTestStartedAtTimestamp} \
+    '
+      function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
+      function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
+      function trim(s)  { return rtrim(ltrim(s)); }
+      {
+        lineTimestamp = substr($1,1,4)substr($1,6,2)substr($1,9,2)substr($2,1,2)substr($2,4,2)substr($2,7,2)trim(substr($2,10,6))
+        if (lineTimestamp > previousTestStartedAtTimestamp && $3 == "error") {
+          print $0;
+        }
+      }
+    ')
+
+    if [[ "${1}" == "" ]]; then
+      ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | wc -l)
+    else
+      ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | egrep -v "${1}" | wc -l)
+    fi
+
+    if [[ "${ERROR_COUNT}" -ne "0" ]]; then
+      foundErrors=1
+      _log "ERROR" "Found an issue in the log file ${SIODB_LOG_DIR}/${logFile}"
+      echo "## ================================================="
+      echo "${LOG_ERROR}"
+      echo "## ================================================="
+    fi
+  done
+
+  echo "foundErrors=${foundErrors}"
+  if [[ "${foundErrors}" == "1" ]]; then
     _failExit
   fi
+
+  _log "INFO" "No error detected the in log files"
 }
 
 function _log {
@@ -298,6 +318,7 @@ function _log {
 }
 
 function _failExit {
+    echo "Test failed."
     if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
       _testfails
     fi
@@ -308,7 +329,7 @@ function _RunSqlScript {
   _log "INFO" "Executing SQL script $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
-    -i "${SCRIPT_DIR}/../share/private_key" < $1
+    -i "${ROOT_DIR}/tests/share/private_key" < $1
 }
 
 function _RunSqlThroughUser {
@@ -321,7 +342,7 @@ function _RunSql {
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
-    -i "${SCRIPT_DIR}/../share/private_key" <<< ''"$1"''
+    -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
 }
 
 function _RunSqlAndValidateOutput {
@@ -330,7 +351,7 @@ function _RunSqlAndValidateOutput {
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   SIOCLI_OUTPUT=$("${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} \
-    -u root --keep-going -i "${SCRIPT_DIR}/../share/private_key" <<< ''"${1}"'')
+    -u root --keep-going -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
   EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"

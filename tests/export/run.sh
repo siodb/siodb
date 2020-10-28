@@ -6,7 +6,7 @@
 
 ## Global
 SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/../share/CommonFunctions.sh"
+source "${ROOT_DIR}/tests/share/CommonFunctions.sh"
 
 _log "INFO" "Tests start"
 _Prepare
@@ -19,16 +19,16 @@ echo "Exporting database..."
 output_dir="${HOME}/tmp/export_$(date +%s)"
 mkdir -p "${output_dir}"
 
-"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${SCRIPT_DIR}/../share/private_key" \
+"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${ROOT_DIR}/tests/share/private_key" \
     -e db1 >"${output_dir}/db1.sql"
 
-"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${SCRIPT_DIR}/../share/private_key" \
+"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${ROOT_DIR}/tests/share/private_key" \
     -e db2 >"${output_dir}/db2.sql"
 
-"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${SCRIPT_DIR}/../share/private_key" \
+"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${ROOT_DIR}/tests/share/private_key" \
     -e db2.t1_db2 >"${output_dir}/db2.t1_db2.sql"
 
-"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${SCRIPT_DIR}/../share/private_key" \
+"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${ROOT_DIR}/tests/share/private_key" \
     -E >"${output_dir}/all.sql"
 
 _StopSiodb

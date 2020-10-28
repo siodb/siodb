@@ -19,7 +19,7 @@ _StartSiodb
 ### Create a database and test data model
 _RunSql "create user user_test_key"
 
-for key in $(ls "${SCRIPT_DIR}/../../config/sample_keys/"*.pub); do
+for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
     KEY=$(cat ${key})
     PUBLIC_KEY_NAME=$(basename ${key} | awk -F "." '{print $1}')
     _RunSql "alter user user_test_key add access key ${PUBLIC_KEY_NAME} '${KEY}'"
@@ -30,7 +30,7 @@ _StopSiodb
 _StartSiodb
 
 ### Login with keys
-for key in $(ls "${SCRIPT_DIR}/../../config/sample_keys/"*.pub); do
+for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
     PRIVATE_KEY_NAME=${key%.*}
     _RunSqlThroughUser "user_test_key" "${PRIVATE_KEY_NAME}" "show databases"
 done
