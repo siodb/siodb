@@ -62,14 +62,15 @@ func (restServerConfig *restServerConfig) ParseAndValidateConfiguration(siodbCon
 	if restServerConfig.ipv4HTTPSPort != 0 || restServerConfig.ipv6HTTPSPort != 0 {
 		if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate_chain"); err != nil {
 			if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate"); err != nil {
-				return fmt.Errorf("Can't find parameter for TLS certificate '%v'", err)
+				return fmt.Errorf("Can't find parameter for TLS certificate: there is no valid parameter " +
+					"rest_server.tls_certificate_chain or rest_server.tls_certificate")
 			}
 			if restServerConfig.tlsCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
 				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate': %v", err)
 			}
 		} else {
 			if restServerConfig.tlsCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
-				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate': %v", err)
+				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate_chain': %v", err)
 			}
 		}
 
