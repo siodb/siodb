@@ -46,6 +46,9 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
 {
     auto startTime = std::chrono::steady_clock::now();
     // Send command to server as protobuf message
+    if (printDebugMessages) {
+        std::cerr << "debug: Sending command to server\n";
+    }
     client_protocol::Command command;
     command.set_request_id(requestId);
     command.set_text(std::move(commandText));
@@ -59,6 +62,10 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
 
         client_protocol::ServerResponse response;
         protobuf::StreamInputStream input(connection, errorCodeChecker);
+
+        if (printDebugMessages) {
+            std::cerr << "debug: Reading reponse from server\n";
+        }
         protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
 
         if (printDebugMessages) {
