@@ -61,7 +61,7 @@ const std::array<std::uint32_t, ColumnDataType_MAX> Column::s_minRequiredBlockFr
 };
 
 const std::unordered_set<std::string> Column::s_wellKnownIgnorableFiles {
-        Column::kInitializationFlagFile,
+        kInitializationFlagFile,
         Column::kMainIndexIdFile,
         Column::kTridCounterFile,
 };

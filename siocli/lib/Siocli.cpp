@@ -25,7 +25,7 @@
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/sys/Syscalls.h>
 #include <siodb/common/utils/CheckOSUser.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/StartupActions.h>
 
@@ -108,6 +108,7 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()("export,e", boost::program_options::value<std::string>(),
                 "Export single database or table");
         desc.add_options()("export-all,E", "Export all databases");
+        //desc.add_options()("output-file,o", "Output file for export");
         desc.add_options()("help,h", "Print help message");
         desc.add_options()("nologo", "Do not print logo");
         desc.add_options()("debug,d", "Print debug messages");
@@ -153,8 +154,8 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_printDebugMessages = vm.count("debug") > 0;
 
         if (exportDatabase) {
-            params.m_exportDatabaseName = vm["export"].as<std::string>();
-            boost::to_upper(params.m_exportDatabaseName);
+            params.m_exportObjectName = vm["export"].as<std::string>();
+            boost::to_upper(params.m_exportObjectName);
         }
 
         if (vm.count("plaintext") > 0)
@@ -384,27 +385,27 @@ int exportSqlDump(const ClientParameters& params)
     siodb::sql_client::authenticate(params.m_identityKey, params.m_user, *connection);
 
     try {
-        const auto currentTime =
-                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        const auto currentTime = std::time(nullptr);
+        std::tm localTime, utcTime;
+        ::localtime_r(&currentTime, &localTime);
+        ::gmtime_r(&currentTime, &utcTime);
         std::cout << "-- Siodb SQL Dump\n"
                   << "-- Hostname: " << params.m_host << '\n'
                   << "-- Instance: " << params.m_instance << '\n'
-                  << "-- Timestamp: "
-                  << std::put_time(std::localtime(&currentTime), "%Y-%m-%d %H:%M:%S") << '\n'
-                  << "-- Timestamp (UTC): "
-                  << std::put_time(std::gmtime(&currentTime), "%Y-%m-%d %H:%M:%S") << '\n';
+                  << "-- Timestamp: " << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S") << '\n'
+                  << "-- Timestamp (UTC): " << std::put_time(&utcTime, "%Y-%m-%d %H:%M:%S") << '\n';
 
-        if (params.m_exportDatabaseName.empty())
+        if (params.m_exportObjectName.empty())
             siodb::siocli::dumpAllDatabases(*connection, std::cout);
         else {
-            std::vector<std::string> components;
-            boost::split(components, params.m_exportDatabaseName, boost::is_any_of("."));
-            if (components.size() == 1)
-                siodb::siocli::dumpDatabase(*connection, std::cout, components.front());
-            else if (components.size() == 2)
-                siodb::siocli::dumpTable(*connection, std::cout, components[0], components[1]);
+            std::vector<std::string> names;
+            boost::split(names, params.m_exportObjectName, boost::is_any_of("."));
+            if (names.size() == 1)
+                siodb::siocli::dumpSingleDatabase(*connection, names.front(), std::cout);
+            else if (names.size() == 2)
+                siodb::siocli::dumpSingleTable(*connection, names[0], names[1], std::cout);
             else {
-                std::cerr << "Invalid database or table name: " << params.m_exportDatabaseName
+                std::cerr << "Invalid database or table name: " << params.m_exportObjectName
                           << std::endl;
                 return 2;
             }

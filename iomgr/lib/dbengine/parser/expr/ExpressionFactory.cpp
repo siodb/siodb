@@ -7,6 +7,7 @@
 // Project headers
 #include "AllExpressions.h"
 #include "../AntlrHelpers.h"
+#include "../DBEngineRequestFactoryError.h"
 #include "../antlr_wrappers/SiodbParserWrapper.h"
 
 // Common project headers
@@ -72,17 +73,17 @@ requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseT
                     return createExpression(midNode);
                 }
             }
-            throw std::runtime_error("Expression is invalid");
+            throw DBEngineRequestFactoryError("Expression is invalid");
         }
         case SiodbParser::RuleFunction_call: {
             // TODO: Support functions
-            throw std::runtime_error("Functions aren't not supported now");
+            throw DBEngineRequestFactoryError("Functions aren't not supported now");
         }
         case SiodbParser::RuleSimple_expr: return createSimpleExpression(node);
         default: break;
     }
 
-    throw std::invalid_argument("Node is not valid expression or not supported");
+    throw DBEngineRequestFactoryError("SQL term is not valid expression or not supported");
 }
 
 Variant ExpressionFactory::createConstantValue(antlr4::tree::ParseTree* node)
@@ -108,7 +109,7 @@ Variant ExpressionFactory::createConstantValue(antlr4::tree::ParseTree* node)
         }
         default: break;
     }
-    throw std::invalid_argument("Not a valid constant");
+    throw DBEngineRequestFactoryError("Not a valid constant");
 }
 
 // ----- internals -----
@@ -133,7 +134,7 @@ Variant ExpressionFactory::createConstantValue(
     if (terminal)
         return createConstantValue(terminal, negate);
     else {
-        throw std::invalid_argument(
+        throw DBEngineRequestFactoryError(
                 "Expression malformed: Literal node has no terminal after 2 children deep");
     }
 }
@@ -166,7 +167,7 @@ Variant ExpressionFactory::createConstantValue(const antlr4::Token* token, bool 
             return Variant(dt);
         }
         case SiodbParser::K_CURRENT_TIMESTAMP: return Variant(RawDateTime(std::time(nullptr)));
-        default: throw std::invalid_argument("Invalid constant type");
+        default: throw DBEngineRequestFactoryError("Invalid constant type");
     }
 }
 
@@ -219,7 +220,7 @@ Variant ExpressionFactory::createNumericConstantValue(const antlr4::Token* token
         return negate ? -n : n;
     } catch (...) {
         // No more variants to try, report error
-        throw std::invalid_argument("Invalid numeric literal");
+        throw DBEngineRequestFactoryError("Invalid numeric literal");
     }
 }
 
@@ -233,11 +234,16 @@ Variant ExpressionFactory::createBinaryConstantValue(const antlr4::Token* token)
     const auto hexLiteral = token->getText();
     // Exclude leading "x'" and trailing "'"
     const auto hexLength = hexLiteral.length() - 3;
-    if (hexLength % 2 == 1) throw std::runtime_error("Odd number of characters in the hex string");
+    if (hexLength % 2 == 1)
+        throw DBEngineRequestFactoryError("Odd number of characters in the hex literal");
     BinaryValue binaryValue(hexLength / 2);
     if (hexLength > 0) {
-        boost::algorithm::unhex(hexLiteral.data() + 2, hexLiteral.data() + hexLiteral.length() - 1,
-                binaryValue.data());
+        try {
+            boost::algorithm::unhex(hexLiteral.data() + 2,
+                    hexLiteral.data() + hexLiteral.length() - 1, binaryValue.data());
+        } catch (boost::algorithm::non_hex_input& ex) {
+            throw DBEngineRequestFactoryError("Invalid character in the hex literal");
+        }
     }
     return binaryValue;
 }
@@ -283,8 +289,9 @@ requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
         antlr4::tree::ParseTree* tableNode, antlr4::tree::ParseTree* columnNode) const
 {
     if (!m_allowColumnExpressions) {
-        throw std::invalid_argument(stdext::string_builder() << "Column " << columnNode->getText()
-                                                             << " is not allowed in this context");
+        throw DBEngineRequestFactoryError(stdext::string_builder()
+                                          << "Column " << columnNode->getText()
+                                          << " is not allowed");
     }
 
     std::string tableName;
@@ -298,9 +305,9 @@ requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
         columnName = helpers::getAnyNameText(columnNode->children.at(0));
         boost::to_upper(columnName);
     } else
-        throw std::invalid_argument("Column node is nullptr");
+        throw DBEngineRequestFactoryError("Missing column term");
 
-    if (columnName.empty()) throw std::invalid_argument("Column node is invalid");
+    if (columnName.empty()) throw DBEngineRequestFactoryError("Column term is invalid");
 
     return std::make_unique<requests::SingleColumnExpression>(
             std::move(tableName), std::move(columnName));
@@ -336,7 +343,7 @@ requests::ExpressionPtr ExpressionFactory::createUnaryOperator(
     // operatorNode rule is unary_operator
     // unary_operator child is terminal with unary operator type
     if (operatorNode->children.size() != 1) {
-        throw std::invalid_argument(
+        throw DBEngineRequestFactoryError(
                 "Expression malformed: Unary operator should have exactly one child");
     }
 
@@ -353,7 +360,7 @@ requests::ExpressionPtr ExpressionFactory::createUnaryOperator(
             return std::make_unique<requests::ComplementOperator>(
                     createSimpleExpression(operandNode));
         }
-        default: throw std::invalid_argument("Unrecognized unary operator");
+        default: throw DBEngineRequestFactoryError("Unrecognized unary operator");
     }
 }
 
@@ -439,7 +446,7 @@ requests::ExpressionPtr ExpressionFactory::createNonLogicalBinaryOperator(
             return std::make_unique<requests::IsOperator>(
                     createSimpleExpression(leftNode), createSimpleExpression(rightNode), false);
         }
-        default: throw std::invalid_argument("Unrecognized binary operator");
+        default: throw DBEngineRequestFactoryError("Unrecognized binary operator");
     }
 }
 
@@ -478,7 +485,7 @@ requests::ExpressionPtr ExpressionFactory::createInOperator(antlr4::tree::ParseT
     for (std::size_t i = notIn ? 4 : 3, n = node->children.size(); i < n; i += 2)
         variants.push_back(createSimpleExpression(node->children[i]));
 
-    if (variants.empty()) throw std::invalid_argument("Operator IN has no variants");
+    if (variants.empty()) throw DBEngineRequestFactoryError("Operator IN has no variants");
 
     return std::make_unique<requests::InOperator>(std::move(valueExpr), std::move(variants), notIn);
 }
@@ -496,7 +503,7 @@ requests::ExpressionPtr ExpressionFactory::createLogicalBinaryOperator(
             return std::make_unique<requests::LogicalOrOperator>(
                     createExpression(leftNode), createExpression(rightNode));
         }
-        default: throw std::invalid_argument("Unrecognized logical binary operator");
+        default: throw DBEngineRequestFactoryError("Unrecognized logical binary operator");
     }
 }
 
@@ -526,7 +533,7 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
                     && rightNodeValid) {
                 return createUnaryOperator(leftNode, rightNode);
             }
-            throw std::invalid_argument("Invalid unary expression");
+            throw DBEngineRequestFactoryError("Invalid unary expression");
         }
         case 3: {
             const auto leftNode = node->children[0];
@@ -598,7 +605,7 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
                      && helpers::getNonTerminalType(node2) == SiodbParser::RuleTable_name
                      && helpers::getTerminalType(node3) == SiodbParser::DOT
                      && helpers::getNonTerminalType(node4) == SiodbParser::RuleColumn_name) {
-                throw std::runtime_error("Column name with a database not supported");
+                throw DBEngineRequestFactoryError("Column name with a database not supported");
             }
             break;
         }
@@ -618,7 +625,7 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
         }
         default: break;
     }
-    throw std::invalid_argument("Node is not valid simple expression or not supported");
+    throw DBEngineRequestFactoryError("Term is not valid simple expression or not supported");
 }
 
 }  // namespace siodb::iomgr::dbengine::parser

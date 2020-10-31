@@ -10,6 +10,6 @@ include $(MK)/MainTargets.mk
 # List of all subdirs to recurse into
 SUBDIRS:= \
 	gdbinit  \
-	run_all_tests
+	run_tests
 
 include $(MK)/ParallelRecurse.mk

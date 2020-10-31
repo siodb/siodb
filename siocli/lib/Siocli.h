@@ -52,7 +52,7 @@ struct ClientParameters {
     bool m_printDebugMessages = false;
 
     /** Database name to export. Empty string means export all databases */
-    std::string m_exportDatabaseName;
+    std::string m_exportObjectName;
 };
 
 /** Prints logo. */

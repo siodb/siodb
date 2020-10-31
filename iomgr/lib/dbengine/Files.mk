@@ -87,12 +87,12 @@ CXX_HDR+= \
 	ConstraintDefinition.h  \
 	ConstraintDefinitionPtr.h  \
 	ConstraintPtr.h  \
+	DBEngineDebug.h  \
 	DataSet.h  \
 	Database.h  \
 	DatabaseError.h  \
 	DatabaseMetadata.h  \
 	DatabasePtr.h  \
-	Debug.h  \
 	DefaultValueConstraint.h  \
 	FirstUserObjectId.h  \
 	Index.h  \

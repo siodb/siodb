@@ -9,6 +9,7 @@
 #include "dbengine/parser/expr/ConstantExpression.h"
 
 // Common project headers
+#include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
@@ -1031,5 +1032,41 @@ TEST(DML_Insert, InsertDefaultNullValue)
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_TRUE(rowLength == 0);
+    }
+}
+
+TEST(DML_Insert, InsertWithColumn)
+{
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+
+    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
+            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
+            {"B", siodb::COLUMN_DATA_TYPE_TEXT, true},
+    };
+
+    instance->findDatabase("SYS")->createUserTable("TEST_INSERT_PARSE_ERROR",
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
+
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    siodb::protobuf::StreamInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+    {
+        // Equal to inserting of:
+        // 0, NULL,
+        // 1, NULL
+        const std::string statement("INSERT INTO TEST_INSERT_PARSE_ERROR VALUES (1, \"abc\")");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        try {
+            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+            FAIL() << "Column name wrongly accepted";
+        } catch (std::exception& ex) {
+            // Do not do anything
+        }
     }
 }

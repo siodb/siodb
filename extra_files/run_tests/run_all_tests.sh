@@ -5,7 +5,7 @@ for f in `ls *_test`; do
         echo "Running $f"
         ./$f
         res=$?
-        if [ $res -ne 0 ]; then
+        if [[ $res -ne 0 ]]; then
             echo "$f failed, exit code $res"
             exit $?
         fi

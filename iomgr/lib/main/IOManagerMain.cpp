@@ -18,7 +18,7 @@
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/HelperMacros.h>
 #include <siodb/common/utils/MessageCatalog.h>

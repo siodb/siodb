@@ -163,10 +163,31 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=DDL.CreateManyTables"
+                "--gtest_filter=DML_Insert.InsertWithColumn"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "request_handler_test_RELEASE",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/release/bin/request_handler_test",
+            "args": [
+                "--gtest_filter=DDL.CreateManyTables_Seeded2"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/release/bin",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

@@ -5,7 +5,7 @@
 // Common project headers
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/Align.h>
-#include <siodb/common/utils/Debug.h>
+#include <siodb/common/utils/DebugMacros.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/AesCipher.h>
 #include <siodb/iomgr/shared/dbengine/io/EncryptedFile.h>
 

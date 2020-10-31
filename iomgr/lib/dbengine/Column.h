@@ -781,9 +781,6 @@ private:
     /** Master column directory prefix */
     static constexpr const char* kMasterColumnDataDirPrefix = "mc";
 
-    /** Initialization flag file name */
-    static constexpr const char* kInitializationFlagFile = ".initialized";
-
     /** Main index ID file name */
     static constexpr const char* kMainIndexIdFile = "main_index_id";
 

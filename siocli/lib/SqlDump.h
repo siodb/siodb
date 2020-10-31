@@ -4,7 +4,7 @@
 
 #pragma once
 
-// Project headers
+// Common project headers
 #include <siodb/common/io/InputOutputStream.h>
 
 // STL headers
@@ -23,22 +23,22 @@ void dumpAllDatabases(siodb::io::InputOutputStream& connection, std::ostream& os
 /**
  * Dumps table definitions and data from the specified database.
  * @param connection Connection.
- * @param os Output stream.
  * @param databaseName Database name.
+ * @param os Output stream.
  * @throw std::runtime_error if I/O error occurs.
  */
-void dumpDatabase(siodb::io::InputOutputStream& connection, std::ostream& os,
-        const std::string& databaseName);
+void dumpSingleDatabase(siodb::io::InputOutputStream& connection, const std::string& databaseName,
+        std::ostream& os);
 
 /**
  * Dumps table definitions and data from the specified table.
  * @param connection Connection.
- * @param os Output stream.
  * @param databaseName Database name.
  * @param tableName Table name.
+ * @param os Output stream.
  * @throw std::runtime_error if I/O error occurs.
  */
-void dumpTable(siodb::io::InputOutputStream& connection, std::ostream& os,
-        const std::string& databaseName, const std::string& tableName);
+void dumpSingleTable(siodb::io::InputOutputStream& connection, const std::string& databaseName,
+        const std::string& tableName, std::ostream& os);
 
 }  // namespace siodb::siocli

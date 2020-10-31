@@ -330,11 +330,12 @@ Now, proceed to the section [All Systems](#all-systems).
 Run following commands:
 
 ```bash
+export SIODB_GO_VERSION=1.15.3
 cd /tmp
-wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
-tar xaf go1.15.2.linux-amd64.tar.gz
-mv go go-1.15
-sudo mv go-1.15 /usr/local
+wget "https://golang.org/dl/go${SIODB_GO_VERSION}.linux-amd64.tar.gz"
+tar xaf go${SIODB_GO_VERSION}.linux-amd64.tar.gz
+mv go go-${SIODB_GO_VERSION}
+sudo mv go-${SIODB_GO_VERSION} /usr/local
 ```
 
 ### Install boost-pretty-printer GDB Extension
@@ -450,9 +451,9 @@ sudo cp -Rf include "${SIODB_GTEST_PREFIX}"
 cd ../../../..
 
 # Build and install JSON library
-cd date
-tar --no-same-owner -xaf date-${SIODB_JSON_VERSION}.tar.xz
-cd date-${SIODB_JSON_VERSION}
+cd json
+tar --no-same-owner -xaf json-${SIODB_JSON_VERSION}.tar.xz
+cd json-${SIODB_JSON_VERSION}
 mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \

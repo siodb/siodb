@@ -592,27 +592,20 @@ TEST(DDL, CreateTable)
 }
 
 // Intent of this test is to check correctness of the some use cases in the block registry.
-TEST(DDL, CreateManyTables)
+void createManyTablesTest(unsigned long long seed)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 
-#if 0
-    std::random_device rd;
-    const auto seed = rd();
-#else
-    //const auto seed = 4281804057UL;
-    const auto seed = 2888146611UL;
-#endif
-
-    LOG_INFO << "DDL.CreateManyTables.seed=" << seed;
     std::mt19937 gen(seed);
     std::uniform_real_distribution realDist(0.0, 1.0);
     std::uniform_int_distribution<int> intDist(1, std::numeric_limits<int16_t>::max());
+    const auto ts = std::time(nullptr);
 
     constexpr int kTableCount = 60;
     for (int tableNo = 0; tableNo < kTableCount; ++tableNo) {
         /// ----------- CREATE TABLE -----------
-        const std::string tableName = stdext::string_builder() << "DDL_TEST_TABLE_MANY_" << tableNo;
+        const std::string tableName = stdext::string_builder() << "DDL_TEST_TABLE_MANY_" << tableNo
+                                                               << '_' << seed << '_' << ts;
         std::size_t randomStringLength = (intDist(gen) % 100) + 1;
         std::string randomString;
         randomString.resize(randomStringLength);
@@ -623,6 +616,7 @@ TEST(DDL, CreateManyTables)
             } while (ch == 0 || ch > 0x7f || ch == '\'' || ch == '\"');
             randomString[i] = static_cast<char>(ch);
         }
+        LOG_DEBUG << "====== CREATE TABLE " << tableName << "======";
         const std::string statement =
                 stdext::string_builder()
                 << "CREATE TABLE " << tableName << "\n(TEST_INTEGER INTEGER DEFAULT "
@@ -752,6 +746,34 @@ TEST(DDL, CreateManyTables)
             ASSERT_EQ(rowLength, 0U);
         }
     }
+}
+
+TEST(DDL, CreateManyTables_Random)
+{
+    // TODO(cxxman): Commented out for now, but uncomment later,
+    //  when CreateManyTables_Seeded2 fixed
+#if 1
+    std::random_device rd;
+    const auto seed = rd();
+    LOG_INFO << "DDL.CreateManyTables.seed=" << seed;
+    createManyTablesTest(seed);
+#endif
+}
+
+TEST(DDL, CreateManyTables_Seeded1)
+{
+    // TODO(cxxman): Commented out for now, but uncomment later,
+    //  when CreateManyTables_Seeded2 fixed
+#if 1
+    const auto seed = 4281804057UL;
+    createManyTablesTest(seed);
+#endif
+}
+
+TEST(DDL, CreateManyTables_Seeded2)
+{
+    const auto seed = 2888146611UL;
+    createManyTablesTest(seed);
 }
 
 TEST(DDL, CreateTableWithDefaultValue)

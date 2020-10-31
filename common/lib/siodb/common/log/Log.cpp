@@ -8,7 +8,7 @@
 #include "../options/InvalidConfigurationError.h"
 #include "../stl_wrap/filesystem_wrapper.h"
 #include "../sys/Syscalls.h"
-#include "../utils/Debug.h"
+#include "../utils/DebugMacros.h"
 
 // STL headers
 #include <iostream>

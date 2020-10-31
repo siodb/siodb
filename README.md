@@ -1,14 +1,10 @@
 ![alt text](https://siodb.io/wp-content/uploads/2020/05/SIODB_Logo_Editable_half_landscape_small_logo_site.png)
 
-# Siodb
+## Deliver safer and faster with Siodb, a Swiss-knife database to remove database complexity
 
-A relational database that gives you:
-
-- Native data encryption
-- Native data versioning
-- Native data model versioning
-- Native data expiration
-- Standard SQL + REST
+- **Performance automation:** Years of experience automated in Siodb (indexing, defragmentation, etc)
+- **Easy integration in your project:** Get the simplicity of REST or the power of SQL
+- **Full encryption:** Keep your data always encrypted at rest and in-transit with the safest protocols and cipher algorithms
 
 **Current status:** Alpha version
 

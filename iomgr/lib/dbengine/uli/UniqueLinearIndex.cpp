@@ -7,7 +7,7 @@
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "FileData.h"
-#include "../Debug.h"
+#include "../DBEngineDebug.h"
 #include "../IndexColumn.h"
 #include "../ThrowDatabaseError.h"
 
@@ -903,6 +903,7 @@ std::set<std::uint64_t> UniqueLinearIndex::scanFiles() const
     std::set<std::uint64_t> fileIds;
     for (fs::directory_iterator it(m_dataDir), endIt; it != endIt; ++it) {
         const auto fileName = it->path().filename().generic_string();
+        if (fileName == kInitializationFlagFile) continue;
         if (fileName.length() < kMinFileNameLength || fileName.find(kIndexFilePrefix) != 0)
             continue;
         const auto fileIdStr = fileName.substr(
