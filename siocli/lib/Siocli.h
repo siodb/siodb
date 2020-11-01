@@ -33,6 +33,9 @@ struct ClientParameters {
     /** Command to execute */
     std::unique_ptr<std::string> m_command;
 
+    /** Output file */
+    std::string m_outputFile;
+
     /** Indication whether client should use encryption or not */
     bool m_encryption = false;
 

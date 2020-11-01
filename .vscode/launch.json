@@ -268,8 +268,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/siocli",
             "args": [
-                "-c",
-                "hello"
+                "-E",
+                "-o",
+                "dump.sql"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

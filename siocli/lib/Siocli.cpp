@@ -39,6 +39,7 @@
 // STL headers
 #include <algorithm>
 #include <chrono>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -81,7 +82,7 @@ extern "C" int siocliMain(int argc, char** argv)
         const auto osUserName = siodb::utils::getOsUserName(uid);
 
         // Declare options
-        boost::program_options::options_description desc("Allowed options");
+        boost::program_options::options_description desc("Options");
         desc.add_options()("admin,a",
                 boost::program_options::value<std::string>()->default_value(std::string()),
                 "Connect to given instance in the admin mode");
@@ -108,7 +109,8 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()("export,e", boost::program_options::value<std::string>(),
                 "Export single database or table");
         desc.add_options()("export-all,E", "Export all databases");
-        //desc.add_options()("output-file,o", "Output file for export");
+        desc.add_options()("output-file,o", boost::program_options::value<std::string>(),
+                "Output file for the exported data");
         desc.add_options()("help,h", "Print help message");
         desc.add_options()("nologo", "Do not print logo");
         desc.add_options()("debug,d", "Print debug messages");
@@ -150,6 +152,7 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_stdinIsTerminal = stdinIsTerminal;
         params.m_echoCommandsWhenNotOnATerminal = vm.count("no-echo") == 0;
         params.m_verifyCertificates = vm.count("verify-certificates") > 0;
+        if (vm.count("output-file") > 0) params.m_outputFile = vm["output-file"].as<std::string>();
         params.m_noLogo = vm.count("nologo") > 0;
         params.m_printDebugMessages = vm.count("debug") > 0;
 
@@ -384,27 +387,40 @@ int exportSqlDump(const ClientParameters& params)
 
     siodb::sql_client::authenticate(params.m_identityKey, params.m_user, *connection);
 
+    std::ostream* out = &std::cout;
+    std::unique_ptr<std::ofstream> ofs;
+    if (!params.m_outputFile.empty()) {
+        ofs = std::make_unique<std::ofstream>(params.m_outputFile);
+        if (!ofs->is_open()) {
+            std::cerr << "Can't open output file '" << params.m_outputFile << "'" << std::endl;
+            return 2;
+        }
+        out = ofs.get();
+    }
+
     try {
         const auto currentTime = std::time(nullptr);
         std::tm localTime, utcTime;
         ::localtime_r(&currentTime, &localTime);
         ::gmtime_r(&currentTime, &utcTime);
-        std::cout << "-- Siodb SQL Dump\n"
-                  << "-- Hostname: " << params.m_host << '\n'
-                  << "-- Instance: " << params.m_instance << '\n'
-                  << "-- Timestamp: " << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S") << '\n'
-                  << "-- Timestamp (UTC): " << std::put_time(&utcTime, "%Y-%m-%d %H:%M:%S") << '\n';
+        *out << "-- Siodb SQL Dump\n"
+             << "-- Hostname: " << params.m_host << '\n'
+             << "-- Instance: " << params.m_instance << '\n'
+             << "-- Timestamp: " << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S") << '\n'
+             << "-- Timestamp (UTC): " << std::put_time(&utcTime, "%Y-%m-%d %H:%M:%S") << '\n';
 
-        if (params.m_exportObjectName.empty())
-            siodb::siocli::dumpAllDatabases(*connection, std::cout);
-        else {
+        if (params.m_exportObjectName.empty()) {
+            siodb::siocli::dumpAllDatabases(*connection, *out, params.m_printDebugMessages);
+        } else {
             std::vector<std::string> names;
             boost::split(names, params.m_exportObjectName, boost::is_any_of("."));
-            if (names.size() == 1)
-                siodb::siocli::dumpSingleDatabase(*connection, names.front(), std::cout);
-            else if (names.size() == 2)
-                siodb::siocli::dumpSingleTable(*connection, names[0], names[1], std::cout);
-            else {
+            if (names.size() == 1) {
+                siodb::siocli::dumpSingleDatabase(
+                        *connection, names.front(), *out, params.m_printDebugMessages);
+            } else if (names.size() == 2) {
+                siodb::siocli::dumpSingleTable(
+                        *connection, names[0], names[1], *out, params.m_printDebugMessages);
+            } else {
                 std::cerr << "Invalid database or table name: " << params.m_exportObjectName
                           << std::endl;
                 return 2;

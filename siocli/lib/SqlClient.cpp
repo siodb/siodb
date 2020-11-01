@@ -46,9 +46,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
 {
     auto startTime = std::chrono::steady_clock::now();
     // Send command to server as protobuf message
-    if (printDebugMessages) {
-        std::cerr << "debug: Sending command to server\n";
-    }
+    if (printDebugMessages) std::clog << "debug: Sending command to server" << std::endl;
     client_protocol::Command command;
     command.set_request_id(requestId);
     command.set_text(std::move(commandText));
@@ -63,13 +61,12 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         client_protocol::ServerResponse response;
         protobuf::StreamInputStream input(connection, errorCodeChecker);
 
-        if (printDebugMessages) {
-            std::cerr << "debug: Reading reponse from server\n";
-        }
+        if (printDebugMessages) std::clog << "debug: Reading reponse from server" << std::endl;
+
         protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
 
         if (printDebugMessages) {
-            std::cerr << "\ndebug: "
+            std::clog << "\ndebug: "
                          "==================================================================="
                          "====\n"
                       << "debug: Expecting response: requestId=" << requestId
@@ -102,9 +99,8 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         if (responseId == 0) {
             responseCount = response.response_count();
             if (responseCount == 0) responseCount = 1;
-            if (printDebugMessages) {
-                os << "debug: Number of responses:" << responseCount << std::endl;
-            }
+            if (printDebugMessages)
+                std::clog << "debug: Number of responses:" << responseCount << std::endl;
         } else {
             // Print extra separator lines between responses.
             os << "\n\n";
@@ -170,13 +166,13 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
             }
 
             if (printDebugMessages) {
-                std::cerr << "\ndebug: Columns: " << columnCount << '\n';
+                std::clog << "\ndebug: Columns: " << columnCount << '\n';
                 for (int i = 0; i < columnCount; ++i) {
                     const auto& column = response.column_description(i);
-                    std::cerr << "debug: [" << i << "] name: '" << column.name()
+                    std::clog << "debug: [" << i << "] name: '" << column.name()
                               << "' type: " << static_cast<int>(column.type()) << '\n';
                 }
-                std::cerr << std::endl;
+                std::clog << std::endl;
             }
 
             // Print column names
