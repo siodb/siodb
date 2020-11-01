@@ -6,6 +6,7 @@
 
 ./rest/run.sh "$*"
 ./sql/run.sh "$*"
+./login_with_keys/run.sh "$*"
 ./users/run.sh "$*"
 ./export/run.sh "$*"
 ./issues/run.sh "$*"

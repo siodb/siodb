@@ -19,10 +19,12 @@ namespace siodb::protobuf {
 
 namespace {
 
-void reportInputStreamError(const StreamInputStream& stream)
+void reportInputStreamError(const StreamInputStream& stream, const char* what)
 {
     stream.CheckNoError();
-    throw ProtocolError("Protocol error: Protobuf message decoding error");
+    std::ostringstream err;
+    err << "Protocol error: " << what;
+    throw ProtocolError(err.str());
 }
 
 ProtocolMessageType readMessageType(const ProtocolMessageType* messageTypes,
@@ -30,8 +32,8 @@ ProtocolMessageType readMessageType(const ProtocolMessageType* messageTypes,
 {
     std::uint32_t messageTypeId = 0;
     google::protobuf::io::CodedInputStream codedInput(&input);
-
-    if (!codedInput.ReadVarint32(&messageTypeId)) reportInputStreamError(input);
+    if (!codedInput.ReadVarint32(&messageTypeId))
+        reportInputStreamError(input, "can't read message type");
 
     if (messageTypeId >= static_cast<std::uint32_t>(ProtocolMessageType::kMax)) {
         std::ostringstream err;
@@ -83,7 +85,8 @@ std::unique_ptr<google::protobuf::MessageLite> readMessage(const ProtocolMessage
     google::protobuf::io::CodedInputStream codedInput(&input);
     const auto limit = codedInput.ReadLengthAndPushLimit();
     if (limit == 0) throw ProtocolError("Protocol error: can't read message size");
-    if (!message->ParseFromCodedStream(&codedInput)) reportInputStreamError(input);
+    if (!message->ParseFromCodedStream(&codedInput))
+        reportInputStreamError(input, "message decoding error #1");
     return message;
 }
 
@@ -94,7 +97,8 @@ void readMessage(ProtocolMessageType messageType, google::protobuf::MessageLite&
     google::protobuf::io::CodedInputStream codedInput(&input);
     const auto limit = codedInput.ReadLengthAndPushLimit();
     if (limit == 0) throw ProtocolError("Protocol error: can't read message size");
-    if (!message.ParseFromCodedStream(&codedInput)) reportInputStreamError(input);
+    if (!message.ParseFromCodedStream(&codedInput))
+        reportInputStreamError(input, "message decoding error #2");
 }
 
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,

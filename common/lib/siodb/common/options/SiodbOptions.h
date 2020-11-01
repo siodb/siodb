@@ -35,6 +35,8 @@ constexpr const char* kGeneralOptionDeadConnectionCleanupInterval =
         "dead_connection_cleanup_interval";
 constexpr const char* kGeneralOptionAllowGroupPermissionsOnConfigFiles =
         "allow_group_permissions_on_config_files";
+constexpr const char* kGeneralOptionIgnorePermissionsOnConfigFiles =
+        "ignore_permissions_on_config_files";
 constexpr const char* kGeneralOptionEnableRestServer = "enable_rest_server";
 
 // IO Manager options
@@ -101,6 +103,9 @@ constexpr unsigned kDefaultOptionDeadConnectionCleanupInterval = 15;
 
 // Allow group permission of config files
 constexpr bool kDefaultOptionAllowGroupPermissionsOnConfigFiles = true;
+
+// Ignore permissions of config files
+constexpr bool kDefaultOptionIgnorePermissionsOnConfigFiles = false;
 
 // Whether REST Server is enabled by default
 constexpr bool kDefaultOptionEnableRestServer = false;
@@ -184,6 +189,9 @@ struct GeneralOptions {
 
     /** Allow group permission of config files */
     bool m_allowGroupPermissionsOnConfigFiles = kDefaultOptionAllowGroupPermissionsOnConfigFiles;
+
+    /** Ignore permissions of config files */
+    bool m_ignorePermissionsOnConfigFiles = kDefaultOptionIgnorePermissionsOnConfigFiles;
 
     /**
      * Explicit superuser's initial access key. Needed only when creating new instance.

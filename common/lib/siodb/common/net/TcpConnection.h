@@ -9,6 +9,12 @@
 
 namespace siodb::net {
 
+/** IPv4 localhost address */
+constexpr const char* kIPv4LocalhostAddress = "127.0.0.1";
+
+/** IPv6 localhost address */
+constexpr const char* kIPv6LocalhostAddress = "::1";
+
 /**
  * Opens TCP connection to server.
  * @param host Target host.

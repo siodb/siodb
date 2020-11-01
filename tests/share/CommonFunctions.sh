@@ -13,13 +13,14 @@ set -e
 # --------------------------------------------------------------
 # Global parameters
 # --------------------------------------------------------------
-SCRIPT=$(realpath "$0")
-SCRIPT_DIR=$(dirname "$SCRIPT")
-ROOT_DIR=($realpath "${SCRIPT_DIR}")
-while [[ ! -f "${ROOT_DIR}/.rootdir" ]]; do
-  ROOT_DIR=($realpath "${ROOT_DIR}/..")
-done
 UNIQUE_SUFFIX=$(date +%s)_$$
+SCRIPT=$(realpath "$0")
+SCRIPT_DIR=$(dirname "${SCRIPT}")
+SCRIPT_DIR=$(realpath "${SCRIPT_DIR}")
+ROOT_DIR=${SCRIPT_DIR}
+while [[ ! -f "${ROOT_DIR}/.rootdir" ]]; do
+  ROOT_DIR=$(realpath "${ROOT_DIR}/..")
+done
 
 instanceStartupTimeout=45
 previousTestStartedAtTimestamp=0

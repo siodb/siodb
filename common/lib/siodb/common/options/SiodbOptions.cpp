@@ -173,6 +173,11 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
             config.get<bool>(constructOptionPath(kGeneralOptionAllowGroupPermissionsOnConfigFiles),
                     kDefaultOptionAllowGroupPermissionsOnConfigFiles, BoolTranslator());
 
+    // Parse "ignore group permission on the config files" flag
+    tmpOptions.m_generalOptions.m_ignorePermissionsOnConfigFiles =
+            config.get<bool>(constructOptionPath(kGeneralOptionIgnorePermissionsOnConfigFiles),
+                    kDefaultOptionIgnorePermissionsOnConfigFiles, BoolTranslator());
+
     // Parse "enable REST Server" flag
     tmpOptions.m_generalOptions.m_enableRestServer =
             config.get<bool>(constructOptionPath(kGeneralOptionEnableRestServer),

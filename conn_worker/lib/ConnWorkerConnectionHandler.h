@@ -54,11 +54,11 @@ private:
     void responseToClientWithError(int requestId, const char* text, int errorCode);
 
     /**
-     * Receives row data from IO manager and sends to client
+     * Receives row data from IO manager and sends to client.
      * @param ioMgrInputStream Input stream.
      * @throw std::system_error when I/O error happens.
      * */
-    void transmitRowData(protobuf::StreamInputStream& ioMgrInputStream);
+    void forwardRowData(protobuf::StreamInputStream& ioMgrInputStream);
 
     /**
      * Updates used database to @ref m_lastUsedDatabase (Sends USE DATABASE to Iomgr).

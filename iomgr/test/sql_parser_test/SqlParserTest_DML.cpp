@@ -4,6 +4,7 @@
 
 // Project headers
 #include "TestContext.h"
+#include "dbengine/parser/DBEngineRequestFactoryError.h"
 #include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 #include "dbengine/parser/expr/AllExpressions.h"
@@ -315,7 +316,7 @@ TEST(DML, InsertColumnName_1)
     parser_ns::SqlParser parser(str);
     parser.parse();
     ASSERT_THROW(parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0)),
-            std::invalid_argument);
+            parser_ns::DBEngineRequestFactoryError);
 }
 
 TEST(DML, InsertColumnName_2)
@@ -325,5 +326,5 @@ TEST(DML, InsertColumnName_2)
     parser.parse();
 
     ASSERT_THROW(parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0)),
-            std::invalid_argument);
+            parser_ns::DBEngineRequestFactoryError);
 }
