@@ -42,7 +42,7 @@ BlockRegistry::BlockRegistry(const Column& column, bool create)
     , m_lastBlockId(0)
 {
     DBG_LOG_DEBUG((create ? "Creating" : "Loading")
-                  << " Block Registry" << m_column.makeDisplayName() << " in " << m_dataDir);
+                  << " BlockRegistry " << m_column.makeDisplayName() << " in " << m_dataDir);
     if (create)
         createDataFiles();
     else
@@ -414,7 +414,7 @@ void BlockRegistry::openDataFiles()
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), errorCode,
                 std::strerror(errorCode));
     }
-    if (nextBlockListFileSize % BlockListRecord::kSerializedSize != 0) {
+    if (nextBlockListFileSize % NextBlockListRecord::kSerializedSize != 0) {
         throwDatabaseError(IOManagerMessageId::kErrorInvalidNextBlockListDataFileSize,
                 m_column.getDatabaseName(), m_column.getTableName(), m_column.getName(),
                 m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(),
