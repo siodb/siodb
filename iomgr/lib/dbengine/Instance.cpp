@@ -347,16 +347,19 @@ void Instance::dropUserAccessKey(const std::string& userName, const std::string&
 
     const auto& userIndex = m_userRegistry.byName();
     const auto itUser = userIndex.find(userName);
-    if (itUser == userIndex.end()) {
-        if (mustExist) throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
-        return;
-    }
+    if (itUser == userIndex.end())
+        throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
 
     // NOTE: We don't index by UserRecord::m_accessKeys, that's why this works
     auto& accessKeyIndex = stdext::as_mutable(*itUser).m_accessKeys.byName();
     const auto itKey = accessKeyIndex.find(keyName);
-    if (itKey == accessKeyIndex.end())
-        throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, keyName);
+    if (itKey == accessKeyIndex.end()) {
+        if (mustExist) {
+            throwDatabaseError(
+                    IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, userName, keyName);
+        }
+        return;
+    }
 
     const auto user = findUserUnlocked(*itUser);
     const auto accessKeyId = itKey->m_id;
@@ -474,16 +477,19 @@ void Instance::dropUserToken(const std::string& userName, const std::string& tok
 
     const auto& userIndex = m_userRegistry.byName();
     const auto itUser = userIndex.find(userName);
-    if (itUser == userIndex.end()) {
-        if (mustExist) throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
-        return;
-    }
+    if (itUser == userIndex.end())
+        throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
 
     // NOTE: We don't index by UserRecord::m_accessKeys.
     auto& tokenIndex = stdext::as_mutable(*itUser).m_tokens.byName();
     const auto itToken = tokenIndex.find(tokenName);
-    if (itToken == tokenIndex.end())
-        throwDatabaseError(IOManagerMessageId::kErrorUserTokenDoesNotExist, userName, tokenName);
+    if (itToken == tokenIndex.end()) {
+        if (mustExist) {
+            throwDatabaseError(
+                    IOManagerMessageId::kErrorUserTokenDoesNotExist, userName, tokenName);
+        }
+        return;
+    }
 
     const auto user = findUserUnlocked(*itUser);
 
