@@ -711,7 +711,7 @@ bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType co
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_UINT32: {
-            std::uint8_t value = 0;
+            std::uint32_t value = 0;
             if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
             result = std::to_string(value);
             return true;
