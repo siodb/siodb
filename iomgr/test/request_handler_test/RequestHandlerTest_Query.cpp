@@ -132,16 +132,16 @@ TEST(Query, SelectWithWhere)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_1 VALUES ";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_1 VALUES ";
         // a is always 300, b is [-0, 100, ..., 1000]
         std::int32_t bValue = 0;
-        ss << '(' << 300 << ',' << bValue << ')';
+        oss << '(' << 300 << ',' << bValue << ')';
         for (auto i = 1; i < 10; ++i) {
-            ss << ", (" << 300 << ',' << bValue + (100 * i) << ')';
+            oss << ", (" << 300 << ',' << bValue + (100 * i) << ')';
         }
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -233,15 +233,15 @@ TEST(Query, SelectWithWhereBetweenDatetime)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_2 VALUES";
-        ss << "('2012-03-12'),";
-        ss << "('2015-03-01'),";
-        ss << "('2015-03-02'),";
-        ss << "('2015-03-03'),";
-        ss << "('2019-03-14')";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_2 VALUES";
+        oss << "('2012-03-12'),";
+        oss << "('2015-03-01'),";
+        oss << "('2015-03-02'),";
+        oss << "('2015-03-03'),";
+        oss << "('2019-03-14')";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -328,16 +328,16 @@ TEST(Query, SelectWithWhereCompoundExpression)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_3 VALUES";
-        ss << "(0.0, 0, 4000000),";
-        ss << "(4.0, 2, 3000000),";
-        ss << "(8.0, 8, 20000000),";
-        ss << "(16.0, 32, 10000000),";  // 32 > 16
-        ss << "(32.0, 64, 10000000),";  // 64 > 32
-        ss << "(64.0, 127, 0)";  // 127 > 64
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_3 VALUES";
+        oss << "(0.0, 0, 4000000),";
+        oss << "(4.0, 2, 3000000),";
+        oss << "(8.0, 8, 20000000),";
+        oss << "(16.0, 32, 10000000),";  // 32 > 16
+        oss << "(32.0, 64, 10000000),";  // 64 > 32
+        oss << "(64.0, 127, 0)";  // 127 > 64
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -431,13 +431,13 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_4 VALUES ";
-        ss << "(0, 100),";
-        ss << "(1, 200),";
-        ss << "(2, 300)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_4 VALUES ";
+        oss << "(0, 100),";
+        oss << "(1, 200),";
+        oss << "(2, 300)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -724,15 +724,15 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_6 VALUES";
-        ss << "('2012-03-12', 'abc'),";
-        ss << "('2015-03-01', 'bca'),";
-        ss << "('2015-03-02', 'abc'),";
-        ss << "('2015-03-03', 'cab'),";
-        ss << "('2019-03-14',  'bac')";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_6 VALUES";
+        oss << "('2012-03-12', 'abc'),";
+        oss << "('2015-03-01', 'bca'),";
+        oss << "('2015-03-02', 'abc'),";
+        oss << "('2015-03-03', 'cab'),";
+        oss << "('2019-03-14',  'bac')";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -829,10 +829,10 @@ TEST(Query, SelectFrom2Tables)
 
     /// ----------- INSERT_1 -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_1 VALUES (0),(1),(2),(3),(4)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_1 VALUES (0),(1),(2),(3),(4)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -854,11 +854,11 @@ TEST(Query, SelectFrom2Tables)
 
     /// ----------- INSERT_2 -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_2 VALUES (6.0, false), (5.0, false), (4.0, "
-              "false),(3.0, false), (2.0, true), (1.0, true), (0.0, true)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_2 VALUES (6.0, false), (5.0, false), (4.0, "
+               "false),(3.0, false), (2.0, true), (1.0, true), (0.0, true)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -956,10 +956,10 @@ TEST(Query, SelectWithExpression)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_8 VALUES (0, 0),(10, 1),(20, 2),(30, 3),(40, 4)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_8 VALUES (0, 0),(10, 1),(20, 2),(30, 3),(40, 4)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1098,10 +1098,10 @@ TEST(Query, SelectWithExpressionWithNull)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.TEST_EXPRESSION VALUES (10)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.TEST_EXPRESSION VALUES (10)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1419,11 +1419,11 @@ TEST(Query, SelectWithLimit)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_1 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
-              "(8), (9)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_1 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
+               "(8), (9)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1503,11 +1503,11 @@ TEST(Query, SelectWithZeroLimit)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
-              "(8), (9)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
+               "(8), (9)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1577,11 +1577,11 @@ TEST(Query, SelectWithNegativeLimit)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
-              "(8), (9)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
+               "(8), (9)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1640,12 +1640,13 @@ TEST(Query, SelectWithLimitAndOffset)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), (4), (5), "
-              "(6), (7), "
-              "(8), (9)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), (4), "
+               "(5), "
+               "(6), (7), "
+               "(8), (9)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1726,12 +1727,13 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_2 VALUES (0), (1), (2), (3), (4), (5), "
-              "(6), (7), "
-              "(8), (9)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_2 VALUES (0), (1), (2), (3), (4), "
+               "(5), "
+               "(6), (7), "
+               "(8), (9)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1802,12 +1804,13 @@ TEST(Query, SelectWithNegativeOffset)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_3 VALUES (0), (1), (2), (3), (4), (5), "
-              "(6), (7), "
-              "(8), (9)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_3 VALUES (0), (1), (2), (3), (4), "
+               "(5), "
+               "(6), (7), "
+               "(8), (9)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1867,13 +1870,13 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), "
-              "(4), (5), "
-              "(6), (7), "
-              "(8), (9)";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), "
+               "(4), (5), "
+               "(6), (7), "
+               "(8), (9)";
 
-        const std::string statement(ss.str());
+        const std::string statement(oss.str());
 
         parser_ns::SqlParser parser(statement);
         parser.parse();

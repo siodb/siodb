@@ -182,10 +182,10 @@ void TestUser::checkExists(bool mustExist) const
 
     std::string sql;
     {
-        std::ostringstream ss;
-        ss << "SELECT * FROM SYS.SYS_USERS WHERE name = '" << boost::to_upper_copy(m_name)
-           << "' AND REAL_NAME = '" << m_realName << "' AND STATE = " << (m_active ? '1' : '0');
-        sql = ss.str();
+        std::ostringstream oss;
+        oss << "SELECT * FROM SYS.SYS_USERS WHERE name = '" << boost::to_upper_copy(m_name)
+            << "' AND REAL_NAME = '" << m_realName << "' AND STATE = " << (m_active ? '1' : '0');
+        sql = oss.str();
     }
 
     parser_ns::SqlParser parser(sql);
@@ -369,27 +369,27 @@ void TestUserAccessKey::checkExists(bool mustExist) const
 void TestUserToken::create(bool newToken)
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::ostringstream ss;
+    std::ostringstream oss;
 
-    ss << "ALTER USER " << m_userName << " ADD TOKEN " << m_tokenName;
+    oss << "ALTER USER " << m_userName << " ADD TOKEN " << m_tokenName;
     if (m_tokenValue) {
         auto& tokenValue = *m_tokenValue;
-        ss << " x'";
+        oss << " x'";
         for (std::size_t i = 0, n = tokenValue.size(); i < n; ++i) {
-            ss << std::hex << std::setfill('0') << std::setw(2) << (unsigned short) tokenValue[i];
+            oss << std::hex << std::setfill('0') << std::setw(2) << (unsigned short) tokenValue[i];
         }
-        ss << "'";
+        oss << "'";
     }
     if (m_expirationTimestamp) {
         std::tm tm;
         gmtime_r(&*m_expirationTimestamp, &tm);
         char buffer[64];
         std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-        ss << " WITH EXPIRATION_TIMESTAMP = '" << buffer << "'";
+        oss << " WITH EXPIRATION_TIMESTAMP = '" << buffer << "'";
     }
-    ss << ';';
+    oss << ';';
 
-    const auto statement = ss.str();
+    const auto statement = oss.str();
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
@@ -466,19 +466,19 @@ void TestUserToken::drop(bool tokenExists) const
 void TestUserToken::alter(bool tokenExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::ostringstream ss;
-    ss << "ALTER USER " << m_userName << " ALTER TOKEN " << m_tokenName
-       << " SET EXPIRATION_TIMESTAMP = ";
+    std::ostringstream oss;
+    oss << "ALTER USER " << m_userName << " ALTER TOKEN " << m_tokenName
+        << " SET EXPIRATION_TIMESTAMP = ";
     if (m_expirationTimestamp) {
         std::tm tm;
         gmtime_r(&*m_expirationTimestamp, &tm);
         char buffer[64];
         std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-        ss << "'" << buffer << "'";
+        oss << "'" << buffer << "'";
     } else {
-        ss << " NULL";
+        oss << " NULL";
     }
-    const auto statement = ss.str();
+    const auto statement = oss.str();
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -506,18 +506,18 @@ void TestUserToken::alter(bool tokenExists) const
 void TestUserToken::checkExists(bool mustExist) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::ostringstream ss;
-    ss << "SELECT * FROM SYS.SYS_USER_TOKENS WHERE NAME = '" << boost::to_upper_copy(m_tokenName)
-       << "' AND EXPIRATION_TIMESTAMP";
+    std::ostringstream oss;
+    oss << "SELECT * FROM SYS.SYS_USER_TOKENS WHERE NAME = '" << boost::to_upper_copy(m_tokenName)
+        << "' AND EXPIRATION_TIMESTAMP";
     if (m_expirationTimestamp) {
         std::tm tm;
         gmtime_r(&*m_expirationTimestamp, &tm);
         char buffer[64];
         std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-        ss << " = '" << buffer << "'";
+        oss << " = '" << buffer << "'";
     } else
-        ss << " IS NULL";
-    const auto statement = ss.str();
+        oss << " IS NULL";
+    const auto statement = oss.str();
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -560,16 +560,16 @@ void TestUserToken::check(bool mustBeValid) const
 {
     ASSERT_TRUE(m_tokenValue.has_value());
     const auto requestHandler = TestEnvironment::makeRequestHandler();
-    std::ostringstream ss;
-    ss << "CHECK TOKEN " << m_userName << '.' << m_tokenName << " x'";
+    std::ostringstream oss;
+    oss << "CHECK TOKEN " << m_userName << '.' << m_tokenName << " x'";
     {
         std::string tokenStr;
         tokenStr.resize(m_tokenValue->size() * 2, ' ');
         boost::algorithm::hex_lower(m_tokenValue->cbegin(), m_tokenValue->cend(), tokenStr.begin());
-        ss << tokenStr;
+        oss << tokenStr;
     }
-    ss << '\'';
-    const auto statement = ss.str();
+    oss << '\'';
+    const auto statement = oss.str();
 
     parser_ns::SqlParser parser(statement);
     parser.parse();

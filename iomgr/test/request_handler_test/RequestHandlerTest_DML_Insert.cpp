@@ -292,15 +292,15 @@ TEST(DML_Insert, InsertMultipleRecords)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.TEST_CUSTOMERS (LAST_NAME, FIRST_NAME) values ";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.TEST_CUSTOMERS (LAST_NAME, FIRST_NAME) values ";
 
         // 2 columns
         for (size_t i = 0; i < kInsertRows * 2; i += 2) {
-            if (i > 0) ss << ", ";
-            ss << "('TEST" << i << "', 'TEST" << (i + 1) << "')";
+            if (i > 0) oss << ", ";
+            oss << "('TEST" << i << "', 'TEST" << (i + 1) << "')";
         }
-        const auto statement = ss.str();
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
