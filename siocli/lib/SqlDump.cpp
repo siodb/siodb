@@ -734,14 +734,18 @@ bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType co
         case ColumnDataType::COLUMN_DATA_TYPE_FLOAT: {
             float value = 0.0f;
             if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
-            result = std::to_string(value);
+            std::ostringstream oss;
+            oss << value;
+            result = oss.str();
             return true;
         }
 
         case ColumnDataType::COLUMN_DATA_TYPE_DOUBLE: {
             double value = 0.0;
             if (SIODB_UNLIKELY(!codedInput.Read(&value))) return false;
-            result = std::to_string(value);
+            std::ostringstream oss;
+            oss << value;
+            result = oss.str();
             return true;
         }
 
