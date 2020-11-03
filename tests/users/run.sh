@@ -148,10 +148,10 @@ done
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} drop access key key1"
 done
-#### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/95
-# for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-# _RunSql "alter user user_test_1_${i} drop access key if exists key1"
-# done
+### Try dropping non-existing access keys with "IF EXISTS"
+for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
+  _RunSql "alter user user_test_1_${i} drop access key if exists key1"
+done
 
 #### Expected error with keys
 _RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename to key3 " 'Status 6: Not implemented yet'
@@ -225,8 +225,7 @@ _CheckLogFiles
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
                           rename if exists to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
 _CheckLogFiles
-##### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/96
-# _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} drop token IF EXISTS NOEXISTS" 6 'Status 6: Not implemented yet'
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} drop token IF EXISTS NOEXISTS" 6 'Status 6: Not implemented yet'
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1"
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1" 'Status 2029: User token'
 _CheckLogFiles 'User token .* already exists'
@@ -234,10 +233,9 @@ USERTOKEN=$(openssl rand -hex 64)
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_2 x'${USERTOKEN}'"
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_3 x'${USERTOKEN}'" 'Status 2091: Duplicate user token'
 _CheckLogFiles 'Duplicate user token'
-##### BELOW FAILS (WAITING FOR FIX) https://github.com/siodb/siodb/issues/97
-# _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_2_${siodbUserTridStartingAt} x'FAKE'"
-_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_2_${siodbUserTridStartingAt} 'FAKE'" 'Status 2: at .*: extraneous input'
-_CheckLogFiles
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_2_${siodbUserTridStartingAt} x'FAKE'"\
+  'Status 2: at .*: Invalid character in the hex literal'
+_CheckLogFiles 'Invalid character in the hex literal'
 
 ## -------------------------------------------------------------------------
 ## Users Token deletion
