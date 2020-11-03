@@ -94,15 +94,26 @@ void SqlParser::dump(antlr4::tree::ParseTree* tree, std::size_t index, std::size
     }
 }
 
+std::string SqlParser::injectError(std::size_t line, std::size_t column, const std::string& msg)
+{
+    std::string s;
+    {
+        std::ostringstream err;
+        err << "at (" << line << ", " << column << "): " << msg;
+        s = err.str();
+    }
+    m_errorMessage = s;
+    return s;
+}
+
+// ----- internals ------
+
 void SqlParser::syntaxError([[maybe_unused]] antlr4::Recognizer* recognizer,
         [[maybe_unused]] antlr4::Token* offendingSymbol, [[maybe_unused]] std::size_t line,
         [[maybe_unused]] std::size_t charPositionInLine, [[maybe_unused]] const std::string& msg,
         [[maybe_unused]] std::exception_ptr e)
 {
-    std::ostringstream err;
-    err << "at (" << line << ", " << charPositionInLine << "): " << msg;
-    m_errorMessage = err.str();
-    throw std::runtime_error(m_errorMessage);
+    throw std::runtime_error(injectError(line, charPositionInLine, msg));
 }
 
 }  // namespace siodb::iomgr::dbengine::parser

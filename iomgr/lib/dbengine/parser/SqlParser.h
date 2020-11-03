@@ -12,7 +12,7 @@
 #include <siodb/common/utils/HelperMacros.h>
 
 // ANTLR4 headers
-#include <antlr4-runtime.h>
+#include "antlr_wrappers/Antlr4RuntimeWrapper.h"
 
 namespace siodb::iomgr::dbengine::parser {
 
@@ -93,6 +93,15 @@ public:
      * @param flush Indicates that stream must be flushed after dumping.
      */
     void dump(antlr4::tree::ParseTree* tree, std::ostream& os, bool flush = true) const;
+
+    /**
+     * Injects parser error.
+     * @param line Line number.
+     * @param column Column number.
+     * @param msg Error message.
+     * @return Formatted error message.
+     */
+    std::string injectError(std::size_t line, std::size_t column, const std::string& msg);
 
 private:
     /**

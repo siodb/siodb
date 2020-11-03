@@ -95,7 +95,7 @@ antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* node, std::size_t
     const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
     if (terminal) {
         const auto symbol = terminal->getSymbol();
-        return (symbol && symbol->getType() == type) ? node : nullptr;
+        return (symbol && (type == 0 || symbol->getType() == type)) ? node : nullptr;
     }
 
     // Search for the terminal recursively.
@@ -113,7 +113,7 @@ std::size_t findTerminalChild(antlr4::tree::ParseTree* node, std::size_t type) n
         const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(childNode);
         if (terminal) {
             const auto symbol = terminal->getSymbol();
-            if (symbol && symbol->getType() == type) return index;
+            if (symbol && (type == 0 || symbol->getType() == type)) return index;
         }
         ++index;
     }
@@ -133,6 +133,28 @@ bool hasTerminalChild(
         }
     }
     return false;
+}
+
+bool captureTerminalPosition(
+        antlr4::tree::ParseTree* node, std::size_t& line, std::size_t& column) noexcept
+{
+    const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
+    if (terminal) {
+        const auto symbol = terminal->getSymbol();
+        if (symbol) {
+            line = symbol->getLine();
+            column = symbol->getCharPositionInLine() + 1;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool findFirstTerminalAndCapturePosition(antlr4::tree::ParseTree* node, std::size_t type,
+        std::size_t& line, std::size_t& column) noexcept
+{
+    const auto terminal = findTerminal(node, type);
+    return terminal ? captureTerminalPosition(terminal, line, column) : false;
 }
 
 std::size_t getNonTerminalType(antlr4::tree::ParseTree* node) noexcept

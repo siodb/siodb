@@ -25,8 +25,8 @@ TEST(DDL, AttachDatabase)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     EXPECT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kAttachDatabase);
@@ -46,8 +46,8 @@ TEST(DDL, DetachDatabase)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDetachDatabase);
@@ -64,8 +64,8 @@ TEST(DDL, CreateDatabase)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     EXPECT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateDatabase);
@@ -85,8 +85,8 @@ TEST(DDL, CreateTempDatabase)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     EXPECT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateDatabase);
@@ -108,8 +108,8 @@ TEST(DDL, CreateDatabaseWithOptions)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     EXPECT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateDatabase);
@@ -131,8 +131,8 @@ TEST(DDL, DropDatabase)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDropDatabase);
@@ -150,8 +150,8 @@ TEST(DDL, DropDatabaseIfExists)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDropDatabase);
@@ -169,8 +169,8 @@ TEST(DDL, RenameDatabase)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameDatabase);
@@ -189,8 +189,8 @@ TEST(DDL, RenameDatabaseIfExists)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameDatabase);
@@ -209,8 +209,8 @@ TEST(DDL, AlterDatabaseSetAttributes)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSetDatabaseAttributes);
@@ -236,8 +236,8 @@ TEST(DDL, CreateTable1)
     parser.parse();
     //parser.dump(std::cout);
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateTable);
@@ -274,8 +274,8 @@ TEST(DDL, CreateTable2)
     parser.parse();
     //parser.dump(std::cout);
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateTable);
@@ -305,8 +305,9 @@ TEST(DDL, DropTable)
     const std::string statement("DROP TABLE my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDropTable);
@@ -324,8 +325,9 @@ TEST(DDL, DropTableIfExists)
     const std::string statement("DROP TABLE IF EXISTS my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDropTable);
@@ -345,8 +347,8 @@ TEST(DDL, AlterTableRenameTo)
     parser.parse();
     //parser.dump(std::cout);
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameTable);
@@ -366,8 +368,8 @@ TEST(DDL, AlterTableRenameToIfExists)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameTable);
@@ -387,8 +389,8 @@ TEST(DDL, AlterTableSetTableAttributes)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSetTableAttributes);
@@ -410,8 +412,8 @@ TEST(DDL, AlterTableAddColumn)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kAddColumn);
@@ -431,8 +433,8 @@ TEST(DDL, AlterTableDropColumn)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDropColumn);
@@ -454,8 +456,8 @@ TEST(DDL, AlterTableDropColumnIfExists)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDropColumn);
@@ -476,8 +478,8 @@ TEST(DDL, AlterTableRenameColumn)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameColumn);
@@ -499,8 +501,8 @@ TEST(DDL, AlterTableRenameColumnIfExists)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRenameColumn);
@@ -521,8 +523,8 @@ TEST(DDL, AlterTableRedefineColumn)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRedefineColumn);
@@ -548,8 +550,8 @@ TEST(DDL, CreateIndex)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateIndex);
@@ -583,8 +585,8 @@ TEST(DDL, CreateIndexIfNotExists)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateIndex);
@@ -618,8 +620,8 @@ TEST(DDL, CreateUniqueIndex)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kCreateIndex);
@@ -649,8 +651,8 @@ TEST(DDL, DropIndex)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDropIndex);
@@ -669,8 +671,8 @@ TEST(DDL, DropIndexIfExists)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDropIndex);

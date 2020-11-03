@@ -92,8 +92,8 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                     }();
 #endif
                     LOG_DEBUG << m_logContext << "Parsing statement #" << i;
-                    dbEngineRequest = dbengine::parser::DBEngineSqlRequestFactory::createSqlRequest(
-                            parser.findStatement(i));
+                    dbengine::parser::DBEngineSqlRequestFactory factory(parser);
+                    dbEngineRequest = factory.createSqlRequest(i);
                 } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                     LOG_ERROR << m_logContext << "SQL parse error: " << ex.what();
                     sendErrorReponse(requestMsg.request_id(), kSqlParseError, ex.what());

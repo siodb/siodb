@@ -37,8 +37,9 @@ TEST(SqlParser_Query, SelectSimple)
             "SELECT column1, column2 AS column_2222 FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -64,8 +65,9 @@ TEST(SqlParser_Query, SelectWithExpression)
             "SELECT (c1 + c2) || 'test' AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -111,8 +113,8 @@ TEST(SqlParser_Query, SelectWithWhereSimpleGreater)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -146,8 +148,8 @@ TEST(SqlParser_Query, SelectWithWhereBetween)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -185,8 +187,8 @@ TEST(SqlParser_Query, SelectWithWhereBetweenWithAnd)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -246,8 +248,8 @@ TEST(SqlParser_Query, SelectWithWhereAndStatement)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -301,8 +303,8 @@ TEST(SqlParser_Query, SelectWithWhereOrCodition)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -356,8 +358,8 @@ TEST(SqlParser_Query, SelectWithWhereArithmeticSubExpression)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -417,8 +419,8 @@ TEST(SqlParser_Query, SelectWithWhereComplexExpression)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -505,8 +507,8 @@ TEST(SqlParser_Query, SelectWithWhereLike)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -539,8 +541,8 @@ TEST(SqlParser_Query, SelectWithWhereNotLike)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -573,8 +575,8 @@ TEST(SqlParser_Query, SelectWithWhereNotBetween)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -611,8 +613,8 @@ TEST(SqlParser_Query, SelectWithWhereUnaryMinus)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -670,8 +672,8 @@ TEST(SqlParser_Query, SelectWithWhereUnaryPlus)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -711,8 +713,8 @@ TEST(SqlParser_Query, SelectWithWhereComplement)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -755,8 +757,8 @@ TEST(SqlParser_Query, SelectWithWhereTableColumn)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto dbeRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto dbeRequest = factory.createSqlRequest();
 
         ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
         const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -796,8 +798,8 @@ TEST(SqlParser_Query, SelectWithWhereRightShift)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -824,8 +826,8 @@ TEST(SqlParser_Query, SelectWithWhereLeftShift)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -852,8 +854,8 @@ TEST(SqlParser_Query, SelectWithWhereBitwiseOrOperator)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -882,8 +884,8 @@ TEST(SqlParser_Query, SelectWithWhereIn)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto dbeRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto dbeRequest = factory.createSqlRequest();
 
         ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
         const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -920,8 +922,8 @@ TEST(SqlParser_Query, SelectWithWhereOperatorPrecedence)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -1125,8 +1127,8 @@ TEST(SqlParser_Query, SelectWithKeyword)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -1167,8 +1169,9 @@ TEST(SqlParser_Query, SelectWithAttribute)
     // Parse statement and prepare request
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -1198,8 +1201,8 @@ TEST(SqlParser_Query, SelectWithWhereIsNull)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -1228,8 +1231,8 @@ TEST(SqlParser_Query, SelectWithWhereIsNotNull)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -1258,8 +1261,8 @@ TEST(SqlParser_Query, SelectWithWhereIsExpresssion)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -1287,8 +1290,8 @@ TEST(SqlParser_Query, SelectWithLimit)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -1310,8 +1313,8 @@ TEST(SqlParser_Query, SelectWithLimitCompoundExpression)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -1335,8 +1338,8 @@ TEST(SqlParser_Query, SelectWithLimitAndOffset)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
@@ -1368,8 +1371,8 @@ TEST(SqlParser_Query, SelectWithLimitAndOffset_2)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
     const auto& selectRequest = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);

@@ -87,10 +87,10 @@ void TestUser::create(bool newUser) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto createUserRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*createUserRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -118,15 +118,14 @@ void TestUser::drop(bool userExists) const
     parser_ns::SqlParser parser(str);
     parser.parse();
 
-    const auto dropUserRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
+
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    requestHandler->executeRequest(*dropUserRequest, TestEnvironment::kTestRequestId, 0, 1);
-
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -153,15 +152,14 @@ void TestUser::alter(bool userExists) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto alterUserRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
+
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    requestHandler->executeRequest(*alterUserRequest, TestEnvironment::kTestRequestId, 0, 1);
-
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -191,12 +189,10 @@ void TestUser::checkExists(bool mustExist) const
     parser_ns::SqlParser parser(sql);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
-
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -237,15 +233,14 @@ void TestUserAccessKey::create(bool newKey) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -268,14 +263,14 @@ void TestUserAccessKey::drop(bool keyExists) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
+
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -300,14 +295,14 @@ void TestUserAccessKey::alter(bool keyExists) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
+
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -332,12 +327,10 @@ void TestUserAccessKey::checkExists(bool mustExist) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
-
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -393,10 +386,10 @@ void TestUserToken::create(bool newToken)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -443,15 +436,14 @@ void TestUserToken::drop(bool tokenExists) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
+
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
-
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -483,15 +475,14 @@ void TestUserToken::alter(bool tokenExists) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
+
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
-
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -522,17 +513,14 @@ void TestUserToken::checkExists(bool mustExist) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
-
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -574,14 +562,14 @@ void TestUserToken::check(bool mustBeValid) const
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
+
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    requestHandler->executeRequest(*dbeRequest, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
