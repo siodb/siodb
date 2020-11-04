@@ -52,7 +52,7 @@ echo "Exporting all ..."
     -E >"${output_dir}/all2.sql"
 
 echo "Comparing output ..."
-diff "${output_dir}/all.sql ${output_dir}/all2.sql
+diff "${output_dir}/all.sql" "${output_dir}/all2.sql"
 
 _StopSiodb
 _log "INFO" "SUCCESS: All tests passed"
