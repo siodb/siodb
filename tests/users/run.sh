@@ -145,12 +145,13 @@ for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${number
 _RunSql "alter user user_test_1_${i} alter access key key1 set STATE = ACTIVE"
 done
 #### Drop access key 1 for all users
-for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} drop access key key1"
+_RunSql "alter user user_test_1_4096 drop access key key1"
+for ((i = ${siodbUserTridStartingAt}+1; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
+_RunSql "alter user user_test_1_${i} drop access key if exists key1"
 done
 ### Try dropping non-existing access keys with "IF EXISTS"
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-  _RunSql "alter user user_test_1_${i} drop access key if exists key1"
+  _RunSql "alter user user_test_1_${i} drop access key if exists NOEXISTS"
 done
 
 #### Expected error with keys
@@ -167,7 +168,7 @@ _CheckLogFiles
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add token user_token_1_${i}"
 done
-#### Add Token with value to all users | FAILS - WAITING FOR FIX
+#### Add Token with value to all users
 USERTOKEN=$(openssl rand -hex 64)
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add token user_token_2_${i} x'${USERTOKEN}'"
@@ -225,7 +226,7 @@ _CheckLogFiles
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
                           rename if exists to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
 _CheckLogFiles
-_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} drop token IF EXISTS NOEXISTS" 6 'Status 6: Not implemented yet'
+_RunSql "alter user user_test_1_${siodbUserTridStartingAt} drop token IF EXISTS NOEXISTS"
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1"
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1" 'Status 2029: User token'
 _CheckLogFiles 'User token .* already exists'
@@ -256,6 +257,7 @@ done
 USERTOKEN=$(openssl rand -hex 64)
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_10_1 x'${USERTOKEN}'"
 _RunSql "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'"
+_RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'FAKE'" 'Status 2: .* Invalid character in the hex literal'
 USERTOKEN=$(openssl rand -hex 64)
 _RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'" 'Status 2107: User token .* check failed'
 _CheckLogFiles 'User token .* check failed'
