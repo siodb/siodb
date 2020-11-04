@@ -48,12 +48,22 @@ for i in $(seq 1 3); do
   echo
 done
 
+## Validate data
+_RunSql "select * from ${database_name}.huge_test"
+
 _CheckLogFiles
 
 ### Restart instance
 echo "Restarting instance..."
+SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
+SIOTEST_KEEP_INSTANCE_UP=0
 _StopSiodb
+SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
 _StartSiodb
+_CheckLogFiles
+
+## Validate data
+_RunSql "select * from ${database_name}.huge_test"
 _CheckLogFiles
 
 ### Stop test
