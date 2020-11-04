@@ -93,6 +93,11 @@ const std::unordered_map<std::string, siodb::ColumnDataType>
                 {"JSON", siodb::COLUMN_DATA_TYPE_JSON},
         };
 
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(std::size_t index)
+{
+    return createSqlRequest(m_parser.findStatement(index));
+}
+
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
         antlr4::tree::ParseTree* node)
 {
@@ -243,7 +248,7 @@ DBEngineSqlRequestFactory::createSelectRequestForGeneralSelectStatement(
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSelectRequestForSimpleSelectStatement(
         antlr4::tree::ParseTree* node)
 {
-    ExpressionFactory exprFactory;
+    ExpressionFactory exprFactory(m_parser);
     std::string database;
     std::vector<requests::SourceTable> tables;
     std::vector<requests::ResultExpression> columns;
@@ -372,7 +377,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
 
     if (!valuesFound) throw DBEngineRequestFactoryError("INSERT missing VALUES keyword");
 
-    ExpressionFactory exprFactory;
+    ExpressionFactory exprFactory(m_parser);
     std::vector<std::vector<requests::ConstExpressionPtr>> values;
     if (!columns.empty()) values.reserve(columns.size());
     bool inValueGroup = false;
@@ -411,7 +416,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
         antlr4::tree::ParseTree* node)
 {
-    const ExpressionFactory exprFactory(true);
+    ExpressionFactory exprFactory(m_parser, true);
     std::string database, table, tableAlias;
     requests::ConstExpressionPtr where;
     std::vector<requests::ColumnReference> columns;
@@ -595,7 +600,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDeleteRequest(
                                 "DELETE: WHERE clause does not contain expression");
                     }
 
-                    ExpressionFactory exprFactory(true);
+                    ExpressionFactory exprFactory(m_parser, true);
                     where = exprFactory.createExpression(node->children[i]);
                 }
                 break;
@@ -792,7 +797,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
             throw DBEngineRequestFactoryError("CREATE DATABASE: missing option list");
 
         const auto attrListNode = node->children[databaseNodeIndex + 2];
-        ExpressionFactory exprFactory;
+        ExpressionFactory exprFactory(m_parser);
         for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
             auto attrNode = attrListNode->children[i];
             switch (helpers::getTerminalType(attrNode->children.at(0))) {
@@ -987,7 +992,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
                 const auto terminalType =
                         helpers::getTerminalType(constraintNode->children[expressionIndex]);
                 if (terminalType == SiodbParser::OPEN_PAR) ++expressionIndex;
-                ExpressionFactory exprFactory;
+                ExpressionFactory exprFactory(m_parser);
                 auto defaultValue =
                         exprFactory.createExpression(constraintNode->children[expressionIndex]);
                 constraints.emplace_back(std::make_unique<requests::DefaultValueConstraint>(
@@ -1639,6 +1644,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameUserAccessKe
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserTokenRequest(
         antlr4::tree::ParseTree* node)
 {
+    ExpressionFactory exprFactory(m_parser);
     auto userName = helpers::extractObjectName(node, 2);
     auto tokenName = helpers::extractObjectName(node, 5);
     std::optional<BinaryValue> tokenValue;
@@ -1651,7 +1657,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserTokenReques
         if (helpers::getTerminalType(node6) == SiodbParser::K_WITH)
             attrListNode = node->children.at(7);
         else {
-            auto v = ExpressionFactory::createConstantValue(node6->children.at(0));
+            auto v = exprFactory.createConstantValue(node6->children.at(0));
             tokenValue = std::move(v.getBinary());
             if (node->children.size() > 8) attrListNode = node->children.at(8);
         }
@@ -1753,9 +1759,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameUserTokenReq
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCheckUserTokenRequest(
         antlr4::tree::ParseTree* node)
 {
+    ExpressionFactory exprFactory(m_parser);
     auto userName = helpers::extractObjectName(node, 2);
     auto tokenName = helpers::extractObjectName(node, 4);
-    auto v = ExpressionFactory::createConstantValue(node->children.at(5)->children.at(0));
+    auto v = exprFactory.createConstantValue(node->children.at(5)->children.at(0));
     auto tokenValue = std::move(v.getBinary());
     return std::make_unique<requests::CheckUserTokenRequest>(
             std::move(userName), std::move(tokenName), std::move(tokenValue));
@@ -1786,7 +1793,7 @@ requests::ResultExpression DBEngineSqlRequestFactory::createResultExpression(
     // case: expr ( K_AS? column_alias)?
     else if (childrenCount > 0
              && helpers::getNonTerminalType(node->children[0]) == SiodbParser::RuleExpr) {
-        ExpressionFactory exprFactory(true);
+        ExpressionFactory exprFactory(m_parser, true);
         expression = exprFactory.createExpression(node->children[0]);
 
         if (childrenCount > 1
@@ -1803,7 +1810,7 @@ void DBEngineSqlRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node,
         std::string& database, std::vector<requests::SourceTable>& tables,
         std::vector<requests::ResultExpression>& columns, requests::ConstExpressionPtr& where)
 {
-    ExpressionFactory exprFactory(true);
+    ExpressionFactory exprFactory(m_parser, true);
     for (std::size_t i = 0, n = node->children.size(); i < n; ++i) {
         const auto e = node->children[i];
         const auto nonTerminalType = helpers::getNonTerminalType(e);

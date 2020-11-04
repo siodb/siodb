@@ -20,8 +20,9 @@ TEST(Query, SelectWithNegativeInt8)
     const std::string statement("SELECT -111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -54,8 +55,9 @@ TEST(Query, SelectWithUInt8)
     const std::string statement("SELECT 111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -85,8 +87,9 @@ TEST(Query, SelectWithNegativeInt16)
     const std::string statement("SELECT -11111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -119,8 +122,9 @@ TEST(Query, SelectWithUInt16)
     const std::string statement("SELECT 11111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -150,8 +154,9 @@ TEST(Query, SelectWithNegativeInt32)
     const std::string statement("SELECT -111111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -184,8 +189,9 @@ TEST(Query, SelectWithUInt32)
     const std::string statement("SELECT 111111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -215,8 +221,9 @@ TEST(Query, SelectWithNegativeInt64)
     const std::string statement("SELECT -111111111111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -249,8 +256,9 @@ TEST(Query, SelectWithUInt64)
     const std::string statement("SELECT 111111111111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -280,8 +288,9 @@ TEST(Query, SelectWithNegativeDouble)
     const std::string statement("SELECT -111.111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
@@ -314,8 +323,9 @@ TEST(Query, SelectWithDouble)
     const std::string statement("SELECT 111.111 AS column_alias FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);

@@ -137,57 +137,217 @@ struct TableInfo {
     std::vector<ColumnInfo> m_columns;
 };
 
-std::vector<DatabaseInfo> readDatabases(
-        io::InputOutputStream& connection, protobuf::StreamInputStream& input);
+/**
+ * Dumps definition and data of a given database into a given output stream.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param dbInfo Database information.
+ * @param os Output stream.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ */
+void dumpDatabase(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
+        const DatabaseInfo& dbInfo, std::ostream& os, bool printDebugMessages);
 
-void dumpCreateDatabase(const DatabaseInfo& dbInfo, std::ostream& os);
-
-void dumpCreateDatabase(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
-        const std::string& databaseName, std::ostream& os);
-
-void dumpData(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
-        const std::string& databaseName, const std::string& tableName, std::ostream& os);
-
+/**
+ * Dumps data of a given list of table into a given output stream.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param databaseName Database name.
+ * @param tableInfos Table list.
+ * @param os Output stream.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ */
 void dumpTables(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
-        const std::string& databaseName, const std::vector<TableInfo>& tableInfos,
-        std::ostream& os);
+        const std::string& databaseName, const std::vector<TableInfo>& tableInfos, std::ostream& os,
+        bool printDebugMessages);
 
+/**
+ * Dumps data of a given table into a given output stream.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @param os Output stream.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ */
+void dumpTable(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
+        const std::string& databaseName, const std::string& tableName, std::ostream& os,
+        bool printDebugMessages);
+
+/**
+ * Dumps data of a given table into a given output stream.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @param os Output stream.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ */
+void dumpTable(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
+        const std::string& databaseName, const TableInfo& table, std::ostream& os,
+        bool printDebugMessages);
+
+/**
+ * Writes CREATE DATABASE statement fir the given database into a give output stream.
+ * @param dbInfo Database information.
+ * @param os Output stream.
+ */
+void dumpDatabaseDefinition(const DatabaseInfo& dbInfo, std::ostream& os);
+
+/**
+ * Writes CREATE TABLE statment for a given table into a given output stream.
+ * @param databaseName Database name.
+ * @param table Table information.
+ * @param os Output stream.
+ */
 void dumpTableDefinition(const std::string& databaseName, const TableInfo& table, std::ostream& os);
 
-void dumpTableData(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
-        const std::string& databaseName, const TableInfo& table, std::ostream& os);
+/**
+ * Reads list of databases.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param printDebugMessages Turns on or off printing debug messages to stderr.
+ * @return List of databases.
+ */
+std::vector<DatabaseInfo> readDatabaseInfos(io::InputOutputStream& connection,
+        protobuf::StreamInputStream& input, bool printDebugMessages);
 
-std::vector<TableInfo> readTables(io::InputOutputStream& connection,
-        protobuf::StreamInputStream& input, const std::string& databaseName);
+/**
+ * Reads information about a single database.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param dbInfo Database information.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ * @return Database information.
+ */
+DatabaseInfo readDatabaseInfo(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
+        const std::string& databaseName, bool printDebugMessages);
 
-std::vector<ColumnInfo> readColumns(io::InputOutputStream& connection,
+/**
+ * Reads information about tables in a given database.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param databaseName Database name.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ * @return List of tables.
+ */
+std::vector<TableInfo> readTableInfos(io::InputOutputStream& connection,
         protobuf::StreamInputStream& input, const std::string& databaseName,
-        std::int64_t currentColumnSetId);
+        bool printDebugMessages);
 
-std::vector<ColumnConstraint> readColumnConstraints(io::InputOutputStream& connection,
-        protobuf::StreamInputStream& input, const std::string& databaseName,
-        std::int64_t columnSetId);
+/**
+ * Reads information about a single table from a given database.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ * @return List of tables.
+ */
+TableInfo readTableInfo(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
+        const std::string& databaseName, const std::string& tableName, bool printDebugMessages);
 
+/**
+ * Reads information about columns of a table and puts it into table info.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @param columnSetId Column set identifier.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ */
+void readColumns(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
+        const std::string& databaseName, TableInfo& tableInfo, bool printDebugMessages);
+
+/**
+ * Reads information about constraint of a column of a table.
+ * @param connection Connection with database server.
+ * @param input Input stream.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @param columnInfo Column information.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ */
+void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
+        const std::string& databaseName, const std::string& tableName, ColumnInfo& columnInfo,
+        bool printDebugMessages);
+
+/**
+ * Sends command to a server.
+ * @param command  Command text.
+ * @param connection Connection with server.
+ * @param input Input stream.
+ * @param printDebugMessages Turns on or off printing debug messages.
+ */
 client_protocol::ServerResponse sendCommand(std::string&& command,
-        io::InputOutputStream& connection, protobuf::StreamInputStream& input);
+        io::InputOutputStream& connection, protobuf::StreamInputStream& input,
+        bool printDebugMessages);
 
+/**
+ * Checks server reponse for errors.
+ * @throw std::runtime_error if errors found in the reponse.
+ */
 void checkResponse(const client_protocol::ServerResponse& response);
 
-bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType columnDataType,
+/**
+ * Reads data value from a stream.
+ * @param codedInput Input stream.
+ * @param dataType Data type.
+ * @param result Resulting value converted to string.
+ * @return true if read was successful, false otherwise.
+ */
+bool readValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType dataType,
         std::string& result);
 
+/**
+ * Builds core part of the select statement.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @param columnNames Column names.
+ * @return SELECT statement text.
+ */
 std::string buildSelectStatementCore(const std::string& databaseName, const std::string& tableName,
-        const std::vector<std::string>& ColumnNames);
+        const std::vector<std::string>& columnNames);
 
+/**
+ * Builds core part of the select statement.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @param columnNames Column names.
+ * @return SELECT statement text.
+ */
 std::string buildSelectStatementCore(const char* databaseName, const char* tableName,
         const std::vector<std::string>& columnNames);
 
+/**
+ * Builds "SELECT *" statement for a give table.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @return "SELECT *" statement text.
+ */
 std::string buildSelectAllStatement(const std::string& databaseName, const std::string& tableName);
 
+/**
+ * Builds CREATE DATABASE statement for a given database.
+ * @param dbInfo Database information.
+ * @return CREATE DATABASE statement text.
+ */
 std::string buildCreateDatabaseStatement(const DatabaseInfo& dbInfo);
 
+/**
+ * Builds CREATE TABLE statement for a given database.
+ * @param dbInfo Database information.
+ * @return CREATE TABLE statement text.
+ */
 std::string buildCreateTableStatement(const std::string& databaseName, const TableInfo& tableInfo);
 
+/**
+ * Builds ALTER TABLE SET NEXT_TRID statement for a given table.
+ * @param databaseName Database name.
+ * @param tableName Table name.
+ * @param nextTrid Next table row ID value.
+ * @return ALTER TABLE SET NEXT_TRID statement text.
+ */
 std::string buildAlterTableSetNextTridStatement(
         const std::string& databaseName, const std::string& tableName, std::uint64_t nextTrid);
 

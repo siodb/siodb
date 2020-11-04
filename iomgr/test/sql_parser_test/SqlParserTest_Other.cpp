@@ -20,8 +20,9 @@ TEST(Query, UseDatabase)
     const std::string statement("USE DATABASE my_database");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kUseDatabase);
@@ -37,8 +38,9 @@ TEST(Query, ShowDatabases)
     const std::string statement("SHOW DATABASES");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kShowDatabases);

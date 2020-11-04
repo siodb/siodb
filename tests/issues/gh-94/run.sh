@@ -4,8 +4,8 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-set -x
-SIOCLI_DEBUG=--debug
+#set -x
+#SIOCLI_DEBUG=--debug
 
 ## Global
 SCRIPT_DIR=$(dirname "$0")
@@ -43,8 +43,9 @@ echo "[{ \"huge\": \"$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 8m)\" }]"
 ### Post the JSON
 for i in $(seq 1 3); do
   echo "Posting huge JSON: iteration #${i}"
-  curl -v -X POST -d "@${huge_json_file}" \
+  curl -d "@${huge_json_file}" \
   "http://${user_name}:${user_token}@localhost:50080/databases/${database_name}/tables/huge_test/rows"
+  echo
 done
 
 _CheckLogFiles

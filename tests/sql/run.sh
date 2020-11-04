@@ -10,7 +10,7 @@
 ## Program
 
 SCRIPT_DIR=$(dirname "$0")
-source "${ROOT_DIR}/tests/share/CommonFunctions.sh"
+source "${SCRIPT_DIR}/../share/CommonFunctions.sh"
 
 _log "INFO" "Tests start"
 _Prepare

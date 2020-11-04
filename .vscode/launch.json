@@ -226,7 +226,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/sql_parser_test",
             "args": [
-                "--gtest_filter=*.*"
+                "--gtest_filter=UM.AlterUserDropAccessKeyIfExists"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
@@ -268,8 +268,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/siocli",
             "args": [
-                "-c",
-                "hello"
+                "-E",
+                "-o",
+                "dump.sql"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

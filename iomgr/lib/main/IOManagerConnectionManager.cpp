@@ -131,9 +131,11 @@ void IOManagerConnectionManager::deadConnectionCleanupThreadMain()
 
 void IOManagerConnectionManager::removeDeadConnections()
 {
-    LOG_DEBUG << m_logContext << "Cleaning up dead connections...";
     std::lock_guard lock(m_connectionHandlersMutex);
 
+    if (m_connectionHandlers.empty()) return;
+
+    LOG_DEBUG << m_logContext << "Cleaning up dead connections...";
     LOG_DEBUG << m_logContext
               << "Number of connections before cleanup: " << m_connectionHandlers.size();
 

@@ -4,6 +4,7 @@
 
 // Project headers
 #include "TestContext.h"
+#include "dbengine/parser/DBEngineRequestFactoryError.h"
 #include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
 #include "dbengine/parser/expr/AllExpressions.h"
@@ -22,8 +23,9 @@ TEST(DML, Insert1)
             " VALUES (1, 'Bill', true, NULL);");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kInsert);
@@ -72,8 +74,8 @@ TEST(DML, Insert2)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kInsert);
@@ -128,8 +130,9 @@ TEST(DML, Insert3)
     const std::string statement("INSERT INTO my_database.my_table (col1) VALUES (x'abcdef');");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kInsert);
@@ -163,8 +166,9 @@ TEST(DML, Insert_InvalidCharInHexString)
     const std::string statement("INSERT INTO my_database.my_table (col1) VALUES (x'abcdefg');");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    ASSERT_THROW(parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0)),
-            std::runtime_error);
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    ASSERT_THROW(factory.createSqlRequest(), std::runtime_error);
 }
 
 // Hex string size is odd
@@ -174,8 +178,9 @@ TEST(DML, Insert_HexStringLengthIsOdd)
     const std::string statement("INSERT INTO my_database.my_table (col1) VALUES (x'abcdef1');");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    ASSERT_THROW(parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0)),
-            std::runtime_error);
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    ASSERT_THROW(factory.createSqlRequest(), std::runtime_error);
 }
 
 TEST(DML, Update)
@@ -186,8 +191,9 @@ TEST(DML, Update)
             " SET address = 'San Francisco', zip='94010' WHERE name = 'mycompany'");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kUpdate);
@@ -236,8 +242,9 @@ TEST(DML, Delete)
     const std::string statement("DELETE FROM my_database.my_table WHERE id = 7;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
-    const auto dbeRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDelete);
@@ -276,8 +283,8 @@ TEST(DML, DeleteWithTableAliasTest)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto dbeRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto dbeRequest = factory.createSqlRequest();
 
         // Check request type
         ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDelete);
@@ -314,8 +321,9 @@ TEST(DML, InsertColumnName_1)
     const std::string str = "insert into test.t2 values (\"汉字\")";
     parser_ns::SqlParser parser(str);
     parser.parse();
-    ASSERT_THROW(parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0)),
-            std::invalid_argument);
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    ASSERT_THROW(factory.createSqlRequest(), parser_ns::DBEngineRequestFactoryError);
 }
 
 TEST(DML, InsertColumnName_2)
@@ -324,6 +332,6 @@ TEST(DML, InsertColumnName_2)
     parser_ns::SqlParser parser(str);
     parser.parse();
 
-    ASSERT_THROW(parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0)),
-            std::invalid_argument);
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    ASSERT_THROW(factory.createSqlRequest(), parser_ns::DBEngineRequestFactoryError);
 }

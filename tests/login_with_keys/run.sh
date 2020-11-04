@@ -5,7 +5,8 @@
 # in the LICENSE file.
 
 ## Global
-source $(dirname "$0")/../share/CommonFunctions.sh
+SCRIPT_DIR=$(dirname "$0")
+source "{SCRIPT_DIR}/../share/CommonFunctions.sh"
 
 ## Specific test functions
 

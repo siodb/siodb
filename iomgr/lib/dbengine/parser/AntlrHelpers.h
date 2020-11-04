@@ -93,6 +93,27 @@ bool hasTerminalChild(
         antlr4::tree::ParseTree* node, std::size_t type, std::size_t startIndex = 0) noexcept;
 
 /**
+ * Captures terminal position.
+ * @param node Terminal node.
+ * @param[out] line Terminal line.
+ * @param[out] column Terminal column.
+ * @return true if position captured, false otherwise.
+ */
+bool captureTerminalPosition(
+        antlr4::tree::ParseTree* node, std::size_t& line, std::size_t& column) noexcept;
+
+/**
+ * Finds first terminal and gets its position.
+ * @param node A node.
+ * @param type Terminal type.
+ * @param[out] line Terminal line.
+ * @param[out] column Terminal column.
+ * @return true if terminal found and position captured, false otherwise.
+ */
+bool findFirstTerminalAndCapturePosition(antlr4::tree::ParseTree* node, std::size_t type,
+        std::size_t& line, std::size_t& column) noexcept;
+
+/**
  * Finds the first non-terminal of a given type from a given point of the tree.
  * @param node Starting node.
  * @param type Type of the non-terminal.

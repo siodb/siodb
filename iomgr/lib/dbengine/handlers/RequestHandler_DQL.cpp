@@ -85,6 +85,8 @@ void RequestHandler::executeSelectRequest(
                 std::make_unique<requests::DBExpressionEvaluationContext>(std::move(tableDataSets));
     }
     const auto& dataSets = dbContext->getDataSets();
+    LOG_DEBUG << "RequestHandler::executeSelectRequest: There are " << dataSets.size()
+              << " data sets to read from";
 
     std::vector<std::vector<TableColumn>> tableColumnRecordLists;
     tableColumnRecordLists.reserve(request.m_tables.size());
@@ -276,6 +278,8 @@ void RequestHandler::executeSelectRequest(
 
     protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
 
+    std::uint64_t inputRowCount = 0;
+    std::uint64_t outputRowCount = 0;
     try {
         bool rowDataAvailable = true;
         for (auto& tableDataSet : dataSets) {
@@ -288,8 +292,8 @@ void RequestHandler::executeSelectRequest(
 
         std::vector<Variant> values(columnCountToSend);
 
-        //std::uint64_t rowNumber = 0;
         while (rowDataAvailable && (!limit.has_value() || *limit > 0)) {
+            ++inputRowCount;
             std::size_t rowLength = 0;
             if (request.m_where) {
                 try {
@@ -361,9 +365,10 @@ void RequestHandler::executeSelectRequest(
                 rawOutput.CheckNoError();
             }
 
+            ++outputRowCount;
+
             if (limit) --(*limit);
             rowDataAvailable = moveToNextRow(dataSets);
-            //++rowNumber;
         }
     } catch (DatabaseError& ex) {
         LOG_ERROR << kLogContext << ex.what();
@@ -372,12 +377,14 @@ void RequestHandler::executeSelectRequest(
         // All other exceptions are caught on the upper level.
         codedOutput.WriteVarint64(kNoMoreRows);
         rawOutput.CheckNoError();
-
         // NOTE: Do not re-throw here to prevent double response.
     }
 
     codedOutput.WriteVarint64(kNoMoreRows);
     rawOutput.CheckNoError();
+
+    LOG_DEBUG << "RequestHandler::executeSelectRequest: " << inputRowCount << " rows in, "
+              << outputRowCount << " rows out";
 }
 
 void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,

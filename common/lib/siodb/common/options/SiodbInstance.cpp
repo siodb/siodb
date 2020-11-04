@@ -182,11 +182,15 @@ void validateInstance(const std::string& instanceName)
 
     config::SiodbOptions options(instanceName);
 
-#if !defined(_DEBUG)
-    // Check permissions only in release version
-    checkInstanceFilePermissions(
-            configPath, options.m_generalOptions.m_allowGroupPermissionsOnConfigFiles);
+#if defined(_DEBUG)
+    options.m_generalOptions.m_ignorePermissionsOnConfigFiles = true;
 #endif
+
+    // Check permissions only in release version
+    if (!options.m_generalOptions.m_ignorePermissionsOnConfigFiles) {
+        checkInstanceFilePermissions(
+                configPath, options.m_generalOptions.m_allowGroupPermissionsOnConfigFiles);
+    }
 
     // Check master encryption key file
     const auto encryptionKeyPath = options.m_encryptionOptions.m_masterCipherKeyPath.empty()

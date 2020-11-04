@@ -20,12 +20,7 @@
 
 namespace siodb::iomgr::dbengine::parser {
 
-ExpressionFactory::ExpressionFactory(bool allowColumnExpressions) noexcept
-    : m_allowColumnExpressions(allowColumnExpressions)
-{
-}
-
-requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseTree* node) const
+requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseTree* node)
 {
     const auto rule = helpers::getNonTerminalType(node);
     const auto childCount = node->children.size();
@@ -73,17 +68,26 @@ requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseT
                     return createExpression(midNode);
                 }
             }
-            throw DBEngineRequestFactoryError("Expression is invalid");
+            std::size_t line = 1, column = 1;
+            helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
+            throw DBEngineRequestFactoryError(
+                    m_parser.injectError(line, column, "Expression is invalid"));
         }
         case SiodbParser::RuleFunction_call: {
             // TODO: Support functions
-            throw DBEngineRequestFactoryError("Functions aren't not supported now");
+            std::size_t line = 1, column = 1;
+            helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
+            throw DBEngineRequestFactoryError(
+                    m_parser.injectError(line, column, "Functions are not supported yet"));
         }
         case SiodbParser::RuleSimple_expr: return createSimpleExpression(node);
         default: break;
     }
 
-    throw DBEngineRequestFactoryError("SQL term is not valid expression or not supported");
+    std::size_t line = 1, column = 1;
+    helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
+    throw DBEngineRequestFactoryError(m_parser.injectError(
+            line, column, "SQL term is not valid expression or not supported"));
 }
 
 Variant ExpressionFactory::createConstantValue(antlr4::tree::ParseTree* node)
@@ -109,7 +113,10 @@ Variant ExpressionFactory::createConstantValue(antlr4::tree::ParseTree* node)
         }
         default: break;
     }
-    throw DBEngineRequestFactoryError("Not a valid constant");
+
+    std::size_t line = 1, column = 1;
+    helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
+    throw DBEngineRequestFactoryError(m_parser.injectError(line, column, "Not a valid constant"));
 }
 
 // ----- internals -----
@@ -129,13 +136,15 @@ requests::ExpressionPtr ExpressionFactory::createConstant(
 Variant ExpressionFactory::createConstantValue(
         const antlr4::tree::ParseTree* node, std::size_t literalNodeIndex, bool negate)
 {
-    const auto terminal =
-            dynamic_cast<antlr4::tree::TerminalNode*>(node->children.at(literalNodeIndex));
+    const auto child = node->children.at(literalNodeIndex);
+    const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(child);
     if (terminal)
         return createConstantValue(terminal, negate);
     else {
-        throw DBEngineRequestFactoryError(
-                "Expression malformed: Literal node has no terminal after 2 children deep");
+        std::size_t line = 1, column = 1;
+        helpers::findFirstTerminalAndCapturePosition(child, 0, line, column);
+        throw DBEngineRequestFactoryError(m_parser.injectError(line, column,
+                "Expression malformed: Literal node has no terminal after 2 children deep"));
     }
 }
 
@@ -143,7 +152,10 @@ Variant ExpressionFactory::createConstantValue(antlr4::tree::TerminalNode* termi
 {
     const auto symbol = terminal->getSymbol();
     if (symbol) return createConstantValue(symbol, negate);
-    throw std::invalid_argument("Expression malformed: terminal has no symbol");
+    std::size_t line = 1, column = 1;
+    helpers::findFirstTerminalAndCapturePosition(terminal, 0, line, column);
+    throw DBEngineRequestFactoryError(
+            m_parser.injectError(line, column, "Expression malformed: terminal has no symbol"));
 }
 
 Variant ExpressionFactory::createConstantValue(const antlr4::Token* token, bool negate)
@@ -167,7 +179,10 @@ Variant ExpressionFactory::createConstantValue(const antlr4::Token* token, bool 
             return Variant(dt);
         }
         case SiodbParser::K_CURRENT_TIMESTAMP: return Variant(RawDateTime(std::time(nullptr)));
-        default: throw DBEngineRequestFactoryError("Invalid constant type");
+        default: {
+            throw DBEngineRequestFactoryError(m_parser.injectError(
+                    token->getLine(), token->getCharPositionInLine() + 1, "Invalid constant type"));
+        }
     }
 }
 
@@ -220,7 +235,8 @@ Variant ExpressionFactory::createNumericConstantValue(const antlr4::Token* token
         return negate ? -n : n;
     } catch (...) {
         // No more variants to try, report error
-        throw DBEngineRequestFactoryError("Invalid numeric literal");
+        throw DBEngineRequestFactoryError(m_parser.injectError(
+                token->getLine(), token->getCharPositionInLine() + 1, "Invalid numeric literal"));
     }
 }
 
@@ -234,64 +250,32 @@ Variant ExpressionFactory::createBinaryConstantValue(const antlr4::Token* token)
     const auto hexLiteral = token->getText();
     // Exclude leading "x'" and trailing "'"
     const auto hexLength = hexLiteral.length() - 3;
-    if (hexLength % 2 == 1)
-        throw DBEngineRequestFactoryError("Odd number of characters in the hex literal");
+    if (hexLength % 2 == 1) {
+        throw DBEngineRequestFactoryError(m_parser.injectError(token->getLine(),
+                token->getCharPositionInLine() + 1, "Odd number of characters in the hex literal"));
+    }
     BinaryValue binaryValue(hexLength / 2);
     if (hexLength > 0) {
         try {
             boost::algorithm::unhex(hexLiteral.data() + 2,
                     hexLiteral.data() + hexLiteral.length() - 1, binaryValue.data());
         } catch (boost::algorithm::non_hex_input& ex) {
-            throw DBEngineRequestFactoryError("Invalid character in the hex literal");
+            throw DBEngineRequestFactoryError(m_parser.injectError(token->getLine(),
+                    token->getCharPositionInLine() + 1, "Invalid character in the hex literal"));
         }
     }
     return binaryValue;
 }
 
-bool ExpressionFactory::isNonLogicalBinaryOperator(std::size_t terminalType) noexcept
-{
-    switch (terminalType) {
-        case SiodbParser::LT:
-        case SiodbParser::LT_EQ:
-        case SiodbParser::EQ:
-        case SiodbParser::GT:
-        case SiodbParser::GT_EQ:
-        case SiodbParser::PLUS:
-        case SiodbParser::MINUS:
-        case SiodbParser::STAR:
-        case SiodbParser::DIV:
-        case SiodbParser::MOD:
-        case SiodbParser::ASSIGN:
-        case SiodbParser::NOT_EQ1:
-        case SiodbParser::NOT_EQ2:
-        case SiodbParser::K_LIKE:
-        case SiodbParser::PIPE:
-        case SiodbParser::AMP:
-        case SiodbParser::LT2:
-        case SiodbParser::GT2:
-        case SiodbParser::CARAT:
-        case SiodbParser::PIPE2:
-        case SiodbParser::K_IS: return true;
-        default: return false;
-    }
-}
-
-bool ExpressionFactory::isLogicalBinaryOperator(std::size_t terminalType) noexcept
-{
-    switch (terminalType) {
-        case SiodbParser::K_AND:
-        case SiodbParser::K_OR: return true;
-        default: return false;
-    }
-}
-
 requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
-        antlr4::tree::ParseTree* tableNode, antlr4::tree::ParseTree* columnNode) const
+        antlr4::tree::ParseTree* tableNode, antlr4::tree::ParseTree* columnNode)
 {
     if (!m_allowColumnExpressions) {
-        throw DBEngineRequestFactoryError(stdext::string_builder()
-                                          << "Column " << columnNode->getText()
-                                          << " is not allowed");
+        std::size_t line = 1, column = 1;
+        helpers::findFirstTerminalAndCapturePosition(tableNode, 0, line, column);
+        throw DBEngineRequestFactoryError(m_parser.injectError(line, column,
+                stdext::string_builder()
+                        << "Column " << columnNode->getText() << " is not allowed"));
     }
 
     std::string tableName;
@@ -304,10 +288,19 @@ requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
     if (columnNode) {
         columnName = helpers::getAnyNameText(columnNode->children.at(0));
         boost::to_upper(columnName);
-    } else
-        throw DBEngineRequestFactoryError("Missing column term");
+    } else {
+        std::size_t line = 1, column = 1;
+        helpers::findFirstTerminalAndCapturePosition(tableNode, 0, line, column);
+        throw DBEngineRequestFactoryError(
+                m_parser.injectError(line, column, "Missing column term"));
+    }
 
-    if (columnName.empty()) throw DBEngineRequestFactoryError("Column term is invalid");
+    if (columnName.empty()) {
+        std::size_t line = 1, column = 1;
+        helpers::findFirstTerminalAndCapturePosition(tableNode, 0, line, column);
+        throw DBEngineRequestFactoryError(
+                m_parser.injectError(line, column, "Column term is invalid"));
+    }
 
     return std::make_unique<requests::SingleColumnExpression>(
             std::move(tableName), std::move(columnName));
@@ -315,7 +308,7 @@ requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
 
 requests::ExpressionPtr ExpressionFactory::createBetweenExpression(
         antlr4::tree::ParseTree* expression, antlr4::tree::ParseTree* leftBound,
-        antlr4::tree::ParseTree* rightBound, bool notBetween) const
+        antlr4::tree::ParseTree* rightBound, bool notBetween)
 {
     auto valueExpr = createSimpleExpression(expression);
     auto leftBoundExpr = createSimpleExpression(leftBound);
@@ -338,13 +331,15 @@ requests::ExpressionPtr ExpressionFactory::createBetweenExpression(
 }
 
 requests::ExpressionPtr ExpressionFactory::createUnaryOperator(
-        antlr4::tree::ParseTree* operatorNode, antlr4::tree::ParseTree* operandNode) const
+        antlr4::tree::ParseTree* operatorNode, antlr4::tree::ParseTree* operandNode)
 {
     // operatorNode rule is unary_operator
     // unary_operator child is terminal with unary operator type
     if (operatorNode->children.size() != 1) {
-        throw DBEngineRequestFactoryError(
-                "Expression malformed: Unary operator should have exactly one child");
+        std::size_t line = 1, column = 1;
+        helpers::findFirstTerminalAndCapturePosition(operatorNode, 0, line, column);
+        throw DBEngineRequestFactoryError(m_parser.injectError(line, column,
+                "Expression malformed: Unary operator should have exactly one operand"));
     }
 
     auto type = helpers::getTerminalType(operatorNode->children.front());
@@ -360,13 +355,18 @@ requests::ExpressionPtr ExpressionFactory::createUnaryOperator(
             return std::make_unique<requests::ComplementOperator>(
                     createSimpleExpression(operandNode));
         }
-        default: throw DBEngineRequestFactoryError("Unrecognized unary operator");
+        default: {
+            std::size_t line = 1, column = 1;
+            helpers::findFirstTerminalAndCapturePosition(operatorNode, 0, line, column);
+            throw DBEngineRequestFactoryError(
+                    m_parser.injectError(line, column, "Unrecognized unary operator"));
+        }
     }
 }
 
 requests::ExpressionPtr ExpressionFactory::createNonLogicalBinaryOperator(
         antlr4::tree::ParseTree* leftNode, antlr4::tree::ParseTree* operatorNode,
-        antlr4::tree::ParseTree* rightNode) const
+        antlr4::tree::ParseTree* rightNode)
 {
     switch (helpers::getTerminalType(operatorNode)) {
         case SiodbParser::LT: {
@@ -446,37 +446,16 @@ requests::ExpressionPtr ExpressionFactory::createNonLogicalBinaryOperator(
             return std::make_unique<requests::IsOperator>(
                     createSimpleExpression(leftNode), createSimpleExpression(rightNode), false);
         }
-        default: throw DBEngineRequestFactoryError("Unrecognized binary operator");
+        default: {
+            std::size_t line = 1, column = 1;
+            helpers::findFirstTerminalAndCapturePosition(operatorNode, 0, line, column);
+            throw DBEngineRequestFactoryError(
+                    m_parser.injectError(line, column, "Unrecognized binary operator"));
+        }
     }
 }
 
-bool ExpressionFactory::isInOperator(const antlr4::tree::ParseTree* node) noexcept
-{
-    if (node->children.size() < 5) return false;
-
-    if (helpers::getNonTerminalType(node->children[0]) != SiodbParser::RuleSimple_expr)
-        return false;
-
-    std::size_t openParIndex = 0;
-    if (helpers::getTerminalType(node->children[1]) == SiodbParser::K_IN)
-        openParIndex = 2;
-    else if (helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT
-             && helpers::getTerminalType(node->children[2]) == SiodbParser::K_IN)
-        openParIndex = 3;
-    else
-        return false;
-
-    if (helpers::getTerminalType(node->children[openParIndex]) != SiodbParser::OPEN_PAR)
-        return false;
-
-    if (helpers::getTerminalType(node->children[node->children.size() - 1])
-            != SiodbParser::CLOSE_PAR)
-        return false;
-
-    return true;
-}
-
-requests::ExpressionPtr ExpressionFactory::createInOperator(antlr4::tree::ParseTree* node) const
+requests::ExpressionPtr ExpressionFactory::createInOperator(antlr4::tree::ParseTree* node)
 {
     auto valueExpr = createSimpleExpression(node->children[0]);
     const bool notIn = helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT;
@@ -485,14 +464,19 @@ requests::ExpressionPtr ExpressionFactory::createInOperator(antlr4::tree::ParseT
     for (std::size_t i = notIn ? 4 : 3, n = node->children.size(); i < n; i += 2)
         variants.push_back(createSimpleExpression(node->children[i]));
 
-    if (variants.empty()) throw DBEngineRequestFactoryError("Operator IN has no variants");
+    if (variants.empty()) {
+        std::size_t line = 1, column = 1;
+        helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
+        throw DBEngineRequestFactoryError(
+                m_parser.injectError(line, column, "Operator IN has no variants"));
+    }
 
     return std::make_unique<requests::InOperator>(std::move(valueExpr), std::move(variants), notIn);
 }
 
 requests::ExpressionPtr ExpressionFactory::createLogicalBinaryOperator(
         antlr4::tree::ParseTree* leftNode, antlr4::tree::ParseTree* operatorNode,
-        antlr4::tree::ParseTree* rightNode) const
+        antlr4::tree::ParseTree* rightNode)
 {
     switch (helpers::getTerminalType(operatorNode)) {
         case SiodbParser::K_AND: {
@@ -503,22 +487,28 @@ requests::ExpressionPtr ExpressionFactory::createLogicalBinaryOperator(
             return std::make_unique<requests::LogicalOrOperator>(
                     createExpression(leftNode), createExpression(rightNode));
         }
-        default: throw DBEngineRequestFactoryError("Unrecognized logical binary operator");
+        default: {
+            std::size_t line = 1, column = 1;
+            helpers::findFirstTerminalAndCapturePosition(operatorNode, 0, line, column);
+            throw DBEngineRequestFactoryError(
+                    m_parser.injectError(line, column, "Unrecognized logical binary operator"));
+        }
     }
 }
 
-requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
-        antlr4::tree::ParseTree* node) const
+requests::ExpressionPtr ExpressionFactory::createSimpleExpression(antlr4::tree::ParseTree* node)
 {
     if (isInOperator(node)) return createInOperator(node);
     switch (node->children.size()) {
         case 1: {
             const auto childNode = node->children[0];
             const auto rule = helpers::getNonTerminalType(childNode);
-            if (rule == SiodbParser::RuleLiteral_value)
-                return createConstant(childNode);
-            else if (rule == SiodbParser::RuleColumn_name)
-                return createColumnValueExpression(nullptr, childNode);
+            switch (rule) {
+                case SiodbParser::RuleLiteral_value: return createConstant(childNode);
+                case SiodbParser::RuleColumn_name:
+                    return createColumnValueExpression(nullptr, childNode);
+                default: break;
+            }
             break;
         }
         case 2: {
@@ -533,7 +523,10 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
                     && rightNodeValid) {
                 return createUnaryOperator(leftNode, rightNode);
             }
-            throw DBEngineRequestFactoryError("Invalid unary expression");
+            std::size_t line = 1, column = 1;
+            helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
+            throw DBEngineRequestFactoryError(
+                    m_parser.injectError(line, column, "Invalid unary expression"));
         }
         case 3: {
             const auto leftNode = node->children[0];
@@ -605,7 +598,10 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
                      && helpers::getNonTerminalType(node2) == SiodbParser::RuleTable_name
                      && helpers::getTerminalType(node3) == SiodbParser::DOT
                      && helpers::getNonTerminalType(node4) == SiodbParser::RuleColumn_name) {
-                throw DBEngineRequestFactoryError("Column name with a database not supported");
+                std::size_t line = 1, column = 1;
+                helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
+                throw DBEngineRequestFactoryError(m_parser.injectError(
+                        line, column, "Column name with a database not supported"));
             }
             break;
         }
@@ -625,7 +621,73 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(
         }
         default: break;
     }
-    throw DBEngineRequestFactoryError("Term is not valid simple expression or not supported");
+    std::size_t line = 1, column = 1;
+    helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
+    throw DBEngineRequestFactoryError(m_parser.injectError(
+            line, column, "Term is not valid simple expression or not supported"));
+}
+
+bool ExpressionFactory::isNonLogicalBinaryOperator(std::size_t terminalType) noexcept
+{
+    switch (terminalType) {
+        case SiodbParser::LT:
+        case SiodbParser::LT_EQ:
+        case SiodbParser::EQ:
+        case SiodbParser::GT:
+        case SiodbParser::GT_EQ:
+        case SiodbParser::PLUS:
+        case SiodbParser::MINUS:
+        case SiodbParser::STAR:
+        case SiodbParser::DIV:
+        case SiodbParser::MOD:
+        case SiodbParser::ASSIGN:
+        case SiodbParser::NOT_EQ1:
+        case SiodbParser::NOT_EQ2:
+        case SiodbParser::K_LIKE:
+        case SiodbParser::PIPE:
+        case SiodbParser::AMP:
+        case SiodbParser::LT2:
+        case SiodbParser::GT2:
+        case SiodbParser::CARAT:
+        case SiodbParser::PIPE2:
+        case SiodbParser::K_IS: return true;
+        default: return false;
+    }
+}
+
+bool ExpressionFactory::isLogicalBinaryOperator(std::size_t terminalType) noexcept
+{
+    switch (terminalType) {
+        case SiodbParser::K_AND:
+        case SiodbParser::K_OR: return true;
+        default: return false;
+    }
+}
+
+bool ExpressionFactory::isInOperator(const antlr4::tree::ParseTree* node) noexcept
+{
+    if (node->children.size() < 5) return false;
+
+    if (helpers::getNonTerminalType(node->children[0]) != SiodbParser::RuleSimple_expr)
+        return false;
+
+    std::size_t openParIndex = 0;
+    if (helpers::getTerminalType(node->children[1]) == SiodbParser::K_IN)
+        openParIndex = 2;
+    else if (helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT
+             && helpers::getTerminalType(node->children[2]) == SiodbParser::K_IN)
+        openParIndex = 3;
+    else
+        return false;
+
+    if (helpers::getTerminalType(node->children[openParIndex]) != SiodbParser::OPEN_PAR)
+        return false;
+
+    if (helpers::getTerminalType(node->children[node->children.size() - 1])
+            != SiodbParser::CLOSE_PAR)
+        return false;
+
+    return true;
 }
 
 }  // namespace siodb::iomgr::dbengine::parser

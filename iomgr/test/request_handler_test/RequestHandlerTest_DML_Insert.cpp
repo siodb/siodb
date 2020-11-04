@@ -45,10 +45,10 @@ TEST(DML_Insert, InsertSingleRecord)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto insertRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -68,10 +68,10 @@ TEST(DML_Insert, InsertSingleRecord)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -128,10 +128,10 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto insertRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -151,10 +151,10 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -211,10 +211,10 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto insertRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::iomgr_protocol::DatabaseEngineResponse response;
     siodb::protobuf::StreamInputStream inputStream(
@@ -234,10 +234,10 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
                 response, inputStream);
@@ -292,23 +292,23 @@ TEST(DML_Insert, InsertMultipleRecords)
 
     /// ----------- INSERT -----------
     {
-        std::ostringstream ss;
-        ss << "INSERT INTO SYS.TEST_CUSTOMERS (LAST_NAME, FIRST_NAME) values ";
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS.TEST_CUSTOMERS (LAST_NAME, FIRST_NAME) values ";
 
         // 2 columns
         for (size_t i = 0; i < kInsertRows * 2; i += 2) {
-            if (i > 0) ss << ", ";
-            ss << "('TEST" << i << "', 'TEST" << (i + 1) << "')";
+            if (i > 0) oss << ", ";
+            oss << "('TEST" << i << "', 'TEST" << (i + 1) << "')";
         }
-        const auto statement = ss.str();
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::StreamInputStream inputStream(
@@ -328,10 +328,10 @@ TEST(DML_Insert, InsertMultipleRecords)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::StreamInputStream inputStream(
@@ -442,10 +442,11 @@ TEST(DML_Insert, InsertDataTypesWithLength)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto selectRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
 
@@ -586,10 +587,10 @@ TEST(DML_Insert, InsertMinMaxValues)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto selectRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -797,10 +798,10 @@ TEST(DML_Insert, InsertDateTime)
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
-    const auto selectRequest =
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
 
-    requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
     siodb::protobuf::readMessage(
             siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
@@ -871,10 +872,10 @@ TEST(DML_Insert, InsertNullValue)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -891,10 +892,10 @@ TEST(DML_Insert, InsertNullValue)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -969,10 +970,10 @@ TEST(DML_Insert, InsertDefaultNullValue)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto insertRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*insertRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -989,10 +990,10 @@ TEST(DML_Insert, InsertDefaultNullValue)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
-        const auto selectRequest =
-                parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
 
-        requestHandler->executeRequest(*selectRequest, TestEnvironment::kTestRequestId, 0, 1);
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
 
         siodb::iomgr_protocol::DatabaseEngineResponse response;
         siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
@@ -1062,8 +1063,9 @@ TEST(DML_Insert, InsertWithColumn)
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
         try {
-            parser_ns::DBEngineSqlRequestFactory::createSqlRequest(parser.findStatement(0));
+            factory.createSqlRequest();
             FAIL() << "Column name wrongly accepted";
         } catch (std::exception& ex) {
             // Do not do anything
