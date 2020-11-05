@@ -6,15 +6,15 @@
 
 SCRIPT_DIR=$(dirname $(realpath "$0"))
 
-for d in $(ls -d "${SCRIPT_DIR}/gh-"*/); do
-    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | INFO | Running test for the issue $d"
+for d in $(ls -d "${SCRIPT_DIR}/"*/); do
+    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | INFO | Running scenario $d"
     ${d}/run.sh "$@"
     if [[ $? -ne  0 ]]; then
-        echo "## `date "+%Y-%m-%dT%H:%M:%S"` | TEST:ERROR | Tests in issue $d failed"
+        echo "## `date "+%Y-%m-%dT%H:%M:%S"` | TEST:ERROR | Tests in scenario $d failed"
         if [[ "${SIODB_TEST_ALL}" != "yes" ]]; then
             exit 1
         fi
     else
-        echo "## `date "+%Y-%m-%dT%H:%M:%S"` | TEST:SUCCESS | Tests in issue $d succeed"
+        echo "## `date "+%Y-%m-%dT%H:%M:%S"` | TEST:SUCCESS | Tests in scenario $d succeed"
     fi
 done

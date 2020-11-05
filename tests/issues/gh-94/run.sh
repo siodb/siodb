@@ -8,7 +8,8 @@
 #SIOCLI_DEBUG=--debug
 
 ## Global
-SCRIPT_DIR=$(dirname "$0")
+SCRIPT_DIR=$(dirname $(realpath "$0"))
+TEST_NAME=$(basename "${SCRIPT_DIR}")
 source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
 
@@ -54,13 +55,7 @@ _RunSql "select * from ${database_name}.huge_test"
 _CheckLogFiles
 
 ### Restart instance
-echo "Restarting instance..."
-SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
-SIOTEST_KEEP_INSTANCE_UP=0
-_StopSiodb
-SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
-_StartSiodb
-_CheckLogFiles
+_restartSiodb
 
 ## Validate data
 _RunSql "select * from ${database_name}.huge_test"

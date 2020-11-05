@@ -5,8 +5,9 @@
 # in the LICENSE file.
 
 ## Global
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/../share/CommonFunctions.sh"
+SCRIPT_DIR=$(dirname $(realpath "$0"))
+TEST_NAME=$(basename "${SCRIPT_DIR}")
+source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
 ## Specific test functions
 
@@ -118,7 +119,7 @@ _CheckLogFiles
 ## -------------------------------------------------------------------------
 ## Users keys
 ## -------------------------------------------------------------------------
-SIOKEY1=$(cat $(dirname "$0")/../share/public_key)
+SIOKEY1=$(cat $(dirname "$0")/../../share/public_key)
 #### Add key
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add access key key1 '${SIOKEY1}'"

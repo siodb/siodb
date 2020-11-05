@@ -8,9 +8,10 @@
 #set -e
 
 ## Global
-exitcode=0
-SCRIPT_DIR=$(dirname "$0")
+SCRIPT_DIR=$(dirname $(realpath "$0"))
+TEST_NAME=$(basename "${SCRIPT_DIR}")
 source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
+exitcode=0
 
 _log "INFO" "Tests start"
 _Prepare

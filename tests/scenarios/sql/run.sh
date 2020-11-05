@@ -4,14 +4,12 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-# Uncomment for debugging this script
-# set -x
+## Global
+SCRIPT_DIR=$(dirname $(realpath "$0"))
+TEST_NAME=$(basename "${SCRIPT_DIR}")
+source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
 ## Program
-
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/../share/CommonFunctions.sh"
-
 _log "INFO" "Tests start"
 _Prepare
 _StartSiodb
@@ -29,22 +27,22 @@ if [[ "${SHORT_TEST}" == "1" ]]; then
 
 else
 
-  _RunSqlScript "${SCRIPT_DIR}/query_sys_tables.sql"
+  _RunSqlScript "${SCRIPT_DIR}/query_sys_tables.sql" 120
   _CheckLogFiles
 
-  _RunSqlScript "${SCRIPT_DIR}/ddl_database.sql"
+  _RunSqlScript "${SCRIPT_DIR}/ddl_database.sql" 120
   _CheckLogFiles
 
-  _RunSqlScript "${SCRIPT_DIR}/ddl_user.sql"
+  _RunSqlScript "${SCRIPT_DIR}/ddl_user.sql" 120
   _CheckLogFiles
 
-  _RunSqlScript "${SCRIPT_DIR}/ddl_general.sql"
+  _RunSqlScript "${SCRIPT_DIR}/ddl_general.sql" 120
   _CheckLogFiles
 
-  _RunSqlScript "${SCRIPT_DIR}/dml_general.sql"
+  _RunSqlScript "${SCRIPT_DIR}/dml_general.sql" 120
   _CheckLogFiles
 
-  _RunSqlScript "${SCRIPT_DIR}/dml_datetime.sql"
+  _RunSqlScript "${SCRIPT_DIR}/dml_datetime.sql" 120
   _CheckLogFiles
 
 fi

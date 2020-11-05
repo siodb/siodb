@@ -116,6 +116,15 @@ function _killSiodb {
   fi
 }
 
+function _restartSiodb {
+  _log "INFO" "Restarting instance..."
+  SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
+  SIOTEST_KEEP_INSTANCE_UP=0
+  _StopSiodb
+  SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
+  _StartSiodb
+}
+
 function _SetInstanceParameter {
   _log "INFO" "setting parameter '${1}' to '${2}'"
   sed -i -e "s#.*${1}[ ]*=.*#${1} = ${2}#g" \
@@ -318,7 +327,8 @@ function _CheckLogFiles {
 }
 
 function _log {
-    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | $1 | $2"
+    if [[ -z ${TEST_NAME} ]]; then TEST_NAME="UNDEFINED"; fi
+    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | ${TEST_NAME} | $1 | $2"
 }
 
 function _failExit {
@@ -330,8 +340,9 @@ function _failExit {
 }
 
 function _RunSqlScript {
+  # $1: Path to SQL script
   # $2: Optional timeout
-  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; fi
+  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL script $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout -v --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
@@ -339,9 +350,24 @@ function _RunSqlScript {
     -i "${ROOT_DIR}/tests/share/private_key" < $1
 }
 
-function _RunSqlThroughUser {
-  # $2: Optional timeout
-  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; fi
+function _RunSqlThroughUserUnixSocket {
+  # $1: Path to SQL script
+  # $2: Siodb user
+  # $3: Siodb user key
+  # $4: Optional timeout
+  if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
+  _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
+  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
+  timeout -v --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+}
+
+function _RunSqlThroughUserTCPSocket {
+  # $1: Path to SQL script
+  # $2: Siodb user
+  # $3: Siodb user key
+  # $4: Optional timeout
+  if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout -v --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
@@ -349,8 +375,9 @@ function _RunSqlThroughUser {
 }
 
 function _RunSql {
+  # $1: SQL to run
   # $2: Optional timeout
-  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; fi
+  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout -v --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
@@ -362,7 +389,7 @@ function _RunSqlAndValidateOutput {
   # $1: the SQL to execute
   # $2: The expected output
   # $3: Optional timeout
-  if [[ ! -z "${3}" ]]; then TIMEOUT_SECOND="${3}"; fi
+  if [[ ! -z "${3}" ]]; then TIMEOUT_SECOND="${3}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   SIOCLI_OUTPUT=$(timeout -v --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \

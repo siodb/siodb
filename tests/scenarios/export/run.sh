@@ -5,9 +5,11 @@
 # in the LICENSE file.
 
 ## Global
-SCRIPT_DIR=$(dirname "$0")
-source "${SCRIPT_DIR}/../share/CommonFunctions.sh"
+SCRIPT_DIR=$(dirname $(realpath "$0"))
+TEST_NAME=$(basename "${SCRIPT_DIR}")
+source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
+## Program
 _log "INFO" "Tests start"
 _Prepare
 _StartSiodb
@@ -51,8 +53,13 @@ echo "Exporting all ..."
 "${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${ROOT_DIR}/tests/share/private_key" \
     -E >"${output_dir}/all2.sql"
 
-echo "Comparing output ..."
-diff "${output_dir}/all.sql" "${output_dir}/all2.sql"
+echo "Comparing imported and exported data..."
+DIFF_COUNT=$(diff "${output_dir}/all.sql" "${output_dir}/all2.sql" | wc -l)
+if [[ ${DIFF_COUNT} -gt 6 ]]; then
+  echo "ERROR: Differnce bewteen imported (<) and exported data (>):"
+  diff "${output_dir}/all.sql" "${output_dir}/all2.sql"
+  _failExit
+fi
 
 _StopSiodb
 _log "INFO" "SUCCESS: All tests passed"
