@@ -14,7 +14,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test parameters
 
 ## Tests
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _StartSiodb
 

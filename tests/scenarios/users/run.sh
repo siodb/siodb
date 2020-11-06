@@ -27,7 +27,7 @@ if [[ -z "${numberOfTokensToTest}" ]]; then
 fi
 
 ## Tests
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _StartSiodb
 

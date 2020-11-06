@@ -10,7 +10,7 @@ TEST_NAME=$(basename "${SCRIPT_DIR}")
 source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
 ## Program
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _StartSiodb
 _CheckLogFiles

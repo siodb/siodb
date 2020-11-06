@@ -18,7 +18,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test parameters
 
 ## Tests
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _SetInstanceParameter "iomgr.max_json_payload_size" "10m"
 #_SetInstanceParameter "log.file.severity" "debug"
@@ -63,4 +63,4 @@ _CheckLogFiles
 
 ### Stop test
 _StopSiodb
-_log "INFO" "SUCCESS: Test passed"
+_TestEnd

@@ -16,7 +16,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## =============================================
 ## TEST HEADER
 ## =============================================
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _StartSiodb
 
@@ -31,5 +31,5 @@ _StartSiodb
 ## =============================================
 _StopSiodb
 _CheckLogFiles
-_log "INFO" "SUCCESS: Test passed"
+_TestEnd
 exit 0

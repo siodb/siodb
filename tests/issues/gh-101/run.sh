@@ -13,7 +13,7 @@ TEST_NAME=$(basename "${SCRIPT_DIR}")
 source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 exitcode=0
 
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _StartSiodb
 
@@ -34,7 +34,7 @@ exitcode=$?
 _StopSiodb
 
 if [[ ${exitcode} -eq 0 ]]; then
-    _log "INFO" "SUCCESS: Test passed"
+    _TestEnd
 fi
 
 exit ${exitcode}

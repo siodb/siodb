@@ -106,6 +106,18 @@ fi
 # --------------------------------------------------------------
 # Global functions
 # --------------------------------------------------------------
+function _TestBegin {
+  _log "INFO" "Test ${TEST_NAME} begins..."
+  _TestBeginStartTimeStamp=$(date +%s)
+}
+
+function _TestEnd {
+  _TestEndStartTimeStamp=$(date +%s)
+  _log "INFO" "SUCCESS: Test passed in
+  $(echo "scale=2; ($_TestEndStartTimeStamp-$_TestBeginStartTimeStamp)/60" | bc -l)
+  seconds"
+}
+
 function _testfails {
   _killSiodb
 }
@@ -130,6 +142,18 @@ function _SetInstanceParameter {
   sed -i -e "s#.*${1}[ ]*=.*#${1} = ${2}#g" \
   /etc/siodb/instances/${SIODB_INSTANCE}/config
   cat /etc/siodb/instances/${SIODB_INSTANCE}/config | grep "${1}"
+}
+
+function _GetInstanceParameter {
+  _log "INFO" "getting value of parameter '${1}'"
+  _GetInstanceParameterReturnedValue=$(
+  cat /etc/siodb/instances/${SIODB_INSTANCE}/config \
+  | sed 's/^ *//;s/ *$//' \
+  | egrep -v '^#|^$' \
+  | grep "^${1}" \
+  | awk -F '=' '{print $2}' \
+  | sed 's/^ *//;s/ *$//'
+  )
 }
 
 function _ConfigureInstance {
@@ -395,7 +419,7 @@ function _RunSqlAndValidateOutput {
   SIOCLI_OUTPUT=$(timeout -v --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
     -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
-  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | egrep "${2}" | wc -l | bc)
+  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
     _failExit
