@@ -44,4 +44,6 @@ done
 
 ### Stop test
 _StopSiodb
-_log "INFO" "SUCCESS: All tests passed"
+_CheckLogFiles
+_TestEnd
+exit 0

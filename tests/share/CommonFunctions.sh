@@ -113,9 +113,8 @@ function _TestBegin {
 
 function _TestEnd {
   _TestEndStartTimeStamp=$(date +%s)
-  _log "INFO" "SUCCESS: Test passed in
-  $(echo "scale=2; ($_TestEndStartTimeStamp-$_TestBeginStartTimeStamp)/60" | bc -l)
-  seconds"
+  TestElapsedTime="$(echo "scale=2; ($_TestEndStartTimeStamp-$_TestBeginStartTimeStamp)/60" | bc -l)"
+  _log "INFO" "SUCCESS: Test passed in ${TestElapsedTime} minutes"
 }
 
 function _testfails {

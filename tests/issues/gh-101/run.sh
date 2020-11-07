@@ -32,6 +32,7 @@ dbname=testdb
 exitcode=$?
 
 _StopSiodb
+_CheckLogFiles
 
 if [[ ${exitcode} -eq 0 ]]; then
     _TestEnd

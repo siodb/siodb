@@ -63,4 +63,6 @@ _CheckLogFiles
 
 ### Stop test
 _StopSiodb
+_CheckLogFiles
 _TestEnd
+exit 0

@@ -97,4 +97,5 @@ fi
 
 _StopSiodb
 _CheckLogFiles
-_log "INFO" "SUCCESS: All tests passed"
+_TestEnd
+exit 0
