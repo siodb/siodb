@@ -77,7 +77,7 @@ done
 _CheckLogFiles
 
 # Restart the database
-_restartSiodb
+_RestartSiodb
 _CheckLogFiles
 
 ## Check value from each database, create a table with TEXT, BIGINT and TIMESTAMP
@@ -119,15 +119,17 @@ done
 
 ### Alter database: set description
 for cipher_id in ${SUPPORTED_CIPHER_IDS}; do
-  _RunSql "alter database db_${cipher_id}_with_cipher_id
-           set description = 'Description for db_${cipher_id}_with_cipher_id'"
-  _RunSql "alter database db_${cipher_id}_with_cipher_id_and_key_seed
-           set description = 'Description for db_${cipher_id}_with_cipher_id_and_key_seed'"
+  _RunSqlAndValidateOutput "alter database db_${cipher_id}_with_cipher_id
+                            set description = 'Description for db_${cipher_id}_with_cipher_id'" \
+                            "^Status 6: Not implemented yet$"
+  _RunSqlAndValidateOutput "alter database db_${cipher_id}_with_cipher_id_and_key_seed
+                            set description = 'Description for db_${cipher_id}_with_cipher_id_and_key_seed'" \
+                            "^Status 6: Not implemented yet$"
 done
 
 # Drop database that no exists
 _RunSqlAndValidateOutput "alter database noexists set description = 'noexists'"  \
-                         "^Status 2001: Database .* doesn't exist$"
+                         "^Status 6: Not implemented yet$"
 
 ### Drop each database
 for cipher_id in ${SUPPORTED_CIPHER_IDS}; do

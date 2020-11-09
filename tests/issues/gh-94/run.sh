@@ -55,7 +55,7 @@ _RunSql "select * from ${database_name}.huge_test"
 _CheckLogFiles
 
 ### Restart instance
-_restartSiodb
+_RestartSiodb
 
 ## Validate data
 _RunSql "select * from ${database_name}.huge_test"

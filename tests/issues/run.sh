@@ -4,17 +4,18 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/../share/LogFunctions.sh
 SCRIPT_DIR=$(dirname $(realpath "$0"))
 
 for d in $(ls -d "${SCRIPT_DIR}/gh-"*/); do
-    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | INFO | Running test for the issue $d"
+    _log "INFO" "Running test for the issue $d"
     ${d}/run.sh "$@"
     if [[ $? -ne  0 ]]; then
-        echo "## `date "+%Y-%m-%dT%H:%M:%S"` | TEST:ERROR | Tests in issue $d failed"
+        _log "TEST:ERROR" "Tests in issue $d failed"
         if [[ "${SIODB_TEST_ALL}" != "yes" ]]; then
             exit 1
         fi
     else
-        echo "## `date "+%Y-%m-%dT%H:%M:%S"` | TEST:SUCCESS | Tests in issue $d succeed"
+        _log "TEST:SUCCESS" "Tests in issue $d succeed"
     fi
 done

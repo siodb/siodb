@@ -28,7 +28,7 @@ for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
 done
 
 ### Restart instance
-_restartSiodb
+_RestartSiodb
 
 ### Login with keys Unix socket
 for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do

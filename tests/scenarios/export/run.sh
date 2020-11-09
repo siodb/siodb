@@ -18,7 +18,7 @@ _StartSiodb
 _RunSqlScript "${SCRIPT_DIR}/data.sql" 120
 _CheckLogFiles
 
-output_dir="${HOME}/tmp/export_$(date +%s)"
+output_dir="${HOME}/tmp/export_$(date +%s)_$$"
 mkdir -p "${output_dir}"
 
 echo "Exporting db1 ..."

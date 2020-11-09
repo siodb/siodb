@@ -11,6 +11,11 @@ fi
 set -e
 
 # --------------------------------------------------------------
+# Include
+# --------------------------------------------------------------
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/LogFunctions.sh
+
+# --------------------------------------------------------------
 # Global parameters
 # --------------------------------------------------------------
 UNIQUE_SUFFIX=$(date +%s)_$$
@@ -92,9 +97,6 @@ fi
 if [[ -z "${SIOTEST_KEEP_INSTANCE_UP}" ]]; then
   SIOTEST_KEEP_INSTANCE_UP=0
 fi
-if [[ -z "${CLIENT_TIMEOUT_SECOND}" ]]; then
-  CLIENT_TIMEOUT_SECOND=30
-fi
 
 # --------------------------------------------------------------
 # Trapping
@@ -127,7 +129,7 @@ function _killSiodb {
   fi
 }
 
-function _restartSiodb {
+function _RestartSiodb {
   _log "INFO" "Restarting instance..."
   SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
   SIOTEST_KEEP_INSTANCE_UP=0
@@ -347,11 +349,6 @@ function _CheckLogFiles {
   fi
 
   _log "INFO" "No error detected the in log files"
-}
-
-function _log {
-    if [[ -z ${TEST_NAME} ]]; then TEST_NAME="UNDEFINED"; fi
-    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | ${TEST_NAME} | $1 | $2"
 }
 
 function _failExit {

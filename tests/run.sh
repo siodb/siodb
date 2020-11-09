@@ -4,13 +4,14 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/share/LogFunctions.sh
 SCRIPT_DIR=$(dirname $(realpath "$0"))
 TEST_GOUPS="$(find ./ -maxdepth 1 -type d -not -path "./share" -not -path "./" -not -path "./skeleton")"
 OUTPUT_FILE="${HOME}/tmp/all_tests_$(date +%s)"
 export SIODB_TEST_ALL="yes"
 
 for d in ${TEST_GOUPS}; do
-    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | INFO | Running test group $d"
+    _log "INFO" "Running test group $d"
     ${d}/run.sh "$@" | tee -a "${OUTPUT_FILE}"
 done
 
@@ -22,11 +23,11 @@ echo ""
 ERROR_COUNT=$(cat "${OUTPUT_FILE}" | egrep '\| TEST\:ERROR \|' | wc -l)
 if [[ "${ERROR_COUNT}" -gt 0 ]]; then
   cat -v "${OUTPUT_FILE}" | egrep --color=never '\| TEST\:ERROR \||\| TEST\:SUCCESS \|'
-  echo "## `date "+%Y-%m-%dT%H:%M:%S"` | ERROR | Not all tests passed"
+  _log "ERROR" "Not all tests passed"
   exit 1
 else
   cat -v "${OUTPUT_FILE}" | egrep --color=never '\| TEST\:ERROR \||\| TEST\:SUCCESS \|'
-  echo "## `date "+%Y-%m-%dT%H:%M:%S"` | INFO | All tests passed successfully"
+  _log "INFO" "All tests passed successfully"
   exit 0
 fi
 

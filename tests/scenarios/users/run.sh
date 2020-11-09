@@ -119,7 +119,8 @@ _CheckLogFiles
 ## -------------------------------------------------------------------------
 ## Users keys
 ## -------------------------------------------------------------------------
-SIOKEY1=$(cat $(dirname "$0")/../../share/public_key)
+SIOKEY1="$(cat ${SCRIPT_DIR}/../../share/public_key)"
+
 #### Add key
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
 _RunSql "alter user user_test_1_${i} add access key key1 '${SIOKEY1}'"

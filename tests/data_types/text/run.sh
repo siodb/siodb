@@ -25,7 +25,7 @@ _StartSiodb
 ## =============================================
 
 # TODO: Once issue https://github.com/siodb/siodb/issues/94 is fixed
-# output_dir="${HOME}/tmp/export_$(date +%s)"
+# output_dir="${HOME}/tmp/export_$(date +%s)_$$"
 # mkdir -p "${output_dir}"
 
 # # Create test data model
