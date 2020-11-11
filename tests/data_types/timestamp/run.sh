@@ -32,10 +32,10 @@ user_token=$(openssl rand -hex 64)
 _RunSql "alter user root add token test_token x'${user_token}'"
 
 # Insert random TS and check returned value
-for i in {1..1000}; do
+for i in {1..100}; do
   # Uncomment below when gh-104 fixed
-  # CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 00:00:00.$(date +"%N") + ${RANDOM:0:1} months + ${RANDOM:0:3} days + ${RANDOM:0:2} hours + ${RANDOM:0:2} minutes + ${RANDOM:0:2} seconds" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
-  CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 01:00:00.$(date +"%N")" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
+  # CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 12:00:00.$(date +"%N") AM + ${RANDOM:0:1} months + ${RANDOM:0:3} days + ${RANDOM:0:2} hours + ${RANDOM:0:2} minutes + ${RANDOM:0:2} seconds" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
+  CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 11:00:00.$(date +"%N") AM" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
   CTIMESTAMP_OUTPUT="$(date -d "${CTIMESTAMP}" +"%a %b %d %-Y %0l:%0M:%0S.%N %p")"
   _log "INFO" "Returned value should be: '${CTIMESTAMP_OUTPUT}'"
   _RunSql "insert into ${database_name}.t1 ( cts1 ) values ( '${CTIMESTAMP}' )"
