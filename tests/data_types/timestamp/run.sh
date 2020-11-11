@@ -27,22 +27,67 @@ _StartSiodb
 # Create test data model
 database_name=db_tst_timestamp
 _RunSql "create database ${database_name}"
-_RunSql "create table ${database_name}.t1 ( cts1 timestamp )"
 user_token=$(openssl rand -hex 64)
 _RunSql "alter user root add token test_token x'${user_token}'"
 
-# Insert random TS and check returned value
+# SQL: Insert random TS and check returned value
+table_name=t1
+_RunSql "create table ${database_name}.${table_name} ( cts1 timestamp )"
 for i in {1..100}; do
-  # Uncomment below when gh-104 fixed
-  # CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 12:00:00.$(date +"%N") AM + ${RANDOM:0:1} months + ${RANDOM:0:3} days + ${RANDOM:0:2} hours + ${RANDOM:0:2} minutes + ${RANDOM:0:2} seconds" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
-  CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 11:00:00.$(date +"%N") AM" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
-  CTIMESTAMP_OUTPUT="$(date -d "${CTIMESTAMP}" +"%a %b %d %-Y %0l:%0M:%0S.%N %p")"
-  _log "INFO" "Returned value should be: '${CTIMESTAMP_OUTPUT}'"
-  _RunSql "insert into ${database_name}.t1 ( cts1 ) values ( '${CTIMESTAMP}' )"
-  _RunSqlAndValidateOutput "select cts1 from ${database_name}.t1 where TRID = ${i}"  \
-                         "^${CTIMESTAMP_OUTPUT}$"
+    # Uncomment below when gh-104 and gh-107 fixed
+    # CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 12:00:00.$(date +"%N") AM + ${RANDOM:0:1} months + ${RANDOM:0:3} days + ${RANDOM:0:2} hours + ${RANDOM:0:2} minutes + ${RANDOM:0:2} seconds" +'%Y-%m-%d %0l:%0M:%0S.%-N %p')"
+    CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 11:00:00.$(date +"%N") AM" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
+    CTIMESTAMP_SIOCLI_OUTPUT="$(date -d "${CTIMESTAMP}" +"%a %b %d %-Y %0l:%0M:%0S.%N %p")"
+    CTIMESTAMP_REST_OUTPUT="$(date -d "${CTIMESTAMP}" +"%-Y-%m-%d %H:%0M:%0S.%-N")"
+    _log "INFO" "Returned value should be: '${CTIMESTAMP_SIOCLI_OUTPUT}'"
+    _RunSql "insert into ${database_name}.${table_name} ( cts1 ) values ( '${CTIMESTAMP}' )"
+     ## Check returned value
+    _RunSqlAndValidateOutput "select cts1 from ${database_name}.${table_name} where TRID = ${i}"  \
+                             "^${CTIMESTAMP_SIOCLI_OUTPUT}$"
+    CTIMESTAMP_REST_RETURNED="$(curl -s -k \
+    https://root:${user_token}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/${i} \
+    2>&1 \
+    | awk -F '"' '{print $10}')"
+    if [[ "${CTIMESTAMP_REST_OUTPUT}" != "${CTIMESTAMP_REST_RETURNED}" ]]; then
+        _log "ERROR" "REST SHOULD BE: '${CTIMESTAMP_REST_OUTPUT}' RETURNED: '${CTIMESTAMP_REST_RETURNED}'"
+        _failExit
+    fi
 done
 
+# REST: Insert random TS and check returned value (Test currently doesn't pass du to issue gh-107)
+table_name=t2
+_RunSql "create table ${database_name}.${table_name} ( cts1 timestamp )"
+for i in {1..100}; do
+    # Uncomment below when gh-104 fixed
+    # CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 12:00:00.$(date +"%N") AM + ${RANDOM:0:1} months + ${RANDOM:0:3} days + ${RANDOM:0:2} hours + ${RANDOM:0:2} minutes + ${RANDOM:0:2} seconds" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
+    CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 11:00:00.$(date +"%N") AM" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
+    CTIMESTAMP_SIOCLI_OUTPUT="$(date -d "${CTIMESTAMP}" +"%a %b %d %-Y %0l:%0M:%0S.%N %p")"
+    # uncomment when gh-107 fixed
+    # CTIMESTAMP_REST_INPUT="$(date -d "${CTIMESTAMP}" +"%-Y-%m-%d %H:%0M:%0S.%N")"
+    CTIMESTAMP_REST_INPUT="$(date -d "${CTIMESTAMP}" +"%-Y-%m-%d %H:%0M:%0S.%N")"
+    CTIMESTAMP_REST_OUTPUT="$(date -d "${CTIMESTAMP}" +"%-Y-%m-%d %H:%0M:%0S.%-N")"
+    STATUS=$(curl -X POST -d "[{\"cts1\": \"${CTIMESTAMP_REST_INPUT}\"}]" \
+    --write-out '%{http_code}' -o /dev/null \
+    "http://root:${user_token}@localhost:50080/databases/${database_name}/tables/${table_name}/rows")
+    # uncomment when issue gh-106 fixed
+    #if [[ "${STATUS}" != "201" ]]; then
+    if [[ "${STATUS}" != "200" ]]; then
+        _log "ERROR" "curl returned ${STATUS}"
+        _failExit
+    fi
+    ## Check returned value
+    _log "INFO" "Returned value should be: '${CTIMESTAMP_SIOCLI_OUTPUT}'"
+    _RunSqlAndValidateOutput "select cts1 from ${database_name}.${table_name} where TRID = ${i}"  \
+                             "^${CTIMESTAMP_SIOCLI_OUTPUT}$"
+    CTIMESTAMP_REST_RETURNED="$(curl -s -k \
+    https://root:${user_token}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/${i} \
+    2>&1 \
+    | awk -F '"' '{print $10}')"
+    if [[ "${CTIMESTAMP_REST_OUTPUT}" != "${CTIMESTAMP_REST_RETURNED}" ]]; then
+        _log "ERROR" "REST SHOULD BE: '${CTIMESTAMP_REST_OUTPUT}' RETURNED: '${CTIMESTAMP_REST_RETURNED}'"
+        _failExit
+    fi
+done
 
 ## =============================================
 ## TEST FOOTER
