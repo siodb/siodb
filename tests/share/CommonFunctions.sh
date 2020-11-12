@@ -33,6 +33,14 @@ previousInstanceStartTimestamp=0
 doInstanceConfiguration=1
 defaultClientTimeoutSecond=30
 
+# timeout(1) on Ubuntu 18.04 doesn't support option -v
+# Try to detect this.
+_timeout_verbose=-v
+set +e
+timeout -v 10000 "cat /etc/issue" >/dev/null 2>&1
+if [[ $? -ne 0 ]]; then unset _timeout_verbose; fi
+set -e
+
 # --------------------------------------------------------------
 # Command line
 # --------------------------------------------------------------
@@ -365,7 +373,7 @@ function _RunSqlScript {
   if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL script $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  timeout -v --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
     -i "${ROOT_DIR}/tests/share/private_key" < $1
 }
@@ -378,7 +386,7 @@ function _RunSqlThroughUserUnixSocket {
   if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  timeout -v --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
 }
 
@@ -390,7 +398,7 @@ function _RunSqlThroughUserTCPSocket {
   if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  timeout -v --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo -u ${1} -i ${2} <<< ''"${3}"''
 }
 
@@ -400,7 +408,7 @@ function _RunSql {
   if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  timeout -v --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
   -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
 }
@@ -412,7 +420,7 @@ function _RunSqlAndValidateOutput {
   if [[ ! -z "${3}" ]]; then TIMEOUT_SECOND="${3}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  SIOCLI_OUTPUT=$(timeout -v --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
+  SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
     -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
   EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)

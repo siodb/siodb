@@ -32,13 +32,23 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         io::InputOutputStream& connection, std::ostream& os, bool stopOnError,
         bool printDebugMessages);
 
+// Server connectioninformation
+struct ServerConnectionInfo {
+    /** Instance name */
+    std::string m_instanceName;
+
+    /** Session identifier */
+    std::string m_sessionId;
+};
+
 /**
  * Authenticates user.
  * @param identityKey Indentity key of a user.
  * @param userName Name of a user.
  * @param connection Connection IO.
+ * @param[out] serverConnectionInfo Server information.
  */
 void authenticate(const std::string& identityKey, const std::string& userName,
-        io::InputOutputStream& connectionFd);
+        io::InputOutputStream& connectionFd, ServerConnectionInfo& serverConnectionInfo);
 
 }  // namespace siodb::sql_client

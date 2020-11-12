@@ -210,6 +210,7 @@ int commandPrompt(const ClientParameters& params)
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
     const bool needPrompt = params.m_stdinIsTerminal;
     const bool singleCommand = static_cast<bool>(params.m_command);
+    ServerConnectionInfo serverConnectionInfo;
 
     do {
         try {
@@ -329,7 +330,8 @@ int commandPrompt(const ClientParameters& params)
                               << instanceSocketPath << " in the admin mode." << std::endl;
                     connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
                 }
-                authenticate(params.m_identityKey, params.m_user, *connection);
+                authenticate(
+                        params.m_identityKey, params.m_user, *connection, serverConnectionInfo);
                 requestId = 1;
             }
 
@@ -363,18 +365,13 @@ int exportSqlDump(const ClientParameters& params)
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
     if (params.m_instance.empty()) {
         auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
-
         if (params.m_encryption) {
             tlsClient = std::make_unique<siodb::crypto::TlsClient>();
-
             if (params.m_verifyCertificates) tlsClient->enableCertificateVerification();
-
             auto tlsConnection = tlsClient->connectToServer(connectionFd);
-
             auto x509Certificate = SSL_get_peer_certificate(tlsConnection->getSsl());
             if (x509Certificate == nullptr)
                 throw siodb::crypto::OpenSslError("SSL_get_peer_certificate failed");
-
             connection = std::move(tlsConnection);
         } else
             connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
@@ -385,7 +382,9 @@ int exportSqlDump(const ClientParameters& params)
         connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
     }
 
-    siodb::sql_client::authenticate(params.m_identityKey, params.m_user, *connection);
+    ServerConnectionInfo serverConnectionInfo;
+    siodb::sql_client::authenticate(
+            params.m_identityKey, params.m_user, *connection, serverConnectionInfo);
 
     std::ostream* out = &std::cout;
     std::unique_ptr<std::ofstream> ofs;
@@ -405,7 +404,10 @@ int exportSqlDump(const ClientParameters& params)
         ::gmtime_r(&currentTime, &utcTime);
         *out << "-- Siodb SQL Dump\n"
              << "-- Hostname: " << params.m_host << '\n'
-             << "-- Instance: " << params.m_instance << '\n'
+             << "-- Instance: "
+             << (serverConnectionInfo.m_instanceName.empty() ? serverConnectionInfo.m_instanceName
+                                                             : params.m_instance)
+             << '\n'
              << "-- Timestamp: " << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S") << '\n'
              << "-- Timestamp (UTC): " << std::put_time(&utcTime, "%Y-%m-%d %H:%M:%S") << '\n';
 
