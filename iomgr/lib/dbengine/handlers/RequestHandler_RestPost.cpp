@@ -73,6 +73,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     }
 
     response.set_affected_row_count(tridList.size());
+    response.set_rest_status_code(kRestStatusCreated);
 
     // Write response message
     {
@@ -85,7 +86,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeModificationJsonProlog(kRestStatusOk, tridList.size(), jsonWriter);
+    writeModificationJsonProlog(kRestStatusCreated, tridList.size(), jsonWriter);
     bool needComma = false;
     for (const auto& trid : tridList) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();

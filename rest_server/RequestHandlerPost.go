@@ -41,7 +41,7 @@ func (worker restWorker) post(
 		return err
 	}
 
-	if err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
+	if _, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
@@ -54,10 +54,12 @@ func (worker restWorker) post(
 		return err
 	}
 
-	if err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
+	if restStatusCode, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
+	} else {
+		c.Writer.WriteHeader(int(restStatusCode))
 	}
 
 	// Read and stream chunked JSON
