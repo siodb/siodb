@@ -89,9 +89,7 @@ for ((i = 1; i < ${numberOfTSToTest}+1; ++i)); do
     STATUS=$(curl -X POST -d "[{\"cts1\": \"${CTIMESTAMP_REST_INPUT}\"}]" \
     --write-out '%{http_code}' -o /dev/null \
     "http://root:${user_token}@localhost:50080/databases/${database_name}/tables/${table_name}/rows")
-    # uncomment when issue gh-106 fixed
-    #if [[ "${STATUS}" != "201" ]]; then
-    if [[ "${STATUS}" != "200" ]]; then
+    if [[ "${STATUS}" != "201" ]]; then
         _log "ERROR" "curl returned ${STATUS}"
         _failExit
     fi
