@@ -12,6 +12,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test functions
 
 ## Specific test parameters
+numberOfTSToTest=100
 
 ## =============================================
 ## TEST HEADER
@@ -30,10 +31,12 @@ _RunSql "create database ${database_name}"
 user_token=$(openssl rand -hex 64)
 _RunSql "alter user root add token test_token x'${user_token}'"
 
-# SQL: Insert random TS and check returned value
+##
+## SQL: Insert random TS and check returned value
+##
 table_name=t1
 _RunSql "create table ${database_name}.${table_name} ( cts1 timestamp )"
-for i in {1..100}; do
+for ((i = 1; i < ${numberOfTSToTest}+1; ++i)); do
     # Uncomment below when gh-104 and gh-107 fixed
     # CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 12:00:00.$(date +"%N") AM + ${RANDOM:0:1} months + ${RANDOM:0:3} days + ${RANDOM:0:2} hours + ${RANDOM:0:2} minutes + ${RANDOM:0:2} seconds" +'%Y-%m-%d %0l:%0M:%0S.%-N %p')"
     CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 11:00:00.$(date +"%N") AM" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
@@ -54,10 +57,27 @@ for i in {1..100}; do
     fi
 done
 
-# REST: Insert random TS and check returned value (Test currently doesn't pass du to issue gh-107)
+##
+## Check for nanoseconds with prepended "0"
+##
 table_name=t2
 _RunSql "create table ${database_name}.${table_name} ( cts1 timestamp )"
-for i in {1..100}; do
+CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 11:00:00.000000123 AM" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
+CTIMESTAMP_SIOCLI_OUTPUT="$(date -d "${CTIMESTAMP}" +"%a %b %d %-Y %0l:%0M:%0S.%N %p")"
+CTIMESTAMP_REST_OUTPUT="$(date -d "${CTIMESTAMP}" +"%-Y-%m-%d %H:%0M:%0S.%-N")"
+_log "INFO" "Returned value should be: '${CTIMESTAMP_SIOCLI_OUTPUT}'"
+_RunSql "insert into ${database_name}.${table_name} ( cts1 ) values ( '${CTIMESTAMP}' )"
+ ## Check returned value
+_RunSqlAndValidateOutput "select cts1 from ${database_name}.${table_name} where TRID = 1"  \
+                         "^${CTIMESTAMP_SIOCLI_OUTPUT}$"
+
+
+##
+## REST: Insert random TS and check returned value (Test currently doesn't pass du to issue gh-107)
+##
+table_name=t3
+_RunSql "create table ${database_name}.${table_name} ( cts1 timestamp )"
+for ((i = 1; i < ${numberOfTSToTest}+1; ++i)); do
     # Uncomment below when gh-104 fixed
     # CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 12:00:00.$(date +"%N") AM + ${RANDOM:0:1} months + ${RANDOM:0:3} days + ${RANDOM:0:2} hours + ${RANDOM:0:2} minutes + ${RANDOM:0:2} seconds" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
     CTIMESTAMP="$(date -d "${RANDOM:0:4}-01-01 11:00:00.$(date +"%N") AM" +'%Y-%m-%d %0l:%0M:%0S.%N %p')"
