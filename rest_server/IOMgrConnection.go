@@ -142,29 +142,32 @@ func (ioMgrConn *ioMgrConnection) writeIOMgrRequest(
 	return requestID, nil
 }
 
-func (ioMgrConn *ioMgrConnection) readIOMgrResponse(requestID uint64) (err error) {
+func (ioMgrConn *ioMgrConnection) readIOMgrResponse(requestID uint64) (restStatusCode uint32, err error) {
 	var databaseEngineResponse siodbproto.DatabaseEngineResponse
+	restStatusCode = 0
 
 	if _, err := ioMgrConn.readMessage(messageTypeDatabaseEngineReposnse, &databaseEngineResponse); err != nil {
-		return fmt.Errorf("Can't read response from IOMgr: %v", err)
+		return restStatusCode, fmt.Errorf("Can't read response from IOMgr: %v", err)
 	}
 	log.Debug("readIOMgrResponse | databaseEngineResponse: %v", &databaseEngineResponse)
 	log.Debug("readIOMgrResponse | databaseEngineResponse.RequestId: %v", databaseEngineResponse.RequestId)
+	log.Debug("readIOMgrResponse | databaseEngineResponse.rest_status_code: %v", databaseEngineResponse.RestStatusCode)
 	log.Debug("readIOMgrResponse | ioMgrConn.RequestID: %v", ioMgrConn.RequestID)
+	restStatusCode = databaseEngineResponse.RestStatusCode
 
 	if databaseEngineResponse.RequestId != requestID {
 		ioMgrConn.Close()
 		ioMgrConn.trackedNetConn.Conn = nil
-		return fmt.Errorf("Request ID mismatch: databaseEngineResponse.RequestId (%v) != requestID (%v)",
+		return restStatusCode, fmt.Errorf("Request ID mismatch: databaseEngineResponse.RequestId (%v) != requestID (%v)",
 			databaseEngineResponse.RequestId, requestID)
 	}
 
 	if len(databaseEngineResponse.Message) > 0 {
-		return fmt.Errorf("code: %v, message: %v",
+		return restStatusCode, fmt.Errorf("code: %v, message: %v",
 			databaseEngineResponse.Message[0].GetStatusCode(), databaseEngineResponse.Message[0].GetText())
 	}
 
-	return nil
+	return restStatusCode, nil
 }
 
 func (ioMgrConn *ioMgrConnection) readChunkedJSON(c *gin.Context) (err error) {

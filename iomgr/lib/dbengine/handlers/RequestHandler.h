@@ -29,7 +29,7 @@ class JsonWriter;
 
 namespace siodb::iomgr::dbengine {
 
-/** 
+/**
  * Handles SQL based requests.
  * Request handler automaticall marks current database as used.
  */
@@ -609,6 +609,9 @@ private:
 
     /** REST status "OK" */
     static constexpr int kRestStatusOk = 200;
+
+    /** REST status "Created" */
+    static constexpr int kRestStatusCreated = 201;
 
     /** REST status "not found" */
     static constexpr int kRestStatusNotFound = 404;

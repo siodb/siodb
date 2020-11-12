@@ -44,6 +44,7 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
             std::move(const_cast<std::vector<Variant>&>(request.m_values)), false, tp);
     const bool rowUpdated = std::get<0>(updateResult);
     if (rowUpdated) response.set_affected_row_count(1);
+    response.set_rest_status_code(kRestStatusOk);
 
     // Write response message
     {

@@ -49,10 +49,12 @@ func (worker restWorker) delete(
 		return err
 	}
 
-	if err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
+	if restStatusCode, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
+	} else {
+		c.Writer.WriteHeader(int(restStatusCode))
 	}
 	// Read and stream chunked JSON
 	if err := ioMgrConn.readChunkedJSON(c); err != nil {
