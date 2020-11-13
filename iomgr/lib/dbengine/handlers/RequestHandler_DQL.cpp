@@ -446,4 +446,163 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     rawOutput.CheckNoError();
 }
 
+void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        [[maybe_unused]] const requests::ShowTablesRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    response.set_affected_row_count(0);
+
+    const std::string& databaseName = m_currentDatabaseName;
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    const auto sysTableTable = database->findTableChecked(kSysTablesTableName);
+    const auto nameColumn = sysTableTable->findColumnChecked(kSysTables_Name_ColumnName);
+    const auto descriptionColumn =
+            sysTableTable->findColumnChecked(kSysTables_Description_ColumnName);
+
+    addColumnToResponse(response, *nameColumn, "");
+    addColumnToResponse(response, *descriptionColumn, "");
+
+    bool hasNullableColumns = false;
+
+    ////////////////////
+
+    utils::DefaultErrorCodeChecker errorChecker;
+    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+
+    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
+
+    ////////////////////
+
+    std::unique_ptr<requests::DBExpressionEvaluationContext> dbContext;
+    {
+        std::vector<DataSetPtr> tableDataSets;
+        LOG_DEBUG << ">>>>>>>>>>>>>>>>>>>>> 0 >> " << kSysTablesTableName;
+        tableDataSets.reserve(1);
+        tableDataSets.push_back(std::make_shared<TableDataSet>(sysTableTable, ""));
+        dbContext =
+                std::make_unique<requests::DBExpressionEvaluationContext>(std::move(tableDataSets));
+    }
+    const auto& dataSets = dbContext->getDataSets();
+    LOG_DEBUG << "RequestHandler::executeSelectRequest: There are " << dataSets.size()
+              << " data sets to read from";
+
+    ////////////////////
+    std::vector<std::vector<TableColumn>> tableColumnRecordLists;
+    tableColumnRecordLists.reserve(1);
+    for (const auto& tableDataSet : dataSets) {
+        const auto table = database->findTableChecked(tableDataSet->getDataSourceId());
+        const auto columnSetId = table->getCurrentColumnSetId();
+        const auto tableColumns = table->getColumnsOrderedByPosition();
+        const auto n = tableColumns.size();
+        auto& tableColumnRecords = tableColumnRecordLists.emplace_back();
+        tableColumnRecords.reserve(n);
+        for (std::size_t i = 0; i < n; ++i)
+            tableColumnRecords.emplace_back(tableColumns[i], columnSetId, i);
+    }
+
+    ////////////////////
+    updateColumnsFromExpression(
+            dataSets, requests::ResultExpression(kSysTables_Name_ColumnName, ""), errors);
+    updateColumnsFromExpression(
+            dataSets, requests::ResultExpression(kSysTables_Name_ColumnName, ""), errors);
+
+    ////////////////////
+
+    std::size_t columnCountToSend = 0;
+    for (const auto& tableColumn : tableColumnRecordLists[0]) {
+        dataSets[0]->emplaceColumnInfo(
+                tableColumn.m_position, tableColumn.m_column->getName(), utils::g_emptyString);
+        hasNullableColumns |= !tableColumn.m_column->isNotNull();
+    }
+    columnCountToSend += tableColumnRecordLists[0].size();
+
+    ////////////////////
+
+    for (auto& tableDataSet : dataSets)
+        tableDataSet->resetCursor();
+
+    std::uint64_t inputRowCount = 0;
+    std::uint64_t outputRowCount = 0;
+    try {
+        bool rowDataAvailable = true;
+        LOG_DEBUG << ">>>>>>>>>>>>>>>>>>>>> 1";
+        for (auto& tableDataSet : dataSets) {
+            rowDataAvailable &= tableDataSet->hasCurrentRow();
+            LOG_DEBUG << ">>>>>>>>>>>>>>>>>>>>> 2";
+            if (!rowDataAvailable) break;
+            LOG_DEBUG << ">>>>>>>>>>>>>>>>>>>>> 2.1";
+        }
+
+        LOG_DEBUG << ">>>>>>>>>>>>>>>>>>>>> 3";
+        stdext::bitmask nullMask;
+        if (hasNullableColumns) nullMask.resize(columnCountToSend);
+
+        std::vector<Variant> values(columnCountToSend);
+
+        LOG_DEBUG << ">>>>>>>>>>>>>>>>>>>>> 4";
+        while (rowDataAvailable) {
+            LOG_DEBUG << ">>>>>>>>>>>>>>>>>>>>> 5";
+            ++inputRowCount;
+
+            std::size_t rowLength = 0;
+            std::size_t valueIndex = 0;
+
+            auto& dataSet = *dataSets[0];
+            dataSet.readCurrentRow();
+
+            for (std::size_t i = 0; i < columnCountToSend; ++i) {
+                LOG_DEBUG << ">>>>>>>>>>>>>>>>>>>>> valueIndex >> " << valueIndex;
+                values[valueIndex] = dataSet.getValues()[i];
+                rowLength += getVariantSize(values[valueIndex]);
+                if (hasNullableColumns) nullMask.set(valueIndex, values[valueIndex].isNull());
+                ++valueIndex;
+            }
+
+            // //values[0] = expr.m_expression->evaluate(*dbContext);
+            // rowLength += getVariantSize(values[0]);
+            // if (hasNullableColumns) nullMask.set(valueIndex, values[0].isNull());
+            // ++valueIndex;
+
+            // //values[1] = expr.m_expression->evaluate(*dbContext);
+            // rowLength += getVariantSize(values[1]);
+            // if (hasNullableColumns) nullMask.set(valueIndex, values[1].isNull());
+            // ++valueIndex;
+
+            rowLength += nullMask.size();
+
+            codedOutput.WriteVarint64(rowLength);
+            rawOutput.CheckNoError();
+
+            if (hasNullableColumns) {
+                codedOutput.WriteRaw(nullMask.data(), nullMask.size());
+                rawOutput.CheckNoError();
+            }
+
+            for (std::size_t i = 0; i < columnCountToSend; ++i) {
+                writeVariant(values[i], codedOutput);
+                rawOutput.CheckNoError();
+            }
+
+            ++outputRowCount;
+
+            rowDataAvailable = moveToNextRow(dataSets);
+        }
+    } catch (DatabaseError& ex) {
+        LOG_ERROR << kLogContext << ex.what();
+        // DatabaseError exception is only possible before data serialization and writing,
+        // so data shouldn't be sent to the server at that moment.
+        // All other exceptions are caught on the upper level.
+        codedOutput.WriteVarint64(kNoMoreRows);
+        rawOutput.CheckNoError();
+        // NOTE: Do not re-throw here to prevent double response.
+    }
+
+    codedOutput.WriteVarint64(kNoMoreRows);
+    rawOutput.CheckNoError();
+
+    LOG_DEBUG << "RequestHandler::executeSelectRequest: " << inputRowCount << " rows in, "
+              << outputRowCount << " rows out";
+}
 }  // namespace siodb::iomgr::dbengine

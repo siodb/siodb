@@ -699,7 +699,7 @@ private:
     /** Master column reference */
     ColumnPtr m_masterColumn;
 
-    /** 
+    /**
      * Cached first user TRID.
      * NOTE: We have to keep it here, to prevent some crashes.
      */

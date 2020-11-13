@@ -70,6 +70,7 @@ sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
 		| simple_select_stmt
 		| select_stmt
 		| show_databases_stmt
+		| show_tables_stmt
 		| update_stmt
 		| update_stmt_limited
 		| use_database_stmt
@@ -332,6 +333,8 @@ select_or_values:
 	)*;
 
 show_databases_stmt: K_SHOW K_DATABASES;
+
+show_tables_stmt: K_SHOW K_TABLES;
 
 update_stmt:
 	with_clause? K_UPDATE (
@@ -974,6 +977,7 @@ K_SELECT: S E L E C T;
 K_SET: S E T;
 K_SHOW: S H O W;
 K_TABLE: T A B L E;
+K_TABLES: T A B L E S;
 K_TEMP: T E M P;
 K_TEMPORARY: T E M P O R A R Y;
 K_THEN: T H E N;

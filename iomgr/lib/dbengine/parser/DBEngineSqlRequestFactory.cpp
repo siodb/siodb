@@ -113,6 +113,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
             return createSelectRequestForFactoredSelectStatement(node);
         case SiodbParser::RuleShow_databases_stmt:
             return std::make_unique<requests::ShowDatabasesRequest>();
+        case SiodbParser::RuleShow_tables_stmt:
+            return std::make_unique<requests::ShowTablesRequest>();
         case SiodbParser::RuleInsert_stmt: return createInsertRequest(node);
         case SiodbParser::RuleUpdate_stmt: return createUpdateRequest(node);
         case SiodbParser::RuleDelete_stmt: return createDeleteRequest(node);
