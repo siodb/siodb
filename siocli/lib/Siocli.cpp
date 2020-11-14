@@ -21,6 +21,7 @@
 #include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
+#include <siodb/common/stl_ext/deleter.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/sys/Syscalls.h>
@@ -60,6 +61,10 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+
+// Readline
+#include <readline/history.h>
+#include <readline/readline.h>
 
 namespace {
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
@@ -111,6 +116,7 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()("export-all,E", "Export all databases");
         desc.add_options()("output-file,o", boost::program_options::value<std::string>(),
                 "Output file for the exported data");
+        desc.add_options()("use-readline,r", "Use readline library for console input");
         desc.add_options()("help,h", "Print help message");
         desc.add_options()("nologo", "Do not print logo");
         desc.add_options()("debug,d", "Print debug messages");
@@ -153,6 +159,7 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_echoCommandsWhenNotOnATerminal = vm.count("no-echo") == 0;
         params.m_verifyCertificates = vm.count("verify-certificates") > 0;
         if (vm.count("output-file") > 0) params.m_outputFile = vm["output-file"].as<std::string>();
+        params.m_useReadline = vm.count("use-readline") > 0;
         params.m_noLogo = vm.count("nologo") > 0;
         params.m_printDebugMessages = vm.count("debug") > 0;
 
@@ -204,11 +211,16 @@ void printLogo()
 
 int commandPrompt(const ClientParameters& params)
 {
+    static bool readlineHistoryInitialized = false;
+    if (params.m_stdinIsTerminal && params.m_useReadline && !readlineHistoryInitialized) {
+        using_history();
+        readlineHistoryInitialized = true;
+    }
+
     std::uint64_t requestId = 1;
     bool hasMoreInput = true;
     std::unique_ptr<siodb::io::InputOutputStream> connection;
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
-    const bool needPrompt = params.m_stdinIsTerminal;
     const bool singleCommand = static_cast<bool>(params.m_command);
     ServerConnectionInfo serverConnectionInfo;
 
@@ -220,63 +232,81 @@ int commandPrompt(const ClientParameters& params)
             if (singleCommand) {
                 command = params.m_command.get();
             } else {
-                std::ostringstream text;
-                std::size_t textLength = 0;
-                char textLastChar = '\0';
-
-                // Read command text, possibly multiline.
-                // Multiline command-text must end with a semicolon.
-                std::size_t lineNo = 0;
-                if (needPrompt) std::cout << '\n' << kFirstLinePrompt << std::flush;
-                do {
-                    std::string line;
-                    if (!std::getline(std::cin, line)) {
-                        hasMoreInput = false;
-                        break;
+                if (params.m_stdinIsTerminal && params.m_useReadline) {
+                    std::unique_ptr<char, stdext::free_deleter<char>> rltext;
+                    rltext.reset(::readline(kFirstLinePrompt));
+                    if (!rltext) continue;
+                    commandHolder = rltext.get();
+                    boost::trim(commandHolder);
+                    if (commandHolder.empty()) continue;
+                    add_history(commandHolder.c_str());
+                    if (commandHolder.find_first_of('\n') == std::string::npos) {
+                        // One line, maybe single word command
+                        std::string s = commandHolder;
+                        boost::to_lower(s);
+                        singleWordCommand = decodeSingleWordCommand(s);
                     }
+                } else {
+                    std::ostringstream text;
+                    std::size_t textLength = 0;
+                    char textLastChar = '\0';
 
-                    boost::trim(line);
-                    if (line.empty()) {
-                        if (needPrompt) {
-                            std::cout
-                                    << (textLength == 0 ? kFirstLinePrompt : kSubsequentLinePrompt)
-                                    << std::flush;
+                    // Read command text, possibly multiline.
+                    // Multiline command-text must end with a semicolon.
+                    std::size_t lineNo = 0;
+                    if (params.m_stdinIsTerminal)
+                        std::cout << '\n' << kFirstLinePrompt << std::flush;
+                    do {
+                        std::string line;
+                        if (!std::getline(std::cin, line)) {
+                            hasMoreInput = false;
+                            break;
                         }
-                        continue;
-                    }
 
-                    // Do not send comments to siodb
-                    if (boost::starts_with(line, kCommentStart)) {
-                        if (needPrompt) {
-                            std::cout << (textLength ? kFirstLinePrompt : kSubsequentLinePrompt)
-                                      << std::flush;
+                        boost::trim(line);
+                        if (line.empty()) {
+                            if (params.m_stdinIsTerminal) {
+                                std::cout << (textLength == 0 ? kFirstLinePrompt
+                                                              : kSubsequentLinePrompt)
+                                          << std::flush;
+                            }
+                            continue;
                         }
-                        continue;
-                    }
 
-                    if (line.back() != ';') {
-                        if (needPrompt) std::cout << kSubsequentLinePrompt << std::flush;
-                    }
+                        // Do not send comments to siodb
+                        if (boost::starts_with(line, kCommentStart)) {
+                            if (params.m_stdinIsTerminal) {
+                                std::cout << (textLength ? kFirstLinePrompt : kSubsequentLinePrompt)
+                                          << std::flush;
+                            }
+                            continue;
+                        }
 
-                    if (textLength > 0) {
-                        text << '\n';
-                        ++textLength;
-                    }
+                        if (line.back() != ';') {
+                            if (params.m_stdinIsTerminal)
+                                std::cout << kSubsequentLinePrompt << std::flush;
+                        }
 
-                    text << line;
-                    textLength += line.length();
-                    if (!line.empty()) textLastChar = line.back();
+                        if (textLength > 0) {
+                            text << '\n';
+                            ++textLength;
+                        }
 
-                    ++lineNo;
-                    if (lineNo == 1) {
-                        auto command1 = boost::to_lower_copy(line);
-                        // Remove whitespace before ';' and ';' itself
-                        boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
-                        singleWordCommand = decodeSingleWordCommand(command1);
-                    }
-                } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
-                         && (textLength == 0 || textLastChar != ';'));
-                commandHolder = text.str();
+                        text << line;
+                        textLength += line.length();
+                        if (!line.empty()) textLastChar = line.back();
+
+                        ++lineNo;
+                        if (lineNo == 1) {
+                            auto command1 = boost::to_lower_copy(line);
+                            // Remove whitespace before ';' and ';' itself
+                            boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
+                            singleWordCommand = decodeSingleWordCommand(command1);
+                        }
+                    } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
+                             && (textLength == 0 || textLastChar != ';'));
+                    commandHolder = text.str();
+                }
             }  // read command
 
             // Maybe echo command
@@ -470,7 +500,8 @@ SingleWordCommandType decodeSingleWordCommand(const std::string& command) noexce
         return SingleWordCommandType::kExit;
     else if (command == "help")
         return SingleWordCommandType::kHelp;
-    return SingleWordCommandType::kUnknownCommand;
+    else
+        return SingleWordCommandType::kUnknownCommand;
 }
 
 }  // namespace siodb::sql_client

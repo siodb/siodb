@@ -19,7 +19,7 @@ namespace siodb::sql_client {
 /**
  * Executes given command on the server and prints out results.
  * @param requestId Unique request identifier.
- * @param commandText A text of the command. This parameter will be moved.
+ * @param commandText A text of the command. will be moved.
  * @param connection Connection IO.
  * @param os Output stream.
  * @param stopOnError Indicates that execution should stop on SQL error.

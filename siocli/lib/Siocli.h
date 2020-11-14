@@ -36,6 +36,9 @@ struct ClientParameters {
     /** Output file */
     std::string m_outputFile;
 
+    /** Database name to export. Empty string means export all databases */
+    std::string m_exportObjectName;
+
     /** Indication whether client should use encryption or not */
     bool m_encryption = false;
 
@@ -51,11 +54,11 @@ struct ClientParameters {
     /** Indicates that siocli should not print logo */
     bool m_noLogo = false;
 
-    /** Inducates the debug messages should be printed */
+    /** Indicates the debug messages should be printed */
     bool m_printDebugMessages = false;
 
-    /** Database name to export. Empty string means export all databases */
-    std::string m_exportObjectName;
+    /** Indicates that readline should be used for reading commands */
+    bool m_useReadline = false;
 };
 
 /** Prints logo. */
@@ -92,6 +95,7 @@ enum class SingleWordCommandType {
 /**
  * Attempts to decode a single-word command.
  * @param command Command text.
+ * @param length Command length.
  * @return Decoded command code or SingleWordCommandType::kUnknownCommand if input string
  *         doesn't represent a single word command.
  */

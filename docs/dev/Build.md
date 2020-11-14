@@ -29,10 +29,10 @@ cd $HOME
 
 # Required tools and libraries
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
-    graphviz gcc-8 g++-8 libboost1.65-dev libboost-iostreams1.65-dev libboost-log1.65-dev \
-    libboost-program-options1.65-dev libcurl4-openssl-dev libtool libssl-dev \
-    lsb-release openjdk-11-jdk-headless python pkg-config uuid-dev \
-    clang-format-10 ubuntu-dbgsym-keyring
+    graphviz gcc-8 g++-8 libboost1.65-dev libboost-iostreams1.65-dev \
+    libboost-log1.65-dev libboost-program-options1.65-dev libcurl4-openssl-dev \
+    readline-dev libtool libssl-dev lsb-release openjdk-11-jdk-headless python \
+    pkg-config uuid-dev clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
@@ -56,9 +56,9 @@ cd $HOME
 # Required tools and libraries
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
     graphviz libboost1.71-dev libboost-iostreams1.71-dev libboost-log1.71-dev \
-    libboost-program-options1.71-dev libcurl4-openssl-dev libtool libssl-dev \
-    lsb-release openjdk-11-jdk-headless pkg-config python2 uuid-dev \
-    clang-format-10 ubuntu-dbgsym-keyring
+    libboost-program-options1.71-dev libcurl4-openssl-dev libreadline-devel\
+    libtool libssl-dev lsb-release openjdk-11-jdk-headless pkg-config python2 \
+    uuid-dev clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
 sudo update-alternatives --install /usr/bin/clang-format clang-format \
@@ -84,8 +84,9 @@ cd $HOME
 # Required tools and libraries
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
     graphviz libboost1.67-dev libboost-iostreams1.67-dev libboost-log1.67-dev \
-    libboost-program-options1.67-dev libcurl4-openssl-dev libtool libssl-dev \
-    lsb-release openjdk-11-jdk-headless pkg-config python2 uuid-dev wget
+    libboost-program-options1.67-dev libcurl4-openssl-dev libtool \
+    libreadline-devel libssl-dev lsb-release openjdk-11-jdk-headless \
+    pkg-config python2 uuid-dev wget
 
 # Install clang-9. This one is for SLES, but works on the Debian 10 too.
 sudo apt install -y libncurses5
@@ -142,7 +143,7 @@ sudo yum install -y git
 sudo yum install -y autoconf automake boost169-devel cmake3 curl \
     devtoolset-8-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
     libatomic libcurl-devel libtool libuuid-devel openssl-devel pkgconfig \
-    python redhat-lsb uuid-devel wget which zlib-devel
+    python readline-devel redhat-lsb uuid-devel wget which zlib-devel
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -198,8 +199,8 @@ sudo dnf -y update
 # Install required tools and libraries
 sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
     git-clang-format java-11-openjdk-headless libatomic libcurl-devel libtool \
-    libuuid-devel openssl-devel python2 pkgconfig redhat-lsb wget which \
-    zlib-devel
+    libuuid-devel openssl-devel python2 pkgconfig readline-devel redhat-lsb \
+    wget which zlib-devel
 
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
@@ -235,7 +236,7 @@ sudo yum install -y git
 sudo yum install -y autoconf automake boost169-devel cmake3 curl \
     devtoolset-8-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
     libatomic libcurl-devel lubtool libuuid-devel openssl-devel pkgconfig \
-    python redhat-lsb uuid-devel wget which zlib-devel
+    python readline-devel redhat-lsb uuid-devel wget which zlib-devel
 
 sudo alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
 --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
@@ -290,8 +291,8 @@ sudo dnf -y update
 # Install required tools and libraries
 sudo dnf install -y autoconf automake boost-devel clang cmake curl gcc gcc-c++ \
     git-clang-format java-11-openjdk-headless libatomic libcurl-devel libtool \
-    libuuid-devel openssl-devel python2 pkgconfig redhat-lsb wget which \
-    zlib-devel
+    libuuid-devel openssl-devel python2 pkgconfig readline-devel redhat-lsb \
+    wget which zlib-devel
 
 # Link Python 2 (required by Google Test fuse script)
 sudo ln -s /usr/bin/python2 /usr/bin/python
