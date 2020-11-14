@@ -3,6 +3,7 @@
         "ptree"
     ],
     "files.associations": {
+        "*.json1": "json",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -106,7 +107,9 @@
         "__node_handle": "cpp",
         "ranges": "cpp",
         "shared_mutex": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "*.def": "cpp",
+        "valarray": "cpp"
     },
     "C_Cpp.default.cppStandard": "c++17",
     "C_Cpp.default.intelliSenseMode": "gcc-x64",

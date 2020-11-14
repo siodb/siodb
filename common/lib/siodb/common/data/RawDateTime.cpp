@@ -28,6 +28,9 @@
 #include <boost/iostreams/stream.hpp>
 
 // Date headers
+#ifndef ONLY_C_LOCALE
+#define ONLY_C_LOCALE 1
+#endif
 #include <date/date.h>
 
 namespace siodb {
@@ -402,11 +405,13 @@ void RawDateTime::parse(const char* s, std::size_t len, const char* format)
     if (SIODB_UNLIKELY(s == nullptr)) throw std::invalid_argument("datetime string is nullptr");
 
     // Parse string
-    boost::iostreams::array_source dataSource(s, len);
-    boost::iostreams::stream<boost::iostreams::array_source> str(dataSource);
     date::sys_time<stdext::chrono::high_capacity_system_clock::duration> timePoint;
-    str >> date::parse(format, timePoint);
-    if (str.fail()) throw std::invalid_argument("invalid datetime string");
+    {
+        boost::iostreams::array_source dataSource(s, len);
+        boost::iostreams::stream<boost::iostreams::array_source> str(dataSource);
+        str >> date::parse(format, timePoint);
+        if (str.fail()) throw std::invalid_argument("invalid datetime string");
+    }
 
     // Validate year
     const date::year_month_day ymd(date::floor<date::days>(timePoint));
@@ -457,7 +462,6 @@ std::string RawDateTime::formatDefault() const
 
 std::string RawDateTime::format(const char* format) const
 {
-    constexpr stdext::int128_t kNanosecondsPerDay128 = kNanosecondsPerDay;
     const auto y = static_cast<int>(m_datePart.m_year) - (m_datePart.m_month <= 1);
     const auto era = (y >= 0 ? y : y - 399) / 400;
     const auto yoe = static_cast<unsigned>(y - era * 400);  // [0, 399]
@@ -467,14 +471,13 @@ std::string RawDateTime::format(const char* format) const
             + m_datePart.m_dayOfMonth;  // [0, 365]
     const auto doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;  // [0, 146096]
     const auto days = era * 146097 + static_cast<int>(doe) - 719468;
-    const date::sys_time<stdext::chrono::high_capacity_system_clock::duration> timePoint(
-            stdext::chrono::high_capacity_system_clock::duration(
-                    days * kNanosecondsPerDay128
-                    + (m_timePart.m_hours * 3600 + m_timePart.m_minutes * 60 + m_timePart.m_seconds)
-                              * std::nano::den
-                    + m_timePart.m_nanos));
-
-    return date::format(format, timePoint);
+    const auto duration =
+            days * stdext::int128_t(kNanosecondsPerDay)
+            + (m_timePart.m_hours * 3600 + m_timePart.m_minutes * 60 + m_timePart.m_seconds)
+                      * std::nano::den
+            + m_timePart.m_nanos;
+    using DurationT = stdext::chrono::high_capacity_system_clock::duration;
+    return date::format(format, date::sys_time<DurationT>(DurationT(duration)));
 }
 
 bool RawDateTime::operator==(const RawDateTime& other) const noexcept

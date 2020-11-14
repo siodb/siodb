@@ -317,7 +317,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/variant_test",
             "args": [
-                "--gtest_filter=*.*"
+                "--gtest_filter=Conversion.StringToDateTime"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
