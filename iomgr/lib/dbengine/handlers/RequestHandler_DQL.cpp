@@ -503,10 +503,17 @@ void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResp
     }
 
     ////////////////////
-    updateColumnsFromExpression(
-            dataSets, requests::ResultExpression(kSysTables_Name_ColumnName, ""), errors);
-    updateColumnsFromExpression(
-            dataSets, requests::ResultExpression(kSysTables_Name_ColumnName, ""), errors);
+    std::vector<CompoundDatabaseError::ErrorRecord> errors;
+    updateColumnsFromExpression(dataSets,
+            requests::ResultExpression(
+                    std::make_unique<requests::AllColumnsExpression>(kSysTables_Name_ColumnName),
+                    ""),
+            errors);
+    updateColumnsFromExpression(dataSets,
+            requests::ResultExpression(
+                    std::make_unique<requests::AllColumnsExpression>(kSysTables_Name_ColumnName),
+                    ""),
+            errors);
 
     ////////////////////
 

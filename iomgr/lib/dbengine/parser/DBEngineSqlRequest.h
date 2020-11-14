@@ -1475,12 +1475,6 @@ struct ShowTablesRequest : public DBEngineRequest {
         : DBEngineRequest(DBEngineRequestType::kShowTables)
     {
     }
-
-    /** List of tables */
-    const std::vector<SourceTable> m_tables;
-
-    /* List of resulting columns */
-    const std::vector<ResultExpression> m_resultExpressions;
 };
 
 }  // namespace siodb::iomgr::dbengine::requests
