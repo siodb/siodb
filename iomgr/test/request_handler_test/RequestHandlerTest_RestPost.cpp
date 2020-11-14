@@ -97,7 +97,7 @@ TEST(RestPost, PostSingleRow)
     LOG_DEBUG << "Response payload: " << jsonPayload;
     const auto j = nlohmann::json::parse(jsonPayload);
     ASSERT_TRUE(j.is_object());
-    ASSERT_EQ(static_cast<int>(j["status"]), 200);
+    ASSERT_EQ(static_cast<int>(j["status"]), 201);
     ASSERT_EQ(static_cast<int>(j["affectedRowCount"]), 1);
 
     // Check TRIDs
@@ -188,7 +188,7 @@ TEST(RestPost, PostMultipleRows)
     LOG_DEBUG << "Response payload: " << jsonPayload;
     const auto j = nlohmann::json::parse(jsonPayload);
     ASSERT_TRUE(j.is_object());
-    ASSERT_EQ(static_cast<int>(j["status"]), 200);
+    ASSERT_EQ(static_cast<int>(j["status"]), 201);
     ASSERT_EQ(static_cast<int>(j["affectedRowCount"]), 3);
 
     // Check TRIDs
