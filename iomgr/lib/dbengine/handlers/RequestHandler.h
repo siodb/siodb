@@ -394,14 +394,6 @@ private:
     void executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::ShowDatabasesRequest& request);
 
-    /**
-     * Executes SQL SHOW TABLES request.
-     * @param response Response object.
-     * @param request Request object.
-     */
-    void executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
-            const requests::ShowTablesRequest& request);
-
     // REST request handlers
 
     /**

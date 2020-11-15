@@ -1822,7 +1822,6 @@ requests::ResultExpression DBEngineSqlRequestFactory::createResultExpression(
     // case: expr ( K_AS? column_alias)?
     else if (childrenCount > 0
              && helpers::getNonTerminalType(node->children[0]) == SiodbParser::RuleExpr) {
-        LOG_DEBUG << "case: expr ( K_AS? column_alias)? >>>" << helpers::extractObjectName(node, 0);
         ExpressionFactory exprFactory(m_parser, true);
         expression = exprFactory.createExpression(node->children[0]);
 

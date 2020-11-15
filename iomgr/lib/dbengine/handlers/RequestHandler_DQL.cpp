@@ -445,4 +445,5 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     codedOutput.WriteVarint64(kNoMoreRows);
     rawOutput.CheckNoError();
 }
+
 }  // namespace siodb::iomgr::dbengine
