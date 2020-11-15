@@ -182,6 +182,7 @@ dbengine::AuthenticationResult IOManagerSqlConnectionHandler::authenticateUser()
                 userName, authRequest.signature(), authRequest.challenge());
         authenticateUserResponse.set_authenticated(true);
         authenticateUserResponse.set_session_id(boost::uuids::to_string(authResult.m_sessionUuid));
+        authenticateUserResponse.add_server_info(m_requestDispatcher.getInstance().getName());
     } catch (dbengine::DatabaseError& dbError) {
         LOG_ERROR << m_logContext << '[' << dbError.getErrorCode() << "] " << dbError.what();
         authenticateUserResponse.set_authenticated(false);

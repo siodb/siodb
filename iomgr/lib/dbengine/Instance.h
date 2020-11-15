@@ -49,6 +49,15 @@ public:
     DECLARE_NONCOPYABLE(Instance);
 
     /**
+     * Returns instance name.
+     * @return instance name.
+     */
+    const auto& getName() const noexcept
+    {
+        return m_name;
+    }
+
+    /**
      * Returns instance UUID.
      * @return Instance UUID.
      */

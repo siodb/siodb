@@ -93,4 +93,7 @@ message ClientAuthenticationResponse {
 
     /** ID of started session. */
     string session_id = 3;
+
+    /** Server information */
+    repeated string server_info = 4;
 }

@@ -7,15 +7,15 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/../share/LogFunctions.sh
 SCRIPT_DIR=$(dirname $(realpath "$0"))
 
-for d in $(ls -d "${SCRIPT_DIR}/gh-"*/); do
-    _log "INFO" "Running test for the issue $d"
+for d in $(ls -d "${SCRIPT_DIR}/"*/); do
+    _log "INFO" "Running scenario $d"
     ${d}/run.sh "$@"
     if [[ $? -ne  0 ]]; then
-        _log "TEST:ERROR" "Tests in issue $d failed"
+        _log "TEST:ERROR" "Tests in scenario $d failed"
         if [[ "${SIODB_TEST_ALL}" != "yes" ]]; then
             exit 1
         fi
     else
-        _log "TEST:SUCCESS" "Tests in issue $d succeed"
+        _log "TEST:SUCCESS" "Tests in scenario $d succeed"
     fi
 done

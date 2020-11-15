@@ -472,11 +472,16 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     } catch (VariantTypeCastError& ex) {
         throwDatabaseError(IOManagerMessageId::kErrorIncompatibleDataType1, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id,
-                static_cast<int>(ex.getDestValueType()), static_cast<int>(ex.getSourceValueType()));
+                getColumnDataTypeName(convertVariantTypeToColumnDataType(ex.getDestValueType())),
+                static_cast<int>(ex.getDestValueType()),
+                getColumnDataTypeName(convertVariantTypeToColumnDataType(ex.getSourceValueType())),
+                static_cast<int>(ex.getSourceValueType()));
     } catch (std::logic_error&) {
         throwDatabaseError(IOManagerMessageId::kErrorIncompatibleDataType2, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id,
-                static_cast<int>(m_dataType), static_cast<int>(value.getValueType()));
+                getColumnDataTypeName(m_dataType), static_cast<int>(m_dataType),
+                getColumnDataTypeName(convertVariantTypeToColumnDataType(value.getValueType())),
+                static_cast<int>(value.getValueType()));
     }
 
     // If no data so far, take value from origin.

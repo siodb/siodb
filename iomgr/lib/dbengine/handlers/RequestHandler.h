@@ -618,6 +618,9 @@ private:
     /** REST status "OK" */
     static constexpr int kRestStatusOk = 200;
 
+    /** REST status "Created" */
+    static constexpr int kRestStatusCreated = 201;
+
     /** REST status "not found" */
     static constexpr int kRestStatusNotFound = 404;
 

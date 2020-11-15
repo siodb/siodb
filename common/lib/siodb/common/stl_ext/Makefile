@@ -25,6 +25,7 @@ CXX_HDR:= \
 	concurrent_queue.h  \
 	chrono_ext.h  \
 	cstdint_ext.h  \
+	deleter.h  \
 	event.h  \
 	functional_ext.h  \
 	lru_cache.h  \

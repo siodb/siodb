@@ -38,7 +38,7 @@ char* _i128toa_impl(const int128_t* value, char* buffer, size_t bufferSize, int 
     const _Bool base10 = base == 10;
     const _Bool neg = base10 && *value < 0;
     const char* const digits = uppercase ? g_uppercaseDigits : g_lowercaseDigits;
-    int128_t v = (neg) ? *value : -*value;
+    int128_t v = neg ? -*value : *value;
     char* p = buffer + bufferSize - 1;
     *p = '\0';
     do {

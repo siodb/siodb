@@ -4,13 +4,13 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-# Uncomment for debugging this script
-# set -x
-
-source $(dirname "$0")/../share/CommonFunctions.sh
+## Global
+SCRIPT_DIR=$(dirname $(realpath "$0"))
+TEST_NAME=$(basename "${SCRIPT_DIR}")
+source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
 ## Program
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _StartSiodb
 _CheckLogFiles
@@ -39,7 +39,7 @@ if [[ "${SHORT_TEST}" == "1" ]]; then
 else
 
   _log "INFO" "Creating test objects"
-  _RunSqlScript "${SCRIPT_DIR}/create_objects.sql"
+  _RunSqlScript "${SCRIPT_DIR}/create_objects.sql" 90
   _CheckLogFiles
 
   _log "INFO" "Creating USER1 token"
@@ -169,5 +169,5 @@ fi
 
 _StopSiodb
 _CheckLogFiles
-
-_log "INFO" "SUCCESS: All tests passed"
+_TestEnd
+exit 0

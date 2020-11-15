@@ -8,7 +8,8 @@
 #SIOCLI_DEBUG=--debug
 
 ## Global
-SCRIPT_DIR=$(dirname "$0")
+SCRIPT_DIR=$(dirname $(realpath "$0"))
+TEST_NAME=$(basename "${SCRIPT_DIR}")
 source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
 
@@ -17,7 +18,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test parameters
 
 ## Tests
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _SetInstanceParameter "iomgr.max_json_payload_size" "10m"
 #_SetInstanceParameter "log.file.severity" "debug"
@@ -48,14 +49,20 @@ for i in $(seq 1 3); do
   echo
 done
 
+## Validate data
+_RunSql "select * from ${database_name}.huge_test"
+
 _CheckLogFiles
 
 ### Restart instance
-echo "Restarting instance..."
-_StopSiodb
-_StartSiodb
+_RestartSiodb
+
+## Validate data
+_RunSql "select * from ${database_name}.huge_test"
 _CheckLogFiles
 
 ### Stop test
 _StopSiodb
-_log "INFO" "SUCCESS: Test passed"
+_CheckLogFiles
+_TestEnd
+exit 0

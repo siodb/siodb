@@ -10,6 +10,7 @@ include ../../../mk/Prolog.mk
 TARGET_EXE:=variant_test
 
 CXX_SRC:= \
+	VariantTest_Conversion.cpp  \
 	VariantTest_Main.cpp  \
 	VariantTest_Serialization.cpp
 

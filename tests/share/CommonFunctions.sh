@@ -11,6 +11,11 @@ fi
 set -e
 
 # --------------------------------------------------------------
+# Include
+# --------------------------------------------------------------
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/LogFunctions.sh
+
+# --------------------------------------------------------------
 # Global parameters
 # --------------------------------------------------------------
 UNIQUE_SUFFIX=$(date +%s)_$$
@@ -26,6 +31,15 @@ instanceStartupTimeout=45
 previousTestStartedAtTimestamp=0
 previousInstanceStartTimestamp=0
 doInstanceConfiguration=1
+defaultClientTimeoutSecond=30
+
+# timeout(1) on Ubuntu 18.04 doesn't support option -v
+# Try to detect this.
+_timeout_verbose=-v
+set +e
+timeout -v 10000 "cat /etc/issue" >/dev/null 2>&1
+if [[ $? -ne 0 ]]; then unset _timeout_verbose; fi
+set -e
 
 # --------------------------------------------------------------
 # Command line
@@ -92,7 +106,6 @@ if [[ -z "${SIOTEST_KEEP_INSTANCE_UP}" ]]; then
   SIOTEST_KEEP_INSTANCE_UP=0
 fi
 
-
 # --------------------------------------------------------------
 # Trapping
 # --------------------------------------------------------------
@@ -103,6 +116,17 @@ fi
 # --------------------------------------------------------------
 # Global functions
 # --------------------------------------------------------------
+function _TestBegin {
+  _log "INFO" "Test ${TEST_NAME} begins..."
+  _TestBeginStartTimeStamp=$(date +%s)
+}
+
+function _TestEnd {
+  _TestEndStartTimeStamp=$(date +%s)
+  TestElapsedTime="$(echo "scale=2; ($_TestEndStartTimeStamp-$_TestBeginStartTimeStamp)/60" | bc -l)"
+  _log "INFO" "SUCCESS: Test passed in ${TestElapsedTime} minutes"
+}
+
 function _testfails {
   _killSiodb
 }
@@ -113,6 +137,15 @@ function _killSiodb {
   fi
 }
 
+function _RestartSiodb {
+  _log "INFO" "Restarting instance..."
+  SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
+  SIOTEST_KEEP_INSTANCE_UP=0
+  _StopSiodb
+  SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
+  _StartSiodb
+}
+
 function _SetInstanceParameter {
   _log "INFO" "setting parameter '${1}' to '${2}'"
   sed -i -e "s#.*${1}[ ]*=.*#${1} = ${2}#g" \
@@ -120,8 +153,20 @@ function _SetInstanceParameter {
   cat /etc/siodb/instances/${SIODB_INSTANCE}/config | grep "${1}"
 }
 
+function _GetInstanceParameter {
+  _log "INFO" "getting value of parameter '${1}'"
+  _GetInstanceParameterReturnedValue=$(
+  cat /etc/siodb/instances/${SIODB_INSTANCE}/config \
+  | sed 's/^ *//;s/ *$//' \
+  | egrep -v '^#|^$' \
+  | grep "^${1}" \
+  | awk -F '=' '{print $2}' \
+  | sed 's/^ *//;s/ *$//'
+  )
+}
+
 function _ConfigureInstance {
-  if [[ "${doInstanceConfiguration}" != "1" ]]; then 
+  if [[ "${doInstanceConfiguration}" != "1" ]]; then
     _log "INFO" "Instance configuration skipped."
     return
   fi
@@ -314,10 +359,6 @@ function _CheckLogFiles {
   _log "INFO" "No error detected the in log files"
 }
 
-function _log {
-    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | $1 | $2"
-}
-
 function _failExit {
     echo "Test failed."
     if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
@@ -327,33 +368,62 @@ function _failExit {
 }
 
 function _RunSqlScript {
+  # $1: Path to SQL script
+  # $2: Optional timeout
+  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL script $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --nologo --admin ${SIODB_INSTANCE} -u root \
     -i "${ROOT_DIR}/tests/share/private_key" < $1
 }
 
-function _RunSqlThroughUser {
+function _RunSqlThroughUserUnixSocket {
+  # $1: Path to SQL script
+  # $2: Siodb user
+  # $3: Siodb user key
+  # $4: Optional timeout
+  if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+}
+
+function _RunSqlThroughUserTCPSocket {
+  # $1: Path to SQL script
+  # $2: Siodb user
+  # $3: Siodb user key
+  # $4: Optional timeout
+  if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
+  _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
+  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --nologo -u ${1} -i ${2} <<< ''"${3}"''
 }
 
 function _RunSql {
+  # $1: SQL to run
+  # $2: Optional timeout
+  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
-    -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --nologo --admin ${SIODB_INSTANCE} -u root \
+  -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
 }
 
 function _RunSqlAndValidateOutput {
   # $1: the SQL to execute
   # $2: The expected output
+  # $3: Optional timeout
+  if [[ ! -z "${3}" ]]; then TIMEOUT_SECOND="${3}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  SIOCLI_OUTPUT=$("${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} \
-    -u root --keep-going -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
-  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | egrep "${2}" | wc -l | bc)
+  SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
+    ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
+    -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
+  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
     _failExit

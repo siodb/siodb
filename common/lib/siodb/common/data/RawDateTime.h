@@ -315,6 +315,9 @@ struct RawDateTime {
     /** Default date/time format */
     static constexpr const char* kDefaultDateTimeFormat = "%Y-%m-%d %H:%M:%S";
 
+    /** Default date/time format with AM/PM indication */
+    static constexpr const char* kDefaultDateTimeFormatAMPM = "%Y-%m-%d %I:%M:%S %p";
+
     /** Default date format */
     static constexpr const char* kDefaultDateFormat = "%Y-%m-%d";
 

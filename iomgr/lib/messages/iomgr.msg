@@ -496,10 +496,10 @@ MSG Error NotMasterColumn  Column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) is not a maste
 MSG Error TooManyColumns   Too many columns in the table '%1%'.'%2%' (%3%.%4%)
 MSG Error IncompatibleDataType1  \
     Can't store value of incompatible data type into column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): \
-    destination data type is %7%, source value type is %8%
+    destination data type is '%7%' (%8%), source value type is '%9%' (%10%)
 MSG Error IncompatibleDataType2  \
     Can't store value of incompatible data type into column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): \
-    column data type is %7%, source value type is %8%
+    column data type is '%7%' (%8%), source value type is '%9%' (%10%)
 
 MSG Error InvalidDataBlockPosition  \
     Invalid position %8% in the data block: '%1%'.'%2%'.'%3%'.%4% (%5%.%6%.%7%.%4%)

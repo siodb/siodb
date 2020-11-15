@@ -5,15 +5,16 @@
 # in the LICENSE file.
 
 ## Global
-SCRIPT_DIR=$(dirname "$0")
-source "{SCRIPT_DIR}/../share/CommonFunctions.sh"
+SCRIPT_DIR=$(dirname $(realpath "$0"))
+TEST_NAME=$(basename "${SCRIPT_DIR}")
+source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
 ## Specific test functions
 
 ## Specific test parameters
 
 ## Tests
-_log "INFO" "Tests start"
+_TestBegin
 _Prepare
 _StartSiodb
 
@@ -27,15 +28,22 @@ for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
 done
 
 ### Restart instance
-_StopSiodb
-_StartSiodb
+_RestartSiodb
 
-### Login with keys
+### Login with keys Unix socket
 for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
     PRIVATE_KEY_NAME=${key%.*}
-    _RunSqlThroughUser "user_test_key" "${PRIVATE_KEY_NAME}" "show databases"
+    _RunSqlThroughUserUnixSocket "user_test_key" "${PRIVATE_KEY_NAME}" "show databases"
+done
+
+### Login with keys TCP socket
+for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
+    PRIVATE_KEY_NAME=${key%.*}
+    _RunSqlThroughUserTCPSocket "user_test_key" "${PRIVATE_KEY_NAME}" "show databases"
 done
 
 ### Stop test
 _StopSiodb
-_log "INFO" "SUCCESS: All tests passed"
+_CheckLogFiles
+_TestEnd
+exit 0
