@@ -58,6 +58,14 @@ private:
     /**
      * Creates SELECT request.
      * @param node Parse tree node with SQL statement.
+     * @param tag Tag idicating simple form of SELECT statement.
+     * @return SELECT request.
+     */
+    requests::DBEngineRequestPtr createSelectRequestForShowTablesStatement();
+
+    /**
+     * Creates SELECT request.
+     * @param node Parse tree node with SQL statement.
      * @param tag Tag idicating factored form of SELECT statement.
      * @return SELECT request.
      */
