@@ -224,89 +224,75 @@ int commandPrompt(const ClientParameters& params)
     const bool singleCommand = static_cast<bool>(params.m_command);
     ServerConnectionInfo serverConnectionInfo;
 
+    if (params.m_stdinIsTerminal) std::cout << '\n';
     do {
+        std::string commandHolder;
+        std::string* command = &commandHolder;
         try {
             auto singleWordCommand = SingleWordCommandType::kUnknownCommand;
-            std::string commandHolder;
-            std::string* command = &commandHolder;
             if (singleCommand) {
                 command = params.m_command.get();
             } else {
-                if (params.m_stdinIsTerminal && params.m_useReadline) {
-                    std::unique_ptr<char, stdext::free_deleter<char>> rltext;
-                    rltext.reset(::readline(kFirstLinePrompt));
-                    if (!rltext) continue;
-                    commandHolder = rltext.get();
-                    boost::trim(commandHolder);
-                    if (commandHolder.empty()) continue;
-                    add_history(commandHolder.c_str());
-                    if (commandHolder.find_first_of('\n') == std::string::npos) {
-                        // One line, maybe single word command
-                        std::string s = commandHolder;
-                        boost::to_lower(s);
-                        singleWordCommand = decodeSingleWordCommand(s);
-                    }
-                } else {
-                    std::ostringstream text;
-                    std::size_t textLength = 0;
-                    char textLastChar = '\0';
+                std::ostringstream text;
+                std::size_t textLength = 0;
+                char textLastChar = '\0';
 
-                    // Read command text, possibly multiline.
-                    // Multiline command-text must end with a semicolon.
-                    std::size_t lineNo = 0;
-                    if (params.m_stdinIsTerminal)
-                        std::cout << '\n' << kFirstLinePrompt << std::flush;
-                    do {
-                        std::string line;
+                // Read command text, possibly multiline.
+                // Multiline command-text must end with a semicolon.
+                std::size_t lineNo = 0;
+                const char* prompt = kFirstLinePrompt;
+                do {
+                    std::string line;
+                    if (params.m_stdinIsTerminal && params.m_useReadline) {
+                        std::unique_ptr<char, stdext::free_deleter<char>> rltext;
+                        while (!rltext)
+                            rltext.reset(::readline(prompt));
+                        add_history(rltext.get());
+                        line = rltext.get();
+                    } else {
+                        if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
                         if (!std::getline(std::cin, line)) {
                             hasMoreInput = false;
                             break;
                         }
+                    }
 
-                        boost::trim(line);
-                        if (line.empty()) {
-                            if (params.m_stdinIsTerminal) {
-                                std::cout << (textLength == 0 ? kFirstLinePrompt
-                                                              : kSubsequentLinePrompt)
-                                          << std::flush;
-                            }
-                            continue;
-                        }
+                    boost::trim(line);
+                    if (line.empty()) {
+                        if (params.m_stdinIsTerminal && !params.m_useReadline)
+                            std::cout << prompt << std::flush;
+                        continue;
+                    }
 
-                        // Do not send comments to siodb
-                        if (boost::starts_with(line, kCommentStart)) {
-                            if (params.m_stdinIsTerminal) {
-                                std::cout << (textLength ? kFirstLinePrompt : kSubsequentLinePrompt)
-                                          << std::flush;
-                            }
-                            continue;
-                        }
+                    // Do not send comments to siodb
+                    if (boost::starts_with(line, kCommentStart)) {
+                        if (params.m_stdinIsTerminal)
+                            prompt = textLength ? kFirstLinePrompt : kSubsequentLinePrompt;
+                        continue;
+                    }
 
-                        if (line.back() != ';') {
-                            if (params.m_stdinIsTerminal)
-                                std::cout << kSubsequentLinePrompt << std::flush;
-                        }
+                    if (line.back() != ';' && params.m_stdinIsTerminal)
+                        prompt = kSubsequentLinePrompt;
 
-                        if (textLength > 0) {
-                            text << '\n';
-                            ++textLength;
-                        }
+                    if (textLength > 0) {
+                        text << '\n';
+                        ++textLength;
+                    }
 
-                        text << line;
-                        textLength += line.length();
-                        if (!line.empty()) textLastChar = line.back();
+                    text << line;
+                    textLength += line.length();
+                    if (!line.empty()) textLastChar = line.back();
 
-                        ++lineNo;
-                        if (lineNo == 1) {
-                            auto command1 = boost::to_lower_copy(line);
-                            // Remove whitespace before ';' and ';' itself
-                            boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
-                            singleWordCommand = decodeSingleWordCommand(command1);
-                        }
-                    } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
-                             && (textLength == 0 || textLastChar != ';'));
-                    commandHolder = text.str();
-                }
+                    ++lineNo;
+                    if (lineNo == 1) {
+                        auto command1 = boost::to_lower_copy(line);
+                        // Remove whitespace before ';' and ';' itself
+                        boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
+                        singleWordCommand = decodeSingleWordCommand(command1);
+                    }
+                } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
+                         && (textLength == 0 || textLastChar != ';'));
+                commandHolder = text.str();
             }  // read command
 
             // Maybe echo command
