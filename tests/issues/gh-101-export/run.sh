@@ -17,11 +17,12 @@ _TestBegin
 _Prepare
 _StartSiodb
 
+echo "Creating test data..."
 _RunSqlScript "${SCRIPT_DIR}/data.sql"
 _CheckLogFiles
 
 echo "Exporting database..."
-output_dir="${HOME}/tmp/gh-101_$(date +%s)"
+output_dir="${HOME}/tmp/gh-101_$(date +%s)_$$"
 mkdir -p "${output_dir}"
 
 dbname=testdb

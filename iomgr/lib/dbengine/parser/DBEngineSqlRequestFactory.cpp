@@ -10,8 +10,8 @@
 #include "antlr_wrappers/SiodbParserWrapper.h"
 #include "expr/AllColumnsExpression.h"
 #include "expr/ConstantExpression.h"
-#include "expr/SingleColumnExpression.h"
 #include "expr/ExpressionFactory.h"
+#include "expr/SingleColumnExpression.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDataFileDefs.h>
@@ -115,7 +115,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
             return createSelectRequestForFactoredSelectStatement(node);
         case SiodbParser::RuleShow_databases_stmt:
             return std::make_unique<requests::ShowDatabasesRequest>();
-        case SiodbParser::RuleShow_tables_stmt: return createSelectRequestForShowTablesStatement();
+        case SiodbParser::RuleShow_tables_stmt:
+            return std::make_unique<requests::ShowTablesRequest>();
         case SiodbParser::RuleInsert_stmt: return createInsertRequest(node);
         case SiodbParser::RuleUpdate_stmt: return createUpdateRequest(node);
         case SiodbParser::RuleDelete_stmt: return createDeleteRequest(node);

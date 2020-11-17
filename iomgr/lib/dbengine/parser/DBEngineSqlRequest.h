@@ -1468,4 +1468,13 @@ struct ShowDatabasesRequest : public DBEngineRequest {
     }
 };
 
+/** SHOW TABLES request */
+struct ShowTablesRequest : public DBEngineRequest {
+    /** Initializes object of class ShowTablesRequest */
+    ShowTablesRequest() noexcept
+        : DBEngineRequest(DBEngineRequestType::kShowTables)
+    {
+    }
+};
+
 }  // namespace siodb::iomgr::dbengine::requests

@@ -65,8 +65,36 @@ std::vector<std::string> Database::getTableNames(bool includeSystemTables) const
             index.cbegin(), index.cend(), std::back_inserter(result),
             [](const auto& tableRecord) { return tableRecord.m_name; },
             [includeSystemTables](const auto& tableRecord) {
-                return Database::isSystemTable(tableRecord.m_name) == includeSystemTables;
+                return isSystemTable(tableRecord.m_name) == includeSystemTables;
             });
+    return result;
+}
+
+std::vector<TableRecord> Database::getTableRecordsOrderedByName(bool includeSystemTables) const
+{
+    std::lock_guard lock(m_mutex);
+    std::vector<TableRecord> result;
+    const auto& index = m_tableRegistry.byName();
+    const auto tableCount = includeSystemTables
+                                    ? m_tableRegistry.size()
+                                    : std::count_if(index.begin(), index.end(),
+                                            [](const auto& tableRecord) noexcept {
+                                                return !isSystemTable(tableRecord.m_name);
+                                            });
+    if (tableCount > 0) {
+        result.reserve(tableCount);
+        if (includeSystemTables)
+            std::copy(index.begin(), index.end(), std::back_inserter(result));
+        else {
+            std::copy_if(index.begin(), index.end(), std::back_inserter(result),
+                    [](const auto& tableRecord) noexcept {
+                        return !isSystemTable(tableRecord.m_name);
+                    });
+        }
+        std::sort(result.begin(), result.end(), [](const auto& left, const auto& right) noexcept {
+            return left.m_name < right.m_name;
+        });
+    }
     return result;
 }
 
