@@ -11,12 +11,12 @@
 #include "expr/AllColumnsExpression.h"
 #include "expr/ConstantExpression.h"
 #include "expr/SingleColumnExpression.h"
-#include "../../../../common/lib/siodb/iomgr/shared/dbengine/SystemObjectNames.h"
+#include "expr/ExpressionFactory.h"
 
 // Common project headers
-#include "expr/ExpressionFactory.h"
 #include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/log/Log.h>
+#include <siodb/iomgr/shared/dbengine/SystemObjectNames.h>
 
 // Boost headers
 #include <boost/algorithm/hex.hpp>
