@@ -149,7 +149,7 @@ _RunSqlAndValidateOutput "drop database noexists"  \
 ## =============================================
 ## TEST FOOTER
 ## =============================================
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0

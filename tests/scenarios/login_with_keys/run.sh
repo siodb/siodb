@@ -45,7 +45,7 @@ for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
 done
 
 ### Stop test
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0

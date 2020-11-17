@@ -47,7 +47,7 @@ else
 
 fi
 
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0

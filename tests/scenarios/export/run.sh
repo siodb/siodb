@@ -15,7 +15,7 @@ _Prepare
 _SetInstanceParameter "iomgr.max_json_payload_size" "10m"
 _StartSiodb
 
-_RunSqlScript "${SCRIPT_DIR}/data.sql" 120
+_RunSqlScript "${SHARED_DIR}/sql/data.sql" 120
 _CheckLogFiles
 
 output_dir="${HOME}/tmp/export_$(date +%s)_$$"
@@ -95,7 +95,7 @@ if [[ ${DIFF_COUNT} -gt 6 ]]; then
   _failExit
 fi
 
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0
