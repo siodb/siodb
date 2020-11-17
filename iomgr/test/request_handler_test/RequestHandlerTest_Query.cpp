@@ -1026,7 +1026,7 @@ TEST(Query, SelectWithExpression)
 
 /**
  * Test executes query below:
- * SELECT sys_tables.name, sys_columns.name from sys_tables, sys_columns 
+ * SELECT sys_tables.name, sys_columns.name from sys_tables, sys_columns
  *        WHERE sys_tables.trid = sys_columns.table_id AND sys_tables.trid < 4096;
  */
 TEST(Query, SelectWithExpressionFrom2Tables)
@@ -1222,7 +1222,7 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
 }
 
 /**
- * SELECT * FROM NULL_TEST_TABLE_1 WHERE T IS NULL 
+ * SELECT * FROM NULL_TEST_TABLE_1 WHERE T IS NULL
  */
 TEST(Query, SelectWithWhereIsNull)
 {

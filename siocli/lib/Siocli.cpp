@@ -309,7 +309,7 @@ int commandPrompt(const ClientParameters& params)
                     std::cout << "Type SQL query with ';' symbol in the end. This query will be "
                                  "sent to the Siodb server.\n"
                                  "Example: SELECT * FROM <table_name>;\n"
-                                 "Type exit to stop SioDB client.\n"
+                                 "Type exit to stop siocli.\n"
                               << std::flush;
                     continue;
                 }

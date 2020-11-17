@@ -56,7 +56,7 @@ cd $HOME
 # Required tools and libraries
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
     graphviz libboost1.71-dev libboost-iostreams1.71-dev libboost-log1.71-dev \
-    libboost-program-options1.71-dev libcurl4-openssl-dev libreadline-devel\
+    libboost-program-options1.71-dev libcurl4-openssl-dev libreadline-dev\
     libtool libssl-dev lsb-release openjdk-11-jdk-headless pkg-config python2 \
     uuid-dev clang-format-10 ubuntu-dbgsym-keyring
 
