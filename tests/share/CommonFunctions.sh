@@ -26,7 +26,6 @@ ROOT_DIR=${SCRIPT_DIR}
 while [[ ! -f "${ROOT_DIR}/.rootdir" ]]; do
   ROOT_DIR=$(realpath "${ROOT_DIR}/..")
 done
-
 instanceStartupTimeout=45
 previousTestStartedAtTimestamp=0
 previousInstanceStartTimestamp=0
@@ -46,10 +45,15 @@ set -e
 # --------------------------------------------------------------
 while [[ $# -gt 0 ]];
 do
+  echo $1
   if [[ "$1" == "--" ]]; then
     break
   fi
   if [[ "$1" == "-b" ]]; then
+    if [[ $# -lt 2 ]]; then
+      echo "Missing parameter for the option: $1" >&2
+      exit 1
+    fi
     SIODB_BIN=$2
     shift 2
     continue
@@ -61,6 +65,10 @@ do
     continue
   fi
   if [[ "$1" == "-e" ]]; then
+    if [[ $# -lt 3 ]]; then
+      echo "Missing parameters for the option: $1" >&2
+      exit 1
+    fi
     declare "$2"="$3"
     shift 3
     continue
@@ -166,8 +174,15 @@ function _GetInstanceParameter {
 }
 
 function _ConfigureInstance {
+  SIODB_DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
+  if [[ ! -d "${SIODB_DATA_DIR}" ]]; then
+    _log "INFO" "Creating instance data directory ${SIODB_DATA_DIR}"
+    mkdir -p ${SIODB_DATA_DIR}
+    chmod 770 ${SIODB_DATA_DIR}
+  fi
+
   if [[ "${doInstanceConfiguration}" != "1" ]]; then
-    _log "INFO" "Instance configuration skipped."
+    _log "INFO" "Instance configuration parts skipped."
     return
   fi
 
@@ -180,9 +195,6 @@ function _ConfigureInstance {
 
   # Overload default config file
   _SetInstanceParameter "data_dir" "/var/lib/siodb/${SIODB_INSTANCE}/data"
-  SIODB_DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
-  mkdir -p ${SIODB_DATA_DIR}
-  chmod 770 ${SIODB_DATA_DIR}
   _SetInstanceParameter "log.file.destination" "/var/log/siodb/${SIODB_INSTANCE}"
   SIODB_LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
   mkdir -p ${SIODB_LOG_DIR}
@@ -514,3 +526,5 @@ function _TestExternalAbort {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   pkill -9 siodb
 }
+
+_log "INFO" "Common parts applied"
