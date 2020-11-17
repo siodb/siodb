@@ -387,7 +387,7 @@ function _RunSqlThroughUserUnixSocket {
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
-  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} -c ''"${3}"''
 }
 
 function _RunSqlThroughUserTCPSocket {
@@ -399,7 +399,7 @@ function _RunSqlThroughUserTCPSocket {
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
-  --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  --nologo -u ${1} -i ${2} -c''"${3}"''
 }
 
 function _RunSql {
@@ -410,7 +410,7 @@ function _RunSql {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
-  -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
+  -i "${ROOT_DIR}/tests/share/private_key" -c ''"$1"''
 }
 
 function _RunSqlAndValidateOutput {
@@ -422,7 +422,7 @@ function _RunSqlAndValidateOutput {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
-    -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
+    -i "${ROOT_DIR}/tests/share/private_key" -c ''"${1}"'')
   EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
