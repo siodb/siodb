@@ -189,10 +189,10 @@ function _ConfigureInstance {
   chmod 770 ${SIODB_LOG_DIR}
   _SetInstanceParameter "enable_rest_server" "yes"
   _SetInstanceParameter "client.enable_encryption" "yes"
-  _SetInstanceParameter "client.tls_certificate" "cert.pem"
-  _SetInstanceParameter "client.tls_private_key" "key.pem"
-  _SetInstanceParameter "rest_server.tls_certificate" "cert.pem"
-  _SetInstanceParameter "rest_server.tls_private_key" "key.pem"
+  _SetInstanceParameter "client.tls_certificate" "/etc/siodb/instances/${SIODB_INSTANCE}/cert.pem"
+  _SetInstanceParameter "client.tls_private_key" "/etc/siodb/instances/${SIODB_INSTANCE}/key.pem"
+  _SetInstanceParameter "rest_server.tls_certificate" "/etc/siodb/instances/${SIODB_INSTANCE}/cert.pem"
+  _SetInstanceParameter "rest_server.tls_private_key" "/etc/siodb/instances/${SIODB_INSTANCE}/key.pem"
   _SetInstanceParameter "rest_server.iomgr_read_timeout" "60"
   _SetInstanceParameter "log.file.severity" "debug"
 
