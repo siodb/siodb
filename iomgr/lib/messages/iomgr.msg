@@ -525,9 +525,10 @@ MSG Error UliInvalidIndexFileName  \
     ULI '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) invalid index file name '%7%'
 
 MSG Error InvalidLobChunkHeader  \
-    Invalid LOB header at address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %9%
+    Invalid LOB chunk header at address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' \
+    (%4%.%5%.%6%): %9%
 MSG Error InvalidLobChunkHeaderAddress  \
-    Invalid LOB header address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %9%
+    Invalid LOB chunk header address '%7%'.'%8%' in the column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%): %9%
 
 MSG Error CannotGetCachedTable      Can't obtain cached table '%1%'.'%2%' (%3%.%4%)
 MSG Error CannotGetSystemTableInfo  \

@@ -71,6 +71,9 @@ protected:
 
     /** Current offset in block */
     std::uint32_t m_offsetInBlock;
+
+    /** Chunk number */
+    std::uint32_t m_chunkId;
 };
 
 }  // namespace siodb::iomgr::dbengine

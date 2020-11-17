@@ -499,6 +499,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     }
 
     const auto pos = block->getNextDataPos();
+    DBG_LOG_DEBUG(makeDisplayName() << ": writeRecord: block=" << block->getId() << " pos=" << pos);
 
     // Store data
     switch (m_dataType) {
@@ -593,7 +594,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
                 writeBuffer(s.c_str(), s.length(), block);
             } else {
                 assert(v.isClob());
-                return writeClob(v.getClob(), block);
+                return writeLob(v.getClob(), block);
             }
             break;
         }
@@ -604,7 +605,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
                 writeBuffer(s.data(), s.size(), block);
             } else {
                 assert(v.isBlob());
-                return writeBlob(v.getBlob(), block);
+                return writeLob(v.getBlob(), block);
             }
             break;
         }
@@ -1247,82 +1248,6 @@ std::uint64_t Column::findFirstBlock() const
     return firstBlockId;
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeLob(
-        LobStream& lob, ColumnDataBlockPtr block)
-{
-    ColumnDataAddress result;
-
-    // Initialize chunk counters
-    std::uint32_t chunkId = 1;
-    std::uint8_t headerBuffer[LobChunkHeader::kSerializedSize];
-    std::unique_ptr<std::uint8_t[]> dataBuffer;
-    std::uint32_t lastHeaderPos = 0;
-    LobChunkHeader lastHeader(0, 0);
-    ColumnDataBlockPtr lastBlock;
-    do {
-        // Compute potential chunk length
-        const auto remainingLobSize = lob.getRemainingSize();
-        auto freeSpace = block->getFreeDataSpace();
-        LobChunkHeader header(remainingLobSize, std::min(freeSpace, remainingLobSize));
-
-        // Check if chunk header fits into remaining free space in the block
-        if (freeSpace < LobChunkHeader::kSerializedSize) {
-            auto newBlock = createOrGetNextBlock(
-                    *block, LobChunkHeader::kSerializedSize + kBlockFreeSpaceThresholdForLob);
-            if (chunkId == 1)
-                result = ColumnDataAddress(block->getId(), block->getNextDataPos());
-            else {
-                // Update next chunk position in the header of the last chunk
-                lastHeader.m_nextChunkBlockId = newBlock->getId();
-                lastHeader.m_nextChunkOffset = newBlock->getNextDataPos();
-                header.serialize(headerBuffer);
-                block->writeData(headerBuffer, LobChunkHeader::kSerializedSize, lastHeaderPos);
-            }
-            block = newBlock;
-            freeSpace = block->getFreeDataSpace();
-            header.m_chunkLength = std::min(freeSpace, remainingLobSize);
-        }
-
-        // Compute actual chunk length
-        const auto availableSpace =
-                static_cast<std::uint32_t>(freeSpace - LobChunkHeader::kSerializedSize);
-        header.m_chunkLength = std::min(availableSpace, remainingLobSize);
-
-        // Write header
-        lastHeaderPos = block->getNextDataPos();
-        header.serialize(headerBuffer);
-        block->writeData(headerBuffer, LobChunkHeader::kSerializedSize);
-        block->incNextDataPos(LobChunkHeader::kSerializedSize);
-        lastHeader = header;
-        lastBlock = block;
-
-        if (header.m_chunkLength > 0) {
-            // Read LOB into data buffer
-            if (!dataBuffer) dataBuffer.reset(new std::uint8_t[m_dataBlockDataAreaSize]);
-            auto data = dataBuffer.get();
-            std::size_t remainingToRead = header.m_chunkLength;
-            while (remainingToRead > 0) {
-                auto actuallyRead = lob.read(data, remainingToRead);
-                if (actuallyRead < 1) {
-                    throwDatabaseError(IOManagerMessageId::kErrorLobReadFailed, getDatabaseName(),
-                            m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id);
-                }
-                data += actuallyRead;
-                remainingToRead -= actuallyRead;
-            }
-            // Write data
-            block->writeData(dataBuffer.get(), header.m_chunkLength);
-            // Advance next data position
-            block->incNextDataPos(header.m_chunkLength);
-        }
-
-        // Update counters
-        ++chunkId;
-    } while (lob.getRemainingSize() > 0);
-
-    return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
-}
-
 std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
         const void* src, std::uint32_t length, ColumnDataBlockPtr block)
 {
@@ -1332,10 +1257,10 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
     // Initialize chunk counters
     std::uint32_t chunkId = 1;
     std::uint8_t headerBuffer[LobChunkHeader::kSerializedSize];
-    std::unique_ptr<std::uint8_t> dataBuffer;
     std::uint32_t lastHeaderPos = 0;
     LobChunkHeader lastHeader(0, 0);
     ColumnDataBlockPtr lastBlock;
+
     do {
         // Compute potential chunk length
         auto freeSpace = block->getFreeDataSpace();
@@ -1351,7 +1276,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
                 // Update next chunk position in the header of the last chunk
                 lastHeader.m_nextChunkBlockId = newBlock->getId();
                 lastHeader.m_nextChunkOffset = newBlock->getNextDataPos();
-                header.serialize(headerBuffer);
+                lastHeader.serialize(headerBuffer);
                 block->writeData(headerBuffer, LobChunkHeader::kSerializedSize, lastHeaderPos);
             }
             block = newBlock;
@@ -1382,6 +1307,83 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
         // Update counters
         ++chunkId;
     } while (length > 0);
+
+    return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
+}
+
+std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeLob(
+        LobStream& lob, ColumnDataBlockPtr block)
+{
+    ColumnDataAddress result;
+
+    // Initialize chunk counters
+    std::uint32_t chunkId = 1;
+    std::uint8_t headerBuffer[LobChunkHeader::kSerializedSize];
+    std::unique_ptr<std::uint8_t[]> dataBuffer;
+    std::uint32_t lastHeaderPos = 0;
+    LobChunkHeader lastHeader(0, 0);
+    ColumnDataBlockPtr lastBlock;
+
+    do {
+        // Compute potential chunk length
+        const auto remainingLobSize = lob.getRemainingSize();
+        auto freeSpace = block->getFreeDataSpace();
+        LobChunkHeader header(remainingLobSize, std::min(freeSpace, remainingLobSize));
+
+        // Check if chunk header fits into remaining free space in the block
+        if (freeSpace < LobChunkHeader::kSerializedSize) {
+            auto newBlock = createOrGetNextBlock(
+                    *block, LobChunkHeader::kSerializedSize + kBlockFreeSpaceThresholdForLob);
+            if (chunkId == 1)
+                result = ColumnDataAddress(block->getId(), block->getNextDataPos());
+            else {
+                // Update next chunk position in the header of the last chunk
+                lastHeader.m_nextChunkBlockId = newBlock->getId();
+                lastHeader.m_nextChunkOffset = newBlock->getNextDataPos();
+                lastHeader.serialize(headerBuffer);
+                block->writeData(headerBuffer, LobChunkHeader::kSerializedSize, lastHeaderPos);
+            }
+            block = newBlock;
+            freeSpace = block->getFreeDataSpace();
+            header.m_chunkLength = std::min(freeSpace, remainingLobSize);
+        }
+
+        // Compute actual chunk length
+        const auto availableSpace =
+                static_cast<std::uint32_t>(freeSpace - LobChunkHeader::kSerializedSize);
+        header.m_chunkLength = std::min(availableSpace, remainingLobSize);
+
+        // Write header
+        lastHeaderPos = block->getNextDataPos();
+        header.serialize(headerBuffer);
+        block->writeData(headerBuffer, LobChunkHeader::kSerializedSize);
+        block->incNextDataPos(LobChunkHeader::kSerializedSize);
+        lastHeader = header;
+        lastBlock = block;
+
+        if (header.m_chunkLength > 0) {
+            // Read LOB into data buffer
+            if (!dataBuffer) dataBuffer.reset(new std::uint8_t[m_dataBlockDataAreaSize]);
+            auto data = dataBuffer.get();
+            std::size_t remainingToRead = header.m_chunkLength;
+            while (remainingToRead > 0) {
+                const auto actuallyRead = lob.read(data, remainingToRead);
+                if (actuallyRead < 1) {
+                    throwDatabaseError(IOManagerMessageId::kErrorLobReadFailed, getDatabaseName(),
+                            m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id);
+                }
+                data += actuallyRead;
+                remainingToRead -= actuallyRead;
+            }
+            // Write data
+            block->writeData(dataBuffer.get(), header.m_chunkLength);
+            // Advance next data position
+            block->incNextDataPos(header.m_chunkLength);
+        }
+
+        // Update counters
+        ++chunkId;
+    } while (lob.getRemainingSize() > 0);
 
     return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }

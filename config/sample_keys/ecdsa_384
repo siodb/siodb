@@ -1,15 +1,6 @@
------BEGIN PUBLIC KEY-----
-MIICXDCCAc8GByqGSM49AgEwggHCAgEBME0GByqGSM49AQECQgH/////////////
-////////////////////////////////////////////////////////////////
-/////////zCBngRCAf//////////////////////////////////////////////
-///////////////////////////////////////8BEFRlT65YY4cmh+SmiGgtoVA
-7qLacluZsxXzuLSJkY7xCeFWGTlR7H6TexZSwL07sb8HNXPfiD0sNPHvRR/Ua1A/
-AAMVANCeiAApHLhTlsxnFzkyhKqg2mS6BIGFBADGhY4GtwQE6c2ePstmI5W0Qpxk
-gTkFP7Uh+CivYGtNPbqhS1537+dZKP4dwSei/6jeM0izwYVqQpv5fn4xwuW9ZgEY
-OSlqeJo7wARcil+0LH0b2Zj1RElXm0RoF6+9Fyc+ZiyX7nKZXvQmQMVQuQE/rQdh
-NTxwhqJywkCIvpR2n9FmUAJCAf//////////////////////////////////////
-////+lGGh4O/L5Zrf8wBSPcJpdA7tcm4iZxHrrtvtx6ROGQJAgEBA4GGAAQBZy69
-ImVte1yTkhyRrQZTNteL6Zt4C4dzkF/CqVdjegVIcQgKVHrAv1YkP+Hiwt5yWUdJ
-rG/PUWYyreQA5mF0SpgACbYbzBlsUgEM9+dkYrWTV56xnn2A1/ihJZ8p3WLkopME
-WelLzuewvZ58lMYRTnSy0sPMYF3RV2SZFX5OSkzuWPU=
------END PUBLIC KEY-----
+-----BEGIN EC PRIVATE KEY-----
+MIGkAgEBBDB6eh3I0cH5LIJ/0JlA2PC8d6ANiJD3tEvoEMsqE/PQHIslJBYs4h8T
+N4Iq6o3Di/egBwYFK4EEACKhZANiAATQu9qsSI84v2yrkU4StMtVU5VZ1DMEpk/7
+RRzIRcycWMICvpAie90NV9tbeGV4wp1Vm0516W6wo3e6kz/jMaIsVFxsC9wx7Jo5
+rLvAGRIU57zgCfKYI0LAaqEiVpgh2O4=
+-----END EC PRIVATE KEY-----

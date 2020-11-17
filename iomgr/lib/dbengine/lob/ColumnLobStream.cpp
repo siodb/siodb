@@ -24,6 +24,7 @@ ColumnLobStream::ColumnLobStream(Column& column, const ColumnDataAddress& addr, 
     , m_blockId(m_startingAddress.getBlockId())
     , m_offsetInBlock(m_column.loadLobChunkHeader(
               m_startingAddress.getBlockId(), m_startingAddress.getOffset(), m_chunkHeader))
+    , m_chunkId(1)
 {
     m_size = m_chunkHeader.m_remainingLobLength;
 }
@@ -92,6 +93,8 @@ std::ptrdiff_t ColumnLobStream::readInternal(void* buffer, std::size_t bufferSiz
                     m_column.getDatabaseUuid(), m_column.getTableId(), m_column.getId(), m_blockId,
                     m_offsetInBlock, "invalid next chunk offset in the subsequent chunk header");
         }
+
+        ++m_chunkId;
         m_chunkHeader = chunkHeader;
         m_offsetInBlock = newOffsetInBlock;
         m_offsetInChunk = 0;
@@ -104,6 +107,7 @@ void ColumnLobStream::doRewind()
     m_blockId = m_startingAddress.getBlockId();
     m_offsetInBlock = m_column.loadLobChunkHeader(
             m_startingAddress.getBlockId(), m_startingAddress.getOffset(), m_chunkHeader);
+    m_chunkId = 1;
 }
 
 }  // namespace siodb::iomgr::dbengine

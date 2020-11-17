@@ -33,12 +33,14 @@ _RestartSiodb
 ### Login with keys Unix socket
 for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
     PRIVATE_KEY_NAME=${key%.*}
+    echo "Connecting via UNIX socket using ${PRIVATE_KEY_NAME}"
     _RunSqlThroughUserUnixSocket "user_test_key" "${PRIVATE_KEY_NAME}" "show databases"
 done
 
 ### Login with keys TCP socket
 for key in $(ls "${ROOT_DIR}/config/sample_keys/"*.pub); do
     PRIVATE_KEY_NAME=${key%.*}
+    echo "Connecting via TCP socket using ${PRIVATE_KEY_NAME}"
     _RunSqlThroughUserTCPSocket "user_test_key" "${PRIVATE_KEY_NAME}" "show databases"
 done
 
