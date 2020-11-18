@@ -12,8 +12,8 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test functions
 
 ## Specific test parameters
-SOURCE_DATA_DIR="/var/lib/siodb/siodb/data"
-TARGET_DATA_DIR="/var/lib/siodb/siodb/data_restored"
+SOURCE_DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
+TARGET_DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data_restored"
 
 ## =============================================
 ## TEST HEADER
