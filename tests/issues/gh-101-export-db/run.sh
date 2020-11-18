@@ -25,10 +25,10 @@ echo "Exporting database..."
 output_dir="${HOME}/tmp/gh-101_$(date +%s)_$$"
 mkdir -p "${output_dir}"
 
-dbname=testdb
+db_name=testdb
 "${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root \
     -i "${ROOT_DIR}/tests/share/private_key" \
-    -e "${dbname}" -o "${output_dir}/${dbname}.sql"
+    -e "${db_name}" -o "${output_dir}/${db_name}.sql"
 
 exitcode=$?
 
