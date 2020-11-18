@@ -10,13 +10,12 @@
 #include "antlr_wrappers/SiodbParserWrapper.h"
 #include "expr/AllColumnsExpression.h"
 #include "expr/ConstantExpression.h"
-#include "expr/SingleColumnExpression.h"
 #include "expr/ExpressionFactory.h"
+#include "expr/SingleColumnExpression.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/log/Log.h>
-#include <siodb/iomgr/shared/dbengine/SystemObjectNames.h>
 
 // Boost headers
 #include <boost/algorithm/hex.hpp>
@@ -115,7 +114,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
             return createSelectRequestForFactoredSelectStatement(node);
         case SiodbParser::RuleShow_databases_stmt:
             return std::make_unique<requests::ShowDatabasesRequest>();
-        case SiodbParser::RuleShow_tables_stmt: return createSelectRequestForShowTablesStatement();
+        case SiodbParser::RuleShow_tables_stmt:
+            return std::make_unique<requests::ShowTablesRequest>();
         case SiodbParser::RuleInsert_stmt: return createInsertRequest(node);
         case SiodbParser::RuleUpdate_stmt: return createUpdateRequest(node);
         case SiodbParser::RuleDelete_stmt: return createDeleteRequest(node);
@@ -307,32 +307,6 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSelectRequestForSi
 
     // TODO: Capture ORDER BY values
     std::vector<requests::ConstExpressionPtr> orderBy;
-
-    return std::make_unique<requests::SelectRequest>(std::move(database), std::move(tables),
-            std::move(columns), std::move(where), std::move(groupBy), std::move(having),
-            std::move(orderBy), std::move(offset), std::move(limit));
-}
-
-requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSelectRequestForShowTablesStatement()
-{
-    std::string database;
-    requests::ConstExpressionPtr where, offset, limit;
-    requests::ConstExpressionPtr having;
-    std::vector<requests::ConstExpressionPtr> groupBy;
-    std::vector<requests::ConstExpressionPtr> orderBy;
-
-    std::vector<requests::SourceTable> tables;
-    tables.emplace_back(kSysTablesTableName, "");
-
-    std::vector<requests::ResultExpression> columns;
-    columns.push_back(
-            requests::ResultExpression(std::make_unique<requests::SingleColumnExpression>(
-                                               kSysTablesTableName, kSysTables_Name_ColumnName),
-                    ""));
-    columns.push_back(requests::ResultExpression(
-            std::make_unique<requests::SingleColumnExpression>(
-                    kSysTablesTableName, kSysTables_Description_ColumnName),
-            ""));
 
     return std::make_unique<requests::SelectRequest>(std::move(database), std::move(tables),
             std::move(columns), std::move(where), std::move(groupBy), std::move(having),
