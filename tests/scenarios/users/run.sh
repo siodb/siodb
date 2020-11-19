@@ -280,7 +280,7 @@ done
 _CheckLogFiles
 
 ### Stop test
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0

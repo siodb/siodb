@@ -18,6 +18,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## =============================================
 _TestBegin
 _Prepare
+#_SetInstanceParameter "data_dir" "${SOURCE_DATA_DIR}"
 _StartSiodb
 
 ## =============================================
@@ -29,7 +30,7 @@ _StartSiodb
 ## =============================================
 ## TEST FOOTER
 ## =============================================
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0

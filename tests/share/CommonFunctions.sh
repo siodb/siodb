@@ -20,9 +20,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/LogFunctions.sh
 # --------------------------------------------------------------
 UNIQUE_SUFFIX=$(date +%s)_$$
 SCRIPT=$(realpath "$0")
-SCRIPT_DIR=$(dirname "${SCRIPT}")
 SCRIPT_DIR=$(realpath "${SCRIPT_DIR}")
 ROOT_DIR=${SCRIPT_DIR}
+SHARED_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 while [[ ! -f "${ROOT_DIR}/.rootdir" ]]; do
   ROOT_DIR=$(realpath "${ROOT_DIR}/..")
 done
@@ -143,15 +143,6 @@ function _killSiodb {
   if [[ `pkill -c siodb` -gt 0 ]]; then
     pkill -9 siodb
   fi
-}
-
-function _RestartSiodb {
-  _log "INFO" "Restarting instance..."
-  SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
-  SIOTEST_KEEP_INSTANCE_UP=0
-  _StopSiodb
-  SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
-  _StartSiodb
 }
 
 function _SetInstanceParameter {
@@ -295,38 +286,59 @@ function _StartSiodb {
   _ShowSiodbProcesses
 }
 
+function _RestartSiodb {
+  _log "INFO" "Restarting instance..."
+  SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
+  SIOTEST_KEEP_INSTANCE_UP=0
+  _StopSiodbAndWaitUntilStopped
+  SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
+  _StartSiodb
+}
+
 function _StopSiodb {
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
+  _log "INFO" "Stoping instance..."
+  SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
+  SIOTEST_KEEP_INSTANCE_UP=0
+  _StopSiodbAndWaitUntilStopped
+  SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
+}
+
+function _FinalStopOfSiodb {
   if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
-    _log "INFO" "Stopping Siodb process on default instance"
-    _ShowSiodbProcesses
-    SIODB_PROCESS_ID=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
-        | grep -v grep | awk '{print $2}')
-    if [[ -z "${SIODB_PROCESS_ID}" ]]; then
-      echo "Siodb is already not running."
-    else
-      kill -SIGINT ${SIODB_PROCESS_ID}
-      counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
-          | grep -v grep | awk '{print $2}' | wc -l | bc)
-      counterTimeout=0
-      _log "INFO" "Waiting for Siodb instance to stop..."
-      while [[ $counterSiodbProcesses -ne 0 ]]; do
-        counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
-            | grep -v grep | awk '{print $2}' | wc -l | bc)
-        if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
-          _log "ERROR" \
-              "Timeout (${instanceStartupTimeout} seconds) reached while stopping the instance..."
-          _failExit
-        fi
-        counterTimeout=$((counterTimeout+1))
-        sleep 1
-      done
-    fi
-    echo "After stopping:"
-    _ShowSiodbProcesses
+    _StopSiodbAndWaitUntilStopped
   else
     _log "INFO" "Siodb process kept in running state"
   fi
+}
+
+function _StopSiodbAndWaitUntilStopped {
+  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
+  _log "INFO" "Stopping Siodb process on default instance"
+  _ShowSiodbProcesses
+  SIODB_PROCESS_ID=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+      | grep -v grep | awk '{print $2}')
+  if [[ -z "${SIODB_PROCESS_ID}" ]]; then
+    echo "Siodb is already not running."
+  else
+    kill -SIGINT ${SIODB_PROCESS_ID}
+    counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+        | grep -v grep | awk '{print $2}' | wc -l | bc)
+    counterTimeout=0
+    _log "INFO" "Waiting for Siodb instance to stop..."
+    while [[ $counterSiodbProcesses -ne 0 ]]; do
+      counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+          | grep -v grep | awk '{print $2}' | wc -l | bc)
+      if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
+        _log "ERROR" \
+            "Timeout (${instanceStartupTimeout} seconds) reached while stopping the instance..."
+        _failExit
+      fi
+      counterTimeout=$((counterTimeout+1))
+      sleep 1
+    done
+  fi
+  echo "After stopping:"
+  _ShowSiodbProcesses
 }
 
 function _CheckLogFiles {
@@ -399,7 +411,7 @@ function _RunSqlThroughUserUnixSocket {
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
-  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} -c ''"${3}"''
 }
 
 function _RunSqlThroughUserTCPSocket {
@@ -411,7 +423,7 @@ function _RunSqlThroughUserTCPSocket {
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
-  --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  --nologo -u ${1} -i ${2} -c''"${3}"''
 }
 
 function _RunSql {
@@ -422,7 +434,7 @@ function _RunSql {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
-  -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
+  -i "${ROOT_DIR}/tests/share/private_key" -c ''"$1"''
 }
 
 function _RunSqlAndValidateOutput {
@@ -434,7 +446,7 @@ function _RunSqlAndValidateOutput {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
-    -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
+    -i "${ROOT_DIR}/tests/share/private_key" -c ''"${1}"'')
   EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"

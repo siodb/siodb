@@ -49,7 +49,7 @@ fi
 ## =============================================
 ## TEST FOOTER
 ## =============================================
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0

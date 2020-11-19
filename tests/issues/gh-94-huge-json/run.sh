@@ -62,7 +62,7 @@ _RunSql "select * from ${database_name}.huge_test"
 _CheckLogFiles
 
 ### Stop test
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0

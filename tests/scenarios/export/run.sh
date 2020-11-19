@@ -15,7 +15,7 @@ _Prepare
 _SetInstanceParameter "iomgr.max_json_payload_size" "10m"
 _StartSiodb
 
-_RunSqlScript "${SCRIPT_DIR}/data.sql" 120
+_RunSqlScript "${SHARED_DIR}/sql/data.sql" 120
 _CheckLogFiles
 
 output_dir="${HOME}/tmp/export_$(date +%s)_$$"
@@ -33,9 +33,9 @@ echo "Exporting db3 ..."
 "${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${ROOT_DIR}/tests/share/private_key" \
     -e db3 >"${output_dir}/db3.sql"
 
-# echo "Exporting db2.tablealldatatypes ..."
-# "${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${ROOT_DIR}/tests/share/private_key" \
-#     -e db2.tablealldatatypes >"${output_dir}/db2.tablealldatatypes.sql"
+echo "Exporting db2.tablealldatatypes ..."
+"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root -i "${ROOT_DIR}/tests/share/private_key" \
+    -e db2.tablealldatatypes >"${output_dir}/db2.tablealldatatypes.sql"
 
 ### Create database db4 and test data model
 database_name=db4
@@ -49,9 +49,9 @@ _RunSql "alter user root add token test_token x'${user_token}'"
 medium_json_file="${output_dir}/medium.json"
 echo "[{ \"huge\": \"$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 1m)\" }]" \
 > "${medium_json_file}"
-STATUS=$(curl --write-out '%{http_code}' -o ${output_dir}/medium.log -d "@${medium_json_file}" \
+STATUS=$(curl --write-out '%{http_code}' -o ${output_dir}/medium.log -X POST -d "@${medium_json_file}" \
 "http://root:${user_token}@localhost:50080/databases/${database_name}/tables/huge_test/rows")
-if [[ $STATUS -ne 200 ]]; then
+if [[ $STATUS -ne 201 ]]; then
   _log "ERROR" "curl returned ${STATUS}"
   ${output_dir}/medium.log
   _failExit
@@ -61,9 +61,9 @@ fi
 huge_json_file="${output_dir}/huge.json"
 echo "[{ \"huge\": \"$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 5m)\" }]" \
 > "${huge_json_file}"
-STATUS=$(curl --write-out '%{http_code}' -o ${output_dir}/huge.log -d "@${huge_json_file}" \
+STATUS=$(curl --write-out '%{http_code}' -o ${output_dir}/huge.log -X POST -d "@${huge_json_file}" \
 "http://root:${user_token}@localhost:50080/databases/${database_name}/tables/huge_test/rows")
-if [[ $STATUS -ne 200 ]]; then
+if [[ $STATUS -ne 201 ]]; then
   _log "ERROR" "curl returned ${STATUS}"
   cat ${output_dir}/huge.log
   _failExit
@@ -95,7 +95,7 @@ if [[ ${DIFF_COUNT} -gt 6 ]]; then
   _failExit
 fi
 
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 _TestEnd
 exit 0

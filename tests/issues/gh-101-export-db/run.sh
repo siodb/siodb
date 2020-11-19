@@ -32,7 +32,7 @@ db_name=testdb
 
 exitcode=$?
 
-_StopSiodb
+_FinalStopOfSiodb
 _CheckLogFiles
 
 if [[ ${exitcode} -eq 0 ]]; then
