@@ -27,7 +27,7 @@ mkdir -p "${output_dir}"
 
 db_name=testdb
 table_name=table_with_all_data_types
-"${SIODB_BIN}/siocli" -a ${SIODB_INSTANCE} -u root \
+"${SIODB_BIN}/siocli" -d -a ${SIODB_INSTANCE} -u root \
     -i "${ROOT_DIR}/tests/share/private_key" \
     -e "${db_name}.${table_name}" \
     -o "${output_dir}/${db_name}.${table_name}.sql"

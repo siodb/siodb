@@ -268,9 +268,16 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/siocli",
             "args": [
-                "-E",
+                "-a",
+                "siodb",
+                "-u",
+                "root",
+                "-i",
+                "${workspaceFolder}/config/sample_keys/rsa",
+                "-e",
+                "testdb.TABLE_WITH_ALL_DATA_TYPES",
                 "-o",
-                "dump.sql"
+                "export111.sql"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
