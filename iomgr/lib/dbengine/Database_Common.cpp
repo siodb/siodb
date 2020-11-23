@@ -511,9 +511,15 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
     if (type != TableType::kDisk)
         throwDatabaseError(IOManagerMessageId::kErrorTableTypeNotSupported, static_cast<int>(type));
 
+    if (isSystemDatabase() && !canContainUserTables())
+        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateUserTablesInSystemDatabase);
+
     LOG_DEBUG << "Database " << m_name << ": Creating user table " << name;
 
     std::lock_guard lock(m_mutex);
+
+    if (isTableExistsUnlocked(name))
+        throwDatabaseError(IOManagerMessageId::kErrorTableAlreadyExists, m_name, name);
 
     std::vector<char> columnPresent(columnSpecs.size());
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
@@ -603,6 +609,35 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
     recordTableDefinition(*table, tp);
 
     return table;
+}
+
+void Database::dropTable(
+        const std::string& name, bool tableMustExists, [[maybe_unused]] std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_mutex);
+    auto table = findTableUnlocked(name);
+    if (!table) {
+        if (!tableMustExists) return;
+        throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, m_name, name);
+    }
+
+    // TODO: Implement DROP TABLE
+    // Drop table implementation should:
+    // 1. Collect all sorts of objects related to table.
+    // 2. Determine which of them must be removed.
+    // 3. Remove these objects.
+    // 4. Commit transaction.
+    // 5. Remove from internal dictionaries.
+
+    // Objects:
+    // - Table has column sets
+    //   |-> column set has column set columns
+    // - Table has columns
+    //   |-> column has column definitions
+    //       |->column definition has column definition constraints
+    //          |-> column definition constraint is related to constaint
+    //              |-> constaint is linked to constrain definition
+    //                  |-> constraint definition can be shared by multiple constraints
 }
 
 io::FilePtr Database::createFile(

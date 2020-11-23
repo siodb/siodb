@@ -80,13 +80,6 @@ void RequestHandler::executeCreateTableRequest(iomgr_protocol::DatabaseEngineRes
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
-    if (database->isSystemDatabase() && !database->canContainUserTables())
-        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateUserTablesInSystemDatabase);
-
-    if (database->isTableExists(request.m_table))
-        throwDatabaseError(
-                IOManagerMessageId::kErrorTableAlreadyExists, databaseName, request.m_table);
-
     std::vector<ColumnSpecification> tableColumns;
     tableColumns.reserve(request.m_columns.size());
     for (const auto& column : request.m_columns)
@@ -222,7 +215,17 @@ void RequestHandler::executeDropTableRequest(
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+
+    database->dropTable(request.m_table, !request.m_ifExists, m_userId);
+
+#if 0
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
+#else
+    // TODO: Remove when Database::dropTable() is implemented.
     sendNotImplementedYet(response);
+#endif
 }
 
 void RequestHandler::executeDropColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,

@@ -22,15 +22,7 @@ public:
      * @param expression Constraint expression.
      */
     ConstraintDefinition(bool system, Database& database, ConstraintType type,
-            requests::ConstExpressionPtr&& expression)
-        : m_database(database)
-        , m_id(m_database.generateNextConstraintDefinitionId(system))
-        , m_type(type)
-        , m_expression(std::move(expression))
-        , m_hash(computeHash())
-        , m_writtenToStorage(false)
-    {
-    }
+            requests::ConstExpressionPtr&& expression);
 
     /**
      * Initializes object of class ConstraintDefinition for the existing constraint.
@@ -38,15 +30,7 @@ public:
      * @param constraintDefinitionRecord Constraint definition registry record.
      */
     ConstraintDefinition(
-            Database& database, const ConstraintDefinitionRecord& constraintDefinitionRecord)
-        : m_database(database)
-        , m_id(constraintDefinitionRecord.m_id)
-        , m_type(constraintDefinitionRecord.m_type)
-        , m_expression(deserializeExpression(constraintDefinitionRecord.m_expression))
-        , m_hash(constraintDefinitionRecord.m_hash)
-        , m_writtenToStorage(true)
-    {
-    }
+            Database& database, const ConstraintDefinitionRecord& constraintDefinitionRecord);
 
     /**
      * Returns database object.

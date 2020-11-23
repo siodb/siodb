@@ -672,6 +672,14 @@ public:
             std::optional<std::string>&& description);
 
     /**
+     * Deletes table from the database.
+     * @param name Table name.
+     * @param tableMustExist Table must exist, otherwise do not fail operation.
+     * @param currentUserId Current user.
+     */
+    void dropTable(const std::string& name, bool tableMustExist, std::uint32_t currentUserId);
+
+    /**
      * Creates new file. File is created with encrypted I/O if available.
      * @param path File path.
      * @param extraFlags Additional open file flags.
