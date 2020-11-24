@@ -217,9 +217,8 @@ void RequestHandler::executeDropTableRequest(
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
 
-    database->dropTable(request.m_table, !request.m_ifExists, m_userId);
-
 #if 0
+    database->dropTable(request.m_table, !request.m_ifExists, m_userId);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
 #else
