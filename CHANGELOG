@@ -1,6 +1,15 @@
+2020-11-24 version 0.9.0
+
+- New feature: SHOW TABLES statement
+- Fix: Various database engine stability fixes
+- Fix: Multiple fixes and improvements in the database export output
+- Fix: POST request returns code 201 on success
+- Fix: CentOS/RHEL 8 build procedure for the Protobuf updated to produce
+  static librararies
+
 2020-10-14 version 0.8.0
 
-- New feature: Data export functionality in the siocli
+- New feature: Database export functionality in the siocli
 - New feature: User authentication with token
 - New feature: User token management statements
 - New feature: REST Server
