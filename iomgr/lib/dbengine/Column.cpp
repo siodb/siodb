@@ -199,7 +199,7 @@ void Column::readRecord(
     //DBG_LOG_DEBUG("Column::readRecord(): " << makeDisplayName() << " at " << addr);
 
     // Handle NULL value
-    if (addr.isNullValueAddress()) {
+    if (!addr) {
         value.clear();
         return;
     }
@@ -634,7 +634,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
 }
 
 std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
-        const MasterColumnRecord& record)
+        const MasterColumnRecord& record, bool updateMainIndex)
 {
     // Check that this is master column
     if (!isMasterColumn()) {
@@ -679,21 +679,23 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
     ::pbeEncodeUInt64(block->getId(), indexValue.m_data);
     ::pbeEncodeUInt32(pos, indexValue.m_data + 8);
 
-    switch (record.getOperationType()) {
-        case DmlOperationType::kInsert: {
-            if (!m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data)) {
-                throwDatabaseError(IOManagerMessageId::kErrorCannotInsertDuplicateTrid,
-                        getDatabaseName(), getTableName(), m_name, record.getTableRowId());
+    if (SIODB_LIKELY(updateMainIndex)) {
+        switch (record.getOperationType()) {
+            case DmlOperationType::kInsert: {
+                if (!m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data)) {
+                    throwDatabaseError(IOManagerMessageId::kErrorCannotInsertDuplicateTrid,
+                            getDatabaseName(), getTableName(), m_name, record.getTableRowId());
+                }
+                break;
             }
-            break;
-        }
-        case DmlOperationType::kDelete: {
-            m_masterColumnData->m_mainIndex->erase(indexKey);
-            break;
-        }
-        case DmlOperationType::kUpdate: {
-            m_masterColumnData->m_mainIndex->update(indexKey, indexValue.m_data);
-            break;
+            case DmlOperationType::kDelete: {
+                m_masterColumnData->m_mainIndex->erase(indexKey);
+                break;
+            }
+            case DmlOperationType::kUpdate: {
+                m_masterColumnData->m_mainIndex->update(indexKey, indexValue.m_data);
+                break;
+            }
         }
     }
 
@@ -709,7 +711,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
             ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
-void Column::eraseFromMasterColumnRecordMainIndex(std::uint64_t trid)
+void Column::eraseFromMasterColumnMainIndex(std::uint64_t trid)
 {
     // Check that this is master column
     if (!isMasterColumn()) {

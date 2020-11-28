@@ -4,11 +4,11 @@
 
 #pragma once
 
+// Common project headers
+#include "../stl_wrap/system_error_wrapper.h"
+
 // STL headers
 #include <sstream>
-
-// Boost headers
-#include <boost/system/error_code.hpp>
 
 namespace siodb::utils {
 
@@ -40,6 +40,6 @@ void clearDir(const std::string& path);
  * @param[out] errorCode Error code.
  * @return true if operation succeeded, false otherwise.
  */
-bool clearDir(const std::string& path, boost::system::error_code& errorCode);
+bool clearDir(const std::string& path, system_error_code& errorCode);
 
 }  // namespace siodb::utils

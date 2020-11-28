@@ -55,6 +55,15 @@ public:
     }
 
     /**
+     * Returns mutable index by table ID.
+     * @return Registry index object.
+     */
+    auto& byId() noexcept
+    {
+        return m_container.get<ByIdTag>();
+    }
+
+    /**
      * Returns read-only index by table ID.
      * @return Registry index object.
      */

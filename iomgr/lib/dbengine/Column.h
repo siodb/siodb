@@ -318,16 +318,17 @@ public:
     /**
      * Adds new data to a master column.
      * @param record Master column record.
+     * @param updateMainIndex Flag which indocates whether update of the main index must be perfomed.
      * @return Pair containing data address and next data address
      */
     std::pair<ColumnDataAddress, ColumnDataAddress> writeMasterColumnRecord(
-            const MasterColumnRecord& record);
+            const MasterColumnRecord& record, bool updateMainIndex = true);
 
     /**
-     * Erases TRID in the master column record main index
+     * Erases TRID in the master column record main index.
      * @param trid Table row ID
      */
-    void eraseFromMasterColumnRecordMainIndex(std::uint64_t trid);
+    void eraseFromMasterColumnMainIndex(std::uint64_t trid);
 
     /**
      * Rolls back to the given data address.
