@@ -217,9 +217,13 @@ void RequestHandler::executeDropTableRequest(
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
 
+#if 0
     database->dropTable(request.m_table, !request.m_ifExists, m_userId);
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
+#else
+    sendNotImplementedYet(response);
+#endif
 }
 
 void RequestHandler::executeDropColumnRequest(iomgr_protocol::DatabaseEngineResponse& response,
