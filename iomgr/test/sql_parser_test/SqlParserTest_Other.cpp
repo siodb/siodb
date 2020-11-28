@@ -6,7 +6,9 @@
 #include "TestContext.h"
 #include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
-#include "dbengine/parser/expr/AllExpressions.h"
+
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllExpressions.h>
 
 // Google Test
 #include <gtest/gtest.h>

@@ -13,12 +13,12 @@
 #include "../parser/DBEngineRestRequest.h"
 #include "../parser/DBEngineSqlRequest.h"
 #include "../parser/DBExpressionEvaluationContext.h"
-#include "../parser/expr/Expression.h"
 #include "../reg/ColumnRecord.h"
 
 // Common project headers
 #include <siodb/common/io/OutputStream.h>
 #include <siodb/common/protobuf/ExtendedCodedOutputStream.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/IOManagerProtocol.pb.h>

@@ -5,13 +5,13 @@
 #include "ExpressionFactory.h"
 
 // Project headers
-#include "AllExpressions.h"
-#include "../AntlrHelpers.h"
-#include "../DBEngineRequestFactoryError.h"
-#include "../antlr_wrappers/SiodbParserWrapper.h"
+#include "AntlrHelpers.h"
+#include "DBEngineRequestFactoryError.h"
+#include "antlr_wrappers/SiodbParserWrapper.h"
 
 // Common project headers
 #include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllExpressions.h>
 
 // Boost headers
 #include <boost/algorithm/hex.hpp>

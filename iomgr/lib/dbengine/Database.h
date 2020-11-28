@@ -16,7 +16,6 @@
 #include "MasterColumnRecordPtr.h"
 #include "TablePtr.h"
 #include "TransactionParameters.h"
-#include "parser/expr/Expression.h"
 #include "reg/ColumnDefinitionRegistry.h"
 #include "reg/ColumnRegistry.h"
 #include "reg/ColumnSetRegistry.h"
@@ -32,6 +31,7 @@
 #include <siodb/iomgr/shared/dbengine/SystemObjectNames.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
 #include <siodb/iomgr/shared/dbengine/io/File.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 // STL headers
 #include <unordered_map>

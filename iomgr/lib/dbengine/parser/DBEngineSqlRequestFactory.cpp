@@ -7,15 +7,15 @@
 // Project headers
 #include "AntlrHelpers.h"
 #include "DBEngineRequestFactoryError.h"
+#include "ExpressionFactory.h"
 #include "antlr_wrappers/SiodbParserWrapper.h"
-#include "expr/AllColumnsExpression.h"
-#include "expr/ConstantExpression.h"
-#include "expr/ExpressionFactory.h"
-#include "expr/SingleColumnExpression.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/log/Log.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllColumnsExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/SingleColumnExpression.h>
 
 // Boost headers
 #include <boost/algorithm/hex.hpp>

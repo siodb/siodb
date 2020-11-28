@@ -9,7 +9,6 @@
 #include "dbengine/handlers/RequestHandler.h"
 #include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
-#include "dbengine/parser/expr/ConstantExpression.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
@@ -18,6 +17,7 @@
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
 // STL headers
 #include <random>

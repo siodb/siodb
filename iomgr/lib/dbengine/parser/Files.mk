@@ -3,7 +3,6 @@
 # in the LICENSE file.
 
 include parser/antlr_wrappers/Files.mk
-include parser/expr/Files.mk
 
 CXX_SRC+= \
 	parser/AntlrHelpers.cpp  \
@@ -12,6 +11,7 @@ CXX_SRC+= \
 	parser/DBEngineSqlRequestFactory.cpp  \
 	parser/DBExpressionEvaluationContext.cpp  \
 	parser/EmptyExpressionEvaluationContext.cpp  \
+	parser/ExpressionFactory.cpp  \
 	parser/RowDataJsonSaxParser.cpp  \
 	parser/SqlParser.cpp
 
@@ -26,6 +26,7 @@ CXX_HDR+= \
 	parser/DBEngineSqlRequestFactory.h  \
 	parser/DBExpressionEvaluationContext.h  \
 	parser/EmptyExpressionEvaluationContext.h  \
+	parser/ExpressionFactory.h  \
 	parser/JsonParserError.h  \
 	parser/RowDataJsonSaxParser.h  \
 	parser/SqlParser.h
