@@ -137,7 +137,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
 
             throw DBEngineRequestFactoryError("ALTER DATABASE: unsupported operation");
         }
-        case SiodbParser::RuleUse_database_stmt: return createUseDatabaseRequest(node);
+        case SiodbParser::RuleUse_database_stmt1: return createUseDatabaseRequest(node);
+        case SiodbParser::RuleUse_database_stmt2: return createUseDatabaseRequest(node);
         case SiodbParser::RuleCreate_table_stmt: return createCreateTableRequest(node);
         case SiodbParser::RuleDrop_table_stmt: return createDropTableRequest(node);
         case SiodbParser::RuleAlter_table_stmt: {

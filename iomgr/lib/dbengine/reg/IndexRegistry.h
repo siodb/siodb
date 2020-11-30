@@ -32,6 +32,10 @@ private:
     struct ByNameTag {
     };
 
+    /** Index tag */
+    struct ByTableIdTag {
+    };
+
     /** Registry data container type */
     typedef boost::multi_index::multi_index_container<value_type,
             boost::multi_index::indexed_by<
@@ -40,7 +44,10 @@ private:
                                     &value_type::m_id>>,
                     boost::multi_index::hashed_unique<boost::multi_index::tag<ByNameTag>,
                             boost::multi_index::member<value_type, decltype(value_type::m_name),
-                                    &value_type::m_name>>>>
+                                    &value_type::m_name>>,
+                    boost::multi_index::hashed_non_unique<boost::multi_index::tag<ByTableIdTag>,
+                            boost::multi_index::member<value_type, decltype(value_type::m_tableId),
+                                    &value_type::m_tableId>>>>
             Container;
 
 public:
@@ -64,12 +71,39 @@ public:
     }
 
     /**
+     * Returns mutable index by index ID.
+     * @return Registry index object.
+     */
+    auto& byId() noexcept
+    {
+        return m_container.get<ByIdTag>();
+    }
+
+    /**
      * Returns read-only index by index name.
      * @return Registry index object.
      */
     const auto& byName() const noexcept
     {
         return m_container.get<ByNameTag>();
+    }
+
+    /**
+     * Returns mutable index by index name.
+     * @return Registry index object.
+     */
+    auto& byName() noexcept
+    {
+        return m_container.get<ByNameTag>();
+    }
+
+    /**
+     * Returns read-only index by table ID.
+     * @return Registry index object.
+     */
+    const auto& byTableId() const noexcept
+    {
+        return m_container.get<ByTableIdTag>();
     }
 
     /**

@@ -33,10 +33,10 @@ else
   _RunSqlScript "${SCRIPT_DIR}/ddl_database.sql" 120
   _CheckLogFiles
 
-  _RunSqlScript "${SCRIPT_DIR}/ddl_user.sql" 120
+  _RunSqlScript "${SCRIPT_DIR}/ddl_table.sql" 120
   _CheckLogFiles
 
-  _RunSqlScript "${SCRIPT_DIR}/ddl_general.sql" 120
+  _RunSqlScript "${SCRIPT_DIR}/ddl_user.sql" 120
   _CheckLogFiles
 
   _RunSqlScript "${SCRIPT_DIR}/dml_general.sql" 120

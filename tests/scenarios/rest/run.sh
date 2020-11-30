@@ -15,7 +15,7 @@ _Prepare
 _StartSiodb
 _CheckLogFiles
 
-export RESTCLI_DEBUG=--debug
+##export RESTCLI_DEBUG=--debug
 ##export SIOCLI_DEBUG=--debug
 
 _log "INFO" "Creating ROOT token"

@@ -749,24 +749,16 @@ void createManyTablesTest(unsigned long long seed)
 
 TEST(DDL, CreateManyTables_Random)
 {
-    // TODO(cxxman): Commented out for now, but uncomment later,
-    //  when CreateManyTables_Seeded2 fixed
-#if 1
     std::random_device rd;
     const auto seed = rd();
     LOG_INFO << "DDL.CreateManyTables.seed=" << seed;
     createManyTablesTest(seed);
-#endif
 }
 
 TEST(DDL, CreateManyTables_Seeded1)
 {
-    // TODO(cxxman): Commented out for now, but uncomment later,
-    //  when CreateManyTables_Seeded2 fixed
-#if 1
     const auto seed = 4281804057UL;
     createManyTablesTest(seed);
-#endif
 }
 
 TEST(DDL, CreateManyTables_Seeded2)
@@ -832,6 +824,237 @@ TEST(DDL, CreateTableWithNotNullAndDefaultValue)
     EXPECT_FALSE(response.has_affected_row_count());
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
+}
+
+TEST(DDL, DropTable_SingleColumn_NoExplicitConstaints)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    {
+        const std::string statement("CREATE TABLE DDL_TEST_DROP_TABLE_1 (A text)");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+
+    /// ----------- DROP TABLE -----------
+    {
+        const std::string statement("DROP TABLE DDL_TEST_DROP_TABLE_1");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+}
+
+TEST(DDL, DropTable_SingleColumn_WithDefaultValue)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    {
+        const std::string statement(
+                "CREATE TABLE DDL_TEST_DROP_TABLE_2 (A text DEFAULT 'hello world!')");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+
+    /// ----------- DROP TABLE -----------
+    {
+        const std::string statement("DROP TABLE DDL_TEST_DROP_TABLE_2");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+}
+
+TEST(DDL, DropTable_MultipleColumns_NoExplicitConstaints)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    {
+        const std::string statement("CREATE TABLE DDL_TEST_DROP_TABLE_3 (A text, B int, C real)");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+
+    /// ----------- DROP TABLE -----------
+    {
+        const std::string statement("DROP TABLE DDL_TEST_DROP_TABLE_3");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+}
+
+TEST(DDL, DropTable_MultipleColumns_WithDefaultValue)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    /// ----------- CREATE TABLE -----------
+    {
+        const std::string statement(
+                "CREATE TABLE DDL_TEST_DROP_TABLE_4 "
+                "(A text not null default 'a', B int default 3, C real default 2.45678901)");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+
+    /// ----------- DROP TABLE -----------
+    {
+        const std::string statement("DROP TABLE DDL_TEST_DROP_TABLE_4");
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
 }
 
 TEST(DDL, SetTableAttributes_NextTrid)

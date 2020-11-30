@@ -73,7 +73,8 @@ sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
 		| show_tables_stmt
 		| update_stmt
 		| update_stmt_limited
-		| use_database_stmt
+		| use_database_stmt1
+		| use_database_stmt2
 		| vacuum_stmt
 	);
 
@@ -362,7 +363,8 @@ update_stmt_limited:
 		)?
 	)?;
 
-use_database_stmt: K_USE K_DATABASE database_name;
+use_database_stmt1: K_USE database_name;
+use_database_stmt2: K_USE K_DATABASE database_name;
 
 vacuum_stmt: K_VACUUM;
 

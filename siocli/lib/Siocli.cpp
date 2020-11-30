@@ -12,6 +12,7 @@
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/config/SiodbVersion.h>
+#include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/crypto/TlsClient.h>
 #include <siodb/common/io/FDStream.h>
 #include <siodb/common/io/FileIO.h>
@@ -68,9 +69,11 @@
 
 namespace {
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
-const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
-const char* kSubsequentLinePrompt = "\033[1m      > \033[0m";
-const char* kCommentStart = "--";
+constexpr const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
+constexpr const char* kSubsequentLinePrompt = "\033[1m      > \033[0m";
+constexpr const char* kCommentStart = "--";
+constexpr const char* kVariablePrefix = "var:";
+constexpr auto kVariablePrefixLen = ::ct_strlen(kVariablePrefix);
 }  // namespace
 
 extern "C" int siocliMain(int argc, char** argv)
@@ -149,7 +152,19 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_port = vm["port"].as<int>();
         params.m_exitOnError = !stdinIsTerminal && vm.count("keep-going") == 0;
         params.m_user = vm["user"].as<std::string>();
-        const auto identityFile = vm["identity-file"].as<std::string>();
+        auto identityFile = vm["identity-file"].as<std::string>();
+        if (identityFile.size() > kVariablePrefixLen
+                && identityFile.substr(0, 4) == kVariablePrefix) {
+            const auto varName = identityFile.substr(kVariablePrefixLen);
+            const char* varValue = std::getenv(varName.c_str());
+            if (varValue == nullptr) {
+                std::ostringstream err;
+                err << "Can't get identity file name from the variable '" << varName
+                    << "': variable is undefined";
+                throw std::runtime_error(err.str());
+            }
+            identityFile = varValue;
+        }
         if (vm.count("command") > 0) {
             auto command = vm["command"].as<std::string>();
             boost::trim(command);
