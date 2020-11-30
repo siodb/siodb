@@ -153,7 +153,7 @@ create a plain text session this way:
 
 ```bash
 $ /opt/siodb-0.6/bin/siocli --user root --plaintext
-Siodb client v.0.6.0
+Siodb client v.0.9.0
 Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
 
 siocli>
