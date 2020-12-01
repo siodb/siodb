@@ -5,7 +5,7 @@
 # in the LICENSE file.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../share/CommonFunctions.sh"
+source "${SCRIPT_DIR}/../share/LogFunctions.sh"
 
 for d in $(ls -d "${SCRIPT_DIR}/gh-"*/); do
     _log "INFO" "Running test for the issue $d"

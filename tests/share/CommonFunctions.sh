@@ -11,18 +11,12 @@ fi
 set -e
 
 # --------------------------------------------------------------
-# Include
-# --------------------------------------------------------------
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/LogFunctions.sh
-
-# --------------------------------------------------------------
 # Global parameters
 # --------------------------------------------------------------
 UNIQUE_SUFFIX=$(date +%s)_$$
-SCRIPT=$(realpath "$0")
-SCRIPT_DIR=$(realpath "${SCRIPT_DIR}")
-ROOT_DIR=${SCRIPT_DIR}
-SHARED_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMMON_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${COMMON_SCRIPT_DIR}/../"
+SHARED_DIR="${COMMON_SCRIPT_DIR}/../share/"
 while [[ ! -f "${ROOT_DIR}/.rootdir" ]]; do
   ROOT_DIR=$(realpath "${ROOT_DIR}/..")
 done
@@ -39,6 +33,11 @@ set +e
 timeout -v 10000 "cat /etc/issue" >/dev/null 2>&1
 if [[ $? -ne 0 ]]; then unset _timeout_verbose; fi
 set -e
+
+# --------------------------------------------------------------
+# Include
+# --------------------------------------------------------------
+source "${SHARED_DIR}/LogFunctions.sh"
 
 # --------------------------------------------------------------
 # Command line
@@ -411,7 +410,7 @@ function _RunSqlThroughUserUnixSocket {
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
-  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} -c ''"${3}"''
+  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
 }
 
 function _RunSqlThroughUserTCPSocket {
@@ -423,7 +422,7 @@ function _RunSqlThroughUserTCPSocket {
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
-  --nologo -u ${1} -i ${2} -c''"${3}"''
+  --nologo -u ${1} -i ${2} <<< ''"${3}"''
 }
 
 function _RunSql {
@@ -434,7 +433,7 @@ function _RunSql {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
-  -i "${ROOT_DIR}/tests/share/private_key" -c ''"$1"''
+  -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
 }
 
 function _RunSqlAndValidateOutput {
@@ -446,7 +445,7 @@ function _RunSqlAndValidateOutput {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
-    -i "${ROOT_DIR}/tests/share/private_key" -c ''"${1}"'')
+    -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
   EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"

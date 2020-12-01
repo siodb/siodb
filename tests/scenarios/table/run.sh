@@ -4,6 +4,8 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
+set -e
+
 ## Global
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_NAME=$(basename "${SCRIPT_DIR}")
@@ -12,7 +14,8 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test functions
 
 ## Specific test parameters
-nbOfTableToCreate=100
+## TODO: change to 100 once gh-113
+nbOfTableToCreate=1
 
 ## =============================================
 ## TEST HEADER
@@ -32,9 +35,15 @@ _RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
 _RestartSiodb
 _CheckLogFiles
 
+_RunSqlAndValidateOutput "create table db1.tablealldatatypes ( col text )" \
+"Status .*: Table .* already exists"
+
 _RunSql "drop table db1.tablealldatatypes"
 _RestartSiodb
 _CheckLogFiles
+
+_RunSqlAndValidateOutput "drop table db1.tablealldatatypes" \
+"Status .*: Table .* doesn't exist"
 
 _RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
 _RestartSiodb
@@ -42,13 +51,13 @@ _CheckLogFiles
 
 for ((i = 0; i < ${nbOfTableToCreate}; ++i)); do
   _RunSql "create table db1.table${i} ( free_text text )"
-  _RunSql "insert into table db1.table${i} ( 'free text fro db1.table${i}' )"
+  _RunSql "insert into db1.table${i} values ( 'free text fro db1.table${i}' )"
 done
 _RestartSiodb
 _CheckLogFiles
 
 for ((i = 0; i < ${nbOfTableToCreate}; ++i)); do
-  _RunSql "drop table db1.table${i} ( free_text text )"
+  _RunSql "drop table db1.table${i}"
 done
 
 ## =============================================

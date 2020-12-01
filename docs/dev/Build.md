@@ -31,7 +31,7 @@ cd $HOME
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
     graphviz gcc-8 g++-8 libboost1.65-dev libboost-iostreams1.65-dev \
     libboost-log1.65-dev libboost-program-options1.65-dev libcurl4-openssl-dev \
-    readline-dev libtool libssl-dev lsb-release openjdk-11-jdk-headless python \
+    libreadline-dev libtool libssl-dev lsb-release openjdk-11-jdk-headless python \
     pkg-config uuid-dev clang-format-10 ubuntu-dbgsym-keyring
 
 # Set up alternatives for the clang-format
@@ -85,7 +85,7 @@ cd $HOME
 sudo apt install -y autoconf automake build-essential cmake doxygen gdb git \
     graphviz libboost1.67-dev libboost-iostreams1.67-dev libboost-log1.67-dev \
     libboost-program-options1.67-dev libcurl4-openssl-dev libtool \
-    libreadline-devel libssl-dev lsb-release openjdk-11-jdk-headless \
+    libreadline-dev libssl-dev lsb-release openjdk-11-jdk-headless \
     pkg-config python2 uuid-dev wget
 
 # Install clang-9. This one is for SLES, but works on the Debian 10 too.
