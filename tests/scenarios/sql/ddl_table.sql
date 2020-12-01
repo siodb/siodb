@@ -6,6 +6,8 @@ create database db_default;
 
 use database db_default;
 
+show tables;
+
 create table table_all_datatypes (
     col_integer integer,
     col_int int,
@@ -26,6 +28,8 @@ create table table_all_datatypes (
     col_blob blob,
     col_timestamp timestamp
 );
+
+show tables;
 
 create table table_100_cols_all_datatypes (
     col_1_integer integer,
@@ -129,6 +133,51 @@ create table table_100_cols_all_datatypes (
     col_99_biguint biguint,
     col_100_smallreal smallreal
 );
+
+show tables;
+
+create table table_1 (
+    col_int int,
+    col_text text
+);
+
+show tables;
+
+insert into table_1 values(1, 'a');
+insert into table_1 values(2, 'b');
+
+select * from table_1;
+
+drop table table_1;
+
+show tables;
+
+create table table_2 (
+    col_int int not null,
+    col_text text not null default 'hello world!!!'
+);
+
+show tables;
+
+drop table table_2;
+
+show tables;
+
+create table table_1 (
+    col_text2 text,
+    col_int2 real
+);
+
+show tables;
+
+insert into table_1 values('x', 100.51);
+insert into table_1 values('y', 200.45);
+
+select * from table_1;
+
+drop table table_1;
+
+show tables;
 
 use database sys;
 

@@ -69,6 +69,15 @@ public:
     }
 
     /**
+     * Returns mutable index by column ID.
+     * @return Index object.
+     */
+    auto& byId() noexcept
+    {
+        return m_container.get<ByIdTag>();
+    }
+
+    /**
      * Returns read-only index by column ID.
      * @return Index object.
      */

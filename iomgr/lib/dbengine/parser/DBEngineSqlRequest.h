@@ -6,7 +6,6 @@
 
 // Project headers
 #include "DBEngineRequest.h"
-#include "expr/Expression.h"
 #include "../UpdateDatabaseParameters.h"
 #include "../UpdateUserAccessKeyParameters.h"
 #include "../UpdateUserParameters.h"
@@ -16,6 +15,7 @@
 #include <siodb/common/proto/ColumnDataType.pb.h>
 #include <siodb/common/utils/Uuid.h>
 #include <siodb/iomgr/shared/dbengine/ConstraintType.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 namespace siodb::iomgr::dbengine::requests {
 

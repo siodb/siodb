@@ -7,15 +7,15 @@
 // Project headers
 #include "AntlrHelpers.h"
 #include "DBEngineRequestFactoryError.h"
+#include "ExpressionFactory.h"
 #include "antlr_wrappers/SiodbParserWrapper.h"
-#include "expr/AllColumnsExpression.h"
-#include "expr/ConstantExpression.h"
-#include "expr/ExpressionFactory.h"
-#include "expr/SingleColumnExpression.h"
 
 // Common project headers
 #include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/log/Log.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllColumnsExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/SingleColumnExpression.h>
 
 // Boost headers
 #include <boost/algorithm/hex.hpp>
@@ -137,7 +137,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
 
             throw DBEngineRequestFactoryError("ALTER DATABASE: unsupported operation");
         }
-        case SiodbParser::RuleUse_database_stmt: return createUseDatabaseRequest(node);
+        case SiodbParser::RuleUse_database_stmt1: return createUseDatabaseRequest(node);
+        case SiodbParser::RuleUse_database_stmt2: return createUseDatabaseRequest(node);
         case SiodbParser::RuleCreate_table_stmt: return createCreateTableRequest(node);
         case SiodbParser::RuleDrop_table_stmt: return createDropTableRequest(node);
         case SiodbParser::RuleAlter_table_stmt: {

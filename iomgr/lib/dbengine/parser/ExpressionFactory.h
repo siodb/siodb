@@ -5,8 +5,10 @@
 #pragma once
 
 // Project headers
-#include "Expression.h"
-#include "../SqlParser.h"
+#include "SqlParser.h"
+
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 namespace siodb::iomgr::dbengine::parser {
 
@@ -14,7 +16,7 @@ class ExpressionFactory {
 public:
     /**
      * Initializes object of class ExpressionFactory.
-     * @param parser SQL parser object.
+     * @param parser Parser object.
      * @param allowColumnExpressions Indication that parser should allow columns in expressions.
      */
     explicit ExpressionFactory(SqlParser& parser, bool allowColumnExpressions = false) noexcept
@@ -215,7 +217,7 @@ private:
     static bool isInOperator(const antlr4::tree::ParseTree* node) noexcept;
 
 private:
-    /** SQL parser object */
+    /** Parser object */
     SqlParser& m_parser;
 
     /* Indication that parser should allow columns in expressions */

@@ -431,7 +431,7 @@ bool writeTextFile(const MessageContainer& messages, const CompilerOptions& opti
 
 bool renameFile(const std::string& src, const std::string& to)
 {
-    boost::system::error_code ec;
+    system_error_code ec;
     fs::rename(src, to, ec);
     if (!ec) return true;
 

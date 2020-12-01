@@ -22,7 +22,7 @@ CREATE TABLE testdb.table_with_all_data_types (
     cdoublemin   DOUBLE,
     cdoublemax   DOUBLE,
     ctext        TEXT,
-    cts          TIMESTAMP
+    cts          TIMESTAMP NOT NULL
 );
 
 INSERT INTO testdb.table_with_all_data_types VALUES (

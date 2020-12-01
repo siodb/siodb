@@ -16,7 +16,6 @@
 #include "MasterColumnRecordPtr.h"
 #include "TablePtr.h"
 #include "TransactionParameters.h"
-#include "parser/expr/Expression.h"
 #include "reg/ColumnDefinitionRegistry.h"
 #include "reg/ColumnRegistry.h"
 #include "reg/ColumnSetRegistry.h"
@@ -32,6 +31,7 @@
 #include <siodb/iomgr/shared/dbengine/SystemObjectNames.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
 #include <siodb/iomgr/shared/dbengine/io/File.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 // STL headers
 #include <unordered_map>
@@ -670,6 +670,14 @@ public:
     TablePtr createUserTable(std::string&& name, TableType type,
             const std::vector<ColumnSpecification>& columnSpecs, std::uint32_t currentUserId,
             std::optional<std::string>&& description);
+
+    /**
+     * Deletes table from the database.
+     * @param name Table name.
+     * @param tableMustExist Table must exist, otherwise do not fail operation.
+     * @param currentUserId Current user.
+     */
+    void dropTable(const std::string& name, bool tableMustExist, std::uint32_t currentUserId);
 
     /**
      * Creates new file. File is created with encrypted I/O if available.

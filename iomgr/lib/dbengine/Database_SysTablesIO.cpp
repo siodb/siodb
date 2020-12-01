@@ -262,7 +262,7 @@ void Database::saveSystemObjectsInfo() const
     f.reset();
 
     // Move temporary file into permanent
-    boost::system::error_code ec;
+    system_error_code ec;
     fs::rename(tmpFilePath, filePath, ec);
     if (ec) {
         std::ostringstream err;

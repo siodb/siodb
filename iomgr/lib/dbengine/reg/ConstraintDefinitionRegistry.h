@@ -52,6 +52,15 @@ public:
     }
 
     /**
+     * Returns mutable index by constraint definition ID.
+     * @return Registry index object.
+     */
+    auto& byId() noexcept
+    {
+        return m_container.get<ByIdTag>();
+    }
+
+    /**
      * Returns read-only index by constraint definition ID.
      * @return Registry index object.
      */

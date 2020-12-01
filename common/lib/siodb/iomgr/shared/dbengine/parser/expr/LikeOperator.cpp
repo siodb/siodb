@@ -4,8 +4,8 @@
 
 // Project headers
 #include "LikeOperator.h"
-#include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
-#include "../../ThrowDatabaseError.h"
+//#include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
+//#include "../../ThrowDatabaseError.h"
 
 #include <utf8cpp/utf8.h>
 
@@ -58,13 +58,15 @@ Variant LikeOperator::evaluate(ExpressionEvaluationContext& context) const
     }
 
     if (!value.isString()) {
-        throwDatabaseError(IOManagerMessageId::kErrorLikeValueTypeIsWrong,
-                getColumnDataTypeName(convertVariantTypeToColumnDataType(value.getValueType())));
+        throw std::runtime_error("LIKE operator: left operand isn't string");
+        //throwDatabaseError(IOManagerMessageId::kErrorLikeValueTypeIsWrong,
+        //        getColumnDataTypeName(convertVariantTypeToColumnDataType(value.getValueType())));
     }
 
     if (!pattern.isString()) {
-        throwDatabaseError(IOManagerMessageId::kErrorLikePatternTypeIsWrong,
-                getColumnDataTypeName(convertVariantTypeToColumnDataType(pattern.getValueType())));
+        throw std::runtime_error("LIKE operator: right operand isn't string");
+        //throwDatabaseError(IOManagerMessageId::kErrorLikePatternTypeIsWrong,
+        //        getColumnDataTypeName(convertVariantTypeToColumnDataType(pattern.getValueType())));
     }
 
     const auto& valueStr = value.getString();

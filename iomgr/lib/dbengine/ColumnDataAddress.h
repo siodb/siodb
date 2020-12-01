@@ -69,6 +69,15 @@ public:
     }
 
     /**
+     * Casts ColumnAddress to boolean, enabling direct use in the conditional expressions.
+     * @returns false if address is null value address, true otherwise.
+     */
+    operator bool() const noexcept
+    {
+        return m_blockId != 0 || m_offset != 0;
+    }
+
+    /**
      * Returns actual serialized size.
      * @return Actual serialized size.
      */

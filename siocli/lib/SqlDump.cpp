@@ -70,7 +70,7 @@ void dumpDatabase(io::InputOutputStream& connection, protobuf::StreamInputStream
         const DatabaseInfo& dbInfo, std::ostream& os, bool printDebugMessages)
 {
     if (printDebugMessages)
-        std::clog << "Dumping database '" << dbInfo.m_name << "'..." << std::endl;
+        std::clog << "progress: Dumping database '" << dbInfo.m_name << "'..." << std::endl;
     const auto tables = readTableInfos(connection, input, dbInfo.m_name, printDebugMessages);
     dumpDatabaseDefinition(dbInfo, os);
     dumpTables(connection, input, dbInfo.m_name, tables, os, printDebugMessages);
@@ -98,8 +98,11 @@ void dumpTable(io::InputOutputStream& connection, protobuf::StreamInputStream& i
         bool printDebugMessages)
 {
     if (printDebugMessages) {
-        std::clog << "Dumping table '" << databaseName << '.' << table.m_name << "'..."
+        std::clog << "progress: Dumping table '" << databaseName << '.' << table.m_name << "'..."
                   << std::endl;
+        if (printDebugMessages) {
+            std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
+        }
     }
 
     dumpTableDefinition(databaseName, table, os);
@@ -124,9 +127,15 @@ void dumpTable(io::InputOutputStream& connection, protobuf::StreamInputStream& i
     std::uint64_t rowCount = 0;
     std::uint64_t expectedTrid = 1;
     while (true) {
+        if (printDebugMessages) {
+            std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
+        }
         std::uint64_t rowLength = 0;
         if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             throw std::runtime_error("dumpTable: Read row length failed");
+        if (printDebugMessages) {
+            std::clog << "debug: dumpTable: rowLength=" << rowLength << std::endl;
+        }
 
         if (SIODB_UNLIKELY(rowLength == 0)) break;
 
@@ -191,8 +200,8 @@ void dumpTable(io::InputOutputStream& connection, protobuf::StreamInputStream& i
     }
 
     if (printDebugMessages) {
-        std::clog << "Dumping " << rowCount << " rows from the table '" << databaseName << '.'
-                  << table.m_name << '.' << std::endl;
+        std::clog << "progress: Dumping " << rowCount << " rows from the table '" << databaseName
+                  << '.' << table.m_name << '.' << std::endl;
     }
 }
 
@@ -210,8 +219,10 @@ void dumpTableDefinition(const std::string& databaseName, const TableInfo& table
 std::vector<DatabaseInfo> readDatabaseInfos(io::InputOutputStream& connection,
         protobuf::StreamInputStream& input, bool printDebugMessages)
 {
-    if (printDebugMessages) std::clog << "Reading databases..." << std::endl;
-
+    if (printDebugMessages) {
+        std::clog << "progress: Reading databases..." << std::endl;
+        std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
+    }
     auto query = buildSelectStatementCore(kSystemDatabaseName, kSysDatabasesTableName,
             {kSysDatabases_Name_ColumnName, kSysDatabases_CipherId_ColumnName});
     const auto response = sendCommand(std::move(query), connection, input, printDebugMessages);
@@ -225,6 +236,9 @@ std::vector<DatabaseInfo> readDatabaseInfos(io::InputOutputStream& connection,
         std::uint64_t rowLength = 0;
         if (!codedInput.ReadVarint64(&rowLength))
             throw std::runtime_error("readDatabaseInfos: Read row length failed");
+        if (printDebugMessages) {
+            std::clog << "debug: readDatabaseInfos: rowLength=" << rowLength << std::endl;
+        }
 
         if (rowLength == 0) break;
 
@@ -236,7 +250,8 @@ std::vector<DatabaseInfo> readDatabaseInfos(io::InputOutputStream& connection,
             throw std::runtime_error("readDatabaseInfos: Read database record failed");
     }
 
-    if (printDebugMessages) std::clog << "Read " << databases.size() << " databases." << std::endl;
+    if (printDebugMessages)
+        std::clog << "progress: Read " << databases.size() << " databases." << std::endl;
 
     return databases;
 }
@@ -244,8 +259,10 @@ std::vector<DatabaseInfo> readDatabaseInfos(io::InputOutputStream& connection,
 DatabaseInfo readDatabaseInfo(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
         const std::string& databaseName, bool printDebugMessages)
 {
-    if (printDebugMessages)
-        std::clog << "Reading database '" << databaseName << "'..." << std::endl;
+    if (printDebugMessages) {
+        std::clog << "progress: Reading database '" << databaseName << "'..." << std::endl;
+        std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
+    }
 
     std::ostringstream oss;
     oss << buildSelectStatementCore(kSystemDatabaseName, kSysDatabasesTableName,
@@ -259,6 +276,9 @@ DatabaseInfo readDatabaseInfo(io::InputOutputStream& connection, protobuf::Strea
     std::uint64_t rowLength = 0;
     if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
         throw std::runtime_error("readDatabaseInfo: Read row length failed");
+    if (printDebugMessages) {
+        std::clog << "debug: readDatabaseInfo(1): rowLength=" << rowLength << std::endl;
+    }
 
     if (SIODB_UNLIKELY(rowLength == 0))
         throw std::runtime_error("readDatabaseInfo: Database doesn't exist");
@@ -268,6 +288,9 @@ DatabaseInfo readDatabaseInfo(io::InputOutputStream& connection, protobuf::Strea
     if (SIODB_LIKELY(codedInput.Read(&dbInfo.m_name) && codedInput.Read(&dbInfo.m_cipherId))) {
         if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             throw std::runtime_error("readDatabaseInfo: Read row length failed");
+        if (printDebugMessages) {
+            std::clog << "debug: readDatabaseInfo(2): rowLength=" << rowLength << std::endl;
+        }
         if (SIODB_UNLIKELY(rowLength != 0))
             throw std::runtime_error("readDatabaseInfo: Invalid row length");
         if (printDebugMessages) std::clog << "Read database '" << databaseName << "'." << std::endl;
@@ -280,10 +303,13 @@ std::vector<TableInfo> readTableInfos(io::InputOutputStream& connection,
         protobuf::StreamInputStream& input, const std::string& databaseName,
         bool printDebugMessages)
 {
-    if (printDebugMessages)
-        std::clog << "Reading table of the database '" << databaseName << "'..." << std::endl;
+    if (printDebugMessages) {
+        std::clog << "progress: Reading tables of the database '" << databaseName << "'..."
+                  << std::endl;
+        std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
+    }
 
-    // SELECT TRID,NAME,CURRENT_COLUMN_SET_ID FROM <DATABASE>.SYS_TABLES
+    // SELECT TRID,NAME,CURRENT_COLUMN_SET_ID FROM SYS_TABLES
     // WHERE NAME NOT LIKE 'SYS_%'"
     std::ostringstream oss;
     oss << buildSelectStatementCore(databaseName, kSysTablesTableName,
@@ -302,6 +328,9 @@ std::vector<TableInfo> readTableInfos(io::InputOutputStream& connection,
         std::uint64_t rowLength = 0;
         if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             throw std::runtime_error("readTableInfos: Read row length failed");
+        if (printDebugMessages) {
+            std::clog << "debug: readTableInfos: rowLength=" << rowLength << std::endl;
+        }
 
         if (SIODB_UNLIKELY(rowLength == 0)) break;
 
@@ -317,8 +346,8 @@ std::vector<TableInfo> readTableInfos(io::InputOutputStream& connection,
         readColumns(connection, input, databaseName, tableInfo, printDebugMessages);
 
     if (printDebugMessages) {
-        std::clog << "Database '" << databaseName << "': read " << tableInfos.size() << " tables."
-                  << std::endl;
+        std::clog << "progress: Database '" << databaseName << "': read " << tableInfos.size()
+                  << " tables." << std::endl;
     }
 
     return tableInfos;
@@ -327,10 +356,13 @@ std::vector<TableInfo> readTableInfos(io::InputOutputStream& connection,
 TableInfo readTableInfo(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
         const std::string& databaseName, const std::string& tableName, bool printDebugMessages)
 {
-    if (printDebugMessages)
-        std::clog << "Reading table '" << databaseName << '.' << tableName << "'..." << std::endl;
+    if (printDebugMessages) {
+        std::clog << "progress: Reading table '" << databaseName << '.' << tableName << "'..."
+                  << std::endl;
+        std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
+    }
 
-    // SELECT TRID,NAME,CURRENT_COLUMN_SET_ID FROM <DATABASE>.SYS_TABLES
+    // SELECT TRID,NAME,CURRENT_COLUMN_SET_ID FROM SYS_TABLES
     // WHERE NAME NOT LIKE 'SYS_%'"
     std::ostringstream oss;
     oss << buildSelectStatementCore(databaseName, kSysTablesTableName,
@@ -344,32 +376,52 @@ TableInfo readTableInfo(io::InputOutputStream& connection, protobuf::StreamInput
 
     protobuf::ExtendedCodedInputStream codedInput(&input);
 
-    std::uint64_t rowLength = 0;
-    if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
-        throw std::runtime_error("readTableInfos: Read row length failed");
+    bool tableInfoRead = false;
+    while (true) {
+        std::uint64_t rowLength = 0;
+        if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
+            throw std::runtime_error("readTableInfos: Read row length failed");
+        if (printDebugMessages) {
+            std::clog << "debug: readTableInfo: rowLength=" << rowLength << std::endl;
+        }
 
-    if (SIODB_UNLIKELY(rowLength == 0))
-        throw std::runtime_error("readTableInfos: Table doesn't exist");
+        if (tableInfoRead) {
+            if (SIODB_LIKELY(rowLength == 0))
+                break;
+            else {
+                throw std::runtime_error(
+                        "readTableInfos: Extra rows when expecting information about a single "
+                        "table");
+            }
+        }
 
-    if (SIODB_LIKELY(codedInput.Read(&tableInfo.m_trid) && codedInput.Read(&tableInfo.m_name)
-                     && codedInput.Read(&tableInfo.m_currentColumnSetId))) {
-        readColumns(connection, input, databaseName, tableInfo, printDebugMessages);
-        if (printDebugMessages)
-            std::clog << "Read table '" << databaseName << '.' << tableName << "'" << std::endl;
-        return tableInfo;
-    } else
-        throw std::runtime_error("readTableInfos: Read table record failed");
+        if (SIODB_UNLIKELY(rowLength == 0))
+            throw std::runtime_error("readTableInfos: Table doesn't exist");
+
+        if (SIODB_LIKELY(codedInput.Read(&tableInfo.m_trid) && codedInput.Read(&tableInfo.m_name)
+                         && codedInput.Read(&tableInfo.m_currentColumnSetId))) {
+            tableInfoRead = true;
+            if (printDebugMessages) {
+                std::clog << "progress: Read table '" << databaseName << '.' << tableName << "'"
+                          << std::endl;
+            }
+        } else
+            throw std::runtime_error("readTableInfos: Read table record failed");
+    }
+    readColumns(connection, input, databaseName, tableInfo, printDebugMessages);
+    return tableInfo;
 }
 
 void readColumns(io::InputOutputStream& connection, protobuf::StreamInputStream& input,
         const std::string& databaseName, TableInfo& tableInfo, bool printDebugMessages)
 {
     if (printDebugMessages) {
-        std::clog << "Reading columns of the table '" << databaseName << '.' << tableInfo.m_name
-                  << "'..." << std::endl;
+        std::clog << "progress: Reading columns of the table '" << databaseName << '.'
+                  << tableInfo.m_name << "'..." << std::endl;
+        std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
     }
 
-    // SELECT TRID, COLUMN_ID <database-name>.SYS_COLUMN_SET_COLUMNS
+    // SELECT TRID, COLUMN_ID SYS_COLUMN_SET_COLUMNS
     // WHERE COLUMN_SET_ID = value of <CURRENT_COLUMN_SET> in the SYS_TABLES
     std::ostringstream oss;
     oss << buildSelectStatementCore(databaseName, kSysColumnSetColumnsTableName,
@@ -385,6 +437,9 @@ void readColumns(io::InputOutputStream& connection, protobuf::StreamInputStream&
         std::uint64_t rowLength = 0;
         if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             throw std::runtime_error("readColumns: Read SYS_COLUMN_SET_COLUMNS row failed");
+        if (printDebugMessages) {
+            std::clog << "debug: readColumns(1): rowLength=" << rowLength << std::endl;
+        }
 
         if (SIODB_UNLIKELY(rowLength == 0)) break;
 
@@ -400,13 +455,14 @@ void readColumns(io::InputOutputStream& connection, protobuf::StreamInputStream&
     if (columnSetInfos.empty()) {
         tableInfo.m_columns.clear();
         if (printDebugMessages) {
-            std::clog << "Table '" << databaseName << '.' << tableInfo.m_name << "': column set #"
-                      << tableInfo.m_currentColumnSetId << ": no columns" << std::endl;
+            std::clog << "debug: Table '" << databaseName << '.' << tableInfo.m_name
+                      << "': column set #" << tableInfo.m_currentColumnSetId << ": no columns"
+                      << std::endl;
         }
         return;
     }
 
-    // SELECT TRID, COLUMN_ID from <database-name>.SYS_COLUMN_DEFS
+    // SELECT TRID, COLUMN_ID from SYS_COLUMN_DEFS
     // WHERE TRID IN (list of selected above m_columnDefinitionId);
     oss.str("");
     oss << buildSelectStatementCore(databaseName, kSysColumnDefsTableName,
@@ -425,6 +481,9 @@ void readColumns(io::InputOutputStream& connection, protobuf::StreamInputStream&
         std::uint64_t rowLength = 0;
         if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             throw std::runtime_error("readColumns: Read SYS_COLUMN_DEFS row length failed");
+        if (printDebugMessages) {
+            std::clog << "debug: readColumns(2): rowLength=" << rowLength << std::endl;
+        }
 
         if (SIODB_UNLIKELY(rowLength == 0)) break;
 
@@ -438,7 +497,7 @@ void readColumns(io::InputOutputStream& connection, protobuf::StreamInputStream&
             throw std::runtime_error("readColumns: Read column definition record failed");
     }
 
-    // SELECT TRID, DATA_TYPE, NAME FROM <database-name>.SYS_COLUMNS
+    // SELECT TRID, DATA_TYPE, NAME FROM SYS_COLUMNS
     // WHERE TRID IN (... list of retrieved above COLUMN_IDs ... )
     oss.str("");
     oss << buildSelectStatementCore(databaseName, kSysColumnsTableName,
@@ -457,6 +516,9 @@ void readColumns(io::InputOutputStream& connection, protobuf::StreamInputStream&
         std::uint64_t rowLength = 0;
         if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength)))
             throw std::runtime_error("readColumns: Read SYS_COLUMNS row length failed");
+        if (printDebugMessages) {
+            std::clog << "debug: readColumns(3): rowLength=" << rowLength << std::endl;
+        }
 
         if (SIODB_UNLIKELY(rowLength == 0)) break;
 
@@ -486,9 +548,9 @@ void readColumns(io::InputOutputStream& connection, protobuf::StreamInputStream&
     tableInfo.m_columns = std::move(columns);
 
     if (printDebugMessages) {
-        std::clog << "Table '" << databaseName << '.' << tableInfo.m_name << "': column set #"
-                  << tableInfo.m_currentColumnSetId << ": read " << tableInfo.m_columns.size()
-                  << " column." << std::endl;
+        std::clog << "progress: Table '" << databaseName << '.' << tableInfo.m_name
+                  << "': column set #" << tableInfo.m_currentColumnSetId << ": read "
+                  << tableInfo.m_columns.size() << " columns" << std::endl;
     }
 }
 
@@ -497,11 +559,12 @@ void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamIn
         bool printDebugMessages)
 {
     if (printDebugMessages) {
-        std::clog << "Reading constraints of the table column '" << databaseName << '.' << tableName
-                  << '.' << columnInfo.m_name << "'..." << std::endl;
+        std::clog << "progress: Reading constraints of the table column '" << databaseName << '.'
+                  << tableName << '.' << columnInfo.m_name << "'..." << std::endl;
+        std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
     }
 
-    // SELECT CONSTRAINT_ID FROM <database-name>SYS_COLUMN_DEF_CONSTRAINTS
+    // SELECT CONSTRAINT_ID FROM SYS_COLUMN_DEF_CONSTRAINTS
     // WHERE COLUMN_DEF_ID = value of the earlier selected SYS_COLUMN_SET_COLUMNS.COLUMN_DEF_ID
     std::ostringstream oss;
     oss << buildSelectStatementCore(databaseName, kSysColumnDefConstraintsTableName,
@@ -520,6 +583,9 @@ void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamIn
             throw std::runtime_error(
                     "readColumnConstraints: Read SYS_COLUMN_SET_COLUMNS row length failed");
         }
+        if (printDebugMessages) {
+            std::clog << "debug: readColumnConstraints(1): rowLength=" << rowLength << std::endl;
+        }
 
         if (rowLength == 0) break;
 
@@ -532,7 +598,7 @@ void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamIn
 
     if (constaintIds.empty()) {
         if (printDebugMessages) {
-            std::clog << "Table column '" << databaseName << '.' << tableName << '.'
+            std::clog << "progress: Table column '" << databaseName << '.' << tableName << '.'
                       << columnInfo.m_name << "': column definition #"
                       << columnInfo.m_columnDefinitionId << ": there are no constraints."
                       << std::endl;
@@ -540,7 +606,7 @@ void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamIn
         return;
     }
 
-    // SELECT NAME, CONSTRAINT_DEF_ID FROM .SYS_CONSTRAINTS
+    // SELECT TRID, NAME, CONSTRAINT_DEF_ID FROM SYS_CONSTRAINTS
     // WHERE TRID IN (list of selected above CONSTRAINT_ID)
     oss.str("");
     oss << buildSelectStatementCore(databaseName, kSysConstraintsTableName,
@@ -560,6 +626,9 @@ void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamIn
             throw std::runtime_error(
                     "readColumnConstraints: Read SYS_CONSTRAINTS row length failed");
         }
+        if (printDebugMessages) {
+            std::clog << "debug: readColumnConstraints(2): rowLength=" << rowLength << std::endl;
+        }
 
         if (SIODB_UNLIKELY(rowLength == 0)) break;
 
@@ -572,14 +641,18 @@ void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamIn
     }
 
     for (auto& constraint : constraints) {
-        // SELECT TYPE, EXPR FROM <database-name>.SYS_CONSTRAINT_DEFS
+        // SELECT TYPE, EXPR FROM SYS_CONSTRAINT_DEFS
         // WHERE TRID = selected above CONSTRAINT_DEF_ID
+        if (printDebugMessages) {
+            std::clog << "debug: Reading constraint definition #"
+                      << constraint.m_constraintDefinitionId << std::endl;
+            std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
+        }
         oss.str("");
         oss << buildSelectStatementCore(databaseName, kSysConstraintDefsTableName,
                 {kSysConstraintDefs_Type_ColumnName, kSysConstraintDefs_Expr_ColumnName})
             << " WHERE " << kMasterColumnName << '=' << constraint.m_constraintDefinitionId;
         response = sendCommand(oss.str(), connection, input, printDebugMessages);
-
         const int columnCount = response.column_description_size();
 
         while (true) {
@@ -587,6 +660,10 @@ void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamIn
             if (SIODB_UNLIKELY(!codedInput.ReadVarint64(&rowLength))) {
                 throw std::runtime_error(
                         "readColumnConstraints: Read SYS_CONSTRAINT_DEFS row length failed");
+            }
+            if (printDebugMessages) {
+                std::clog << "debug: readColumnConstraints(3): rowLength=" << rowLength
+                          << std::endl;
             }
 
             if (SIODB_UNLIKELY(rowLength == 0)) break;
@@ -619,7 +696,7 @@ void readColumnConstraints(io::InputOutputStream& connection, protobuf::StreamIn
     columnInfo.m_constraints = std::move(constraints);
 
     if (printDebugMessages) {
-        std::clog << "Table column '" << databaseName << '.' << tableName << '.'
+        std::clog << "progress: Table column '" << databaseName << '.' << tableName << '.'
                   << columnInfo.m_name << "': column definition #"
                   << columnInfo.m_columnDefinitionId << ": read " << columnInfo.m_constraints.size()
                   << " constraints." << std::endl;
@@ -631,9 +708,10 @@ client_protocol::ServerResponse sendCommand(std::string&& command,
         bool printDebugMessages)
 {
     if (printDebugMessages) {
-        std::clog << "Sending command: \n----------\n"
+        std::clog << "debug: Sending command: \n----------\n"
                   << command << "\n----------\n\n"
                   << std::flush;
+        std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
     }
 
     static std::int64_t requestId = 0;
@@ -643,7 +721,12 @@ client_protocol::ServerResponse sendCommand(std::string&& command,
     protobuf::writeMessage(protobuf::ProtocolMessageType::kCommand, clientCommand, connection);
 
     client_protocol::ServerResponse response;
+    if (printDebugMessages) std::clog << "debug: Reading response..." << std::endl;
     protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
+    if (printDebugMessages) {
+        std::clog << "debug: Received response." << std::endl;
+        std::clog << "debug: ===== stream bytes: " << input.ByteCount() << "=====" << std::endl;
+    }
     checkResponse(response);
     ++requestId;
 

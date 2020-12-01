@@ -4,15 +4,11 @@
 
 #pragma once
 
-// Project headers
-#include "system_error_wrapper.h"
-
 #if __cplusplus <= 201703L  // C++17 and below
-#include <boost/filesystem.hpp>
+#include <boost/system/system_error.hpp>
 using system_error_code = boost::system::error_code;
-namespace fs = boost::filesystem;
 #else  // C++20 and above
-#include <filesystem>
+#include <system_error>
 using system_error_code = std::error_code;
 namespace fs = std::filesystem;
 #endif  // __cplusplus <= 201703L

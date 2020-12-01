@@ -457,17 +457,27 @@ cd ../../..
 
 # Build and install Google Protobuf library
 cd protobuf
-tar --no-same-owner -xaf protobuf-all-${SIODB_PROTOBUF_VERSION}.tar.xz
+tar --no-same-owner -xaf protobuf-${SIODB_PROTOBUF_VERSION}.tar.xz
 cd protobuf-${SIODB_PROTOBUF_VERSION}
 ./autogen.sh
+
+# CentOS and RHEL
+# We have to build protobuf static libs, because with shared libs
+# there is incorrect linkage of protoc to them.
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
 LDFLAGS="${SIODB_TP_LDFLAGS} -L${SIODB_PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib" \
-    ./configure "--prefix=${SIODB_PROTOBUF_PREFIX}" --enable-shared --enable-static
+    ./configure "--prefix=${SIODB_PROTOBUF_PREFIX}" --enable-shared=no --enable-static=yes
+
+# Debian and Ubuntu
+CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
+LDFLAGS="${SIODB_TP_LDFLAGS} -L${SIODB_PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib" \
+    ./configure "--prefix=${SIODB_PROTOBUF_PREFIX}" --enable-shared=yes --enable-static=no
+
 make -j4
 sudo make install
 sudo ldconfig
 
-# Fix protoc if needed
+# Fix protoc (only Debian and Ubuntu)
 ${SIODB_PROTOBUF_PREFIX}/bin/protoc
 if [[ $? != 0 ]]; then
     cd src
@@ -528,7 +538,7 @@ cd ../../..
 Run following commands:
 
 ```bash
-export GO_VERSION=1.15
+export GO_VERSION=1.15.3
 /usr/local/go-${GO_VERSION}/bin/go get -u github.com/golang/protobuf/protoc-gen-go
 /usr/local/go-${GO_VERSION}/bin/go get -u github.com/gin-gonic/gin
 ```
@@ -538,7 +548,7 @@ export GO_VERSION=1.15
 One-time system setup commands (with explanation):
 
 ```bash
-# Change to siodb repository root, CHANGE THIS to actua directory
+# Change to siodb repository root, CHANGE IT to the actual directory path
 cd siodb
 
 # Add Siodb user and group

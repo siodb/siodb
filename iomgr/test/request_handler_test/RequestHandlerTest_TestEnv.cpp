@@ -9,7 +9,6 @@
 #include "dbengine/Table.h"
 #include "dbengine/handlers/RequestHandler.h"
 #include "dbengine/parser/DBEngineSqlRequestFactory.h"
-#include "dbengine/parser/expr/ConstantExpression.h"
 
 // Common project headers
 #include <siodb/common/io/FDStream.h>
@@ -20,6 +19,7 @@
 #include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
 #include <siodb/common/utils/StartupActions.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
 // CRT headers
 #include <ctime>

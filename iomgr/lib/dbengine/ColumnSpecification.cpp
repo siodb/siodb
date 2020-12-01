@@ -4,11 +4,9 @@
 
 #include "ColumnSpecification.h"
 
-// Project headers
-#include "parser/expr/ConstantExpression.h"
-
 // Common project headers
 #include <siodb/common/config/SiodbDataFileDefs.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
 namespace siodb::iomgr::dbengine {
 

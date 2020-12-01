@@ -511,9 +511,15 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
     if (type != TableType::kDisk)
         throwDatabaseError(IOManagerMessageId::kErrorTableTypeNotSupported, static_cast<int>(type));
 
+    if (isSystemDatabase() && !canContainUserTables())
+        throwDatabaseError(IOManagerMessageId::kErrorCannotCreateUserTablesInSystemDatabase);
+
     LOG_DEBUG << "Database " << m_name << ": Creating user table " << name;
 
     std::lock_guard lock(m_mutex);
+
+    if (isTableExistsUnlocked(name))
+        throwDatabaseError(IOManagerMessageId::kErrorTableAlreadyExists, m_name, name);
 
     std::vector<char> columnPresent(columnSpecs.size());
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
@@ -603,6 +609,381 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
     recordTableDefinition(*table, tp);
 
     return table;
+}
+
+void Database::dropTable(const std::string& name, bool tableMustExists, std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_mutex);
+
+    auto table = findTableUnlocked(name);
+    if (!table) {
+        if (!tableMustExists) return;
+        throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, m_name, name);
+    }
+
+    const auto tableId = table->getId();
+    const auto fullTableName = table->makeDisplayName();
+    const auto tableDataDir = table->getDataDir();
+
+    // DROP TABLE algorithm:
+    // 1. Collect all sorts of objects related to table.
+    // 2. Determine which of them must be removed.
+    // 3. Remove these objects.
+    // 4. Update indices of the affected system tables.
+    // 5. Free in-memory data structures.
+    // 6. Remove records from internal dictionaries.
+    // 7. Remove data directory of the table.
+    //
+    // Hierarchy of the affected system objects:
+    //
+    // Table
+    // |--> Table has column sets
+    // |    |--> Column set has column set columns
+    // |--> Table has columns
+    // |    |--> Column has column definitions
+    // |         |--> Column definition has column definition constraints
+    // |              |--> Column definition constraint is related to constaint
+    // |                   |--> Constaint is linked to constrain definition
+    // |                        |--> Constraint definition can be shared by multiple constraints
+    // |--> Table has indices
+    //      |--> Index has indexed columns
+
+    // Below we use lots of ordered maps in order to ensure stable sequence of delete actions
+
+    // Key is column set ID, value is list of ColumnSetColumn IDs
+    std::map<std::uint64_t, std::vector<std::uint64_t>> columnSetsToRemove;
+
+    // Key is column ID, value is map where: key is ColumnDefinition ID, and value is another map,
+    // where: key is ColumnDefinitionConstaint ID, value is constraint ID
+    std::map<std::uint64_t, std::map<std::uint64_t, std::map<std::uint64_t, std::uint64_t>>>
+            columnsToRemove;
+
+    // Key is ConstraintDefinition ID, value is list of correspodning ColumnDefinitionConstaint IDs
+    std::map<std::uint64_t, std::unordered_set<std::uint64_t>> constraintDefinitionsToRemove;
+
+    // Key is index ID, value is list of index column IDs
+    std::map<std::uint64_t, std::vector<std::uint64_t>> indicesToRemove;
+
+    // Determine system objects to be deleted
+
+    auto& columnsById = m_columnRegistry.byId();
+    auto& constraintsById = m_constraintRegistry.byId();
+
+    for (auto columnSetsRange = m_columnSetRegistry.byTableId().equal_range(tableId);
+            columnSetsRange.first != columnSetsRange.second; ++columnSetsRange.first) {
+        // Capture column set columns
+        auto& columnSet = *columnSetsRange.first;
+        std::vector<std::uint64_t> columnSetColumns0;
+        columnSetColumns0.reserve(columnSet.m_columns.size());
+        std::transform(columnSet.m_columns.byId().cbegin(), columnSet.m_columns.byId().cend(),
+                std::back_inserter(columnSetColumns0),
+                [](const auto& columnSetColumnRecord) noexcept {
+                    return columnSetColumnRecord.m_id;
+                });
+        std::sort(columnSetColumns0.begin(), columnSetColumns0.end());
+        auto& columnSetColumns =
+                columnSetsToRemove.emplace(columnSet.m_id, std::move(columnSetColumns0))
+                        .first->second;
+
+        // Capture columns
+        for (const auto& columnSetColumnId : columnSetColumns) {
+            DBG_LOG_DEBUG("dropTable: Processing ColumnSet #"
+                          << columnSet.m_id << " ColumnSetColumn #" << columnSetColumnId);
+            const auto& columnSetColumnRecord = *columnSet.m_columns.byId().find(columnSetColumnId);
+            if (columnsToRemove.count(columnSetColumnRecord.m_columnId) > 0) continue;
+
+            DBG_LOG_DEBUG("dropTable: Processing Column #" << columnSetColumnRecord.m_columnId);
+
+            // Skip non-existing columns - is it good?
+            const auto columnIt = columnsById.find(columnSetColumnRecord.m_columnId);
+            if (columnIt == columnsById.end()) continue;
+
+            // Capture column definitions
+            std::map<std::uint64_t, std::map<std::uint64_t, std::uint64_t>>
+                    columnDefinitionsToRemove;
+            const auto& columnDefsIndex = m_columnDefinitionRegistry.byColumnIdAndId();
+            for (auto range = std::make_pair(columnDefsIndex.lower_bound(std::make_pair(
+                                                     columnSetColumnRecord.m_columnId, 0ULL)),
+                         columnDefsIndex.lower_bound(
+                                 std::make_pair(columnSetColumnRecord.m_columnId + 1, 0ULL)));
+                    range.first != range.second; ++range.first) {
+                const auto& columnDefinitionRecord = *range.first;
+                DBG_LOG_DEBUG("dropTable: Processing ColumnDefinition #"
+                              << columnDefinitionRecord.m_id << " Column #"
+                              << columnDefinitionRecord.m_columnId);
+                std::map<std::uint64_t, std::uint64_t> columnDefConstraints;
+                for (const auto& columnDefinitionConstraintRecord :
+                        columnDefinitionRecord.m_constraints.byId()) {
+                    DBG_LOG_DEBUG("dropTable: Processing ColumnDefinition #"
+                                  << columnDefinitionRecord.m_id << " ColumnDefinitionConstraint #"
+                                  << columnDefinitionConstraintRecord.m_id);
+
+                    // Record constraint
+                    const auto constraintIt =
+                            constraintsById.find(columnDefinitionConstraintRecord.m_constraintId);
+                    if (constraintIt != constraintsById.end()) {
+                        DBG_LOG_DEBUG("dropTable: Processing ColumnDefinition #"
+                                      << columnDefinitionRecord.m_id
+                                      << " ColumnDefinitionConstraint #"
+                                      << columnDefinitionConstraintRecord.m_id << " Constraint #"
+                                      << columnDefinitionConstraintRecord.m_constraintId);
+                        columnDefConstraints.emplace(columnDefinitionConstraintRecord.m_id,
+                                columnDefinitionConstraintRecord.m_constraintId);
+
+                        DBG_LOG_DEBUG("dropTable: Processing Constraint #"
+                                      << columnDefinitionConstraintRecord.m_constraintId
+                                      << " ConstraintDefinition #"
+                                      << constraintIt->m_constraintDefinitionId);
+                        constraintDefinitionsToRemove[constraintIt->m_constraintDefinitionId]
+                                .insert(columnDefinitionConstraintRecord.m_constraintId);
+                    }
+                }
+                columnDefinitionsToRemove.emplace(
+                        columnDefinitionRecord.m_id, std::move(columnDefConstraints));
+            }
+            columnsToRemove.emplace(
+                    columnSetColumnRecord.m_columnId, std::move(columnDefinitionsToRemove));
+        }
+    }
+
+    // Determine which constraint definitions should be removed.
+    // For this, check if constraint has links to something else
+    // than captured ColumnDefinitionConstraint IDs.
+    for (auto it = constraintDefinitionsToRemove.begin();
+            it != constraintDefinitionsToRemove.end();) {
+        DBG_LOG_DEBUG("dropTable: Processing ConstraintDefintion #" << it->first);
+        std::unordered_set<std::uint64_t> allConstraints;
+        for (auto range = m_constraintRegistry.byConstraintDefinitionId().equal_range(it->first);
+                range.first != range.second; ++range.first) {
+            allConstraints.insert(range.first->m_id);
+        }
+        if (allConstraints == it->second)
+            ++it;
+        else {
+            DBG_LOG_DEBUG("dropTable: Not removing ConstraintDefintion #" << it->first);
+            it = constraintDefinitionsToRemove.erase(it);
+        }
+    }
+
+    // Determine indices to delete
+    for (auto tableIndicesRange = m_indexRegistry.byTableId().equal_range(tableId);
+            tableIndicesRange.first != tableIndicesRange.second; ++tableIndicesRange.first) {
+        const auto& indexRecord = *tableIndicesRange.first;
+        DBG_LOG_DEBUG("dropTable: Processing Index #" << indexRecord.m_id << ": "
+                                                      << indexRecord.m_columns.size()
+                                                      << " columns to remove");
+        std::vector<std::uint64_t> indexColumnsToRemove;
+        indexColumnsToRemove.reserve(indexRecord.m_columns.size());
+        std::transform(indexRecord.m_columns.byId().cbegin(), indexRecord.m_columns.byId().cend(),
+                std::back_inserter(indexColumnsToRemove),
+                [](const auto& indexColumnRecord) noexcept { return indexColumnRecord.m_id; });
+        indicesToRemove.emplace(indexRecord.m_id, std::move(indexColumnsToRemove));
+    }
+
+    // Delete records in tables
+    // NOTE: Later on, all affected system tables must be write-locked before doing this
+
+    const TransactionParameters tp(currentUserId, generateNextTransactionId());
+
+    class SystemTableRowDeleter {
+    public:
+        SystemTableRowDeleter(Table& table, const TransactionParameters& tp,
+                const std::string& tableName) noexcept
+            : m_table(table)
+            , m_tp(tp)
+            , m_tableName(tableName)
+            , m_nextBlockId(0)
+        {
+        }
+
+        DECLARE_NONCOPYABLE(SystemTableRowDeleter);
+
+        void deleteRow(std::uint64_t trid)
+        {
+            LOG_DEBUG << "Database " << m_table.getDatabaseName()
+                      << ": DROP TABLE: " << m_table.getName() << ": Removing TRID #" << trid;
+            const auto deleteResult = m_table.deleteRow(trid, m_tp, false);
+            if (std::get<0>(deleteResult)) {
+                if (!m_rollbackAddress) m_rollbackAddress = std::get<2>(deleteResult);
+                m_nextBlockId = std::get<3>(deleteResult).getBlockId();
+            }
+        }
+
+        void rollbackIfChanged()
+        {
+            if (m_rollbackAddress) {
+                try {
+                    LOG_DEBUG << "Database " << m_table.getDatabaseName()
+                              << ": DROP TABLE: Rolling back " << m_table.getName();
+                    m_table.getMasterColumn()->rollbackToAddress(m_rollbackAddress, m_nextBlockId);
+                } catch (std::exception& ex) {
+                    LOG_ERROR << "Database " << m_table.getDatabaseName() << ": DROP TABLE "
+                              << m_tableName << ": Rollback failed for the system table "
+                              << m_table.getName() << ": " << ex.what();
+                    throw;
+                } catch (...) {
+                    LOG_ERROR << "Database " << m_table.getDatabaseName() << ": DROP TABLE "
+                              << m_tableName << ": Rollback failed for the system table "
+                              << m_table.getName() << ": other error";
+                    throw;
+                }
+            }
+        }
+
+        void updateMainIndex(std::uint64_t trid)
+        {
+            try {
+                LOG_DEBUG << "Database " << m_table.getDatabaseName()
+                          << ": DROP TABLE: " << m_table.getName()
+                          << ": Updating index for the TRID #" << trid;
+                m_table.getMasterColumn()->eraseFromMasterColumnMainIndex(trid);
+            } catch (std::exception& ex) {
+                LOG_ERROR << "Database " << m_table.getDatabaseName() << ": DROP TABLE "
+                          << m_tableName << ": Update main index failed for the system table "
+                          << m_table.getName() << ": " << ex.what();
+                throw;
+            } catch (...) {
+                LOG_ERROR << "Database " << m_table.getDatabaseName() << ": DROP TABLE "
+                          << m_tableName << ": Update main index failed for the system table "
+                          << m_table.getName() << ": other error";
+                throw;
+            }
+        }
+
+    private:
+        Table& m_table;
+        const TransactionParameters& m_tp;
+        const std::string& m_tableName;
+        ColumnDataAddress m_rollbackAddress;
+        std::uint64_t m_nextBlockId;
+    };
+
+    SystemTableRowDeleter sysIndexColumnsDeleter(*m_sysIndexColumnsTable, tp, name);
+    SystemTableRowDeleter sysIndicesDeleter(*m_sysIndicesTable, tp, name);
+    SystemTableRowDeleter sysColumnSetColumnsDeleter(*m_sysColumnSetColumnsTable, tp, name);
+    SystemTableRowDeleter sysColumnSetsDeleter(*m_sysColumnSetsTable, tp, name);
+    SystemTableRowDeleter sysTablesDeleter(*m_sysTablesTable, tp, name);
+    SystemTableRowDeleter sysConstraintsDeleter(*m_sysConstraintsTable, tp, name);
+    SystemTableRowDeleter sysColumnDefConstraintsDeleter(*m_sysColumnDefConstraintsTable, tp, name);
+    SystemTableRowDeleter sysColumnDefsDeleter(*m_sysColumnDefsTable, tp, name);
+    SystemTableRowDeleter sysColumnsDeleter(*m_sysColumnsTable, tp, name);
+    SystemTableRowDeleter sysConstraintDefsDeleter(*m_sysConstraintDefsTable, tp, name);
+
+    try {
+        for (const auto& e : indicesToRemove) {
+            for (const auto indexColumnId : e.second)
+                sysIndexColumnsDeleter.deleteRow(indexColumnId);
+            sysIndicesDeleter.deleteRow(e.first);
+        }
+
+        for (const auto& e : columnSetsToRemove) {
+            for (const auto columnSetColumnId : e.second)
+                sysColumnSetColumnsDeleter.deleteRow(columnSetColumnId);
+            sysColumnSetsDeleter.deleteRow(e.first);
+        }
+
+        sysTablesDeleter.deleteRow(tableId);
+
+        for (const auto& e : columnsToRemove) {
+            for (const auto& e2 : e.second) {
+                for (const auto& e3 : e2.second) {
+                    sysConstraintsDeleter.deleteRow(e3.second);
+                    sysColumnDefConstraintsDeleter.deleteRow(e3.first);
+                }
+                sysColumnDefsDeleter.deleteRow(e2.first);
+            }
+            sysColumnsDeleter.deleteRow(e.first);
+        }
+
+        for (const auto& e : constraintDefinitionsToRemove)
+            sysConstraintDefsDeleter.deleteRow(e.first);
+
+    } catch (std::exception& ex) {
+        // Rollback changed tables
+        sysConstraintDefsDeleter.rollbackIfChanged();
+        sysColumnsDeleter.rollbackIfChanged();
+        sysColumnDefsDeleter.rollbackIfChanged();
+        sysColumnDefConstraintsDeleter.rollbackIfChanged();
+        sysConstraintsDeleter.rollbackIfChanged();
+        sysTablesDeleter.rollbackIfChanged();
+        sysColumnSetsDeleter.rollbackIfChanged();
+        sysColumnSetColumnsDeleter.rollbackIfChanged();
+        sysIndicesDeleter.rollbackIfChanged();
+        sysIndexColumnsDeleter.rollbackIfChanged();
+        throw;
+    }
+
+    // Update main indexes
+
+    for (const auto& e : indicesToRemove) {
+        for (const auto indexColumnId : e.second)
+            sysIndexColumnsDeleter.updateMainIndex(indexColumnId);
+        sysIndicesDeleter.updateMainIndex(e.first);
+    }
+
+    for (const auto& e : columnSetsToRemove) {
+        for (const auto columnSetColumnId : e.second)
+            sysColumnSetColumnsDeleter.updateMainIndex(columnSetColumnId);
+        sysColumnSetsDeleter.updateMainIndex(e.first);
+    }
+
+    sysTablesDeleter.updateMainIndex(tableId);
+
+    for (const auto& e : columnsToRemove) {
+        for (const auto& e2 : e.second) {
+            for (const auto& e3 : e2.second) {
+                sysConstraintsDeleter.updateMainIndex(e3.second);
+                sysColumnDefConstraintsDeleter.updateMainIndex(e3.first);
+            }
+            sysColumnDefsDeleter.updateMainIndex(e2.first);
+        }
+        sysColumnsDeleter.updateMainIndex(e.first);
+    }
+
+    for (const auto& e : constraintDefinitionsToRemove)
+        sysConstraintDefsDeleter.updateMainIndex(e.first);
+
+    // Remove in-memory objects from collections, starting from table and further
+
+    table.reset();
+    m_tables.erase(tableId);
+
+    for (const auto& e : constraintDefinitionsToRemove)
+        m_constraintDefinitions.erase(e.first);
+
+    // Remove records from registries
+
+    auto& indicesById = m_indexRegistry.byId();
+    for (const auto& e : indicesToRemove)
+        indicesById.erase(e.first);
+
+    auto& columnSetsById = m_columnSetRegistry.byId();
+    for (const auto& e : columnSetsToRemove)
+        columnSetsById.erase(e.first);
+
+    m_tableRegistry.byId().erase(tableId);
+
+    auto& columnDefinitionsById = m_columnDefinitionRegistry.byId();
+    for (const auto& e : columnsToRemove) {
+        columnsById.erase(e.first);
+        for (const auto& e2 : e.second) {
+            columnDefinitionsById.erase(e2.first);
+            for (const auto& e3 : e2.second)
+                constraintsById.erase(e3.second);
+        }
+    }
+
+    auto& constraintDefinitionsById = m_constraintDefinitionRegistry.byId();
+    for (const auto& e : constraintDefinitionsToRemove)
+        constraintDefinitionsById.erase(e.first);
+
+    // Finally, remove data directory
+    system_error_code ec;
+    fs::remove_all(tableDataDir, ec);
+    if (ec) {
+        LOG_WARNING << "DROP TABLE " << fullTableName << ": Can't remove data directory '"
+                    << tableDataDir << "': " << ec.value() << ": " << ec.message();
+    }
 }
 
 io::FilePtr Database::createFile(
@@ -706,11 +1087,11 @@ BinaryValue Database::loadCipherKey() const
 
     // Check file size
     const auto path = makeCipherKeyFilePath();
-    boost::system::error_code sysErrorCode;
-    const auto fileSize = fs::file_size(path, sysErrorCode);
+    system_error_code ec;
+    const auto fileSize = fs::file_size(path, ec);
     if (fileSize == static_cast<std::uintmax_t>(-1)) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotOpenDatabaseCipherKeyFile, path, m_name,
-                m_uuid, sysErrorCode.value(), std::strerror(sysErrorCode.value()));
+                m_uuid, ec.value(), std::strerror(ec.value()));
     }
     if (m_cipher && fileSize < kCipherKeyFileMinSize) {
         throwDatabaseError(IOManagerMessageId::kErrorDatabaseCipherKeyFileCorrupted, path, m_name,

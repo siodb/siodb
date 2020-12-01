@@ -4,7 +4,33 @@
 
 #include "ConstraintDefinition.h"
 
+// Project headers
+#include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
+#include "ThrowDatabaseError.h"
+
 namespace siodb::iomgr::dbengine {
+
+ConstraintDefinition::ConstraintDefinition(bool system, Database& database, ConstraintType type,
+        requests::ConstExpressionPtr&& expression)
+    : m_database(database)
+    , m_id(m_database.generateNextConstraintDefinitionId(system))
+    , m_type(type)
+    , m_expression(std::move(expression))
+    , m_hash(computeHash())
+    , m_writtenToStorage(false)
+{
+}
+
+ConstraintDefinition::ConstraintDefinition(
+        Database& database, const ConstraintDefinitionRecord& constraintDefinitionRecord)
+    : m_database(database)
+    , m_id(constraintDefinitionRecord.m_id)
+    , m_type(constraintDefinitionRecord.m_type)
+    , m_expression(deserializeExpression(constraintDefinitionRecord.m_expression))
+    , m_hash(constraintDefinitionRecord.m_hash)
+    , m_writtenToStorage(true)
+{
+}
 
 BinaryValue ConstraintDefinition::serializeExpression() const
 {

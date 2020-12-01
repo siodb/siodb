@@ -14,8 +14,6 @@
 #include "../ThrowDatabaseError.h"
 #include "../parser/DBExpressionEvaluationContext.h"
 #include "../parser/EmptyExpressionEvaluationContext.h"
-#include "../parser/expr/AllColumnsExpression.h"
-#include "../parser/expr/SingleColumnExpression.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
@@ -24,6 +22,8 @@
 #include <siodb/common/utils/EmptyString.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllColumnsExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/SingleColumnExpression.h>
 
 namespace siodb::iomgr::dbengine {
 

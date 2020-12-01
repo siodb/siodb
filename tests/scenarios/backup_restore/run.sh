@@ -28,6 +28,7 @@ _StartSiodb
 ## =============================================
 
 # Test data
+
 _RunSqlScript "${SHARED_DIR}/sql/test-db1-2-3.sql" 120
 _StopSiodb
 _CheckLogFiles

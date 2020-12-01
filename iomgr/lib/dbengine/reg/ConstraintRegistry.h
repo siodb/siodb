@@ -40,6 +40,10 @@ private:
     struct ByColumnIdTag {
     };
 
+    /** Index tag */
+    struct ByConstraintDefinitionIdTag {
+    };
+
     /** Registry data container type */
     typedef boost::multi_index::multi_index_container<value_type,
             boost::multi_index::indexed_by<
@@ -54,7 +58,12 @@ private:
                                     &value_type::m_tableId>>,
                     boost::multi_index::hashed_non_unique<boost::multi_index::tag<ByColumnIdTag>,
                             boost::multi_index::member<value_type, decltype(value_type::m_columnId),
-                                    &value_type::m_columnId>>>>
+                                    &value_type::m_columnId>>,
+                    boost::multi_index::hashed_non_unique<
+                            boost::multi_index::tag<ByConstraintDefinitionIdTag>,
+                            boost::multi_index::member<value_type,
+                                    decltype(value_type::m_constraintDefinitionId),
+                                    &value_type::m_constraintDefinitionId>>>>
             Container;
 
 public:
@@ -66,6 +75,15 @@ public:
     bool operator==(const ConstraintRegistry& other) const noexcept
     {
         return m_container == other.m_container;
+    }
+
+    /**
+     * Returns mutable index by constraint ID.
+     * @return Registry index object.
+     */
+    auto& byId() noexcept
+    {
+        return m_container.get<ByIdTag>();
     }
 
     /**
@@ -95,13 +113,22 @@ public:
         return m_container.get<ByTableIdTag>();
     }
 
-    /*
+    /**
      * Returns read-only index by column ID.
      * @return Registry index object.
      */
     const auto& byColumnId() const noexcept
     {
         return m_container.get<ByColumnIdTag>();
+    }
+
+    /**
+     * Returns read-only index by constraint definition ID.
+     * @return Registry index object.
+     */
+    const auto& byConstraintDefinitionId() const noexcept
+    {
+        return m_container.get<ByConstraintDefinitionIdTag>();
     }
 
     /**

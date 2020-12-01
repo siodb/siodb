@@ -4,8 +4,8 @@
 
 #pragma once
 
-// Project headers
-#include "dbengine/parser/expr/AllExpressions.h"
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllExpressions.h>
 
 // STL headers
 #include <initializer_list>
