@@ -2,8 +2,6 @@
 -- Use of this source code is governed by a license that can be found
 -- in the LICENSE file.
 
--- Create some data to export
-
 -- DB1
 create database db1;
 use database db1;

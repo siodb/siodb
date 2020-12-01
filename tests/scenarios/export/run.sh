@@ -5,7 +5,7 @@
 # in the LICENSE file.
 
 ## Global
-SCRIPT_DIR=$(dirname $(realpath "$0"))
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_NAME=$(basename "${SCRIPT_DIR}")
 source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
@@ -15,7 +15,7 @@ _Prepare
 _SetInstanceParameter "iomgr.max_json_payload_size" "10m"
 _StartSiodb
 
-_RunSqlScript "${SHARED_DIR}/sql/data.sql" 120
+_RunSqlScript "${SHARED_DIR}/sql/test-db1-2-3.sql" 120
 _CheckLogFiles
 
 output_dir="${HOME}/tmp/export_$(date +%s)_$$"

@@ -12,56 +12,49 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test functions
 
 ## Specific test parameters
+nbOfTableToCreate=100
 
 ## =============================================
 ## TEST HEADER
 ## =============================================
 _TestBegin
 _Prepare
+#_SetInstanceParameter "data_dir" "${SOURCE_DATA_DIR}"
 _StartSiodb
 
 ## =============================================
 ## TEST
 ## =============================================
 
-echo "Creating test data..."
-_RunSqlScript "${SCRIPT_DIR}/data.sql"
+# Test data
+_RunSqlScript "${SHARED_DIR}/sql/test-db1.sql" 120
+_RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
+_RestartSiodb
 _CheckLogFiles
 
-echo "List databases"
-_RunSql "show databases"
+_RunSql "drop table db1.tablealldatatypes"
+_RestartSiodb
+_CheckLogFiles
 
-echo "Stopping Siodb"
-_StopSiodb
+_RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
+_RestartSiodb
+_CheckLogFiles
 
-echo "Exporting database..."
-output_dir="${HOME}/tmp/gh-101_$(date +%s)_$$"
-backup_file="${output_dir}/${SIODB_INSTANCE}.tar.gz"
-mkdir -p "${output_dir}"
-tar cvfz "${backup_file}" "${SIODB_DATA_DIR}"
+for ((i = 0; i < ${nbOfTableToCreate}; ++i)); do
+  _RunSql "create table db1.table${i} ( free_text text )"
+  _RunSql "insert into table db1.table${i} ( 'free text fro db1.table${i}' )"
+done
+_RestartSiodb
+_CheckLogFiles
 
-echo "Siodb data directory state before removal"
-ls -la "${SIODB_DATA_DIR}"
-
-echo "Removing Siodb data directory"
-rm -rf "${SIODB_DATA_DIR}"
-
-echo "Extracting archived data"
-tar xaf "${backup_file}" -C /
-
-echo "Siodb data directory state after resting backup"
-ls -la "${SIODB_DATA_DIR}"
-
-echo "Starting Siodb"
-_StartSiodb
-
-echo "List databases"
-_RunSql "show databases"
+for ((i = 0; i < ${nbOfTableToCreate}; ++i)); do
+  _RunSql "drop table db1.table${i} ( free_text text )"
+done
 
 ## =============================================
 ## TEST FOOTER
 ## =============================================
-#_StopSiodb
-#_CheckLogFiles
+_FinalStopOfSiodb
+_CheckLogFiles
 _TestEnd
 exit 0

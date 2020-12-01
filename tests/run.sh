@@ -5,8 +5,8 @@
 # in the LICENSE file.
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/share/LogFunctions.sh
-SCRIPT_DIR=$(dirname $(realpath "$0"))
-TEST_GOUPS="$(find ./ -maxdepth 1 -type d -not -path "./share" -not -path "./" -not -path "./skeleton")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEST_GOUPS="$(find ${SCRIPT_DIR} -maxdepth 1 -type d -not -path "./share" -not -path "${SCRIPT_DIR}" -not -path "./skeleton")"
 OUTPUT_FILE="${HOME}/tmp/all_tests_$(date +%s)"
 export SIODB_TEST_ALL="yes"
 
