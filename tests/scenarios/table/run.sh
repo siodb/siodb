@@ -16,6 +16,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test parameters
 ## TODO: change to 100 once gh-113
 nbOfTableToCreate=1
+nbOfNextTRIDToTest=1000
 
 ## =============================================
 ## TEST HEADER
@@ -34,6 +35,24 @@ _RunSqlScript "${SHARED_DIR}/sql/test-db1.sql" 120
 _RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
 _RestartSiodb
 _CheckLogFiles
+
+## TODO: test rename (if exists) table once gh-118 fixed
+_RunSqlAndValidateOutput "alter table db1.tablealldatatypes add column col100 text" \
+"^Status 6: Not implemented yet$"
+_RunSqlAndValidateOutput "alter table db1.tablealldatatypes alter column col100 rename to col200" \
+"^Status 6: Not implemented yet$"
+_RunSqlAndValidateOutput "alter table db1.tablealldatatypes alter column col100 rename if exists to col200" \
+"^Status 6: Not implemented yet$"
+_RunSqlAndValidateOutput "alter table db1.tablealldatatypes alter column col100 bigint" \
+"^Status 6: Not implemented yet$"
+_RunSqlAndValidateOutput "alter table db1.tablealldatatypes drop column col200" \
+"^Status 6: Not implemented yet$"
+
+# Attribute test
+# Uncomment when gh-117 ready
+# for ((i = 99999999; i < $((${nbOfNextTRIDToTest}*99999999)); ++99999999)); do
+#   _RunSql "alter table db1.tablealldatatypes set next_trid = ${i}"
+# done
 
 _RunSqlAndValidateOutput "create table db1.tablealldatatypes ( col text )" \
 "Status .*: Table .* already exists"
@@ -58,6 +77,7 @@ _RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
 _RestartSiodb
 _CheckLogFiles
 
+# Scalling test
 for ((i = 0; i < ${nbOfTableToCreate}; ++i)); do
   _RunSql "create table db1.table${i} ( free_text text )"
   _RunSql "insert into db1.table${i} values ( 'free text fro db1.table${i}' )"
