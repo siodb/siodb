@@ -273,12 +273,12 @@ function _StartSiodb {
     numberEntriesInLog=$(echo "${LOG_STARTUP}" | egrep 'Listening for (TCP|UNIX) connections' \
         | wc -l | bc)
     if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
-    _log "ERROR" \
-        "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
-    _failExit
+      _log "ERROR" \
+          "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
+      _failExit
     fi
     counterTimeout=$((counterTimeout+1))
-    _CheckLogFiles 1>/dev/null
+    _CheckLogFiles
     sleep 1
   done
   previousInstanceStartTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
@@ -287,10 +287,7 @@ function _StartSiodb {
 
 function _RestartSiodb {
   _log "INFO" "Restarting instance..."
-  SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
-  SIOTEST_KEEP_INSTANCE_UP=0
-  _StopSiodbAndWaitUntilStopped
-  SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
+  _StopSiodb
   _StartSiodb
 }
 
@@ -343,7 +340,6 @@ function _StopSiodbAndWaitUntilStopped {
 function _CheckLogFiles {
   # $1: exclude these patterns because expected
   _log "INFO" "Checking for errors in the log files"
-  foundErrors=0
   for logFile in $(ls "${SIODB_LOG_DIR}"); do
     LOG_ERROR=$(cat "${SIODB_LOG_DIR}/${logFile}" \
     | awk -v previousTestStartedAtTimestamp=${previousTestStartedAtTimestamp} \
@@ -365,19 +361,14 @@ function _CheckLogFiles {
       ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | egrep -v "${1}" | wc -l)
     fi
 
-    if [[ "${ERROR_COUNT}" -ne "0" ]]; then
-      foundErrors=1
+    if [[ ${ERROR_COUNT} -ne 0 ]]; then
       _log "ERROR" "Found an issue in the log file ${SIODB_LOG_DIR}/${logFile}"
       echo "## ================================================="
       echo "${LOG_ERROR}"
       echo "## ================================================="
+      _failExit
     fi
   done
-
-  echo "foundErrors=${foundErrors}"
-  if [[ "${foundErrors}" == "1" ]]; then
-    _failExit
-  fi
 
   _log "INFO" "No error detected the in log files"
 }

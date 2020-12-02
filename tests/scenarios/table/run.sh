@@ -38,9 +38,18 @@ _CheckLogFiles
 _RunSqlAndValidateOutput "create table db1.tablealldatatypes ( col text )" \
 "Status .*: Table .* already exists"
 
+# Uncomment when gh-114 ready
+# _RunSql "create table db1.tableasselect as select * from sys_databases"
+# _RunSqlAndValidateOutput "select name from db1.tableasselect where name = 'SYS'" "^SYS$"
+
 _RunSql "drop table db1.tablealldatatypes"
 _RestartSiodb
 _CheckLogFiles
+
+# check if (not) exists (uncomment when gh-116 is fixed)
+# _RunSql "create table if not exists db1.tablealldatatypes ( col text )"
+# _RunSql "drop table db1.tablealldatatypes"
+_RunSql "drop table if exists db1.tablealldatatypes"
 
 _RunSqlAndValidateOutput "drop table db1.tablealldatatypes" \
 "Status .*: Table .* doesn't exist"
@@ -52,6 +61,8 @@ _CheckLogFiles
 for ((i = 0; i < ${nbOfTableToCreate}; ++i)); do
   _RunSql "create table db1.table${i} ( free_text text )"
   _RunSql "insert into db1.table${i} values ( 'free text fro db1.table${i}' )"
+  _RunSqlAndValidateOutput "use database db1; show tables;" \
+  "*.TABLE${i}*."
 done
 _RestartSiodb
 _CheckLogFiles
