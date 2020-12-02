@@ -125,12 +125,12 @@ fi
 # --------------------------------------------------------------
 function _TestBegin {
   _log "INFO" "Test ${TEST_NAME} begins..."
-  _TestBeginStartTimeStamp=$(date +%s)
+  _TestBeginTimeStamp=$(date +%s)
 }
 
 function _TestEnd {
-  _TestEndStartTimeStamp=$(date +%s)
-  TestElapsedTime="$(echo "scale=2; ($_TestEndStartTimeStamp-$_TestBeginStartTimeStamp)/60" | bc -l)"
+  _TestEndTimeStamp=$(date +%s)
+  TestElapsedTime="$(echo "scale=2; ($_TestEndTimeStamp-$_TestBeginTimeStamp)/60" | bc -l)"
   _log "INFO" "SUCCESS: Test passed in ${TestElapsedTime} minutes"
 }
 
@@ -304,6 +304,7 @@ function _FinalStopOfSiodb {
     _StopSiodbAndWaitUntilStopped
   else
     _log "INFO" "Siodb process kept in running state"
+    previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   fi
 }
 
