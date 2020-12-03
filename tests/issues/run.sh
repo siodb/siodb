@@ -4,8 +4,8 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/../share/LogFunctions.sh
-SCRIPT_DIR=$(dirname $(realpath "$0"))
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../share/LogFunctions.sh"
 
 for d in $(ls -d "${SCRIPT_DIR}/gh-"*/); do
     _log "INFO" "Running test for the issue $d"
