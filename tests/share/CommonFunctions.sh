@@ -223,7 +223,7 @@ function _Prepare {
     _log "INFO"  "Purging directory '${SIODB_DATA_DIR}'"
     rm -rf "${SIODB_DATA_DIR}"/*
     rm -rf "${SIODB_DATA_DIR}/.initialized"
-    echo "Contents of the ${SIODB_DATA_DIR}  after cleanup"
+    echo "Contents of the ${SIODB_DATA_DIR} after cleanup"
     ls -la "${SIODB_DATA_DIR}"
   else
     _log "ERROR" "Data directory '${SIODB_DATA_DIR}' doesn't exist or not a directory."

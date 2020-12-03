@@ -36,7 +36,7 @@ _RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
 _RestartSiodb
 _CheckLogFiles
 
-## TODO: test rename (if exists) table once gh-118 fixed
+## TODO: test rename (if exists) table once gh-11 fixed
 _RunSqlAndValidateOutput "alter table db1.tablealldatatypes add column col100 text" \
 "^Status 6: Not implemented yet$"
 _RunSqlAndValidateOutput "alter table db1.tablealldatatypes alter column col100 rename to col200" \
@@ -49,15 +49,14 @@ _RunSqlAndValidateOutput "alter table db1.tablealldatatypes drop column col200" 
 "^Status 6: Not implemented yet$"
 
 # Attribute test
-# Uncomment when gh-117 ready
-# for ((i = 99999999; i < $((${nbOfNextTRIDToTest}*99999999)); ++99999999)); do
-#   _RunSql "alter table db1.tablealldatatypes set next_trid = ${i}"
-# done
+for ((i = 99999999; i < $((${nbOfNextTRIDToTest}*99999999)); i=i+99999999)); do
+  _RunSql "alter table db1.tablealldatatypes set next_trid = ${i}"
+done
 
 _RunSqlAndValidateOutput "create table db1.tablealldatatypes ( col text )" \
 "Status .*: Table .* already exists"
 
-# Uncomment when gh-114 ready
+# Uncomment when gh-26 ready
 # _RunSql "create table db1.tableasselect as select * from sys_databases"
 # _RunSqlAndValidateOutput "select name from db1.tableasselect where name = 'SYS'" "^SYS$"
 
