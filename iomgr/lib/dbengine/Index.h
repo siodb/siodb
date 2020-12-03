@@ -215,6 +215,13 @@ public:
     virtual std::uint32_t getDataFileSize() const noexcept = 0;
 
     /**
+     * Pre-allocates space for storing key.
+     * @param key A key buffer.
+     * @return true if key space allocated, false if key space has already existed.
+     */
+    virtual bool preallocate(const void* key) = 0;
+
+    /**
      * Inserts data into the index.
      * @param key A key buffer.
      * @param value A value buffer.

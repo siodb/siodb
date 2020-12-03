@@ -266,6 +266,13 @@ public:
     }
 
     /**
+     * Selects available block or creates new one that can store at least given amount of bytes.
+     * @param requiredLength Required data length.
+     * @return Data block that can store at least requiredLength bytes of data.
+     */
+    ColumnDataBlockPtr selectAvailableBlock(std::size_t requiredLength);
+
+    /**
      * Creates new column data block.
      * @param prevBlockId Previous Block ID.
      * @param state Initial block state.
@@ -564,7 +571,7 @@ private:
      * @param requiredLength Required data length.
      * @return Data block that can store at least requiredLength bytes of data.
      */
-    ColumnDataBlockPtr selectAvailableBlock(std::size_t requiredLength);
+    ColumnDataBlockPtr selectAvailableBlockUnlocked(std::size_t requiredLength);
 
     /**
      * Updates block information in available block.

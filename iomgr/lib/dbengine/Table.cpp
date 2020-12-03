@@ -397,7 +397,7 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::updateRow(
 
     const auto tableColumns = getColumnsOrderedByPosition();
     std::vector<std::uint64_t> currentBlockIds, nextBlockIds;
-    nextBlockIds.reserve(newMcr->getColumnCount());
+    nextBlockIds.reserve(tableColumns.size() - 1);
     try {
         std::size_t valueIndex = 0;
         for (const auto pos : columnPositions) {
@@ -717,7 +717,8 @@ std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Table::doInsertRowU
             DmlOperationType::kInsert, tp.m_userId, m_currentColumnSet->getId(), kNullValueAddress);
 
     std::vector<std::uint64_t> nextBlockIds;
-    nextBlockIds.reserve(mcr->getColumnCount());
+    nextBlockIds.reserve(m_currentColumns.size() - 1);
+    mcr->reserveColumnRecords(m_currentColumns.size() - 1);
 
     try {
         std::size_t i = 0;

@@ -88,6 +88,16 @@ std::uint32_t UniqueLinearIndex::getDataFileSize() const noexcept
     return m_dataFileSize;
 }
 
+bool UniqueLinearIndex::preallocate(const void* key)
+{
+    const auto numericKey = decodeKey(key);
+    const auto fileId = getFileIdForKey(numericKey);
+    auto file = findFile(fileId);
+    if (file) return false;
+    makeFile(fileId);
+    return true;
+}
+
 bool UniqueLinearIndex::insert(const void* key, const void* value)
 {
     const auto numericKey = decodeKey(key);

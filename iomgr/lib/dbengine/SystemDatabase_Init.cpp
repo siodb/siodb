@@ -8,7 +8,12 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "ColumnDataBlock.h"
 #include "ColumnDefinitionConstraint.h"
+#include "Index.h"
 #include "ThrowDatabaseError.h"
+
+// Common project headers
+#include <siodb/common/log/Log.h>
+#include <siodb/common/utils/PlainBinaryEncoding.h>
 
 // STL headers
 #include <numeric>
@@ -230,10 +235,16 @@ SystemDatabase::SystemDatabase(
 
     // Create blocks for column.
     // NOTE: This is important to do in order to have rollback on error working correctly
+    std::uint8_t key[8];
+    ::pbeEncodeUInt64(1, key);
     for (const auto& column : allColumns) {
-        auto block = column->createBlock(0);
-        column->updateBlockState(block->getId(), ColumnDataBlockState::kCurrent);
-        block->setState(ColumnDataBlockState::kCurrent);
+        LOG_DEBUG << "Pre-allocating data block for the column " << column->makeDisplayName();
+        column->selectAvailableBlock(1);
+        if (column->isMasterColumn()) {
+            LOG_DEBUG << "Pre-allocating index storage for the column "
+                      << column->makeDisplayName();
+            column->getMasterColumnMainIndex()->preallocate(key);
+        }
     }
 
     const auto& tp = m_metadata->getInitTransactionParams();

@@ -172,6 +172,12 @@ ColumnDefinitionPtr Column::getPrevColumnDefinition() const
     return m_prevColumnDefinition;
 }
 
+ColumnDataBlockPtr Column::selectAvailableBlock(std::size_t requiredLength)
+{
+    std::lock_guard lock(m_mutex);
+    return selectAvailableBlockUnlocked(requiredLength);
+}
+
 ColumnDataBlockPtr Column::createBlock(std::uint64_t prevBlockId, ColumnDataBlockState state)
 {
     std::lock_guard lock(m_mutex);
@@ -488,7 +494,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     if (v.isNull()) v = std::move(value);
 
     // Get available block
-    auto block = selectAvailableBlock(requiredLength);
+    auto block = selectAvailableBlockUnlocked(requiredLength);
 
     // Find available block info before we have written something
     auto itBlock = m_availableDataBlocks.find(block->getId());
@@ -655,7 +661,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
     std::lock_guard lock(m_mutex);
 
     // Get available block
-    auto block = selectAvailableBlock(recordSizeWithSizeTag);
+    auto block = selectAvailableBlockUnlocked(recordSizeWithSizeTag);
 
     // Find available block info before we have written something
     auto itBlock = m_availableDataBlocks.find(block->getId());
@@ -1099,7 +1105,7 @@ ColumnDataBlockPtr Column::loadBlock(std::uint64_t blockId)
     return block;
 }
 
-ColumnDataBlockPtr Column::selectAvailableBlock(std::size_t requiredLength)
+ColumnDataBlockPtr Column::selectAvailableBlockUnlocked(std::size_t requiredLength)
 {
     // If there are no available blocks, just create new one
     if (m_availableDataBlocks.empty()) {

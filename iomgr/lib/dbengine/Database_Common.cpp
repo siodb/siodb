@@ -608,6 +608,19 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
     const TransactionParameters tp(currentUserId, generateNextTransactionId());
     recordTableDefinition(*table, tp);
 
+    // Preallocate first block for each column
+    for (const auto& column : columns) {
+        LOG_DEBUG << "Pre-allocating data block for the column " << column->makeDisplayName();
+        column->selectAvailableBlock(1);
+        if (column->isMasterColumn()) {
+            LOG_DEBUG << "Pre-allocating index storage for the column "
+                      << column->makeDisplayName();
+            std::uint8_t key[8];
+            ::pbeEncodeUInt64(1, key);
+            column->getMasterColumnMainIndex()->preallocate(key);
+        }
+    }
+
     return table;
 }
 

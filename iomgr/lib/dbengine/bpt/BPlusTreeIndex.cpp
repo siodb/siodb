@@ -77,6 +77,12 @@ std::uint32_t BPlusTreeIndex::getDataFileSize() const noexcept
     return m_dataFileSize;
 }
 
+bool BPlusTreeIndex::preallocate([[maybe_unused]] const void* key)
+{
+    // Not implemented yet
+    return true;
+}
+
 bool BPlusTreeIndex::insert(const void* key, const void* value)
 {
     // Find a node which should contain the key
