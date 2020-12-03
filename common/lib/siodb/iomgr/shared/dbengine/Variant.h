@@ -1351,6 +1351,24 @@ public:
     }
 
     /**
+     * Returns boolean false value.
+     * @return Boolean false variant value.
+     */
+    static const Variant& false_() noexcept
+    {
+        return s_falseValue;
+    }
+
+    /**
+     * Returns boolean true value.
+     * @return Boolean true variant value.
+     */
+    static const Variant& true_() noexcept
+    {
+        return s_trueValue;
+    }
+
+    /**
      * Returns empty string value.
      * @return Empty string value.
      */
@@ -1979,6 +1997,12 @@ private:
 
     /** Null value */
     static const Variant s_nullValue;
+
+    /** Boolean false value */
+    static const Variant s_falseValue;
+
+    /** Boolean true value */
+    static const Variant s_trueValue;
 
     /** Empty string value */
     static const Variant s_emptyStringValue;

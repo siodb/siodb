@@ -26,6 +26,7 @@
 #include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
 // Boost headers
 #include <boost/format.hpp>
@@ -104,8 +105,9 @@ Column::Column(Table& table, ColumnSpecification&& spec, std::uint64_t firstUser
                 constraintSpec.m_expression->serializeUnchecked(
                         serializedConstraintExpression.data());
             }
-            const auto constraintDefinition = getDatabase().findOrCreateConstraintDefinition(
-                    m_table.isSystemTable(), constraintSpec.m_type, serializedConstraintExpression);
+            const auto constraintDefinition =
+                    getDatabase().findOrCreateConstraintDefinition(m_table.isSystemTable(),
+                            constraintSpec.m_type, serializedConstraintExpression, m_id);
             m_currentColumnDefinition->addConstraint(
                     m_table.createConstraint(std::move(constraintSpec.m_name), constraintDefinition,
                             this, std::move(constraintSpec.m_description)));
@@ -1521,9 +1523,18 @@ void Column::createMasterColumnMainIndex()
 
 void Column::createMasterColumnConstraints()
 {
-    m_currentColumnDefinition->addConstraint(
-            m_table.createConstraint(std::string(), m_table.getSystemNotNullConstraintDefinition(),
-                    this, kMasterColumnNotNullConstraintDescription));
+    ConstraintDefinitionPtr constraintDefinition;
+    if (m_table.isSystemTable()) {
+        constraintDefinition = m_table.getSystemNotNullConstraintDefinition();
+    } else {
+        const requests::ConstantExpression expression(Variant::true_());
+        BinaryValue serializedConstraintExpression(expression.getSerializedSize());
+        expression.serializeUnchecked(serializedConstraintExpression.data());
+        constraintDefinition = getDatabase().findOrCreateConstraintDefinition(
+                false, ConstraintType::kNotNull, serializedConstraintExpression, m_id);
+    }
+    m_currentColumnDefinition->addConstraint(m_table.createConstraint(
+            std::string(), constraintDefinition, this, kMasterColumnNotNullConstraintDescription));
 }
 
 void Column::writeFullTridCounters(int fd, const TridCounters& data)

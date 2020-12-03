@@ -54,7 +54,8 @@ void Database::recordConstraintDefinition(
 void Database::recordConstraint(const Constraint& constraint, const TransactionParameters& tp)
 {
     LOG_DEBUG << "Database " << m_name << ": Recording constraint #" << constraint.getId() << ' '
-              << constraint.getName() << " @" << static_cast<const void*>(&constraint);
+              << constraint.getName() << " @" << static_cast<const void*>(&constraint) << " def #"
+              << constraint.getDefinitionId();
     std::vector<Variant> values(m_sysConstraintsTable->getColumnCount() - 1);
     std::size_t i = 0;
     values.at(i++) = constraint.getName();

@@ -11,6 +11,7 @@
 #include <boost/filesystem.hpp>
 using system_error_code = boost::system::error_code;
 namespace fs = boost::filesystem;
+#define SIODB_USES_BOOST_FILESYSTEM
 #else  // C++20 and above
 #include <filesystem>
 using system_error_code = std::error_code;

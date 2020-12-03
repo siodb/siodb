@@ -22,6 +22,16 @@ public:
      * Initializes object of class ConstantExpression.
      * @param value Constant value.
      */
+    explicit ConstantExpression(const Variant& value)
+        : Expression(ExpressionType::kConstant)
+        , m_value(value)
+    {
+    }
+
+    /**
+     * Initializes object of class ConstantExpression.
+     * @param value Constant value.
+     */
     explicit ConstantExpression(Variant&& value) noexcept
         : Expression(ExpressionType::kConstant)
         , m_value(std::move(value))

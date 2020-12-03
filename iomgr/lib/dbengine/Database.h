@@ -326,10 +326,11 @@ public:
      * @param system Indicates that we are looking for system constraint definiton.
      * @param type Constraint type.
      * @param serializedExpression Serialized expression.
+     * @param columnId Column identifier.
      * @return Constraint definition object.
      */
-    ConstraintDefinitionPtr findOrCreateConstraintDefinition(
-            bool system, ConstraintType type, const BinaryValue& serializedExpression);
+    ConstraintDefinitionPtr findOrCreateConstraintDefinition(bool system, ConstraintType type,
+            const BinaryValue& serializedExpression, std::uint64_t columnId = 0);
 
     /**
      * Returns constaint definition object if it exists.

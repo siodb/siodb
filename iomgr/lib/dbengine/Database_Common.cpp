@@ -120,18 +120,20 @@ ConstraintDefinitionPtr Database::createConstraintDefinition(bool system,
             system, constraintType, std::move(expression), existing);
 }
 
-ConstraintDefinitionPtr Database::findOrCreateConstraintDefinition(
-        bool system, ConstraintType type, const BinaryValue& serializedExpression)
+ConstraintDefinitionPtr Database::findOrCreateConstraintDefinition(bool system, ConstraintType type,
+        const BinaryValue& serializedExpression, [[maybe_unused]] std::uint64_t columnId)
 {
     std::lock_guard lock(m_mutex);
 
     // Try to find suitable constraint definition
     const auto hash = ConstraintDefinitionRecord::computeHash(type, serializedExpression);
-    auto r = m_constraintDefinitionRegistry.byHash().equal_range(hash);
-    for (; r.first != r.second; ++r.first) {
+    for (auto r = m_constraintDefinitionRegistry.byHash().equal_range(hash); r.first != r.second;
+            ++r.first) {
         if (r.first->m_type == type && r.first->m_expression == serializedExpression
                 && ((system && r.first->m_id < kFirstUserTableConstraintDefinitionId)
                         || (!system && r.first->m_id >= kFirstUserTableConstraintDefinitionId))) {
+            DBG_LOG_DEBUG("Found constraint definition #" << r.first->m_id << " for column #"
+                                                          << columnId << " system=" << system);
             return findConstraintDefinitionChecked(r.first->m_id);
         }
     }
@@ -144,6 +146,9 @@ ConstraintDefinitionPtr Database::findOrCreateConstraintDefinition(
             std::make_shared<ConstraintDefinition>(system, *this, type, std::move(expression));
     m_constraintDefinitions.emplace(constraintDefinition->getId(), constraintDefinition);
     m_constraintDefinitionRegistry.emplace(*constraintDefinition);
+    DBG_LOG_DEBUG("Created new constraint definition #" << constraintDefinition->getId()
+                                                        << " for column #" << columnId
+                                                        << " system=" << system);
     return constraintDefinition;
 }
 
@@ -672,7 +677,7 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
             columnsToRemove;
 
     // Key is ConstraintDefinition ID, value is list of correspodning ColumnDefinitionConstaint IDs
-    std::map<std::uint64_t, std::unordered_set<std::uint64_t>> constraintDefinitionsToRemove;
+    std::map<std::uint64_t, std::unordered_set<std::uint64_t>> constraintDefsToRemove;
 
     // Key is index ID, value is list of index column IDs
     std::map<std::uint64_t, std::vector<std::uint64_t>> indicesToRemove;
@@ -747,8 +752,8 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
                                       << columnDefinitionConstraintRecord.m_constraintId
                                       << " ConstraintDefinition #"
                                       << constraintIt->m_constraintDefinitionId);
-                        constraintDefinitionsToRemove[constraintIt->m_constraintDefinitionId]
-                                .insert(columnDefinitionConstraintRecord.m_constraintId);
+                        constraintDefsToRemove[constraintIt->m_constraintDefinitionId].insert(
+                                columnDefinitionConstraintRecord.m_constraintId);
                     }
                 }
                 columnDefinitionsToRemove.emplace(
@@ -762,8 +767,7 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
     // Determine which constraint definitions should be removed.
     // For this, check if constraint has links to something else
     // than captured ColumnDefinitionConstraint IDs.
-    for (auto it = constraintDefinitionsToRemove.begin();
-            it != constraintDefinitionsToRemove.end();) {
+    for (auto it = constraintDefsToRemove.begin(); it != constraintDefsToRemove.end();) {
         DBG_LOG_DEBUG("dropTable: Processing ConstraintDefintion #" << it->first);
         std::unordered_set<std::uint64_t> allConstraints;
         for (auto range = m_constraintRegistry.byConstraintDefinitionId().equal_range(it->first);
@@ -774,7 +778,7 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
             ++it;
         else {
             DBG_LOG_DEBUG("dropTable: Not removing ConstraintDefintion #" << it->first);
-            it = constraintDefinitionsToRemove.erase(it);
+            it = constraintDefsToRemove.erase(it);
         }
     }
 
@@ -876,8 +880,8 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
     SystemTableRowDeleter sysColumnSetColumnsDeleter(*m_sysColumnSetColumnsTable, tp, name);
     SystemTableRowDeleter sysColumnSetsDeleter(*m_sysColumnSetsTable, tp, name);
     SystemTableRowDeleter sysTablesDeleter(*m_sysTablesTable, tp, name);
-    SystemTableRowDeleter sysConstraintsDeleter(*m_sysConstraintsTable, tp, name);
     SystemTableRowDeleter sysColumnDefConstraintsDeleter(*m_sysColumnDefConstraintsTable, tp, name);
+    SystemTableRowDeleter sysConstraintsDeleter(*m_sysConstraintsTable, tp, name);
     SystemTableRowDeleter sysColumnDefsDeleter(*m_sysColumnDefsTable, tp, name);
     SystemTableRowDeleter sysColumnsDeleter(*m_sysColumnsTable, tp, name);
     SystemTableRowDeleter sysConstraintDefsDeleter(*m_sysConstraintDefsTable, tp, name);
@@ -900,15 +904,15 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
         for (const auto& e : columnsToRemove) {
             for (const auto& e2 : e.second) {
                 for (const auto& e3 : e2.second) {
-                    sysConstraintsDeleter.deleteRow(e3.second);
                     sysColumnDefConstraintsDeleter.deleteRow(e3.first);
+                    sysConstraintsDeleter.deleteRow(e3.second);
                 }
                 sysColumnDefsDeleter.deleteRow(e2.first);
             }
             sysColumnsDeleter.deleteRow(e.first);
         }
 
-        for (const auto& e : constraintDefinitionsToRemove)
+        for (const auto& e : constraintDefsToRemove)
             sysConstraintDefsDeleter.deleteRow(e.first);
 
     } catch (std::exception& ex) {
@@ -916,8 +920,8 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
         sysConstraintDefsDeleter.rollbackIfChanged();
         sysColumnsDeleter.rollbackIfChanged();
         sysColumnDefsDeleter.rollbackIfChanged();
-        sysColumnDefConstraintsDeleter.rollbackIfChanged();
         sysConstraintsDeleter.rollbackIfChanged();
+        sysColumnDefConstraintsDeleter.rollbackIfChanged();
         sysTablesDeleter.rollbackIfChanged();
         sysColumnSetsDeleter.rollbackIfChanged();
         sysColumnSetColumnsDeleter.rollbackIfChanged();
@@ -945,15 +949,15 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
     for (const auto& e : columnsToRemove) {
         for (const auto& e2 : e.second) {
             for (const auto& e3 : e2.second) {
-                sysConstraintsDeleter.updateMainIndex(e3.second);
                 sysColumnDefConstraintsDeleter.updateMainIndex(e3.first);
+                sysConstraintsDeleter.updateMainIndex(e3.second);
             }
             sysColumnDefsDeleter.updateMainIndex(e2.first);
         }
         sysColumnsDeleter.updateMainIndex(e.first);
     }
 
-    for (const auto& e : constraintDefinitionsToRemove)
+    for (const auto& e : constraintDefsToRemove)
         sysConstraintDefsDeleter.updateMainIndex(e.first);
 
     // Remove in-memory objects from collections, starting from table and further
@@ -961,8 +965,10 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
     table.reset();
     m_tables.erase(tableId);
 
-    for (const auto& e : constraintDefinitionsToRemove)
+    for (const auto& e : constraintDefsToRemove) {
+        DBG_LOG_DEBUG("Removing constraint definition #" << e.first << " from cache");
         m_constraintDefinitions.erase(e.first);
+    }
 
     // Remove records from registries
 
@@ -986,9 +992,11 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
         }
     }
 
-    auto& constraintDefinitionsById = m_constraintDefinitionRegistry.byId();
-    for (const auto& e : constraintDefinitionsToRemove)
-        constraintDefinitionsById.erase(e.first);
+    auto& constraintDefsById = m_constraintDefinitionRegistry.byId();
+    for (const auto& e : constraintDefsToRemove) {
+        DBG_LOG_DEBUG("Removing constraint definition #" << e.first << " from registry");
+        constraintDefsById.erase(e.first);
+    }
 
     // Finally, remove data directory
     system_error_code ec;
