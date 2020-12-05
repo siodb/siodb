@@ -391,6 +391,7 @@ function _RunSqlScript {
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
     -i "${ROOT_DIR}/tests/share/private_key" < $1
+  _CheckLogFiles
 }
 
 function _RunSqlThroughUserUnixSocket {
@@ -403,6 +404,7 @@ function _RunSqlThroughUserUnixSocket {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  _CheckLogFiles
 }
 
 function _RunSqlThroughUserTCPSocket {
@@ -415,6 +417,7 @@ function _RunSqlThroughUserTCPSocket {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  _CheckLogFiles
 }
 
 function _RunSql {
@@ -426,6 +429,7 @@ function _RunSql {
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
   -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
+  _CheckLogFiles
 }
 
 function _RunSqlAndValidateOutput {
@@ -441,7 +445,7 @@ function _RunSqlAndValidateOutput {
   EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
-    _failExit
+    _failExit "${2}"
   else
     _log "INFO" "Siocli output matched expected output."
   fi

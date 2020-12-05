@@ -14,8 +14,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test functions
 
 ## Specific test parameters
-## TODO: change to 100 once gh-113
-nbOfTableToCreate=1
+nbOfTableToCreate=10
 nbOfNextTRIDToTest=1000
 
 ## =============================================
@@ -64,9 +63,9 @@ _RunSql "drop table db1.tablealldatatypes"
 _RestartSiodb
 _CheckLogFiles
 
-# check if (not) exists (uncomment when gh-116 is fixed)
-# _RunSql "create table if not exists db1.tablealldatatypes ( col text )"
-# _RunSql "drop table db1.tablealldatatypes"
+# check if (not) exists
+_RunSql "create table if not exists db1.tablealldatatypes ( col text )"
+_RunSql "drop table db1.tablealldatatypes"
 _RunSql "drop table if exists db1.tablealldatatypes"
 
 _RunSqlAndValidateOutput "drop table db1.tablealldatatypes" \
@@ -81,7 +80,7 @@ for ((i = 0; i < ${nbOfTableToCreate}; ++i)); do
   _RunSql "create table db1.table${i} ( free_text text )"
   _RunSql "insert into db1.table${i} values ( 'free text fro db1.table${i}' )"
   _RunSqlAndValidateOutput "use database db1; show tables;" \
-  "*.TABLE${i}*."
+  "^TABLE${i}*."
 done
 _RestartSiodb
 _CheckLogFiles
