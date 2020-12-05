@@ -8,4 +8,5 @@
 void printUsage(const char* program);
 
 bool renameFile(const std::string& src, const std::string& dest);
+bool adjustPermissions(const std::string& file);
 std::tuple<std::string, int, int> makeTemporaryFile();

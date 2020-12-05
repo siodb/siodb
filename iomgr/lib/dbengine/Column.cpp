@@ -26,6 +26,7 @@
 #include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
 // Boost headers
 #include <boost/format.hpp>
@@ -104,8 +105,9 @@ Column::Column(Table& table, ColumnSpecification&& spec, std::uint64_t firstUser
                 constraintSpec.m_expression->serializeUnchecked(
                         serializedConstraintExpression.data());
             }
-            const auto constraintDefinition = getDatabase().findOrCreateConstraintDefinition(
-                    m_table.isSystemTable(), constraintSpec.m_type, serializedConstraintExpression);
+            const auto constraintDefinition =
+                    getDatabase().findOrCreateConstraintDefinition(m_table.isSystemTable(),
+                            constraintSpec.m_type, serializedConstraintExpression, m_id);
             m_currentColumnDefinition->addConstraint(
                     m_table.createConstraint(std::move(constraintSpec.m_name), constraintDefinition,
                             this, std::move(constraintSpec.m_description)));
@@ -172,6 +174,12 @@ ColumnDefinitionPtr Column::getPrevColumnDefinition() const
     return m_prevColumnDefinition;
 }
 
+ColumnDataBlockPtr Column::selectAvailableBlock(std::size_t requiredLength)
+{
+    std::lock_guard lock(m_mutex);
+    return selectAvailableBlockUnlocked(requiredLength);
+}
+
 ColumnDataBlockPtr Column::createBlock(std::uint64_t prevBlockId, ColumnDataBlockState state)
 {
     std::lock_guard lock(m_mutex);
@@ -199,7 +207,7 @@ void Column::readRecord(
     //DBG_LOG_DEBUG("Column::readRecord(): " << makeDisplayName() << " at " << addr);
 
     // Handle NULL value
-    if (addr.isNullValueAddress()) {
+    if (!addr) {
         value.clear();
         return;
     }
@@ -472,18 +480,23 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     } catch (VariantTypeCastError& ex) {
         throwDatabaseError(IOManagerMessageId::kErrorIncompatibleDataType1, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id,
-                static_cast<int>(ex.getDestValueType()), static_cast<int>(ex.getSourceValueType()));
+                getColumnDataTypeName(convertVariantTypeToColumnDataType(ex.getDestValueType())),
+                static_cast<int>(ex.getDestValueType()),
+                getColumnDataTypeName(convertVariantTypeToColumnDataType(ex.getSourceValueType())),
+                static_cast<int>(ex.getSourceValueType()));
     } catch (std::logic_error&) {
         throwDatabaseError(IOManagerMessageId::kErrorIncompatibleDataType2, getDatabaseName(),
                 m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id,
-                static_cast<int>(m_dataType), static_cast<int>(value.getValueType()));
+                getColumnDataTypeName(m_dataType), static_cast<int>(m_dataType),
+                getColumnDataTypeName(convertVariantTypeToColumnDataType(value.getValueType())),
+                static_cast<int>(value.getValueType()));
     }
 
     // If no data so far, take value from origin.
     if (v.isNull()) v = std::move(value);
 
     // Get available block
-    auto block = selectAvailableBlock(requiredLength);
+    auto block = selectAvailableBlockUnlocked(requiredLength);
 
     // Find available block info before we have written something
     auto itBlock = m_availableDataBlocks.find(block->getId());
@@ -494,6 +507,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     }
 
     const auto pos = block->getNextDataPos();
+    DBG_LOG_DEBUG(makeDisplayName() << ": writeRecord: block=" << block->getId() << " pos=" << pos);
 
     // Store data
     switch (m_dataType) {
@@ -588,7 +602,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
                 writeBuffer(s.c_str(), s.length(), block);
             } else {
                 assert(v.isClob());
-                return writeClob(v.getClob(), block);
+                return writeLob(v.getClob(), block);
             }
             break;
         }
@@ -599,7 +613,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
                 writeBuffer(s.data(), s.size(), block);
             } else {
                 assert(v.isBlob());
-                return writeBlob(v.getBlob(), block);
+                return writeLob(v.getBlob(), block);
             }
             break;
         }
@@ -628,7 +642,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
 }
 
 std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
-        const MasterColumnRecord& record)
+        const MasterColumnRecord& record, bool updateMainIndex)
 {
     // Check that this is master column
     if (!isMasterColumn()) {
@@ -649,7 +663,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
     std::lock_guard lock(m_mutex);
 
     // Get available block
-    auto block = selectAvailableBlock(recordSizeWithSizeTag);
+    auto block = selectAvailableBlockUnlocked(recordSizeWithSizeTag);
 
     // Find available block info before we have written something
     auto itBlock = m_availableDataBlocks.find(block->getId());
@@ -673,21 +687,23 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
     ::pbeEncodeUInt64(block->getId(), indexValue.m_data);
     ::pbeEncodeUInt32(pos, indexValue.m_data + 8);
 
-    switch (record.getOperationType()) {
-        case DmlOperationType::kInsert: {
-            if (!m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data)) {
-                throwDatabaseError(IOManagerMessageId::kErrorCannotInsertDuplicateTrid,
-                        getDatabaseName(), getTableName(), m_name, record.getTableRowId());
+    if (SIODB_LIKELY(updateMainIndex)) {
+        switch (record.getOperationType()) {
+            case DmlOperationType::kInsert: {
+                if (!m_masterColumnData->m_mainIndex->insert(indexKey, indexValue.m_data)) {
+                    throwDatabaseError(IOManagerMessageId::kErrorCannotInsertDuplicateTrid,
+                            getDatabaseName(), getTableName(), m_name, record.getTableRowId());
+                }
+                break;
             }
-            break;
-        }
-        case DmlOperationType::kDelete: {
-            m_masterColumnData->m_mainIndex->erase(indexKey);
-            break;
-        }
-        case DmlOperationType::kUpdate: {
-            m_masterColumnData->m_mainIndex->update(indexKey, indexValue.m_data);
-            break;
+            case DmlOperationType::kDelete: {
+                m_masterColumnData->m_mainIndex->erase(indexKey);
+                break;
+            }
+            case DmlOperationType::kUpdate: {
+                m_masterColumnData->m_mainIndex->update(indexKey, indexValue.m_data);
+                break;
+            }
         }
     }
 
@@ -703,7 +719,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
             ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
-void Column::eraseFromMasterColumnRecordMainIndex(std::uint64_t trid)
+void Column::eraseFromMasterColumnMainIndex(std::uint64_t trid)
 {
     // Check that this is master column
     if (!isMasterColumn()) {
@@ -1091,7 +1107,7 @@ ColumnDataBlockPtr Column::loadBlock(std::uint64_t blockId)
     return block;
 }
 
-ColumnDataBlockPtr Column::selectAvailableBlock(std::size_t requiredLength)
+ColumnDataBlockPtr Column::selectAvailableBlockUnlocked(std::size_t requiredLength)
 {
     // If there are no available blocks, just create new one
     if (m_availableDataBlocks.empty()) {
@@ -1242,82 +1258,6 @@ std::uint64_t Column::findFirstBlock() const
     return firstBlockId;
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeLob(
-        LobStream& lob, ColumnDataBlockPtr block)
-{
-    ColumnDataAddress result;
-
-    // Initialize chunk counters
-    std::uint32_t chunkId = 1;
-    std::uint8_t headerBuffer[LobChunkHeader::kSerializedSize];
-    std::unique_ptr<std::uint8_t[]> dataBuffer;
-    std::uint32_t lastHeaderPos = 0;
-    LobChunkHeader lastHeader(0, 0);
-    ColumnDataBlockPtr lastBlock;
-    do {
-        // Compute potential chunk length
-        const auto remainingLobSize = lob.getRemainingSize();
-        auto freeSpace = block->getFreeDataSpace();
-        LobChunkHeader header(remainingLobSize, std::min(freeSpace, remainingLobSize));
-
-        // Check if chunk header fits into remaining free space in the block
-        if (freeSpace < LobChunkHeader::kSerializedSize) {
-            auto newBlock = createOrGetNextBlock(
-                    *block, LobChunkHeader::kSerializedSize + kBlockFreeSpaceThresholdForLob);
-            if (chunkId == 1)
-                result = ColumnDataAddress(block->getId(), block->getNextDataPos());
-            else {
-                // Update next chunk position in the header of the last chunk
-                lastHeader.m_nextChunkBlockId = newBlock->getId();
-                lastHeader.m_nextChunkOffset = newBlock->getNextDataPos();
-                header.serialize(headerBuffer);
-                block->writeData(headerBuffer, LobChunkHeader::kSerializedSize, lastHeaderPos);
-            }
-            block = newBlock;
-            freeSpace = block->getFreeDataSpace();
-            header.m_chunkLength = std::min(freeSpace, remainingLobSize);
-        }
-
-        // Compute actual chunk length
-        const auto availableSpace =
-                static_cast<std::uint32_t>(freeSpace - LobChunkHeader::kSerializedSize);
-        header.m_chunkLength = std::min(availableSpace, remainingLobSize);
-
-        // Write header
-        lastHeaderPos = block->getNextDataPos();
-        header.serialize(headerBuffer);
-        block->writeData(headerBuffer, LobChunkHeader::kSerializedSize);
-        block->incNextDataPos(LobChunkHeader::kSerializedSize);
-        lastHeader = header;
-        lastBlock = block;
-
-        if (header.m_chunkLength > 0) {
-            // Read LOB into data buffer
-            if (!dataBuffer) dataBuffer.reset(new std::uint8_t[m_dataBlockDataAreaSize]);
-            auto data = dataBuffer.get();
-            std::size_t remainingToRead = header.m_chunkLength;
-            while (remainingToRead > 0) {
-                auto actuallyRead = lob.read(data, remainingToRead);
-                if (actuallyRead < 1) {
-                    throwDatabaseError(IOManagerMessageId::kErrorLobReadFailed, getDatabaseName(),
-                            m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id);
-                }
-                data += actuallyRead;
-                remainingToRead -= actuallyRead;
-            }
-            // Write data
-            block->writeData(dataBuffer.get(), header.m_chunkLength);
-            // Advance next data position
-            block->incNextDataPos(header.m_chunkLength);
-        }
-
-        // Update counters
-        ++chunkId;
-    } while (lob.getRemainingSize() > 0);
-
-    return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
-}
-
 std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
         const void* src, std::uint32_t length, ColumnDataBlockPtr block)
 {
@@ -1327,10 +1267,10 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
     // Initialize chunk counters
     std::uint32_t chunkId = 1;
     std::uint8_t headerBuffer[LobChunkHeader::kSerializedSize];
-    std::unique_ptr<std::uint8_t> dataBuffer;
     std::uint32_t lastHeaderPos = 0;
     LobChunkHeader lastHeader(0, 0);
     ColumnDataBlockPtr lastBlock;
+
     do {
         // Compute potential chunk length
         auto freeSpace = block->getFreeDataSpace();
@@ -1346,7 +1286,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
                 // Update next chunk position in the header of the last chunk
                 lastHeader.m_nextChunkBlockId = newBlock->getId();
                 lastHeader.m_nextChunkOffset = newBlock->getNextDataPos();
-                header.serialize(headerBuffer);
+                lastHeader.serialize(headerBuffer);
                 block->writeData(headerBuffer, LobChunkHeader::kSerializedSize, lastHeaderPos);
             }
             block = newBlock;
@@ -1377,6 +1317,83 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
         // Update counters
         ++chunkId;
     } while (length > 0);
+
+    return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
+}
+
+std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeLob(
+        LobStream& lob, ColumnDataBlockPtr block)
+{
+    ColumnDataAddress result;
+
+    // Initialize chunk counters
+    std::uint32_t chunkId = 1;
+    std::uint8_t headerBuffer[LobChunkHeader::kSerializedSize];
+    std::unique_ptr<std::uint8_t[]> dataBuffer;
+    std::uint32_t lastHeaderPos = 0;
+    LobChunkHeader lastHeader(0, 0);
+    ColumnDataBlockPtr lastBlock;
+
+    do {
+        // Compute potential chunk length
+        const auto remainingLobSize = lob.getRemainingSize();
+        auto freeSpace = block->getFreeDataSpace();
+        LobChunkHeader header(remainingLobSize, std::min(freeSpace, remainingLobSize));
+
+        // Check if chunk header fits into remaining free space in the block
+        if (freeSpace < LobChunkHeader::kSerializedSize) {
+            auto newBlock = createOrGetNextBlock(
+                    *block, LobChunkHeader::kSerializedSize + kBlockFreeSpaceThresholdForLob);
+            if (chunkId == 1)
+                result = ColumnDataAddress(block->getId(), block->getNextDataPos());
+            else {
+                // Update next chunk position in the header of the last chunk
+                lastHeader.m_nextChunkBlockId = newBlock->getId();
+                lastHeader.m_nextChunkOffset = newBlock->getNextDataPos();
+                lastHeader.serialize(headerBuffer);
+                block->writeData(headerBuffer, LobChunkHeader::kSerializedSize, lastHeaderPos);
+            }
+            block = newBlock;
+            freeSpace = block->getFreeDataSpace();
+            header.m_chunkLength = std::min(freeSpace, remainingLobSize);
+        }
+
+        // Compute actual chunk length
+        const auto availableSpace =
+                static_cast<std::uint32_t>(freeSpace - LobChunkHeader::kSerializedSize);
+        header.m_chunkLength = std::min(availableSpace, remainingLobSize);
+
+        // Write header
+        lastHeaderPos = block->getNextDataPos();
+        header.serialize(headerBuffer);
+        block->writeData(headerBuffer, LobChunkHeader::kSerializedSize);
+        block->incNextDataPos(LobChunkHeader::kSerializedSize);
+        lastHeader = header;
+        lastBlock = block;
+
+        if (header.m_chunkLength > 0) {
+            // Read LOB into data buffer
+            if (!dataBuffer) dataBuffer.reset(new std::uint8_t[m_dataBlockDataAreaSize]);
+            auto data = dataBuffer.get();
+            std::size_t remainingToRead = header.m_chunkLength;
+            while (remainingToRead > 0) {
+                const auto actuallyRead = lob.read(data, remainingToRead);
+                if (actuallyRead < 1) {
+                    throwDatabaseError(IOManagerMessageId::kErrorLobReadFailed, getDatabaseName(),
+                            m_table.getName(), m_name, getDatabaseUuid(), m_table.getId(), m_id);
+                }
+                data += actuallyRead;
+                remainingToRead -= actuallyRead;
+            }
+            // Write data
+            block->writeData(dataBuffer.get(), header.m_chunkLength);
+            // Advance next data position
+            block->incNextDataPos(header.m_chunkLength);
+        }
+
+        // Update counters
+        ++chunkId;
+    } while (lob.getRemainingSize() > 0);
 
     return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
@@ -1506,9 +1523,18 @@ void Column::createMasterColumnMainIndex()
 
 void Column::createMasterColumnConstraints()
 {
-    m_currentColumnDefinition->addConstraint(
-            m_table.createConstraint(std::string(), m_table.getSystemNotNullConstraintDefinition(),
-                    this, kMasterColumnNotNullConstraintDescription));
+    ConstraintDefinitionPtr constraintDefinition;
+    if (m_table.isSystemTable()) {
+        constraintDefinition = m_table.getSystemNotNullConstraintDefinition();
+    } else {
+        const requests::ConstantExpression expression(Variant::true_());
+        BinaryValue serializedConstraintExpression(expression.getSerializedSize());
+        expression.serializeUnchecked(serializedConstraintExpression.data());
+        constraintDefinition = getDatabase().findOrCreateConstraintDefinition(
+                false, ConstraintType::kNotNull, serializedConstraintExpression, m_id);
+    }
+    m_currentColumnDefinition->addConstraint(m_table.createConstraint(
+            std::string(), constraintDefinition, this, kMasterColumnNotNullConstraintDescription));
 }
 
 void Column::writeFullTridCounters(int fd, const TridCounters& data)

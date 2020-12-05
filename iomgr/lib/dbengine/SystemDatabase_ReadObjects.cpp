@@ -12,11 +12,11 @@
 #include "UserAccessKey.h"
 #include "UserPermission.h"
 #include "UserToken.h"
-#include "parser/expr/ConstantExpression.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
 // STL headers
 #include <numeric>

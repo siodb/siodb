@@ -191,10 +191,10 @@ bool Instance::dropDatabase(
     m_databases.erase(id);
     m_databaseRegistry.byId().erase(id);
     m_systemDatabase->deleteDatabase(id, currentUserId);
-    boost::system::error_code errorCode;
-    if (fs::remove_all(dataDir, errorCode) == static_cast<std::uintmax_t>(-1)) {
+    system_error_code ec;
+    if (fs::remove_all(dataDir, ec) == static_cast<std::uintmax_t>(-1)) {
         throwDatabaseError(IOManagerMessageId::kWarningCannotRemoveDatabaseDataDirectory,
-                database->getName(), uuid, errorCode.value(), errorCode.message());
+                database->getName(), uuid, ec.value(), ec.message());
     }
     return true;
 }
@@ -684,20 +684,20 @@ void Instance::loadInstanceData()
 void Instance::ensureDataDir() const
 {
     LOG_DEBUG << "Instance: Ensuring data directory.";
-    boost::system::error_code errorCode;
+    system_error_code ec;
     const fs::path dataDirPath(m_dataDir);
     if (fs::exists(dataDirPath)) {
         if (!fs::is_directory(dataDirPath))
             throwDatabaseError(IOManagerMessageId::kErrorInstanceDataDirIsNotDir, m_dataDir);
     } else {
-        if (!fs::create_directories(dataDirPath, errorCode)) {
+        if (!fs::create_directories(dataDirPath, ec)) {
             throwDatabaseError(IOManagerMessageId::kErrorCannotCreateInstanceDataDir, m_dataDir,
-                    errorCode.value(), errorCode.message());
+                    ec.value(), ec.message());
         }
     }
-    if (!utils::clearDir(m_dataDir, errorCode)) {
+    if (!utils::clearDir(m_dataDir, ec)) {
         throwDatabaseError(IOManagerMessageId::kErrorCannotClearInstanceDataDir, m_dataDir,
-                errorCode.value(), errorCode.message());
+                ec.value(), ec.message());
     }
 }
 
@@ -791,8 +791,8 @@ std::string Instance::loadSuperUserInitialAccessKey() const
 {
     LOG_DEBUG << "Instance: Loading super user initial access key.";
     const auto fileName = composeInstanceInitialSuperUserAccessKeyFilePath(m_name);
-    boost::system::error_code errorCode;
-    const auto fileSize = fs::file_size(fileName, errorCode);
+    system_error_code ec;
+    const auto fileSize = fs::file_size(fileName, ec);
     if (fileSize == static_cast<boost::uintmax_t>(-1))
         throwDatabaseError(IOManagerMessageId::kFatalCannotStatSuperUserKey, fileName);
 

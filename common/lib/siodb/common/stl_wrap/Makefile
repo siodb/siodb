@@ -12,6 +12,7 @@ TARGET_COMMON_LIB:=siodb_common_stl_wrap
 CXX_SRC:= \
 
 CXX_HDR:= \
-	filesystem_wrapper.h
+	filesystem_wrapper.h  \
+	system_error_wrapper.h
 
 include $(MK)/Main.mk

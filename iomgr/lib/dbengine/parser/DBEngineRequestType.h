@@ -52,6 +52,7 @@ enum class DBEngineRequestType {
     kRenameUserToken,
     kCheckUserToken,
     kShowDatabases,
+    kShowTables,
 
     // REST requests
     kRestGetDatabases,

@@ -14,28 +14,45 @@ set -e
 # Global parameters
 # --------------------------------------------------------------
 UNIQUE_SUFFIX=$(date +%s)_$$
-SCRIPT=$(realpath "$0")
-SCRIPT_DIR=$(dirname "${SCRIPT}")
-SCRIPT_DIR=$(realpath "${SCRIPT_DIR}")
-ROOT_DIR=${SCRIPT_DIR}
+COMMON_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${COMMON_SCRIPT_DIR}/../"
+SHARED_DIR="${COMMON_SCRIPT_DIR}/../share/"
 while [[ ! -f "${ROOT_DIR}/.rootdir" ]]; do
   ROOT_DIR=$(realpath "${ROOT_DIR}/..")
 done
-
 instanceStartupTimeout=45
 previousTestStartedAtTimestamp=0
 previousInstanceStartTimestamp=0
 doInstanceConfiguration=1
+defaultClientTimeoutSecond=30
+
+# timeout(1) on Ubuntu 18.04 doesn't support option -v
+# Try to detect this.
+_timeout_verbose=-v
+set +e
+timeout -v 10000 "cat /etc/issue" >/dev/null 2>&1
+if [[ $? -ne 0 ]]; then unset _timeout_verbose; fi
+set -e
+
+# --------------------------------------------------------------
+# Include
+# --------------------------------------------------------------
+source "${SHARED_DIR}/LogFunctions.sh"
 
 # --------------------------------------------------------------
 # Command line
 # --------------------------------------------------------------
 while [[ $# -gt 0 ]];
 do
+  echo $1
   if [[ "$1" == "--" ]]; then
     break
   fi
   if [[ "$1" == "-b" ]]; then
+    if [[ $# -lt 2 ]]; then
+      echo "Missing parameter for the option: $1" >&2
+      exit 1
+    fi
     SIODB_BIN=$2
     shift 2
     continue
@@ -47,6 +64,10 @@ do
     continue
   fi
   if [[ "$1" == "-e" ]]; then
+    if [[ $# -lt 3 ]]; then
+      echo "Missing parameters for the option: $1" >&2
+      exit 1
+    fi
     declare "$2"="$3"
     shift 3
     continue
@@ -92,7 +113,6 @@ if [[ -z "${SIOTEST_KEEP_INSTANCE_UP}" ]]; then
   SIOTEST_KEEP_INSTANCE_UP=0
 fi
 
-
 # --------------------------------------------------------------
 # Trapping
 # --------------------------------------------------------------
@@ -103,6 +123,17 @@ fi
 # --------------------------------------------------------------
 # Global functions
 # --------------------------------------------------------------
+function _TestBegin {
+  _log "INFO" "Test ${TEST_NAME} begins..."
+  _TestBeginTimeStamp=$(date +%s)
+}
+
+function _TestEnd {
+  _TestEndTimeStamp=$(date +%s)
+  TestElapsedTime="$(echo "scale=2; ($_TestEndTimeStamp-$_TestBeginTimeStamp)/60" | bc -l)"
+  _log "INFO" "SUCCESS: Test passed in ${TestElapsedTime} minutes"
+}
+
 function _testfails {
   _killSiodb
 }
@@ -120,9 +151,28 @@ function _SetInstanceParameter {
   cat /etc/siodb/instances/${SIODB_INSTANCE}/config | grep "${1}"
 }
 
+function _GetInstanceParameter {
+  _log "INFO" "getting value of parameter '${1}'"
+  _GetInstanceParameterReturnedValue=$(
+  cat /etc/siodb/instances/${SIODB_INSTANCE}/config \
+  | sed 's/^ *//;s/ *$//' \
+  | egrep -v '^#|^$' \
+  | grep "^${1}" \
+  | awk -F '=' '{print $2}' \
+  | sed 's/^ *//;s/ *$//'
+  )
+}
+
 function _ConfigureInstance {
-  if [[ "${doInstanceConfiguration}" != "1" ]]; then 
-    _log "INFO" "Instance configuration skipped."
+  SIODB_DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
+  if [[ ! -d "${SIODB_DATA_DIR}" ]]; then
+    _log "INFO" "Creating instance data directory ${SIODB_DATA_DIR}"
+    mkdir -p ${SIODB_DATA_DIR}
+    chmod 770 ${SIODB_DATA_DIR}
+  fi
+
+  if [[ "${doInstanceConfiguration}" != "1" ]]; then
+    _log "INFO" "Instance configuration parts skipped."
     return
   fi
 
@@ -135,19 +185,16 @@ function _ConfigureInstance {
 
   # Overload default config file
   _SetInstanceParameter "data_dir" "/var/lib/siodb/${SIODB_INSTANCE}/data"
-  SIODB_DATA_DIR="/var/lib/siodb/${SIODB_INSTANCE}/data"
-  mkdir -p ${SIODB_DATA_DIR}
-  chmod 770 ${SIODB_DATA_DIR}
   _SetInstanceParameter "log.file.destination" "/var/log/siodb/${SIODB_INSTANCE}"
   SIODB_LOG_DIR="/var/log/siodb/${SIODB_INSTANCE}"
   mkdir -p ${SIODB_LOG_DIR}
   chmod 770 ${SIODB_LOG_DIR}
   _SetInstanceParameter "enable_rest_server" "yes"
   _SetInstanceParameter "client.enable_encryption" "yes"
-  _SetInstanceParameter "client.tls_certificate" "cert.pem"
-  _SetInstanceParameter "client.tls_private_key" "key.pem"
-  _SetInstanceParameter "rest_server.tls_certificate" "cert.pem"
-  _SetInstanceParameter "rest_server.tls_private_key" "key.pem"
+  _SetInstanceParameter "client.tls_certificate" "/etc/siodb/instances/${SIODB_INSTANCE}/cert.pem"
+  _SetInstanceParameter "client.tls_private_key" "/etc/siodb/instances/${SIODB_INSTANCE}/key.pem"
+  _SetInstanceParameter "rest_server.tls_certificate" "/etc/siodb/instances/${SIODB_INSTANCE}/cert.pem"
+  _SetInstanceParameter "rest_server.tls_private_key" "/etc/siodb/instances/${SIODB_INSTANCE}/key.pem"
   _SetInstanceParameter "rest_server.iomgr_read_timeout" "60"
   _SetInstanceParameter "log.file.severity" "debug"
 
@@ -176,7 +223,7 @@ function _Prepare {
     _log "INFO"  "Purging directory '${SIODB_DATA_DIR}'"
     rm -rf "${SIODB_DATA_DIR}"/*
     rm -rf "${SIODB_DATA_DIR}/.initialized"
-    echo "Contents of the ${SIODB_DATA_DIR}  after cleanup"
+    echo "Contents of the ${SIODB_DATA_DIR} after cleanup"
     ls -la "${SIODB_DATA_DIR}"
   else
     _log "ERROR" "Data directory '${SIODB_DATA_DIR}' doesn't exist or not a directory."
@@ -226,56 +273,74 @@ function _StartSiodb {
     numberEntriesInLog=$(echo "${LOG_STARTUP}" | egrep 'Listening for (TCP|UNIX) connections' \
         | wc -l | bc)
     if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
-    _log "ERROR" \
-        "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
-    _failExit
+      _log "ERROR" \
+          "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
+      _failExit
     fi
     counterTimeout=$((counterTimeout+1))
-    _CheckLogFiles 1>/dev/null
+    _CheckLogFiles
     sleep 1
   done
   previousInstanceStartTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   _ShowSiodbProcesses
 }
 
+function _RestartSiodb {
+  _log "INFO" "Restarting instance..."
+  _StopSiodb
+  _StartSiodb
+}
+
 function _StopSiodb {
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
+  _log "INFO" "Stoping instance..."
+  SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED=${SIOTEST_KEEP_INSTANCE_UP}
+  SIOTEST_KEEP_INSTANCE_UP=0
+  _StopSiodbAndWaitUntilStopped
+  SIOTEST_KEEP_INSTANCE_UP=${SIOTEST_KEEP_INSTANCE_UP_VALUE_SAVED}
+}
+
+function _FinalStopOfSiodb {
   if [[ "${SIOTEST_KEEP_INSTANCE_UP}" == "0" ]]; then
-    _log "INFO" "Stopping Siodb process on default instance"
-    _ShowSiodbProcesses
-    SIODB_PROCESS_ID=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
-        | grep -v grep | awk '{print $2}')
-    if [[ -z "${SIODB_PROCESS_ID}" ]]; then
-      echo "Siodb is already not running."
-    else
-      kill -SIGINT ${SIODB_PROCESS_ID}
-      counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
-          | grep -v grep | awk '{print $2}' | wc -l | bc)
-      counterTimeout=0
-      _log "INFO" "Waiting for Siodb instance to stop..."
-      while [[ $counterSiodbProcesses -ne 0 ]]; do
-        counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
-            | grep -v grep | awk '{print $2}' | wc -l | bc)
-        if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
-          _log "ERROR" \
-              "Timeout (${instanceStartupTimeout} seconds) reached while stopping the instance..."
-          _failExit
-        fi
-        counterTimeout=$((counterTimeout+1))
-        sleep 1
-      done
-    fi
-    echo "After stopping:"
-    _ShowSiodbProcesses
+    _StopSiodbAndWaitUntilStopped
   else
     _log "INFO" "Siodb process kept in running state"
+    previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   fi
+}
+
+function _StopSiodbAndWaitUntilStopped {
+  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
+  _log "INFO" "Stopping Siodb process on default instance"
+  _ShowSiodbProcesses
+  SIODB_PROCESS_ID=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+      | grep -v grep | awk '{print $2}')
+  if [[ -z "${SIODB_PROCESS_ID}" ]]; then
+    echo "Siodb is already not running."
+  else
+    kill -SIGINT ${SIODB_PROCESS_ID}
+    counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+        | grep -v grep | awk '{print $2}' | wc -l | bc)
+    counterTimeout=0
+    _log "INFO" "Waiting for Siodb instance to stop..."
+    while [[ $counterSiodbProcesses -ne 0 ]]; do
+      counterSiodbProcesses=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
+          | grep -v grep | awk '{print $2}' | wc -l | bc)
+      if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
+        _log "ERROR" \
+            "Timeout (${instanceStartupTimeout} seconds) reached while stopping the instance..."
+        _failExit
+      fi
+      counterTimeout=$((counterTimeout+1))
+      sleep 1
+    done
+  fi
+  echo "After stopping:"
+  _ShowSiodbProcesses
 }
 
 function _CheckLogFiles {
   # $1: exclude these patterns because expected
   _log "INFO" "Checking for errors in the log files"
-  foundErrors=0
   for logFile in $(ls "${SIODB_LOG_DIR}"); do
     LOG_ERROR=$(cat "${SIODB_LOG_DIR}/${logFile}" \
     | awk -v previousTestStartedAtTimestamp=${previousTestStartedAtTimestamp} \
@@ -297,25 +362,16 @@ function _CheckLogFiles {
       ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | egrep -v "${1}" | wc -l)
     fi
 
-    if [[ "${ERROR_COUNT}" -ne "0" ]]; then
-      foundErrors=1
+    if [[ ${ERROR_COUNT} -ne 0 ]]; then
       _log "ERROR" "Found an issue in the log file ${SIODB_LOG_DIR}/${logFile}"
       echo "## ================================================="
       echo "${LOG_ERROR}"
       echo "## ================================================="
+      _failExit
     fi
   done
 
-  echo "foundErrors=${foundErrors}"
-  if [[ "${foundErrors}" == "1" ]]; then
-    _failExit
-  fi
-
   _log "INFO" "No error detected the in log files"
-}
-
-function _log {
-    echo "## `date "+%Y-%m-%dT%H:%M:%S"` | $1 | $2"
 }
 
 function _failExit {
@@ -327,33 +383,62 @@ function _failExit {
 }
 
 function _RunSqlScript {
+  # $1: Path to SQL script
+  # $2: Optional timeout
+  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL script $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --nologo --admin ${SIODB_INSTANCE} -u root \
     -i "${ROOT_DIR}/tests/share/private_key" < $1
 }
 
-function _RunSqlThroughUser {
+function _RunSqlThroughUserUnixSocket {
+  # $1: Path to SQL script
+  # $2: Siodb user
+  # $3: Siodb user key
+  # $4: Optional timeout
+  if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
+}
+
+function _RunSqlThroughUserTCPSocket {
+  # $1: Path to SQL script
+  # $2: Siodb user
+  # $3: Siodb user key
+  # $4: Optional timeout
+  if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
+  _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
+  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --nologo -u ${1} -i ${2} <<< ''"${3}"''
 }
 
 function _RunSql {
+  # $1: SQL to run
+  # $2: Optional timeout
+  if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root \
-    -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
+  timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
+  --nologo --admin ${SIODB_INSTANCE} -u root \
+  -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
 }
 
 function _RunSqlAndValidateOutput {
   # $1: the SQL to execute
   # $2: The expected output
+  # $3: Optional timeout
+  if [[ ! -z "${3}" ]]; then TIMEOUT_SECOND="${3}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
-  SIOCLI_OUTPUT=$("${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} \
-    -u root --keep-going -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
-  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | egrep "${2}" | wc -l | bc)
+  SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
+    ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
+    -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
+  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
     _failExit
@@ -444,3 +529,5 @@ function _TestExternalAbort {
   previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   pkill -9 siodb
 }
+
+_log "INFO" "Common parts applied"

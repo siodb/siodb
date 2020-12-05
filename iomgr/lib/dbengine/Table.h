@@ -405,23 +405,27 @@ public:
      * Deletes existing row from the table.
      * @param trid Table row ID.
      * @param transactionParameters Transaction parameters.
-     * @return Pair of (succes flag (record found), new master column record)
+     * @param updateMasterColumnMainIndex Whether to update or not master column main index.
+     * @return Tuple of (success flag (record found), new MCR, new MCR address, next address)
      * @throw DatabaseError if operation has failed.
      */
-    std::pair<bool, MasterColumnRecordPtr> deleteRow(
-            std::uint64_t trid, const TransactionParameters& transactionParameters);
+    std::tuple<bool, MasterColumnRecordPtr, ColumnDataAddress, ColumnDataAddress> deleteRow(
+            std::uint64_t trid, const TransactionParameters& transactionParameters,
+            bool updateMasterColumnMainIndex = true);
 
     /**
      * Deletes existing row from the table.
      * @param mcr Master column record to be updated.
      * @param mcrAddress MCR address.
      * @param transactionParameters Transaction parameters.
-     * @return New master column record.
+     * @param updateMasterColumnMainIndex Whether to update or not master column main index.
+     * @return Tuple of (new master column record, its address, next address).
      * @throw DatabaseError if operation has failed.
      */
-    MasterColumnRecordPtr deleteRow(const MasterColumnRecord& mcr,
-            const ColumnDataAddress& mcrAddress,
-            const TransactionParameters& transactionParameters);
+    std::tuple<MasterColumnRecordPtr, ColumnDataAddress, ColumnDataAddress> deleteRow(
+            const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
+            const TransactionParameters& transactionParameters,
+            bool updateMasterColumnMainIndex = true);
 
     /**
      * Updates existing row.
@@ -699,7 +703,7 @@ private:
     /** Master column reference */
     ColumnPtr m_masterColumn;
 
-    /** 
+    /**
      * Cached first user TRID.
      * NOTE: We have to keep it here, to prevent some crashes.
      */

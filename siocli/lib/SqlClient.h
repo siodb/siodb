@@ -19,7 +19,7 @@ namespace siodb::sql_client {
 /**
  * Executes given command on the server and prints out results.
  * @param requestId Unique request identifier.
- * @param commandText A text of the command. This parameter will be moved.
+ * @param commandText A text of the command. will be moved.
  * @param connection Connection IO.
  * @param os Output stream.
  * @param stopOnError Indicates that execution should stop on SQL error.
@@ -32,13 +32,23 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         io::InputOutputStream& connection, std::ostream& os, bool stopOnError,
         bool printDebugMessages);
 
+// Server connectioninformation
+struct ServerConnectionInfo {
+    /** Instance name */
+    std::string m_instanceName;
+
+    /** Session identifier */
+    std::string m_sessionId;
+};
+
 /**
  * Authenticates user.
  * @param identityKey Indentity key of a user.
  * @param userName Name of a user.
  * @param connection Connection IO.
+ * @param[out] serverConnectionInfo Server information.
  */
 void authenticate(const std::string& identityKey, const std::string& userName,
-        io::InputOutputStream& connectionFd);
+        io::InputOutputStream& connectionFd, ServerConnectionInfo& serverConnectionInfo);
 
 }  // namespace siodb::sql_client

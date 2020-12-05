@@ -15,9 +15,9 @@ void clearDir(const std::string& path)
         fs::remove_all(it->path());
 }
 
-bool clearDir(const std::string& path, boost::system::error_code& errorCode)
+bool clearDir(const std::string& path, system_error_code& errorCode)
 {
-    boost::system::error_code ec;
+    system_error_code ec;
     for (fs::directory_iterator endIt, it(path); it != endIt; ++it) {
         if (!fs::remove_all(it->path(), ec)) {
             errorCode = ec;

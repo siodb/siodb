@@ -13,12 +13,12 @@
 #include "../parser/DBEngineRestRequest.h"
 #include "../parser/DBEngineSqlRequest.h"
 #include "../parser/DBExpressionEvaluationContext.h"
-#include "../parser/expr/Expression.h"
 #include "../reg/ColumnRecord.h"
 
 // Common project headers
 #include <siodb/common/io/OutputStream.h>
 #include <siodb/common/protobuf/ExtendedCodedOutputStream.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 // Protobuf message headers
 #include <siodb/common/proto/IOManagerProtocol.pb.h>
@@ -29,7 +29,7 @@ class JsonWriter;
 
 namespace siodb::iomgr::dbengine {
 
-/** 
+/**
  * Handles SQL based requests.
  * Request handler automaticall marks current database as used.
  */
@@ -394,6 +394,14 @@ private:
     void executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::ShowDatabasesRequest& request);
 
+    /**
+     * Executes SQL SHOW TABLES request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::ShowTablesRequest& request);
+
     // REST request handlers
 
     /**
@@ -609,6 +617,9 @@ private:
 
     /** REST status "OK" */
     static constexpr int kRestStatusOk = 200;
+
+    /** REST status "Created" */
+    static constexpr int kRestStatusCreated = 201;
 
     /** REST status "not found" */
     static constexpr int kRestStatusNotFound = 404;

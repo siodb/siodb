@@ -91,6 +91,13 @@ public:
     std::uint32_t getDataFileSize() const noexcept override;
 
     /**
+     * Pre-allocates space for storing key.
+     * @param key A key buffer.
+     * @return true if key space allocated, false if key space has already existed.
+     */
+    bool preallocate(const void* key) override;
+
+    /**
      * Inserts data into the index.
      * @param key A key buffer.
      * @param value A value buffer.

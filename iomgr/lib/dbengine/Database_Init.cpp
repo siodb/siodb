@@ -12,11 +12,11 @@
 #include "Table.h"
 #include "User.h"
 #include "crypto/GetCipher.h"
-#include "parser/expr/ConstantExpression.h"
 
 // Common project headers
 #include <siodb/common/stl_ext/utility_ext.h>
 #include <siodb/common/utils/FSUtils.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
 // STL headers
 #include <numeric>

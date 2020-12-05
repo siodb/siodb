@@ -255,7 +255,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
 }
 
 void authenticate(const std::string& identityKey, const std::string& userName,
-        io::InputOutputStream& connection)
+        io::InputOutputStream& connection, ServerConnectionInfo& serverConnectionInfo)
 {
     client_protocol::BeginSessionRequest beginSessionRequest;
     beginSessionRequest.set_user_name(userName);
@@ -298,6 +298,10 @@ void authenticate(const std::string& identityKey, const std::string& userName,
     }
 
     if (!authResponse.authenticated()) throw std::runtime_error("User authentication error");
+
+    serverConnectionInfo.m_sessionId = authResponse.session_id();
+    if (authResponse.server_info_size() > 0)
+        serverConnectionInfo.m_instanceName = authResponse.server_info(0);
 }
 
 }  // namespace siodb::sql_client

@@ -34,7 +34,7 @@ std::ostream& operator<<(std::ostream& os, const stdext::int128_t& value)
     char buffer[128 / 3 + 2];
     const auto p = _i128toa_impl(
             &value, buffer, sizeof(buffer), base, uppercase, (flags & std::ios_base::showpos) != 0);
-    const auto length = (buffer + sizeof(buffer)) - p;
+    const auto length = (buffer + sizeof(buffer) - 1) - p;
     const auto lengthWithBase = length + baseLength;
     const auto fillLength = static_cast<std::streamsize>(lengthWithBase) >= os.width()
                                     ? 0
@@ -48,14 +48,14 @@ std::ostream& operator<<(std::ostream& os, const stdext::int128_t& value)
             std::fill_n(std::ostream_iterator<char>(os), fillLength, os.fill());
             if (!os) return os;
         }
-        os << buffer;
+        os << p;
         if (!os) return os;
     } else if (flags & std::ios_base::right) {
         if ((flags & std::ios_base::showbase) && baseStr) {
             os << baseStr;
             if (!os) return os;
         }
-        os << buffer;
+        os << p;
         if (!os) return os;
         if (fillLength > 0) {
             std::fill_n(std::ostream_iterator<char>(os), fillLength, os.fill());
@@ -99,7 +99,7 @@ std::ostream& operator<<(std::ostream& os, const stdext::uint128_t& value)
     char buffer[128 / 3 + 2];
     const auto p = _u128toa_impl(
             &value, buffer, sizeof(buffer), base, uppercase, (flags & std::ios_base::showpos) != 0);
-    const auto length = (buffer + sizeof(buffer)) - p;
+    const auto length = (buffer + sizeof(buffer) - 1) - p;
     const auto lengthWithBase = length + baseLength;
     const auto fillLength = static_cast<std::streamsize>(lengthWithBase) >= os.width()
                                     ? 0
@@ -113,14 +113,14 @@ std::ostream& operator<<(std::ostream& os, const stdext::uint128_t& value)
             std::fill_n(std::ostream_iterator<char>(os), fillLength, os.fill());
             if (!os) return os;
         }
-        os << buffer;
+        os << p;
         if (!os) return os;
     } else if (flags & std::ios_base::right) {
         if ((flags & std::ios_base::showbase) && baseStr) {
             os << baseStr;
             if (!os) return os;
         }
-        os << buffer;
+        os << p;
         if (!os) return os;
         if (fillLength > 0) {
             std::fill_n(std::ostream_iterator<char>(os), fillLength, os.fill());

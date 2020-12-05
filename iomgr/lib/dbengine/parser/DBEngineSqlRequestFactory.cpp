@@ -7,14 +7,15 @@
 // Project headers
 #include "AntlrHelpers.h"
 #include "DBEngineRequestFactoryError.h"
+#include "ExpressionFactory.h"
 #include "antlr_wrappers/SiodbParserWrapper.h"
-#include "expr/AllColumnsExpression.h"
-#include "expr/ConstantExpression.h"
 
 // Common project headers
-#include "expr/ExpressionFactory.h"
 #include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/log/Log.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllColumnsExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/SingleColumnExpression.h>
 
 // Boost headers
 #include <boost/algorithm/hex.hpp>
@@ -113,6 +114,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
             return createSelectRequestForFactoredSelectStatement(node);
         case SiodbParser::RuleShow_databases_stmt:
             return std::make_unique<requests::ShowDatabasesRequest>();
+        case SiodbParser::RuleShow_tables_stmt:
+            return std::make_unique<requests::ShowTablesRequest>();
         case SiodbParser::RuleInsert_stmt: return createInsertRequest(node);
         case SiodbParser::RuleUpdate_stmt: return createUpdateRequest(node);
         case SiodbParser::RuleDelete_stmt: return createDeleteRequest(node);
@@ -134,7 +137,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
 
             throw DBEngineRequestFactoryError("ALTER DATABASE: unsupported operation");
         }
-        case SiodbParser::RuleUse_database_stmt: return createUseDatabaseRequest(node);
+        case SiodbParser::RuleUse_database_stmt1: return createUseDatabaseRequest(node);
+        case SiodbParser::RuleUse_database_stmt2: return createUseDatabaseRequest(node);
         case SiodbParser::RuleCreate_table_stmt: return createCreateTableRequest(node);
         case SiodbParser::RuleDrop_table_stmt: return createDropTableRequest(node);
         case SiodbParser::RuleAlter_table_stmt: {
@@ -1004,7 +1008,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
             terminal = helpers::findTerminal(constraintNode, SiodbParser::K_PRIMARY);
             if (terminal) {
                 throw DBEngineRequestFactoryError(
-                        "CREATE TABLE: PRIMARY KEY constraint is not supported in the Siodb");
+                        "CREATE TABLE: PRIMARY KEY constraint is not supported");
             }
 
             // Check for REFERENCES constraint

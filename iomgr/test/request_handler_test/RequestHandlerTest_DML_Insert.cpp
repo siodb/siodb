@@ -6,13 +6,13 @@
 #include "RequestHandlerTest_TestEnv.h"
 #include "dbengine/parser/DBEngineSqlRequestFactory.h"
 #include "dbengine/parser/SqlParser.h"
-#include "dbengine/parser/expr/ConstantExpression.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllExpressions.h>
 
 // Boost headers
 #include <boost/date_time.hpp>

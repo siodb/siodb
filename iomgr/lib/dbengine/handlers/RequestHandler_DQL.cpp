@@ -14,8 +14,6 @@
 #include "../ThrowDatabaseError.h"
 #include "../parser/DBExpressionEvaluationContext.h"
 #include "../parser/EmptyExpressionEvaluationContext.h"
-#include "../parser/expr/AllColumnsExpression.h"
-#include "../parser/expr/SingleColumnExpression.h"
 
 // Common project headers
 #include <siodb/common/log/Log.h>
@@ -24,6 +22,8 @@
 #include <siodb/common/utils/EmptyString.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/AllColumnsExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/SingleColumnExpression.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -393,10 +393,10 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    auto& systemDatabase = m_instance.getSystemDatabase();
-    const auto sysDbTable = systemDatabase.findTableChecked(kSysDatabasesTableName);
-    const auto nameColumn = sysDbTable->findColumnChecked(kSysDatabases_Name_ColumnName);
-    const auto uuidColumn = sysDbTable->findColumnChecked(kSysDatabases_Uuid_ColumnName);
+    const auto sysDatabasesTable =
+            m_instance.getSystemDatabase().findTableChecked(kSysDatabasesTableName);
+    const auto nameColumn = sysDatabasesTable->findColumnChecked(kSysDatabases_Name_ColumnName);
+    const auto uuidColumn = sysDatabasesTable->findColumnChecked(kSysDatabases_Uuid_ColumnName);
 
     addColumnToResponse(response, *nameColumn, "");
     addColumnToResponse(response, *uuidColumn, "");
@@ -426,7 +426,65 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
 
         const std::size_t rowSize =
                 getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();
+        codedOutput.WriteVarint64(rowSize);
 
+        if (!nullNotAllowed) {
+            codedOutput.WriteRaw(nullMask.data(), nullMask.size());
+            rawOutput.CheckNoError();
+        }
+
+        rawOutput.CheckNoError();
+
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            writeVariant(values[i], codedOutput);
+            rawOutput.CheckNoError();
+        }
+    }
+
+    codedOutput.WriteVarint64(kNoMoreRows);
+    rawOutput.CheckNoError();
+}
+
+void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        [[maybe_unused]] const requests::ShowTablesRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    response.set_affected_row_count(0);
+
+    const auto database = m_instance.findDatabaseChecked(m_currentDatabaseName);
+    const auto sysTablesTable = database->findTableChecked(kSysTablesTableName);
+    const auto nameColumn = sysTablesTable->findColumnChecked(kSysTables_Name_ColumnName);
+    const auto descriptionColumn =
+            sysTablesTable->findColumnChecked(kSysTables_Description_ColumnName);
+
+    addColumnToResponse(response, *nameColumn, "");
+    addColumnToResponse(response, *descriptionColumn, "");
+
+    const bool nullNotAllowed = nameColumn->isNotNull() && descriptionColumn->isNotNull();
+
+    const auto tableRecords = database->getTableRecordsOrderedByName();
+
+    utils::DefaultErrorCodeChecker errorChecker;
+    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+
+    std::vector<Variant> values(2);
+    stdext::bitmask nullMask;
+    if (!nullNotAllowed) nullMask.resize(values.size(), false);
+
+    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
+    for (const auto& tableRecord : tableRecords) {
+        values[0] = tableRecord.m_name;
+        values[1] = tableRecord.m_description;
+
+        if (!nullNotAllowed) {
+            nullMask.set(0, values[0].isNull());
+            nullMask.set(1, values[1].isNull());
+        }
+
+        const std::size_t rowSize =
+                getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();
         codedOutput.WriteVarint64(rowSize);
 
         if (!nullNotAllowed) {

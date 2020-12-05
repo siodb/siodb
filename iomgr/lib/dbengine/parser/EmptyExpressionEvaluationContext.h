@@ -4,8 +4,8 @@
 
 #pragma once
 
-// Project headers
-#include "expr/ExpressionEvaluationContext.h"
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/parser/expr/ExpressionEvaluationContext.h>
 
 namespace siodb::iomgr::dbengine::requests {
 

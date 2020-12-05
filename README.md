@@ -6,7 +6,7 @@
 - **Easy integration in your project:** Get the simplicity of REST or the power of SQL
 - **Full encryption:** Keep your data always encrypted at rest and in-transit with the safest protocols and cipher algorithms
 
-**Current status:** Alpha version
+**Current status:** Beta version (give your feedack [support@siodb.io](mailto:support@siodb.io))
 
 ## Quick Start
 

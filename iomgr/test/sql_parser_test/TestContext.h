@@ -4,8 +4,8 @@
 
 #pragma once
 
-// Project headers
-#include "dbengine/parser/expr/Expression.h"
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 namespace dbengine = siodb::iomgr::dbengine;
 namespace requests = dbengine::requests;

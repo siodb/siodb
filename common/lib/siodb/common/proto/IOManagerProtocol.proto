@@ -103,7 +103,7 @@ message AuthenticateUserRequest {
     bytes signature = 2;
 }
 
-/** Authenticate user Response */
+/** Authenticate user response */
 message AuthenticateUserResponse {
 
     /** Indication that user is authenticated. */
@@ -114,6 +114,9 @@ message AuthenticateUserResponse {
 
     /** ID of started session. */
     string session_id = 3;
+
+    /** Server information */
+    repeated string server_info = 4;
 }
 
 /** Rest verbs */

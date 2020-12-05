@@ -266,6 +266,13 @@ public:
     }
 
     /**
+     * Selects available block or creates new one that can store at least given amount of bytes.
+     * @param requiredLength Required data length.
+     * @return Data block that can store at least requiredLength bytes of data.
+     */
+    ColumnDataBlockPtr selectAvailableBlock(std::size_t requiredLength);
+
+    /**
      * Creates new column data block.
      * @param prevBlockId Previous Block ID.
      * @param state Initial block state.
@@ -318,16 +325,17 @@ public:
     /**
      * Adds new data to a master column.
      * @param record Master column record.
+     * @param updateMainIndex Flag which indocates whether update of the main index must be perfomed.
      * @return Pair containing data address and next data address
      */
     std::pair<ColumnDataAddress, ColumnDataAddress> writeMasterColumnRecord(
-            const MasterColumnRecord& record);
+            const MasterColumnRecord& record, bool updateMainIndex = true);
 
     /**
-     * Erases TRID in the master column record main index
+     * Erases TRID in the master column record main index.
      * @param trid Table row ID
      */
-    void eraseFromMasterColumnRecordMainIndex(std::uint64_t trid);
+    void eraseFromMasterColumnMainIndex(std::uint64_t trid);
 
     /**
      * Rolls back to the given data address.
@@ -563,7 +571,7 @@ private:
      * @param requiredLength Required data length.
      * @return Data block that can store at least requiredLength bytes of data.
      */
-    ColumnDataBlockPtr selectAvailableBlock(std::size_t requiredLength);
+    ColumnDataBlockPtr selectAvailableBlockUnlocked(std::size_t requiredLength);
 
     /**
      * Updates block information in available block.
@@ -595,30 +603,15 @@ private:
     std::uint64_t findFirstBlock() const;
 
     /**
-     * Stores CLOB data.
+     * Stores binary data in the buffer.
      * Assumes column is already locked.
-     * @param clob CLOB data stream
+     * @param src Data buffer
+     * @param length Data length
      * @param block Starting block.
      * @return Pair containing data address and next data address
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> writeClob(
-            ClobStream& clob, const ColumnDataBlockPtr& block)
-    {
-        return writeLob(clob, block);
-    }
-
-    /**
-     * Stores BLOB data.
-     * Assumes column is already locked.
-     * @param blob BLOB data stream
-     * @param block Starting block.
-     * @return Pair containing data address and next data address
-     */
-    std::pair<ColumnDataAddress, ColumnDataAddress> writeBlob(
-            BlobStream& blob, const ColumnDataBlockPtr& block)
-    {
-        return writeLob(blob, block);
-    }
+    std::pair<ColumnDataAddress, ColumnDataAddress> writeBuffer(
+            const void* src, std::uint32_t length, ColumnDataBlockPtr block);
 
     /**
      * Stores some LOB data.
@@ -629,17 +622,6 @@ private:
      */
     std::pair<ColumnDataAddress, ColumnDataAddress> writeLob(
             LobStream& lob, ColumnDataBlockPtr block);
-
-    /**
-     * Stores binary data in the buffer.
-     * Assumes column is already locked.
-     * @param src Data buffer
-     * @param length Data length
-     * @param block Starting block.
-     * @return Pair containing data address and next data address
-     */
-    std::pair<ColumnDataAddress, ColumnDataAddress> writeBuffer(
-            const void* src, std::uint32_t length, ColumnDataBlockPtr block);
 
     /**
      * Loads TEXT data.

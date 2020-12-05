@@ -222,7 +222,7 @@ public:
         : m_valueType(VariantType::kDateTime)
     {
         const auto len = std::strlen(s);
-        if (!format) format = getDateTimeFormat(len);
+        if (!format) format = getDateTimeFormat(s, len);
         m_value.m_dt = new RawDateTime(stringToDateTime(s, len, format));
     }
 
@@ -297,6 +297,39 @@ public:
 
     /**
      * Initializes object of class Variant.
+     * @param value A value.
+     */
+    Variant(const OptionalOwnershipUniquePtr<std::string>& value)
+        : m_valueType(value ? VariantType::kString : VariantType::kNull)
+    {
+        if (value) m_value.m_string = new std::string(*value);
+    }
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     */
+    Variant(const OptionalOwnershipUniquePtr<const std::string>& value)
+        : m_valueType(value ? VariantType::kString : VariantType::kNull)
+    {
+        if (value) m_value.m_string = new std::string(*value);
+    }
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     */
+    Variant(OptionalOwnershipUniquePtr<std::string>&& value)
+        : m_valueType(value ? VariantType::kString : VariantType::kNull)
+    {
+        if (value) {
+            m_value.m_string = value.get_deleter().isOwner() ? value.release()
+                                                             : new std::string(std::move(*value));
+        }
+    }
+
+    /**
+     * Initializes object of class Variant.
      * @param buffer Data buffer.
      * @param size Buffer size.
      * @param allowNull Indication that null value is allowed.
@@ -351,6 +384,39 @@ public:
         : m_valueType(value ? VariantType::kBinary : VariantType::kNull)
     {
         if (value) m_value.m_binary = new BinaryValue(std::move(*value));
+    }
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     */
+    Variant(const OptionalOwnershipUniquePtr<BinaryValue>& value)
+        : m_valueType(value ? VariantType::kBinary : VariantType::kNull)
+    {
+        if (value) m_value.m_binary = new BinaryValue(*value);
+    }
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     */
+    Variant(const OptionalOwnershipUniquePtr<const BinaryValue>& value)
+        : m_valueType(value ? VariantType::kBinary : VariantType::kNull)
+    {
+        if (value) m_value.m_binary = new BinaryValue(*value);
+    }
+
+    /**
+     * Initializes object of class Variant.
+     * @param value A value.
+     */
+    Variant(OptionalOwnershipUniquePtr<BinaryValue>&& value)
+        : m_valueType(value ? VariantType::kBinary : VariantType::kNull)
+    {
+        if (value) {
+            m_value.m_binary = value.get_deleter().isOwner() ? value.release()
+                                                             : new BinaryValue(std::move(*value));
+        }
     }
 
     /**
@@ -1285,6 +1351,24 @@ public:
     }
 
     /**
+     * Returns boolean false value.
+     * @return Boolean false variant value.
+     */
+    static const Variant& false_() noexcept
+    {
+        return s_falseValue;
+    }
+
+    /**
+     * Returns boolean true value.
+     * @return Boolean true variant value.
+     */
+    static const Variant& true_() noexcept
+    {
+        return s_trueValue;
+    }
+
+    /**
      * Returns empty string value.
      * @return Empty string value.
      */
@@ -1886,16 +1970,12 @@ private:
 
     /**
      * Get a default date format specifier string from passed string length
-     * @param strLen A string length.
+     * @param s A string.
+     * @param strLen String length.
      * @return Format specifier.
-     * @throw std::invalid_argument if @ref strLen is zero.
+     * @throw std::invalid_argument if strLen is zero.
      */
-    static const char* getDateTimeFormat(std::size_t strLen)
-    {
-        if (SIODB_UNLIKELY(strLen == 0)) throw std::invalid_argument("String length is 0");
-        return strLen > RawDateTime::kMaxDateStringLength ? RawDateTime::kDefaultDateTimeFormat
-                                                          : RawDateTime::kDefaultDateFormat;
-    }
+    static const char* getDateTimeFormat(const char* s, std::size_t strLen);
 
     /**
      * Get a default date format specifier string for passed string with date
@@ -1905,7 +1985,7 @@ private:
      */
     static const char* getDateTimeFormat(const std::string& dateStr)
     {
-        return getDateTimeFormat(dateStr.size());
+        return getDateTimeFormat(dateStr.c_str(), dateStr.size());
     }
 
 private:
@@ -1917,6 +1997,12 @@ private:
 
     /** Null value */
     static const Variant s_nullValue;
+
+    /** Boolean false value */
+    static const Variant s_falseValue;
+
+    /** Boolean true value */
+    static const Variant s_trueValue;
 
     /** Empty string value */
     static const Variant s_emptyStringValue;

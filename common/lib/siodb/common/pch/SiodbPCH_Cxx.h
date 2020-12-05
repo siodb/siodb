@@ -73,6 +73,9 @@
 #include <boost/uuid/uuid_io.hpp>
 
 // DATE library
+#ifndef ONLY_C_LOCALE
+#define ONLY_C_LOCALE 1
+#endif
 #include <date/date.h>
 
 // Protobuf headers

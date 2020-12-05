@@ -434,6 +434,7 @@ void ConnWorkerConnectionHandler::authenticateUser(
     clientAuthResponse.set_allocated_session_id(iomgrAuthResponse.release_session_id());
     if (iomgrAuthResponse.has_message())
         clientAuthResponse.set_allocated_message(iomgrAuthResponse.release_message());
+    *clientAuthResponse.mutable_server_info() = std::move(*iomgrAuthResponse.mutable_server_info());
 
     protobuf::writeMessage(protobuf::ProtocolMessageType::kClientAuthenticationResponse,
             clientAuthResponse, *m_clientConnection);

@@ -904,4 +904,17 @@ BinaryValue Variant::readBlobAsBinary(VariantType destValueType) const
     }
 }
 
+const char* Variant::getDateTimeFormat(const char* s, std::size_t strLen)
+{
+    if (SIODB_UNLIKELY(strLen == 0)) throw std::invalid_argument("String length is 0");
+    if (strLen > RawDateTime::kMaxDateStringLength) {
+        if (std::toupper(s[strLen - 1]) == 'M') {
+            const auto c = std::toupper(s[strLen - 2]);
+            if (c == 'A' || c == 'P') return RawDateTime::kDefaultDateTimeFormatAMPM;
+        }
+        return RawDateTime::kDefaultDateTimeFormat;
+    }
+    return RawDateTime::kDefaultDateFormat;
+}
+
 }  // namespace siodb::iomgr::dbengine

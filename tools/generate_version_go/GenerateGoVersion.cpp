@@ -122,9 +122,10 @@ int main(int argc, char** argv)
     ofs << std::flush;
     ofs.close();
 
-    if (!renameFile(std::get<0>(tmpFileInfo), outputFilePath)) return 2;
+    if (renameFile(std::get<0>(tmpFileInfo), outputFilePath) && adjustPermissions(outputFilePath))
+        return 0;
 
-    return 0;
+    return 2;
 }
 
 void printUsage(const char* program)
@@ -134,7 +135,7 @@ void printUsage(const char* program)
 
 bool renameFile(const std::string& src, const std::string& to)
 {
-    boost::system::error_code ec;
+    system_error_code ec;
     fs::rename(src, to, ec);
     if (!ec) return true;
 
@@ -147,6 +148,16 @@ bool renameFile(const std::string& src, const std::string& to)
     }
 
     std::cerr << "Can't rename temporary file " << src << " into " << to << ": " << ec.message()
+              << std::endl;
+    return false;
+}
+
+bool adjustPermissions(const std::string& file)
+{
+    system_error_code ec;
+    fs::permissions(file, fs::add_perms | fs::group_read | fs::others_read, ec);
+    if (!ec) return true;
+    std::cerr << "Can't adjust permissions on the file '" << file << "': " << ec.message()
               << std::endl;
     return false;
 }

@@ -12,6 +12,7 @@
 // Common project headers
 #include <siodb/common/config/SiodbDefs.h>
 #include <siodb/common/config/SiodbVersion.h>
+#include <siodb/common/crt_ext/ct_string.h>
 #include <siodb/common/crypto/TlsClient.h>
 #include <siodb/common/io/FDStream.h>
 #include <siodb/common/io/FileIO.h>
@@ -21,6 +22,7 @@
 #include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
+#include <siodb/common/stl_ext/deleter.h>
 #include <siodb/common/stl_ext/string_builder.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/sys/Syscalls.h>
@@ -61,11 +63,17 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+// Readline
+#include <readline/history.h>
+#include <readline/readline.h>
+
 namespace {
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
-const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
-const char* kSubsequentLinePrompt = "\033[1m      > \033[0m";
-const char* kCommentStart = "--";
+constexpr const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
+constexpr const char* kSubsequentLinePrompt = "\033[1m      > \033[0m";
+constexpr const char* kCommentStart = "--";
+constexpr const char* kVariablePrefix = "var:";
+constexpr auto kVariablePrefixLen = ::ct_strlen(kVariablePrefix);
 }  // namespace
 
 extern "C" int siocliMain(int argc, char** argv)
@@ -111,6 +119,7 @@ extern "C" int siocliMain(int argc, char** argv)
         desc.add_options()("export-all,E", "Export all databases");
         desc.add_options()("output-file,o", boost::program_options::value<std::string>(),
                 "Output file for the exported data");
+        desc.add_options()("use-readline,r", "Use readline library for console input");
         desc.add_options()("help,h", "Print help message");
         desc.add_options()("nologo", "Do not print logo");
         desc.add_options()("debug,d", "Print debug messages");
@@ -143,7 +152,19 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_port = vm["port"].as<int>();
         params.m_exitOnError = !stdinIsTerminal && vm.count("keep-going") == 0;
         params.m_user = vm["user"].as<std::string>();
-        const auto identityFile = vm["identity-file"].as<std::string>();
+        auto identityFile = vm["identity-file"].as<std::string>();
+        if (identityFile.size() > kVariablePrefixLen
+                && identityFile.substr(0, 4) == kVariablePrefix) {
+            const auto varName = identityFile.substr(kVariablePrefixLen);
+            const char* varValue = std::getenv(varName.c_str());
+            if (varValue == nullptr) {
+                std::ostringstream err;
+                err << "Can't get identity file name from the variable '" << varName
+                    << "': variable is undefined";
+                throw std::runtime_error(err.str());
+            }
+            identityFile = varValue;
+        }
         if (vm.count("command") > 0) {
             auto command = vm["command"].as<std::string>();
             boost::trim(command);
@@ -153,6 +174,7 @@ extern "C" int siocliMain(int argc, char** argv)
         params.m_echoCommandsWhenNotOnATerminal = vm.count("no-echo") == 0;
         params.m_verifyCertificates = vm.count("verify-certificates") > 0;
         if (vm.count("output-file") > 0) params.m_outputFile = vm["output-file"].as<std::string>();
+        params.m_useReadline = vm.count("use-readline") > 0;
         params.m_noLogo = vm.count("nologo") > 0;
         params.m_printDebugMessages = vm.count("debug") > 0;
 
@@ -204,18 +226,25 @@ void printLogo()
 
 int commandPrompt(const ClientParameters& params)
 {
+    static bool readlineHistoryInitialized = false;
+    if (params.m_stdinIsTerminal && params.m_useReadline && !readlineHistoryInitialized) {
+        using_history();
+        readlineHistoryInitialized = true;
+    }
+
     std::uint64_t requestId = 1;
     bool hasMoreInput = true;
     std::unique_ptr<siodb::io::InputOutputStream> connection;
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
-    const bool needPrompt = params.m_stdinIsTerminal;
     const bool singleCommand = static_cast<bool>(params.m_command);
+    ServerConnectionInfo serverConnectionInfo;
 
+    if (params.m_stdinIsTerminal) std::cout << '\n';
     do {
+        std::string commandHolder;
+        std::string* command = &commandHolder;
         try {
             auto singleWordCommand = SingleWordCommandType::kUnknownCommand;
-            std::string commandHolder;
-            std::string* command = &commandHolder;
             if (singleCommand) {
                 command = params.m_command.get();
             } else {
@@ -226,36 +255,39 @@ int commandPrompt(const ClientParameters& params)
                 // Read command text, possibly multiline.
                 // Multiline command-text must end with a semicolon.
                 std::size_t lineNo = 0;
-                if (needPrompt) std::cout << '\n' << kFirstLinePrompt << std::flush;
+                const char* prompt = kFirstLinePrompt;
                 do {
                     std::string line;
-                    if (!std::getline(std::cin, line)) {
-                        hasMoreInput = false;
-                        break;
+                    if (params.m_stdinIsTerminal && params.m_useReadline) {
+                        std::unique_ptr<char, stdext::free_deleter<char>> rltext;
+                        while (!rltext)
+                            rltext.reset(::readline(prompt));
+                        add_history(rltext.get());
+                        line = rltext.get();
+                    } else {
+                        if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
+                        if (!std::getline(std::cin, line)) {
+                            hasMoreInput = false;
+                            break;
+                        }
                     }
 
                     boost::trim(line);
                     if (line.empty()) {
-                        if (needPrompt) {
-                            std::cout
-                                    << (textLength == 0 ? kFirstLinePrompt : kSubsequentLinePrompt)
-                                    << std::flush;
-                        }
+                        if (params.m_stdinIsTerminal && !params.m_useReadline)
+                            std::cout << prompt << std::flush;
                         continue;
                     }
 
                     // Do not send comments to siodb
                     if (boost::starts_with(line, kCommentStart)) {
-                        if (needPrompt) {
-                            std::cout << (textLength ? kFirstLinePrompt : kSubsequentLinePrompt)
-                                      << std::flush;
-                        }
+                        if (params.m_stdinIsTerminal)
+                            prompt = textLength ? kFirstLinePrompt : kSubsequentLinePrompt;
                         continue;
                     }
 
-                    if (line.back() != ';') {
-                        if (needPrompt) std::cout << kSubsequentLinePrompt << std::flush;
-                    }
+                    if (line.back() != ';' && params.m_stdinIsTerminal)
+                        prompt = kSubsequentLinePrompt;
 
                     if (textLength > 0) {
                         text << '\n';
@@ -292,7 +324,7 @@ int commandPrompt(const ClientParameters& params)
                     std::cout << "Type SQL query with ';' symbol in the end. This query will be "
                                  "sent to the Siodb server.\n"
                                  "Example: SELECT * FROM <table_name>;\n"
-                                 "Type exit to stop SioDB client.\n"
+                                 "Type exit to stop siocli.\n"
                               << std::flush;
                     continue;
                 }
@@ -329,7 +361,8 @@ int commandPrompt(const ClientParameters& params)
                               << instanceSocketPath << " in the admin mode." << std::endl;
                     connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
                 }
-                authenticate(params.m_identityKey, params.m_user, *connection);
+                authenticate(
+                        params.m_identityKey, params.m_user, *connection, serverConnectionInfo);
                 requestId = 1;
             }
 
@@ -363,18 +396,13 @@ int exportSqlDump(const ClientParameters& params)
     std::unique_ptr<siodb::crypto::TlsClient> tlsClient;
     if (params.m_instance.empty()) {
         auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
-
         if (params.m_encryption) {
             tlsClient = std::make_unique<siodb::crypto::TlsClient>();
-
             if (params.m_verifyCertificates) tlsClient->enableCertificateVerification();
-
             auto tlsConnection = tlsClient->connectToServer(connectionFd);
-
             auto x509Certificate = SSL_get_peer_certificate(tlsConnection->getSsl());
             if (x509Certificate == nullptr)
                 throw siodb::crypto::OpenSslError("SSL_get_peer_certificate failed");
-
             connection = std::move(tlsConnection);
         } else
             connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
@@ -385,7 +413,9 @@ int exportSqlDump(const ClientParameters& params)
         connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
     }
 
-    siodb::sql_client::authenticate(params.m_identityKey, params.m_user, *connection);
+    ServerConnectionInfo serverConnectionInfo;
+    siodb::sql_client::authenticate(
+            params.m_identityKey, params.m_user, *connection, serverConnectionInfo);
 
     std::ostream* out = &std::cout;
     std::unique_ptr<std::ofstream> ofs;
@@ -405,7 +435,10 @@ int exportSqlDump(const ClientParameters& params)
         ::gmtime_r(&currentTime, &utcTime);
         *out << "-- Siodb SQL Dump\n"
              << "-- Hostname: " << params.m_host << '\n'
-             << "-- Instance: " << params.m_instance << '\n'
+             << "-- Instance: "
+             << (serverConnectionInfo.m_instanceName.empty() ? serverConnectionInfo.m_instanceName
+                                                             : params.m_instance)
+             << '\n'
              << "-- Timestamp: " << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S") << '\n'
              << "-- Timestamp (UTC): " << std::put_time(&utcTime, "%Y-%m-%d %H:%M:%S") << '\n';
 
@@ -468,7 +501,8 @@ SingleWordCommandType decodeSingleWordCommand(const std::string& command) noexce
         return SingleWordCommandType::kExit;
     else if (command == "help")
         return SingleWordCommandType::kHelp;
-    return SingleWordCommandType::kUnknownCommand;
+    else
+        return SingleWordCommandType::kUnknownCommand;
 }
 
 }  // namespace siodb::sql_client

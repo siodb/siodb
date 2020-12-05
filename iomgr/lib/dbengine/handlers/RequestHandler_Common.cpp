@@ -10,12 +10,6 @@
 #include "../DatabaseError.h"
 #include "../Index.h"
 #include "../ThrowDatabaseError.h"
-#include "../parser/expr/BinaryOperator.h"
-#include "../parser/expr/ConstantExpression.h"
-#include "../parser/expr/InOperator.h"
-#include "../parser/expr/SingleColumnExpression.h"
-#include "../parser/expr/TernaryOperator.h"
-#include "../parser/expr/UnaryOperator.h"
 
 // Common project headers
 #include <siodb/common/crt_ext/ct_string.h>
@@ -24,6 +18,12 @@
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 #include <siodb/common/utils/Uuid.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/BinaryOperator.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/InOperator.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/SingleColumnExpression.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/TernaryOperator.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/UnaryOperator.h>
 
 // STL headers
 #include <functional>
@@ -75,6 +75,11 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
             case requests::DBEngineRequestType::kShowDatabases: {
                 executeShowDatabasesRequest(
                         response, dynamic_cast<const requests::ShowDatabasesRequest&>(request));
+                break;
+            }
+            case requests::DBEngineRequestType::kShowTables: {
+                executeShowTablesRequest(
+                        response, dynamic_cast<const requests::ShowTablesRequest&>(request));
                 break;
             }
             case requests::DBEngineRequestType::kInsert: {

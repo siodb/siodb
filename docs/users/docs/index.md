@@ -2,6 +2,7 @@
 
 ## Changelogs
 
+- [v0.9.0](https://github.com/siodb/siodb/releases/tag/v0.9.0)
 - [v0.8.0](https://github.com/siodb/siodb/releases/tag/v0.8.0)
 - [v0.7.1](https://github.com/siodb/siodb/releases/tag/v0.7.1)
 - [v0.7.0](https://github.com/siodb/siodb/releases/tag/v0.7.0)

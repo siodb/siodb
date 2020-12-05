@@ -32,6 +32,8 @@ void RequestHandler::executeGetDatabasesRestRequest(
     // Get databases
     const auto databaseNames = m_instance.getDatabaseNames(isSuperUser());
 
+    response.set_rest_status_code(kRestStatusOk);
+
     // Write response message
     {
         utils::DefaultErrorCodeChecker errorChecker;
@@ -67,6 +69,8 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     auto tableNames = database->getTableNames(isSuperUser());
     std::sort(tableNames.begin(), tableNames.end());
+
+    response.set_rest_status_code(kRestStatusOk);
 
     // Write response message
     {
@@ -111,6 +115,8 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     // Create data set
     TableDataSet dataSet(table);
     dataSet.fillColumnInfosFromTable();
+
+    response.set_rest_status_code(kRestStatusOk);
 
     // Write response message
     {
@@ -195,6 +201,8 @@ void RequestHandler::executeGetSingleRowRestRequest(
         }
         rowRelatedData->m_columns = table->getColumnsOrderedByPosition();
     }
+
+    response.set_rest_status_code(kRestStatusOk);
 
     // Write response message
     {

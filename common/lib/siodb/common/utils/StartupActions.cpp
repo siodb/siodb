@@ -16,9 +16,11 @@ void performCommonStartupActions()
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    // We must do it as first thing
+#ifdef SIODB_USES_BOOST_FILESYSTEM
+    // We must do this one as first thing
     // https://www.boost.org/doc/libs/1_64_0/libs/log/doc/html/log/rationale/why_crash_on_term.html
     fs::path::imbue(std::locale::classic());
+#endif
 }
 
 }  // namespace siodb::utils

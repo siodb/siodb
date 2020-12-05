@@ -16,7 +16,6 @@
 #include "MasterColumnRecordPtr.h"
 #include "TablePtr.h"
 #include "TransactionParameters.h"
-#include "parser/expr/Expression.h"
 #include "reg/ColumnDefinitionRegistry.h"
 #include "reg/ColumnRegistry.h"
 #include "reg/ColumnSetRegistry.h"
@@ -32,6 +31,7 @@
 #include <siodb/iomgr/shared/dbengine/SystemObjectNames.h>
 #include <siodb/iomgr/shared/dbengine/crypto/ciphers/Cipher.h>
 #include <siodb/iomgr/shared/dbengine/io/File.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 // STL headers
 #include <unordered_map>
@@ -242,6 +242,13 @@ public:
     std::vector<std::string> getTableNames(bool includeSystemTables = true) const;
 
     /**
+     * Returns list of table records ordered by name.
+     * @param includeSystemTables System tables inclusion flag.
+     * @return List of tables.
+     */
+    std::vector<TableRecord> getTableRecordsOrderedByName(bool includeSystemTables = true) const;
+
+    /**
      * Returns indication that user table can be created in this database.
      * @return true if user table can be created in this database, false otherwise.
      */
@@ -319,10 +326,11 @@ public:
      * @param system Indicates that we are looking for system constraint definiton.
      * @param type Constraint type.
      * @param serializedExpression Serialized expression.
+     * @param columnId Column identifier.
      * @return Constraint definition object.
      */
-    ConstraintDefinitionPtr findOrCreateConstraintDefinition(
-            bool system, ConstraintType type, const BinaryValue& serializedExpression);
+    ConstraintDefinitionPtr findOrCreateConstraintDefinition(bool system, ConstraintType type,
+            const BinaryValue& serializedExpression, std::uint64_t columnId = 0);
 
     /**
      * Returns constaint definition object if it exists.
@@ -663,6 +671,14 @@ public:
     TablePtr createUserTable(std::string&& name, TableType type,
             const std::vector<ColumnSpecification>& columnSpecs, std::uint32_t currentUserId,
             std::optional<std::string>&& description);
+
+    /**
+     * Deletes table from the database.
+     * @param name Table name.
+     * @param tableMustExist Table must exist, otherwise do not fail operation.
+     * @param currentUserId Current user.
+     */
+    void dropTable(const std::string& name, bool tableMustExist, std::uint32_t currentUserId);
 
     /**
      * Creates new file. File is created with encrypted I/O if available.

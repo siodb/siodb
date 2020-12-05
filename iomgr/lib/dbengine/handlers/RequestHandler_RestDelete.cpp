@@ -38,9 +38,14 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     }
 
     // Delete row
-    const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
-    const bool rowDeleted = table->deleteRow(request.m_trid, tp).first;
+    bool rowDeleted;
+    {
+        const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
+        const auto deleteResult = table->deleteRow(request.m_trid, tp);
+        rowDeleted = std::get<0>(deleteResult);
+    }
     if (rowDeleted) response.set_affected_row_count(1);
+    response.set_rest_status_code(kRestStatusOk);
 
     // Write response message
     {

@@ -84,7 +84,7 @@ public:
      * Returns indication that address is null value address.
      * @return true if address is null value address, false otherwise.
      */
-    bool isNullValueAddress() const noexcept
+    bool isNullValue() const noexcept
     {
         return m_address.isNullValueAddress();
     }

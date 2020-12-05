@@ -10,6 +10,8 @@
 namespace siodb::iomgr::dbengine {
 
 const Variant Variant::s_nullValue;
+const Variant Variant::s_falseValue(false);
+const Variant Variant::s_trueValue(true);
 const Variant Variant::s_emptyStringValue = std::string();
 
 Variant::Variant(const Variant& src)

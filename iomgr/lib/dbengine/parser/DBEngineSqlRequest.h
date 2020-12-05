@@ -6,7 +6,6 @@
 
 // Project headers
 #include "DBEngineRequest.h"
-#include "expr/Expression.h"
 #include "../UpdateDatabaseParameters.h"
 #include "../UpdateUserAccessKeyParameters.h"
 #include "../UpdateUserParameters.h"
@@ -16,6 +15,7 @@
 #include <siodb/common/proto/ColumnDataType.pb.h>
 #include <siodb/common/utils/Uuid.h>
 #include <siodb/iomgr/shared/dbengine/ConstraintType.h>
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 namespace siodb::iomgr::dbengine::requests {
 
@@ -429,7 +429,7 @@ struct DetachDatabaseRequest : public DBEngineRequest {
 
 /** CREATE DATABASE request */
 struct CreateDatabaseRequest : public DBEngineRequest {
-    /** 
+    /**
      * Initializes object of class CreateDatabaseRequest.
      * @param database Database name.
      * @param isTemporary Indicates that this is temporary database.
@@ -513,7 +513,7 @@ struct RenameDatabaseRequest : public DBEngineRequest {
 
 /** ALTER DATABASE SET attributes request */
 struct SetDatabaseAttributesRequest : public DBEngineRequest {
-    /** 
+    /**
      * Initializes object of class SetDatabaseAttributesRequest.
      * @param database Database name.
      * @param description New description.
@@ -552,7 +552,7 @@ struct UseDatabaseRequest : public DBEngineRequest {
 /** Base class for all constraints */
 struct Constraint {
 protected:
-    /** 
+    /**
      * Initialized object of class Constraint.
      * @param type Constraint type.
      * @param name Constraint name.
@@ -1160,7 +1160,7 @@ struct DropUserRequest : public DBEngineRequest {
 
 /** ALTER USER SET attributes request */
 struct SetUserAttributesRequest : public DBEngineRequest {
-    /** 
+    /**
      * Initializes object of class SetUserAttributesRequest.
      * @param userName User name.
      * @param realName New real name.
@@ -1190,7 +1190,7 @@ struct AddUserAccessKeyRequest : public DBEngineRequest {
      * Initializes object of class AddUserAccessKeyRequest.
      * @param userName User account name.
      * @param keyName Key name.
-     * @param text Key text. 
+     * @param text Key text.
      * @param active Indication that key is active.
      */
     AddUserAccessKeyRequest(std::string&& userName, std::string&& keyName, std::string&& text,
@@ -1313,7 +1313,7 @@ struct AddUserTokenRequest : public DBEngineRequest {
      * Initializes object of class AddUserTokenRequest.
      * @param userName User account name.
      * @param tokenName Token name.
-     * @param value Token value. 
+     * @param value Token value.
      * @param expirationTimestamp Token expiration timestamp.
      * @param description Token description.
      */
@@ -1464,6 +1464,15 @@ struct ShowDatabasesRequest : public DBEngineRequest {
     /** Initializes object of class ShowDatabasesRequest */
     ShowDatabasesRequest() noexcept
         : DBEngineRequest(DBEngineRequestType::kShowDatabases)
+    {
+    }
+};
+
+/** SHOW TABLES request */
+struct ShowTablesRequest : public DBEngineRequest {
+    /** Initializes object of class ShowTablesRequest */
+    ShowTablesRequest() noexcept
+        : DBEngineRequest(DBEngineRequestType::kShowTables)
     {
     }
 };

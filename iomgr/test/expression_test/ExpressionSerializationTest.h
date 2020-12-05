@@ -5,8 +5,8 @@
 
 #pragma once
 
-// Project headers
-#include "dbengine/parser/expr/Expression.h"
+// Common project headers
+#include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 void testExpressionSerialization(const siodb::iomgr::dbengine::requests::Expression& expr,
         const std::size_t expectedSerializedSize);
