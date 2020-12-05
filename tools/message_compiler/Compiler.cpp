@@ -326,7 +326,8 @@ bool writeSymbolListFile(const MessageContainer& messages, const CompilerOptions
     ofs << std::flush;
     ofs.close();
 
-    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName)
+           && adjustPermissions(options.m_outputFileName);
 }
 
 bool writeMessageListFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -352,7 +353,8 @@ bool writeMessageListFile(const MessageContainer& messages, const CompilerOption
     ofs << std::flush;
     ofs.close();
 
-    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName)
+           && adjustPermissions(options.m_outputFileName);
 }
 
 bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -396,7 +398,8 @@ bool writeHeaderFile(const MessageContainer& messages, const CompilerOptions& op
     ofs << std::flush;
     ofs.close();
 
-    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName)
+           && adjustPermissions(options.m_outputFileName);
 }
 
 bool writeTextFile(const MessageContainer& messages, const CompilerOptions& options)
@@ -426,7 +429,8 @@ bool writeTextFile(const MessageContainer& messages, const CompilerOptions& opti
     ofs << std::flush;
     ofs.close();
 
-    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName);
+    return renameFile(std::get<0>(tmpFileInfo), options.m_outputFileName)
+           && adjustPermissions(options.m_outputFileName);
 }
 
 bool renameFile(const std::string& src, const std::string& to)
@@ -443,7 +447,17 @@ bool renameFile(const std::string& src, const std::string& to)
         }
     }
 
-    std::cerr << "Can't rename temporary file " << src << " into " << to << ": " << ec.message()
+    std::cerr << "Can't rename temporary file '" << src << "' into '" << to << "': " << ec.message()
+              << std::endl;
+    return false;
+}
+
+bool adjustPermissions(const std::string& file)
+{
+    system_error_code ec;
+    fs::permissions(file, fs::add_perms | fs::group_read | fs::others_read, ec);
+    if (!ec) return true;
+    std::cerr << "Can't adjust permissions on the file '" << file << "': " << ec.message()
               << std::endl;
     return false;
 }
