@@ -21,7 +21,7 @@ while [[ ! -f "${ROOT_DIR}/.rootdir" ]]; do
   ROOT_DIR=$(realpath "${ROOT_DIR}/..")
 done
 instanceStartupTimeout=45
-previousTestStartedAtTimestamp=0
+previousCheckLogFileEndedAtTimestamp=0
 previousInstanceStartTimestamp=0
 doInstanceConfiguration=1
 defaultClientTimeoutSecond=30
@@ -251,7 +251,6 @@ function _ShowSiodbProcesses {
 
 function _StartSiodb {
   _log "INFO" "Starting Siodb instance '${SIODB_INSTANCE}'"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/siodb" --instance ${SIODB_INSTANCE} --daemon
   numberEntriesInLog=0
   counterTimeout=0
@@ -278,7 +277,6 @@ function _StartSiodb {
       _failExit
     fi
     counterTimeout=$((counterTimeout+1))
-    _CheckLogFiles
     sleep 1
   done
   previousInstanceStartTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
@@ -304,12 +302,10 @@ function _FinalStopOfSiodb {
     _StopSiodbAndWaitUntilStopped
   else
     _log "INFO" "Siodb process kept in running state"
-    previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   fi
 }
 
 function _StopSiodbAndWaitUntilStopped {
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   _log "INFO" "Stopping Siodb process on default instance"
   _ShowSiodbProcesses
   SIODB_PROCESS_ID=$(ps -ef | grep "siodb --instance ${SIODB_INSTANCE} --daemon" \
@@ -343,14 +339,14 @@ function _CheckLogFiles {
   _log "INFO" "Checking for errors in the log files"
   for logFile in $(ls "${SIODB_LOG_DIR}"); do
     LOG_ERROR=$(cat "${SIODB_LOG_DIR}/${logFile}" \
-    | awk -v previousTestStartedAtTimestamp=${previousTestStartedAtTimestamp} \
+    | awk -v previousCheckLogFileEndedAtTimestamp=${previousCheckLogFileEndedAtTimestamp} \
     '
       function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
       function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
       function trim(s)  { return rtrim(ltrim(s)); }
       {
         lineTimestamp = substr($1,1,4)substr($1,6,2)substr($1,9,2)substr($2,1,2)substr($2,4,2)substr($2,7,2)trim(substr($2,10,6))
-        if (lineTimestamp > previousTestStartedAtTimestamp && $3 == "error") {
+        if (lineTimestamp > previousCheckLogFileEndedAtTimestamp && $3 == "error") {
           print $0;
         }
       }
@@ -372,6 +368,7 @@ function _CheckLogFiles {
   done
 
   _log "INFO" "No error detected the in log files"
+  previousCheckLogFileEndedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
 }
 
 function _failExit {
@@ -387,11 +384,9 @@ function _RunSqlScript {
   # $2: Optional timeout
   if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL script $1"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
     -i "${ROOT_DIR}/tests/share/private_key" < $1
-  _CheckLogFiles
 }
 
 function _RunSqlThroughUserUnixSocket {
@@ -401,10 +396,8 @@ function _RunSqlThroughUserUnixSocket {
   # $4: Optional timeout
   if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --admin ${SIODB_INSTANCE} --nologo -u ${1} -i ${2} <<< ''"${3}"''
-  _CheckLogFiles
 }
 
 function _RunSqlThroughUserTCPSocket {
@@ -414,10 +407,8 @@ function _RunSqlThroughUserTCPSocket {
   # $4: Optional timeout
   if [[ ! -z "${4}" ]]; then TIMEOUT_SECOND="${4}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL (user: ${1}, pkey: ${2}): ${3}"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo -u ${1} -i ${2} <<< ''"${3}"''
-  _CheckLogFiles
 }
 
 function _RunSql {
@@ -425,11 +416,9 @@ function _RunSql {
   # $2: Optional timeout
   if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
   -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
-  _CheckLogFiles
 }
 
 function _RunSqlAndValidateOutput {
@@ -438,7 +427,6 @@ function _RunSqlAndValidateOutput {
   # $3: Optional timeout
   if [[ ! -z "${3}" ]]; then TIMEOUT_SECOND="${3}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
   _log "INFO" "Executing SQL: $1"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
     -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
@@ -453,66 +441,56 @@ function _RunSqlAndValidateOutput {
 
 function _RunRestRequest1 {
   _log "INFO" "Executing REST request: $1 $2"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -u $3 -T $4
 }
 
 function _RunRestRequest2 {
   _log "INFO" "Executing REST request: $1 $2 $3"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -u $4 -T $5
 }
 
 function _RunRestRequest3 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -u $5 -T $6
 }
 
 function _RunRestRequest4 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -P ''"$4"'' \
     -u $5 -T $6
 }
 
 function _RunRestRequest5 {
   _log "INFO" "Executing REST request: $1 $2 $3 @$4"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -f "$4" -u $5 -T $6
 }
 
 function _RunRestRequest6 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' \
     -u $6 -T $7
 }
 
 function _RunRestRequest6d {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' \
     -u $6 -T $7 --drop
 }
 
 function _RunRestRequest7 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 \
     -T $7
 }
 
 function _RunRestRequest7d {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 \
     -T $7 --drop
 }
 
 function _RunCurlGetDatabasesRequest {
   _log "INFO" "Executing CurlGetDatabasesRequest"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   auth=$(echo "$1:$2" | base64 -w0)
   _log "DEBUG" "auth=${auth}"
   curl -v -H "Authorization: Basic ${auth}" http://localhost:50080/databases
@@ -521,7 +499,6 @@ function _RunCurlGetDatabasesRequest {
 
 function _RunCurlGetTablesRequest {
   _log "INFO" "Executing CurlGetTablesRequest: $1"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   auth=$(echo "$2:$3" | base64 -w0)
   _log "DEBUG" "auth=${auth}"
   curl -v -H "Authorization: Basic ${auth}" http://localhost:50080/databases/$1/tables
@@ -530,7 +507,6 @@ function _RunCurlGetTablesRequest {
 
 function _TestExternalAbort {
   _log "INFO" "Testing an external abort $1"
-  previousTestStartedAtTimestamp="$(date=$(date +'%Y%m%d%H%M%S%N'); echo ${date:0:-3})"
   pkill -9 siodb
 }
 

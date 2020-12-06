@@ -260,7 +260,7 @@ _RunSql "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${
 _RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'FAKE'" 'Status 2: .* Invalid character in the hex literal'
 USERTOKEN=$(openssl rand -hex 64)
 _RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'" 'Status 2107: User token .* check failed'
-_CheckLogFiles 'User token .* check failed'
+_CheckLogFiles 'User token .* check failed|Invalid character in the hex literal'
 
 
 ## -------------------------------------------------------------------------

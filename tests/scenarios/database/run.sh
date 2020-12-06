@@ -56,7 +56,7 @@ for cipher_id in ${SUPPORTED_CIPHER_IDS}; do
                             where name = 'DB_${cipher_id^^}_WITH_CIPHER_ID_AND_KEY_SEED'" \
                             "^${cipher_id}$"
 done
-_CheckLogFiles
+_CheckLogFiles 'Temporary databases are not supported yet'
 
 
 # For each database, create a table with TEXT, BIGINT and TIMESTAMP
@@ -130,6 +130,9 @@ done
 # Drop database that no exists
 _RunSqlAndValidateOutput "alter database noexists set description = 'noexists'"  \
                          "^Status 6: Not implemented yet$"
+_RunSqlAndValidateOutput "drop database noexists"  \
+                         "^Status 2001: Database .* doesn't exist$"
+_CheckLogFiles '\[2103\]|\[2021\]|\[2001\]'
 
 ### Drop each database
 for cipher_id in ${SUPPORTED_CIPHER_IDS}; do
@@ -142,9 +145,6 @@ for cipher_id in ${SUPPORTED_CIPHER_IDS}; do
 done
 _CheckLogFiles
 
-# Drop database that no exists
-_RunSqlAndValidateOutput "drop database noexists"  \
-                         "^Status 2001: Database .* doesn't exist$"
 
 ## =============================================
 ## TEST FOOTER
