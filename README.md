@@ -10,7 +10,7 @@
 
 Your support is welcomed. One-click on the star 🟊 on the top right corner of this page ☝☝ is a lot for us!
 
-## Get started for free with Siodb as an API in your serverless DataHub
+## Get started for free with Siodb as an API in your serverless platform
 
 <a href="https://datahub.siodb.io/" target="_blank">
 <img src="https://datahub.siodb.io/static/siodb_data_hub_open_graph_x1200.jpg" width="200" />
