@@ -1,5 +1,3 @@
-#!/bin/bash
-
 gcc_path=$(which gcc)
 if [[ "${gcc_path}" == "/opt/rh/devtoolset-8/root/usr/bin/gcc" ]]; then
     export RHEL_DTS8_CFLAGS=-mcet
