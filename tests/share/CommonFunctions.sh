@@ -139,8 +139,10 @@ function _testfails {
 }
 
 function _killSiodb {
-  if [[ `pkill -c siodb` -gt 0 ]]; then
-    pkill -9 siodb
+  if [[ $(ps -eo pid,cmd | egrep "\-\-instance ${SIODB_INSTANCE}$" | wc -l) -gt 0 ]]; then
+    for siodb_process in $(ps -eo pid,cmd | egrep "\-\-instance ${SIODB_INSTANCE}$" | awk '{print $1}'); do
+      kill -9 ${siodb_process}
+    done
   fi
 }
 

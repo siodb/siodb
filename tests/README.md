@@ -6,16 +6,25 @@ You must run those tests successfully in your environment before creating a pull
 
 You may modify the test behavior with the following environment variables:
 
-- `SIODB_PATH` (default `build/debug/bin`): The directory of the Siodb executables you want to test.
+- `SIODB_BIN` (default `debug`): Run the test against `debug` or `release` build.
 - `SIODB_INSTANCE` (default `siodb`): The local instance name you want to test.
 - `SIOTEST_KEEP_INSTANCE_UP` (default `0`): `1` will keep the instance up and skip the cleaning.
 - `SIOTEST_TRACE` (default `0`): `1` will enable bash traces (`set -x`).
 
-## Execute test
+## Execute all tests
 
 ```bash
 cd siodb
-./tests/sql/run.sh
+export SIODB_BIN=debug
+./tests/run.sh
+```
+
+## Execute one scenario
+
+```bash
+cd siodb
+export SIODB_BIN=debug
+./tests/scenarios/sql/run.sh
 ```
 
 ## Troubleshooting
