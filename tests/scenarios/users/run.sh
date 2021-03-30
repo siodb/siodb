@@ -168,39 +168,39 @@ _CheckLogFiles
 
 #### Add Token to all users
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} add token user_token_1_${i}"
+  _RunSql "alter user user_test_1_${i} add token user_token_1_${i}"
 done
 #### Add Token with value to all users
 USERTOKEN=$(openssl rand -hex 64)
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} add token user_token_2_${i} x'${USERTOKEN}'"
+  _RunSql "alter user user_test_1_${i} add token user_token_2_${i} x'${USERTOKEN}'"
 done
 #### Add Token with attribute to all users
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} add token user_token_3_${i}
-         with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23' "
+  _RunSql "alter user user_test_1_${i} add token user_token_3_${i}
+          with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23' "
 done
 #### Add Token with attribute to all users
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} add token user_token_4_${i}
-         with DESCRIPTION = 'user token 4 ${i}' "
+  _RunSql "alter user user_test_1_${i} add token user_token_4_${i}
+          with DESCRIPTION = 'user token 4 ${i}' "
 done
 #### Add Token with value and token attribute to all users
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} add token user_token_5_${i}
-         with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 5 ${i}' "
+  _RunSql "alter user user_test_1_${i} add token user_token_5_${i}
+          with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 5 ${i}' "
 done
 #### Add Token with value and token attribute to all users
 USERTOKEN=$(openssl rand -hex 64)
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} add token user_token_6_${i} x'${USERTOKEN}'
-         with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 6 ${i}' "
+  _RunSql "alter user user_test_1_${i} add token user_token_6_${i} x'${USERTOKEN}'
+          with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 6 ${i}' "
 done
 #### Add many Tokens to user ${siodbUserTridStartingAt}
 for ((i = ${numberOfTokensToTest}; i < $((${numberOfTokensToTest}+1)); ++i)); do
-USERTOKEN=$(openssl rand -hex 64)
-_RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_7_${i} x'${USERTOKEN}'
-         with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 7 ${i}' "
+  USERTOKEN=$(openssl rand -hex 64)
+  _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_7_${i} x'${USERTOKEN}'
+          with EXPIRATION_TIMESTAMP = '2035-02-23 12:34:23', DESCRIPTION = 'user token 7 ${i}' "
 done
 
 
@@ -209,25 +209,23 @@ done
 ## -------------------------------------------------------------------------
 #### Alter all tokens SET
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
-         set DESCRIPTION = 'user token 1 altered 1 ${i}'"
+  _RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
+          set DESCRIPTION = 'user token 1 altered 1 ${i}'"
 done
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
-         set EXPIRATION_TIMESTAMP = '2045-02-23 12:34:23' "
+  _RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
+          set EXPIRATION_TIMESTAMP = '2045-02-23 12:34:23' "
 done
 for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${numberOfUsersToTest}+1)); ++i)); do
-_RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
-         set DESCRIPTION = 'user token 1 altered 2 ${i}', EXPIRATION_TIMESTAMP = '2055-02-23 12:34:23'"
+  _RunSql "alter user user_test_1_${i} alter token user_token_1_${i}
+          set DESCRIPTION = 'user token 1 altered 2 ${i}', EXPIRATION_TIMESTAMP = '2055-02-23 12:34:23'"
 done
 
 #### Expected error with Token
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
                           rename to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
-_CheckLogFiles
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
                           rename if exists to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
-_CheckLogFiles
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} drop token IF EXISTS NOEXISTS"
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1"
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1" 'Status 2029: User token'
@@ -262,7 +260,7 @@ _RunSql "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${
 _RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'FAKE'" 'Status 2: .* Invalid character in the hex literal'
 USERTOKEN=$(openssl rand -hex 64)
 _RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'" 'Status 2107: User token .* check failed'
-_CheckLogFiles 'User token .* check failed'
+_CheckLogFiles 'User token .* check failed|Invalid character in the hex literal'
 
 
 ## -------------------------------------------------------------------------

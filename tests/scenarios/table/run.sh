@@ -14,8 +14,7 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## Specific test functions
 
 ## Specific test parameters
-## TODO: change to 100 once gh-113
-nbOfTableToCreate=1
+nbOfTableToCreate=10
 nbOfNextTRIDToTest=1000
 
 ## =============================================
@@ -47,14 +46,17 @@ _RunSqlAndValidateOutput "alter table db1.tablealldatatypes alter column col100 
 "^Status 6: Not implemented yet$"
 _RunSqlAndValidateOutput "alter table db1.tablealldatatypes drop column col200" \
 "^Status 6: Not implemented yet$"
+_CheckLogFiles
 
 # Attribute test
 for ((i = 99999999; i < $((${nbOfNextTRIDToTest}*99999999)); i=i+99999999)); do
   _RunSql "alter table db1.tablealldatatypes set next_trid = ${i}"
 done
+_CheckLogFiles
 
 _RunSqlAndValidateOutput "create table db1.tablealldatatypes ( col text )" \
 "Status .*: Table .* already exists"
+_CheckLogFiles '\[2022\]'
 
 # Uncomment when gh-26 ready
 # _RunSql "create table db1.tableasselect as select * from sys_databases"
@@ -64,13 +66,14 @@ _RunSql "drop table db1.tablealldatatypes"
 _RestartSiodb
 _CheckLogFiles
 
-# check if (not) exists (uncomment when gh-116 is fixed)
-# _RunSql "create table if not exists db1.tablealldatatypes ( col text )"
-# _RunSql "drop table db1.tablealldatatypes"
+# check if (not) exists
+_RunSql "create table if not exists db1.tablealldatatypes ( col text )"
+_RunSql "drop table db1.tablealldatatypes"
 _RunSql "drop table if exists db1.tablealldatatypes"
 
 _RunSqlAndValidateOutput "drop table db1.tablealldatatypes" \
 "Status .*: Table .* doesn't exist"
+_CheckLogFiles '\[2002\]'
 
 _RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
 _RestartSiodb
@@ -81,7 +84,7 @@ for ((i = 0; i < ${nbOfTableToCreate}; ++i)); do
   _RunSql "create table db1.table${i} ( free_text text )"
   _RunSql "insert into db1.table${i} values ( 'free text fro db1.table${i}' )"
   _RunSqlAndValidateOutput "use database db1; show tables;" \
-  "*.TABLE${i}*."
+  "^TABLE${i}*."
 done
 _RestartSiodb
 _CheckLogFiles

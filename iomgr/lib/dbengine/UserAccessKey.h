@@ -25,7 +25,7 @@ public:
 
     /** Super user initial access key description */
     static constexpr const char* kSuperUserInitialAccessKeyDescription =
-            "Initial access key of the seper user";
+            "Initial access key of the super user";
 
 public:
     /**
