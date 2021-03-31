@@ -239,7 +239,6 @@ int commandPrompt(const ClientParameters& params)
     const bool singleCommand = static_cast<bool>(params.m_command);
     ServerConnectionInfo serverConnectionInfo;
 
-    if (params.m_stdinIsTerminal) std::cout << '\n';
     do {
         std::string commandHolder;
         std::string* command = &commandHolder;
@@ -256,7 +255,12 @@ int commandPrompt(const ClientParameters& params)
                 // Multiline command-text must end with a semicolon.
                 std::size_t lineNo = 0;
                 const char* prompt = kFirstLinePrompt;
+                std::size_t inStringValue = 0;
                 do {
+                    if (params.m_stdinIsTerminal && lineNo == 0) std::cout << '\n';
+                    if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
+
+                    std::cout << "===============> 1.1\n";
                     std::string line;
                     if (params.m_stdinIsTerminal && params.m_useReadline) {
                         std::unique_ptr<char, stdext::free_deleter<char>> rltext;
@@ -265,46 +269,82 @@ int commandPrompt(const ClientParameters& params)
                         add_history(rltext.get());
                         line = rltext.get();
                     } else {
-                        if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
                         if (!std::getline(std::cin, line)) {
                             hasMoreInput = false;
                             break;
                         }
                     }
 
-                    boost::trim(line);
-                    if (line.empty()) {
-                        if (params.m_stdinIsTerminal && !params.m_useReadline)
-                            std::cout << prompt << std::flush;
+                    std::cout << "===============> 1.2\n";
+                    if (!inStringValue) {
+                        boost::trim(line);
+                        std::cout << "===============> 1.3\n";
+                        if (line.empty()) {
+                            continue;
+                        }
+                    }
+
+                    std::cout << "===============> 1.4\n";
+                    std::size_t isEscaped = 0;
+                    for (char c : line) {
+                        // std::cout << "char: " << c << " (isEscaped:" << isEscaped << ") "
+                        //   << " (inStringValue:" << inStringValue << ") ";
+                        if (c == '\'' && !isEscaped) {
+                            if (!inStringValue) {
+                                inStringValue = 1;
+                            } else {
+                                inStringValue = 0;
+                            }
+                        }
+                        if (c == '\\') {
+                            isEscaped = 1;
+                        } else {
+                            isEscaped = 0;
+                        }
+                    }
+
+                    std::cout << "===============> 1.5\n";
+                    // Do not send comments to siodb except if part of a string
+                    if (boost::starts_with(line, kCommentStart) && lineNo > 0) {
+                        if (params.m_stdinIsTerminal) prompt = kSubsequentLinePrompt;
+                        if (!inStringValue) {
+                            continue;
+                        }
+                    }
+                    if (boost::starts_with(line, kCommentStart) && lineNo == 0) {
+                        if (params.m_stdinIsTerminal) prompt = kFirstLinePrompt;
                         continue;
                     }
 
-                    // Do not send comments to siodb
-                    if (boost::starts_with(line, kCommentStart)) {
-                        if (params.m_stdinIsTerminal)
-                            prompt = textLength ? kFirstLinePrompt : kSubsequentLinePrompt;
-                        continue;
-                    }
-
+                    std::cout << "===============> 1.6\n";
+                    std::cout << "value>" << line << "<value\n";
                     if (line.back() != ';' && params.m_stdinIsTerminal)
                         prompt = kSubsequentLinePrompt;
 
+                    std::cout << "===============> 1.7\n";
                     if (textLength > 0) {
                         text << '\n';
                         ++textLength;
                     }
+                    std::cout << "===============> 1.8\n";
 
                     text << line;
                     textLength += line.length();
-                    if (!line.empty()) textLastChar = line.back();
+                    textLastChar = line.back();
 
+                    std::cout << "===============> 1\n";
                     ++lineNo;
                     if (lineNo == 1) {
+                        std::cout << "===============> 2\n";
                         auto command1 = boost::to_lower_copy(line);
+                        std::cout << "===============> 3\n";
                         // Remove whitespace before ';' and ';' itself
                         boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
+                        std::cout << "===============> 4\n";
                         singleWordCommand = decodeSingleWordCommand(command1);
+                        std::cout << "===============> 5\n";
                     }
+                    std::cout << "===============> 6\n";
                 } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
                          && (textLength == 0 || textLastChar != ';'));
                 commandHolder = text.str();
@@ -371,6 +411,7 @@ int commandPrompt(const ClientParameters& params)
                 executeCommandOnServer(requestId++, std::move(*command), *connection, std::cout,
                         params.m_exitOnError, params.m_printDebugMessages);
             }
+
         } catch (std::exception& ex) {
             std::cerr << "Error: " << ex.what() << '.' << std::endl;
             if (connection && connection->isValid()) {
