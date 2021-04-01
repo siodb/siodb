@@ -71,6 +71,7 @@ namespace {
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
 constexpr const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
 constexpr const char* kSubsequentLinePrompt = "\033[1m      > \033[0m";
+constexpr const char kSQLDelimiter = ';';
 constexpr const char* kCommentStart = "--";
 constexpr const char* kVariablePrefix = "var:";
 constexpr auto kVariablePrefixLen = ::ct_strlen(kVariablePrefix);
@@ -248,7 +249,6 @@ int commandPrompt(const ClientParameters& params)
                 command = params.m_command.get();
             } else {
                 std::ostringstream text;
-                std::size_t textLength = 0;
                 char textLastChar = '\0';
 
                 // Read command text, possibly multiline.
@@ -259,9 +259,14 @@ int commandPrompt(const ClientParameters& params)
                 std::size_t lineEndsInStringValue = 0;
                 std::size_t isInStringValue = 0;
                 do {
+                    // Prompt style
                     if (params.m_stdinIsTerminal && lineNo == 0) std::cout << '\n';
+                    if (lineNo > 0) {
+                        if (params.m_stdinIsTerminal) prompt = kSubsequentLinePrompt;
+                    }
                     if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
 
+                    // Read line
                     std::string line;
                     if (params.m_stdinIsTerminal && params.m_useReadline) {
                         std::unique_ptr<char, stdext::free_deleter<char>> rltext;
@@ -299,20 +304,22 @@ int commandPrompt(const ClientParameters& params)
                                   << " | lineEndsInStringValue:" << lineEndsInStringValue << "\n";
                     }
 
+                    // Empty line considered as '\n'
+                    if (line.empty()) {
+                        if (lineNo == 0) {
+                            break;
+                        }
+                    }
+
                     // Trim line when not in string value
                     if (!lineStartsInStringValue) {
                         boost::trim_left(line);
                     }
                     if (!lineEndsInStringValue) {
                         boost::trim_right(line);
-                    }
-
-                    // Empty line considered as '\n'
-                    if (line.empty()) {
-                        if (lineNo == 0) {
-                            break;
+                        if (!line.empty()) {
+                            textLastChar = line.back();
                         }
-                        line = '\n';
                     }
 
                     // Never send first line comment to the iomgr
@@ -322,34 +329,20 @@ int commandPrompt(const ClientParameters& params)
                         break;
                     }
 
-                    if (lineEndsInStringValue && !line.empty()) {
-                        textLastChar = line.back();
-                    }
-                    if (!lineEndsInStringValue) {
-                        textLastChar = line.back();
-                    }
-
-                    if (textLength > 0) {
+                    if (lineNo > 0) {
                         text << '\n';
-                        ++textLength;
                     }
                     text << line;
-                    textLength += line.length();
                     ++lineNo;
-
-                    // Prompt style for next line
-                    if (lineNo > 0) {
-                        if (params.m_stdinIsTerminal) prompt = kSubsequentLinePrompt;
-                    }
 
                     if (lineNo == 1) {
                         auto command1 = boost::to_lower_copy(line);
-                        // Remove whitespace before ';' and ';' itself
+                        // Remove whitespace before kSQLDelimiter and kSQLDelimiter itself
                         boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
                         singleWordCommand = decodeSingleWordCommand(command1);
                     }
                 } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
-                         && (textLength == 0 || textLastChar != ';'));
+                         && textLastChar != kSQLDelimiter);
                 commandHolder = text.str();
             }  // read command
 
@@ -360,15 +353,20 @@ int commandPrompt(const ClientParameters& params)
             // Handle single-word commands
             switch (singleWordCommand) {
                 case SingleWordCommandType::kExit: {
-                    std::cout << "Bye" << std::endl;
+                    std::cout << '\n' << "Bye" << '\n' << std::endl;
                     return 0;
                 }
                 case SingleWordCommandType::kHelp: {
-                    std::cout << "Type SQL query with ';' symbol in the end. This query will be "
-                                 "sent to the Siodb server.\n"
-                                 "Example: SELECT * FROM <table_name>;\n"
-                                 "Type exit to stop siocli.\n"
-                              << std::flush;
+                    std::cout
+                            << "\n"
+                            << "Type SQL statements separated by '" << kSQLDelimiter
+                            << "'.\n"
+                               "    Example 1: select * from sys_dummy;\n"
+                               "    Example 2: select * from sys_dummy; select * from sys_dummy;\n"
+                            << "\n"
+                               "exit|quit: quits siocli."
+                            << "\n"
+                            << std::flush;
                     continue;
                 }
                 case SingleWordCommandType::kUnknownCommand: break;
