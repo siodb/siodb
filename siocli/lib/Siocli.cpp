@@ -255,12 +255,13 @@ int commandPrompt(const ClientParameters& params)
                 // Multiline command-text must end with a semicolon.
                 std::size_t lineNo = 0;
                 const char* prompt = kFirstLinePrompt;
-                std::size_t inStringValue = 0;
+                std::size_t lineStartsInStringValue = 0;
+                std::size_t lineEndsInStringValue = 0;
+                std::size_t isInStringValue = 0;
                 do {
                     if (params.m_stdinIsTerminal && lineNo == 0) std::cout << '\n';
                     if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
 
-                    std::cout << "===============> 1.1\n";
                     std::string line;
                     if (params.m_stdinIsTerminal && params.m_useReadline) {
                         std::unique_ptr<char, stdext::free_deleter<char>> rltext;
@@ -275,25 +276,15 @@ int commandPrompt(const ClientParameters& params)
                         }
                     }
 
-                    std::cout << "===============> 1.2\n";
-                    if (!inStringValue) {
-                        boost::trim(line);
-                        std::cout << "===============> 1.3\n";
-                        if (line.empty()) {
-                            continue;
-                        }
-                    }
-
-                    std::cout << "===============> 1.4\n";
+                    // Derive line state for string value
+                    lineStartsInStringValue = lineEndsInStringValue;
                     std::size_t isEscaped = 0;
                     for (char c : line) {
-                        // std::cout << "char: " << c << " (isEscaped:" << isEscaped << ") "
-                        //   << " (inStringValue:" << inStringValue << ") ";
                         if (c == '\'' && !isEscaped) {
-                            if (!inStringValue) {
-                                inStringValue = 1;
+                            if (!isInStringValue) {
+                                isInStringValue = 1;
                             } else {
-                                inStringValue = 0;
+                                isInStringValue = 0;
                             }
                         }
                         if (c == '\\') {
@@ -301,50 +292,62 @@ int commandPrompt(const ClientParameters& params)
                         } else {
                             isEscaped = 0;
                         }
+                        lineEndsInStringValue = isInStringValue;
+                        std::cout << "char: " << c << " | isEscaped:" << isEscaped
+                                  << " | isInStringValue:" << isInStringValue
+                                  << " | lineStartsInStringValue:" << lineStartsInStringValue
+                                  << " | lineEndsInStringValue:" << lineEndsInStringValue << "\n";
                     }
 
-                    std::cout << "===============> 1.5\n";
-                    // Do not send comments to siodb except if part of a string
-                    if (boost::starts_with(line, kCommentStart) && lineNo > 0) {
-                        if (params.m_stdinIsTerminal) prompt = kSubsequentLinePrompt;
-                        if (!inStringValue) {
-                            continue;
+                    // Trim line when not in string value
+                    if (!lineStartsInStringValue) {
+                        boost::trim_left(line);
+                    }
+                    if (!lineEndsInStringValue) {
+                        boost::trim_right(line);
+                    }
+
+                    // Empty line considered as '\n'
+                    if (line.empty()) {
+                        if (lineNo == 0) {
+                            break;
                         }
+                        line = '\n';
                     }
+
+                    // Never send first line comment to the iomgr
+                    std::cout << "lineNo: " << lineNo << "value_for_iomgr_begin>" << line
+                              << "<value_for_iomgr_end\n";
                     if (boost::starts_with(line, kCommentStart) && lineNo == 0) {
-                        if (params.m_stdinIsTerminal) prompt = kFirstLinePrompt;
-                        continue;
+                        break;
                     }
 
-                    std::cout << "===============> 1.6\n";
-                    std::cout << "value>" << line << "<value\n";
-                    if (line.back() != ';' && params.m_stdinIsTerminal)
-                        prompt = kSubsequentLinePrompt;
+                    if (lineEndsInStringValue && !line.empty()) {
+                        textLastChar = line.back();
+                    }
+                    if (!lineEndsInStringValue) {
+                        textLastChar = line.back();
+                    }
 
-                    std::cout << "===============> 1.7\n";
                     if (textLength > 0) {
                         text << '\n';
                         ++textLength;
                     }
-                    std::cout << "===============> 1.8\n";
-
                     text << line;
                     textLength += line.length();
-                    textLastChar = line.back();
-
-                    std::cout << "===============> 1\n";
                     ++lineNo;
+
+                    // Prompt style for next line
+                    if (lineNo > 0) {
+                        if (params.m_stdinIsTerminal) prompt = kSubsequentLinePrompt;
+                    }
+
                     if (lineNo == 1) {
-                        std::cout << "===============> 2\n";
                         auto command1 = boost::to_lower_copy(line);
-                        std::cout << "===============> 3\n";
                         // Remove whitespace before ';' and ';' itself
                         boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
-                        std::cout << "===============> 4\n";
                         singleWordCommand = decodeSingleWordCommand(command1);
-                        std::cout << "===============> 5\n";
                     }
-                    std::cout << "===============> 6\n";
                 } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
                          && (textLength == 0 || textLastChar != ';'));
                 commandHolder = text.str();
