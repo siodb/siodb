@@ -264,7 +264,6 @@ int commandPrompt(const ClientParameters& params)
                     if (lineNo > 0) {
                         if (params.m_stdinIsTerminal) prompt = kSubsequentLinePrompt;
                     }
-                    if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
 
                     // Read line
                     std::string line;
@@ -272,16 +271,19 @@ int commandPrompt(const ClientParameters& params)
                         std::unique_ptr<char, stdext::free_deleter<char>> rltext;
                         while (!rltext)
                             rltext.reset(::readline(prompt));
-                        add_history(rltext.get());
                         line = rltext.get();
+                        if (!line.empty()) {
+                            add_history(rltext.get());
+                        }
                     } else {
+                        if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
                         if (!std::getline(std::cin, line)) {
                             hasMoreInput = false;
                             break;
                         }
                     }
 
-                    // Derive line state for string value
+                    // Detect string value state
                     lineStartsInStringValue = lineEndsInStringValue;
                     std::size_t isEscaped = 0;
                     for (char c : line) {
@@ -298,10 +300,13 @@ int commandPrompt(const ClientParameters& params)
                             isEscaped = 0;
                         }
                         lineEndsInStringValue = isInStringValue;
-                        std::cout << "char: " << c << " | isEscaped:" << isEscaped
-                                  << " | isInStringValue:" << isInStringValue
-                                  << " | lineStartsInStringValue:" << lineStartsInStringValue
-                                  << " | lineEndsInStringValue:" << lineEndsInStringValue << "\n";
+                        if (params.m_printDebugMessages) {
+                            std::cout << "debug: char: " << c << " | isEscaped:" << isEscaped
+                                      << " | isInStringValue:" << isInStringValue
+                                      << " | lineStartsInStringValue:" << lineStartsInStringValue
+                                      << " | lineEndsInStringValue:" << lineEndsInStringValue
+                                      << "\n";
+                        }
                     }
 
                     // Empty line considered as '\n'
@@ -323,8 +328,10 @@ int commandPrompt(const ClientParameters& params)
                     }
 
                     // Never send first line comment to the iomgr
-                    std::cout << "lineNo: " << lineNo << "value_for_iomgr_begin>" << line
-                              << "<value_for_iomgr_end\n";
+                    if (params.m_printDebugMessages) {
+                        std::cout << "debug: lineNo: " << lineNo << "value_for_iomgr_begin>" << line
+                                  << "<value_for_iomgr_end\n";
+                    }
                     if (boost::starts_with(line, kCommentStart) && lineNo == 0) {
                         break;
                     }
@@ -353,14 +360,14 @@ int commandPrompt(const ClientParameters& params)
             // Handle single-word commands
             switch (singleWordCommand) {
                 case SingleWordCommandType::kExit: {
-                    std::cout << '\n' << "Bye" << '\n' << std::endl;
+                    std::cout << '\n' << "Bye." << '\n' << std::endl;
                     return 0;
                 }
                 case SingleWordCommandType::kHelp: {
                     std::cout
                             << "\n"
-                            << "Type SQL statements separated by '" << kSQLDelimiter
-                            << "'.\n"
+                            << "Type SQL statements separated by '" << kSQLDelimiter << "':\n"
+                            << "\n"
                                "    Example 1: select * from sys_dummy;\n"
                                "    Example 2: select * from sys_dummy; select * from sys_dummy;\n"
                             << "\n"

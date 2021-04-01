@@ -91,7 +91,7 @@ NAME
                  SYS
 
 1 rows.
-Command execution time: 45 ms.
+Elapsed time: 45 ms.
 ```
 
 If you don't provide the username and the identity file, `siocli` will use your current
@@ -109,5 +109,5 @@ NAME
                  SYS
 
 1 rows.
-Command execution time: 44 ms.
+Elapsed time: 44 ms.
 ```

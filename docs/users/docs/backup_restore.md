@@ -182,26 +182,26 @@ siocli --nologo --user root < /tmp/dump_SQL_db_TEST_DB4.sql
 CREATE DATABASE TEST_DB4 WITH CIPHER_ID = 'aes128';
 
 Connected to localhost:50000
-Command execution time: 7892 ms.
+Elapsed time: 7892 ms.
 
 CREATE TABLE TEST_DB4.EMPLOYEES (FIRSTNAME TEXT, LASTNAME TEXT, SALARY FLOAT, HIRE_DATE TIMESTAMP);
 
-Command execution time: 717 ms.
+Elapsed time: 717 ms.
 
 INSERT INTO TEST_DB4.EMPLOYEES VALUES ('马', '云', 249000.000000, '1964-09-10');
 
 1 rows affected
-Command execution time: 4169 ms.
+Elapsed time: 4169 ms.
 
 INSERT INTO TEST_DB4.EMPLOYEES VALUES ('Юрий', 'Гагарин', 49000.000000, '1934-03-09');
 
 1 rows affected
-Command execution time: 31 ms.
+Elapsed time: 31 ms.
 
 INSERT INTO TEST_DB4.EMPLOYEES VALUES ('Barack', 'Obama', 149000.000000, '1961-08-04');
 
 1 rows affected
-Command execution time: 34 ms.
+Elapsed time: 34 ms.
 ```
 
 ### Restore from physical backup
