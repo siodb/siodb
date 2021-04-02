@@ -76,6 +76,25 @@ _RunSqlAndValidateOutput "       -- QUERY 4
 sys_databases
   /* commment */ where trid = 1;    " "^[\]n--[\]n--[\]n$"
 
+
+line_of_spaces='   '
+_RunSqlAndValidateOutput "${line_of_spaces}
+       -- QUERY 5
+${line_of_spaces}
+       select     '
+${line_of_spaces}
+--
+${line_of_spaces}
+--
+${line_of_spaces}
+' from
+${line_of_spaces}
+  --
+${line_of_spaces}
+sys_databases
+${line_of_spaces}
+  /* commment */ where trid = 1;    " "^[\]n   [\]n--[\]n   [\]n--[\]n   [\]n$"
+
 ## =============================================
 ## TEST FOOTER
 ## =============================================
