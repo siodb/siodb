@@ -417,7 +417,7 @@ function _RunSql {
   # $1: SQL to run
   # $2: Optional timeout
   if [[ ! -z "${2}" ]]; then TIMEOUT_SECOND="${2}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
-  _log "INFO" "Executing SQL: $1"
+  _log "INFO" "Executing SQL: >$1<"
   timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} "${SIODB_BIN}/siocli" ${SIOCLI_DEBUG} \
   --nologo --admin ${SIODB_INSTANCE} -u root \
   -i "${ROOT_DIR}/tests/share/private_key" <<< ''"$1"''
@@ -428,7 +428,7 @@ function _RunSqlAndValidateOutput {
   # $2: The expected output
   # $3: Optional timeout
   if [[ ! -z "${3}" ]]; then TIMEOUT_SECOND="${3}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
-  _log "INFO" "Executing SQL: $1"
+  _log "INFO" "Executing SQL: >$1<"
   SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
     -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
