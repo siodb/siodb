@@ -9,8 +9,7 @@ include ../../../../../mk/Prolog.mk
 
 TARGET_COMMON_LIB:=siodb_common_proto
 
-PROTO_GO_PACKAGE:=siodbproto
-TARGET_PROTO_GO_PACKAGE:=siodb_common_proto
+TARGET_PROTO_GO_MODULE:=siodb.io/siodb/siodbproto
 
 PROTO_SRC:= \
 	ClientProtocol.proto  \

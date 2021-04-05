@@ -197,6 +197,8 @@ void ProcessMonitor::threadMain()
                         std::lock_guard lock(m_monitorMutex);
                         m_running = false;
                     }
+                    LOG_INFO << kLogPrefix << "Given up on restarting monitored process "
+                             << m_processName << ". Raising SIGINT.";
                     ::raise(SIGINT);
                 }
             }

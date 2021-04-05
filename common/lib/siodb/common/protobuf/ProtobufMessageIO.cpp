@@ -111,19 +111,24 @@ void writeMessage(ProtocolMessageType messageType, const google::protobuf::Messa
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
         StreamOutputStream& output)
 {
-    google::protobuf::io::CodedOutputStream codedOutput(&output);
+    {
+        google::protobuf::io::CodedOutputStream codedOutput(&output);
 
-    // Write message type
-    codedOutput.WriteVarint32(static_cast<std::uint32_t>(messageType));
-    output.CheckNoError();
+        // Write message type
+        codedOutput.WriteVarint32(static_cast<std::uint32_t>(messageType));
+        output.CheckNoError();
 
-    // Write message size
-    const auto messageSize = message.ByteSizeLong();
-    codedOutput.WriteVarint32(static_cast<int>(messageSize));
-    output.CheckNoError();
+        // Write message size
+        const auto messageSize = message.ByteSizeLong();
+        codedOutput.WriteVarint32(static_cast<int>(messageSize));
+        output.CheckNoError();
 
-    // Write message itself
-    message.SerializeToCodedStream(&codedOutput);
+        // Write message itself
+        message.SerializeToCodedStream(&codedOutput);
+        output.CheckNoError();
+    }
+
+    output.Flush();
     output.CheckNoError();
 }
 

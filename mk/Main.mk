@@ -18,7 +18,7 @@ PROTO_CXX_HDR_N:=$(PROTO_SRC:.proto=.pb.h)
 PROTO_CXX_SRC:=$(addprefix $(THIS_GENERATED_FILES_DIR)/, $(PROTO_CXX_SRC_N))
 PROTO_CXX_HDR:=$(addprefix $(THIS_GENERATED_FILES_DIR)/, $(PROTO_CXX_HDR_N))
 PROTO_GO_SRC_N:=$(PROTO_SRC:.proto=.pb.go)
-PROTO_GO_SRC:=$(addprefix $(GENERATED_FILES_GOPATH)/src/$(PROTO_GO_PACKAGE)/, $(PROTO_GO_SRC_N))
+PROTO_GO_SRC:=$(addprefix $(GENERATED_FILES_GO_MODULES)/$(TARGET_PROTO_GO_MODULE)/, $(PROTO_GO_SRC_N))
 
 # Objects
 OBJ:=$(addprefix $(THIS_OBJ_DIR)/,$(PROTO_CXX_SRC_N:.pb.cc=.pb.o) $(C_SRC:.c=.o) $(CXX_SRC:.cpp=.o))
@@ -210,8 +210,8 @@ ifdef TARGET_COMMON_LIB
 MAIN_TARGET:=$(LIB_DIR)/lib$(TARGET_COMMON_LIB).a
 endif
 
-ifdef TARGET_PROTO_GO_PACKAGE
-SUPPLEMENTARY_TARGETS+=$(GENERATED_FILES_GO_VTARGET)/$(TARGET_PROTO_GO_PACKAGE).pbgopackage
+ifdef TARGET_PROTO_GO_MODULE
+SUPPLEMENTARY_TARGETS+=$(GENERATED_FILES_GO_MODULES)/$(TARGET_PROTO_GO_MODULE)/go.mod
 endif
 
 ifdef TARGET_BIN_FILES
@@ -278,11 +278,7 @@ full-clean:
 
 # Directories
 
-$(BUILD_CFG_DIR)/.:
-	@echo MKDIR $@
-	$(NOECHO)mkdir -p $@
-
-$(BUILD_CFG_DIR)%/.:
+$(BUILD_ROOT)%/.:
 	@echo MKDIR $@
 	$(NOECHO)mkdir -p $@
 
@@ -293,7 +289,7 @@ $(GENERATED_FILES_DIR)/%.pb.cc $(GENERATED_FILES_DIR)/%.pb.h: $(ROOT)/%.proto | 
 	$(NOECHO)$(PROTOC) -I$(COMMON_PROTO_DIR) $(PROTOC_INCLUDE) --cpp_out=$(realpath $(dir $@)) $(realpath $<)
 
 # Protobuf to Go compilation
-$(GENERATED_FILES_GOPATH)/src/$(PROTO_GO_PACKAGE)/%.pb.go: $(SRC_DIR)/%.proto | $$(@D)/.
+$(GENERATED_FILES_GO_MODULES)/$(TARGET_PROTO_GO_MODULE)/%.pb.go: $(SRC_DIR)/%.proto | $$(@D)/.
 	@echo PROTOC $@
 	$(NOECHO)$(PROTOC) -I$(COMMON_PROTO_DIR) $(PROTOC_INCLUDE) \
 		--plugin=protoc-gen-go=${HOME}/go/bin/protoc-gen-go \
@@ -405,8 +401,11 @@ ifdef TARGET_GO_EXE
 
 $(MAIN_TARGET): $(GO_SRC) | $(BIN_DIR)/.
 	@echo GO $@
-	$(NOECHO)( GOPATH=${HOME}/go:$(GENERATED_FILES_GOPATH) $(GO) build -o $@.tmp1 $(GOFLAGS) \
-		-gcflags="$(GOGCFLAGS)" -ldflags="$(GOLDFLAGS)" )
+	$(NOECHO)( \
+		GO111MODULE=auto \
+		$(GO) build -o $@.tmp1 $(GOFLAGS) \
+		-gcflags="$(GOGCFLAGS)" -ldflags="$(GOLDFLAGS)" \
+	)
 	$(NOECHO)objcopy --only-keep-debug $@.tmp1 $@.tmp2
 	$(NOECHO)chmod -x $@.tmp2
 	$(NOECHO)mv -f $@.tmp2 $@.debug
@@ -459,13 +458,13 @@ $(MAIN_TARGET): $(OBJ) | $(LIB_DIR)/.
 endif # TARGET_COMMON_LIB
 
 
-ifdef TARGET_PROTO_GO_PACKAGE
+ifdef TARGET_PROTO_GO_MODULE
 
-$(GENERATED_FILES_GO_VTARGET)/$(TARGET_PROTO_GO_PACKAGE).pbgopackage: $(PROTO_GO_SRC) | $$(@D)/.
-	@echo TOUCH $@
-	@touch $@
+$(GENERATED_FILES_GO_MODULES)/$(TARGET_PROTO_GO_MODULE)/go.mod: $(PROTO_GO_SRC) | $$(@D)/.
+	@echo GOMODTOOL $@
+	$(ROOT)/mk/scripts/gomodtool.sh $(TARGET_PROTO_GO_MODULE) "$@" "$(GO)"
 
-endif # TARGET_PROTO_GO_PACKAGE
+endif # TARGET_PROTO_GO_MODULE
 
 
 # For debug purposes

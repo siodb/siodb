@@ -12,7 +12,7 @@ namespace siodb::iomgr {
 /** Dispatches incoming requests to executors */
 class IOManagerRequestDispatcher : public IOManagerRequestHandlerBase {
 public:
-    /** 
+    /**
      * Initializes object of class IOManagerRequestDispatcher.
      * @param options Siodb options.
      * @param instance Database engine instance.

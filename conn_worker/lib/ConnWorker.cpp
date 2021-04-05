@@ -107,7 +107,7 @@ int run(int argc, char** argv)
         return 1;
     }
 
-    siodb::utils::setupSignalHandlers(&terminationSignalHandler);
+    siodb::utils::setupSignalHandlers(&connWorkerTerminationSignalChainHandler);
 
     // Work with connection
     {
@@ -143,7 +143,7 @@ int run(int argc, char** argv)
     return 0;
 }
 
-void terminationSignalHandler([[maybe_unused]] int signal)
+void connWorkerTerminationSignalChainHandler([[maybe_unused]] int signal)
 {
     if (g_connectionHandler) {
         g_connectionHandler->closeConnection();

@@ -219,9 +219,10 @@ extern "C" int siodbMain(int argc, char** argv)
 
             siodb::utils::waitForExitEvent();
 
-            const int exitSignal = siodb::utils::getExitSignal();
+            const int exitSignal = siodb::utils::getExitSignalNumber();
             LOG_INFO << "Database instance is shutting down due to signal #" << exitSignal << " ("
-                     << strsignal(exitSignal) << ").";
+                     << strsignal(exitSignal) << "), received from PID "
+                     << siodb::utils::getExitSignalSenderPid();
         } catch (std::exception& ex) {
             exitCode = 4;
             LOG_FATAL << ex.what();

@@ -22,7 +22,7 @@ namespace siodb::iomgr {
 /** Base class for the handlers of incoming requests from clients. */
 class IOManagerRequestHandlerBase {
 protected:
-    /** 
+    /**
      * Initializes object of class IOManagerRequestHandlerBase.
      * @param logContextBase Log context name base string.
      */
@@ -43,7 +43,8 @@ public:
 protected:
     /**
      * Handles single request.
-     * @param request A request to be handled.
+     * @param request A request to be handled. This parameter is intentionally a shared pointer.
+     *                Do not change to a reference or whatever.
      */
     virtual void handleRequest(const IOManagerRequestPtr& request) = 0;
 
@@ -56,16 +57,16 @@ protected:
     const std::string m_logContext;
 
 private:
-    /** Access synchronization object for the requesн queue */
+    /** Access synchronization object for the request queue */
     std::mutex m_mutex;
 
-    /** Access synchronization object for the requesн queue */
+    /** Access synchronization object for the request queue */
     std::condition_variable m_cond;
 
     /** Request queue */
     std::deque<IOManagerRequestPtr> m_requestQueue;
 
-    /** Indication that thread should run */
+    /** Indication that thread should continue to run */
     std::atomic_bool m_shouldRun;
 
     /** Request handler thread, must be the last member variable in this class. */

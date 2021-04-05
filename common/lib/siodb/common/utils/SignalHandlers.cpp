@@ -13,12 +13,17 @@
 // CRT headers
 #include <cstring>
 
+// System headers
+#include <ucontext.h>
+
 namespace siodb::utils {
 
 namespace {
 
+int g_exitSignalNumber;
 sighandler_t g_chainedHandler;
-int g_exitSignal;
+siginfo_t g_exitSignalInfo;
+ucontext_t g_exitSignalUContext;
 stdext::event g_exitEvent;
 
 }  // namespace
@@ -31,8 +36,8 @@ void setupSignalHandlers(sighandler_t chainedHandler)
     std::memset(&sa, 0, sizeof(sa));
 
     // We need this one to stop connection listener
-    // and connection handler threads. The main effect is that blocking
-    // I/O system calls are interrupted.
+    // and connection handler threads. The main effect is that blocking I/O
+    // system calls are interrupted.
     sa.sa_handler = &noActionSignalHandler;
     sigaction(SIGUSR1, &sa, nullptr);
 
@@ -40,7 +45,10 @@ void setupSignalHandlers(sighandler_t chainedHandler)
     for (int signal : signals) {
         sigaddset(&sa.sa_mask, signal);
     }
-    sa.sa_handler = &terminationSignalHandler;
+
+    // https://serverfault.com/questions/94956/how-to-find-out-the-source-of-a-posix-signal
+    sa.sa_handler = nullptr;
+    sa.sa_sigaction = &terminationSignalHandler;
     for (int signal : signals) {
         sigaction(signal, &sa, nullptr);
     }
@@ -58,25 +66,36 @@ bool isExitEventSignaled()
     return g_exitEvent.signaled();
 }
 
-int getExitSignal() noexcept
+int getExitSignalNumber() noexcept
 {
-    return g_exitSignal;
+    return g_exitSignalNumber;
+}
+
+siginfo_t getExitSignalInfo() noexcept
+{
+    return g_exitSignalInfo;
+}
+
+pid_t getExitSignalSenderPid() noexcept
+{
+    const auto sigCode = g_exitSignalInfo.si_code & 0xFF;
+    return (sigCode == SI_USER || sigCode == SI_QUEUE) ? g_exitSignalInfo.si_pid : -1;
 }
 
 namespace {
 
-void terminationSignalHandler(int signal)
-{
-    g_exitSignal = signal;
-    g_exitEvent.notify_one();
-    if (g_chainedHandler) {
-        g_chainedHandler(signal);
-    }
-}
-
 void noActionSignalHandler([[maybe_unused]] int signal)
 {
-    // Intentionally do not do anything here
+    // Intentionally don't do anything here
+}
+
+void terminationSignalHandler(int signal, siginfo_t* info, void* ucontext)
+{
+    g_exitSignalNumber = signal;
+    g_exitSignalInfo = *info;
+    g_exitSignalUContext = *reinterpret_cast<ucontext_t*>(ucontext);
+    g_exitEvent.notify_one();
+    if (g_chainedHandler) g_chainedHandler(signal);
 }
 
 }  // anonymous namespace

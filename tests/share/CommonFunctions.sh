@@ -99,7 +99,7 @@ if [[ ! -d "${SIODB_BIN}" ]]; then
   echo "## `date "+%Y-%m-%dT%H:%M:%S"` | ERROR | Invalid Siodb binary directory."
   exit 2
 fi
-
+w
 if [[ -z "${SIODB_INSTANCE}" ]]; then
   SIODB_INSTANCE=siodb
 fi

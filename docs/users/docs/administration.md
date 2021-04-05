@@ -81,8 +81,8 @@ Example of a remote connection:
 
 ```bash
 nico@siodb:~$ /opt/siodb-0.6/bin/siocli --host 192.168.56.50 --port 50000 --user nico --identity-file .ssh/id_rsa
-Siodb client v.0.9.0
-Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+Siodb client v.0.10.0
+Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 
 siocli> select name from sys_databases ;
 Connected to 192.168.56.50:50000
@@ -99,8 +99,8 @@ OS username and the first private key found into the `.ssh` locate in your home.
 
 ```bash
 nico@siodb:~$ /opt/siodb-0.6/bin/siocli --host 192.168.56.50 --port 50000
-Siodb client v.0.9.0
-Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+Siodb client v.0.10.0
+Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 
 siocli> select name from sys_databases ;
 Connected to 192.168.56.50:50000

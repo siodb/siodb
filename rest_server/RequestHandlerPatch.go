@@ -7,11 +7,12 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"siodbproto"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"siodb.io/siodb/siodbproto"
 )
 
 func (worker restWorker) patchRow(c *gin.Context) {

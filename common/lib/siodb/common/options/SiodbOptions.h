@@ -17,6 +17,9 @@ namespace siodb::config {
 // Instance configuration file directory
 constexpr const char* kSiodbInstanceConfigDirectory = "/etc/siodb/instances";
 
+// Options override variable
+constexpr const char* kSiodbOverrideOptions = "SIODB_OVERRIDE_OPTIONS";
+
 ///////////////////////////// Options names ////////////////////////////////////
 
 // Instance options

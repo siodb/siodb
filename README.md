@@ -18,7 +18,7 @@ Your support is welcomed. One-click on the star 🟊 on the top right corner of 
 
 ## Contributing
 
-Go to the contribution page 👉 [Here](CONTRIBUTING.md).
+- Go to the contribution page 👉 [Here](CONTRIBUTING.md).
 
 ## Links
 
@@ -37,5 +37,3 @@ Go to the contribution page 👉 [Here](CONTRIBUTING.md).
 Siodb is free, and the source is available under the AGPL v3. Siodb uses
 bundled dependencies for which you can find the license in the NOTICE file
 in this repository's top-level directory.
-
-

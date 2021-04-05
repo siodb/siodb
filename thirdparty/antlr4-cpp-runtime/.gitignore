@@ -1,5 +1,2 @@
 *.tar
-
-# Add new folders here, do not remove previous
-antlr4-cpp-runtime-4.7.2-source
-antlr4-cpp-runtime-4.8-source
+antlr4-cpp-runtime-*-source/

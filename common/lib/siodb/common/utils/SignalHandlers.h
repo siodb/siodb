@@ -9,6 +9,7 @@
 
 // System headers
 #include <signal.h>
+#include <unistd.h>
 
 namespace siodb::utils {
 
@@ -31,6 +32,18 @@ bool isExitEventSignaled();
  * Returns exit signal number that have triggered exit event.
  * @return exit signal number.
  */
-int getExitSignal() noexcept;
+int getExitSignalNumber() noexcept;
+
+/**
+ * Returns signal information that have triggered exit event.
+ * @return Signal information.
+ */
+siginfo_t getExitSignalInfo() noexcept;
+
+/**
+ * Returns signal sender PID if available.
+ * @return Signal sender PID if available, -1 otherwise.
+ */
+pid_t getExitSignalSenderPid() noexcept;
 
 }  // namespace siodb::utils

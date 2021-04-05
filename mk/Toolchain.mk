@@ -7,7 +7,7 @@
 # Ubuntu 18.04
 ifeq ($(DISTRO),Ubuntu)
 ifeq ($(DISTRO_MAJOR),18)
-TOOLCHAIN:=gcc8
+TOOLCHAIN:=gcc9
 endif
 endif
 
@@ -70,8 +70,20 @@ CXX:=clang++-10
 LD:=clang++-10
 endif
 
+ifeq ($(TOOLCHAIN),clang11)
+CC:=clang-11
+CXX:=clang++-11
+LD:=clang++-11
+endif
+
+ifeq ($(TOOLCHAIN),clang12)
+CC:=clang-12
+CXX:=clang++-12
+LD:=clang++-12
+endif
+
 AR:=ar
 
 # Go
-GO_VERSION:=1.15.3
+GO_VERSION:=1.16.2
 GO:=/usr/local/go-$(GO_VERSION)/bin/go

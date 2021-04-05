@@ -13,7 +13,7 @@ namespace siodb::iomgr {
 /** Sequentially executes incoming requests on the database engine instance. */
 class IOManagerRequestExecutor : public IOManagerRequestHandlerBase {
 public:
-    /** 
+    /**
      * Initializes object of class IOManagerRequestExecutor.
      * @param id Executor ID.
      * @param instance Database engine instance.

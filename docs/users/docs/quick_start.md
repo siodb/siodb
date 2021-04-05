@@ -13,8 +13,8 @@ docker run siodb/siodb
 
 ```sql
 siodb@ea7ad13791c1:/$ siocli --host localhost --port 50000 --user root --identity-file ~/.ssh/id_rsa
-Siodb client v.0.9.0
-Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+Siodb client v.0.10.0
+Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 
 siocli> show databases ;
 

@@ -205,9 +205,10 @@ extern "C" int iomgrMain(int argc, char** argv)
 
         siodb::utils::waitForExitEvent();
 
-        const int exitSignal = siodb::utils::getExitSignal();
+        const int exitSignal = siodb::utils::getExitSignalNumber();
         LOG_INFO << "IO Manager is shutting down due to signal #" << exitSignal << " ("
-                 << strsignal(exitSignal) << ").";
+                 << strsignal(exitSignal) << "), received from PID "
+                 << siodb::utils::getExitSignalSenderPid();
 
         // Make shutdown process more detailed in the log
         if (ipv6RestConnectionManager) {

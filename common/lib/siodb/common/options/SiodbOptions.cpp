@@ -69,6 +69,41 @@ void SiodbOptions::load(const std::string& instanceName, const std::string& conf
     boost::property_tree::ptree config;
     boost::property_tree::read_ini(configPath, config);
 
+    // Apply override options from environment variable, if available
+    const auto overrideOptions = ::getenv(kSiodbOverrideOptions);
+    if (overrideOptions) {
+        const auto end = overrideOptions + std::strlen(overrideOptions) + 1;
+        auto start = overrideOptions;
+        for (auto p = overrideOptions; p != end; ++p) {
+            const auto c = *p;
+            if (c != ':' && c != '\0') continue;
+            const auto option = std::string(start, p);
+            const auto assignmentPos = option.find_first_of('=');
+            bool isValid = false;
+            if (assignmentPos != std::string::npos && assignmentPos != 0) {
+                auto key = option.substr(0, assignmentPos);
+                boost::trim(key);
+                isValid = !key.empty();
+                if (isValid) {
+                    std::string value;
+                    if (assignmentPos != option.length() - 1)
+                        value = option.substr(assignmentPos + 1);
+                    boost::trim(value);
+                    config.erase(key);
+                    if (!value.empty()) {
+                        boost::property_tree::ptree::path_type path(key.c_str(), ':');
+                        config.put(path, value);
+                    }
+                }
+            }
+            if (!isValid) {
+                std::ostringstream err;
+                err << "Invalid override option '" << option << '\'';
+                throw InvalidConfigurationError(err.str());
+            }
+        }
+    }
+
     SiodbOptions tmpOptions;
 
     // Instance options

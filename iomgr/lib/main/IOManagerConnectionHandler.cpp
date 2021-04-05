@@ -18,6 +18,7 @@
 #include <siodb/common/proto/IOManagerProtocol.pb.h>
 
 // System headers
+#include <signal.h>
 #include <sys/epoll.h>
 
 namespace siodb::iomgr {

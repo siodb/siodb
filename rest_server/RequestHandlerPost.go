@@ -7,10 +7,11 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"siodbproto"
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"siodb.io/siodb/siodbproto"
 )
 
 func (worker restWorker) postRows(c *gin.Context) {

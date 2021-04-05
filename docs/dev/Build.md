@@ -141,7 +141,7 @@ sudo yum install -y git
 
 # Install required tools and libraries
 sudo yum install -y autoconf automake boost169-devel cmake3 curl \
-    devtoolset-8-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
+    devtoolset-9-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
     libatomic libcurl-devel libtool libuuid-devel openssl-devel pkgconfig \
     python readline-devel redhat-lsb uuid-devel wget which zlib-devel
 
@@ -234,7 +234,7 @@ sudo yum install -y git
 
 # Install required tools and libraries
 sudo yum install -y autoconf automake boost169-devel cmake3 curl \
-    devtoolset-8-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
+    devtoolset-9-toolchain doxygen gcc gcc-c++ java-1.8.0-openjdk-headless \
     libatomic libcurl-devel lubtool libuuid-devel openssl-devel pkgconfig \
     python readline-devel redhat-lsb uuid-devel wget which zlib-devel
 
@@ -307,7 +307,7 @@ Now, proceed to the section [All Systems](#all-systems).
 Run following commands:
 
 ```bash
-export SIODB_GO_VERSION=1.15.3
+export SIODB_GO_VERSION=1.16.2
 cd /tmp
 wget "https://golang.org/dl/go${SIODB_GO_VERSION}.linux-amd64.tar.gz"
 tar xaf go${SIODB_GO_VERSION}.linux-amd64.tar.gz
@@ -347,8 +347,6 @@ Now, proceed to the section [Building Third-Party Libraries](#building-third-par
 
 Change current directory to the root of siodb Git repository and execute following commands:
 
-**NOTE:** Adjust make parameter `-j4` to number of CPUs/cores available on the your build machine.
-
 ```bash
 
 # Clone Siodb repository or your Siodb fork, like this:
@@ -362,8 +360,8 @@ cd siodb
 # Install source code formatting hook for git
 cp -fv tools/git/clang-format.hook .git/hooks/pre-commit
 
-# CentOS 7/RHEL 7 ONLY: Enable devtoolset-8
-scl enable devtoolset-8 bash
+# CentOS 7/RHEL 7 ONLY: Enable devtoolset-9
+scl enable devtoolset-9 bash
 
 # Enter third party libraries directory
 cd thirdparty
@@ -381,9 +379,9 @@ cd openssl-${SIODB_OPENSSL_VERSION}
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
 LDFLAGS="${SIODB_TP_LDFLAGS} -Wl,-rpath -Wl,${SIODB_OPENSSL_PREFIX}/lib" \
     ./config --prefix=${SIODB_OPENSSL_PREFIX} --openssldir=${SIODB_OPENSSL_PREFIX} shared zlib
-make -j4
-make -j4 test
-sudo make -j4 install
+make -j$(nproc)
+make -j$(nproc) test
+sudo make -j$(nproc) install
 cd ../..
 
 # Install ANTLR4 executables
@@ -391,7 +389,7 @@ cd antlr4
 sudo ./install.sh ${SIODB_ANTLR4_PREFIX}
 cd ..
 
-# Build and isntall ANTLR4 runtime library
+# Build and install ANTLR4 runtime library
 cd antlr4-cpp-runtime
 tar --no-same-owner -xaf antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source.tar.xz
 cd antlr4-cpp-runtime-${SIODB_ANTLR4_CPP_RUNTIME_VERSION}-source
@@ -399,7 +397,7 @@ mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
     cmake -DCMAKE_INSTALL_PREFIX=${SIODB_ANTLR4_CPP_RUNTIME_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo ..
-make -j4
+make -j$(nproc)
 sudo make install
 sudo ldconfig
 cd ../../..
@@ -412,15 +410,15 @@ mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
     cmake -DCMAKE_INSTALL_PREFIX=${SIODB_LIBDATE_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
-          -DUSE_SYSTEM_TZ_DB=ON -DENABLE_DATE_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
-make -j4
+          -DUSE_SYSTEM_TZ_DB=ON -DENABLE_DATE_TESTING=ON -DBUILD_SHARED_LIBS=ON ..
+make -j$(nproc)
 sudo make install
 sudo ldconfig
 cd ../../..
 
 # Build and install Google Test library
 cd googletest
-tar --no-same-owner -xaf googletest-release-${SIODB_GTEST_VERSION}.tar.xz
+tar --no-same-owner -xaf googletest-${SIODB_GTEST_VERSION}.tar.xz
 cd googletest-release-${SIODB_GTEST_VERSION}/googlemock/scripts
 ./fuse_gmock_files.py include
 sudo mkdir -p "${SIODB_GTEST_PREFIX}"
@@ -436,21 +434,7 @@ cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
     cmake -DCMAKE_INSTALL_PREFIX=${SIODB_JSON_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
     -DJSON_BuildTests=OFF ..
-make -j4
-sudo make install
-sudo ldconfig
-cd ../../..
-
-# Build and install Oat++ library
-cd oatpp
-tar --no-same-owner -xaf oatpp-${SIODB_OATPP_VERSION}.tar.xz
-cd oatpp-${SIODB_OATPP_VERSION}
-mkdir build
-cd build
-CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
-    cmake -DCMAKE_INSTALL_PREFIX=${SIODB_OATPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
-          -DBUILD_SHARED_LIBS=ON -DOATPP_BUILD_TESTS=OFF ..
-make -j4
+make -j$(nproc)
 sudo make install
 sudo ldconfig
 cd ../../..
@@ -473,7 +457,7 @@ CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" \
 LDFLAGS="${SIODB_TP_LDFLAGS} -L${SIODB_PROTOBUF_PREFIX}/lib -Wl,-rpath -Wl,${SIODB_PROTOBUF_PREFIX}/lib" \
     ./configure "--prefix=${SIODB_PROTOBUF_PREFIX}" --enable-shared=yes --enable-static=no
 
-make -j4
+make -j$(nproc)
 sudo make install
 sudo ldconfig
 
@@ -502,8 +486,8 @@ mkdir build
 cd build
 CFLAGS="${SIODB_TP_CFLAGS}" CXXFLAGS="${SIODB_TP_CXXFLAGS}" LDFLAGS="${SIODB_TP_LDFLAGS}" \
     cmake -DCMAKE_INSTALL_PREFIX=${SIODB_UTF8CPP_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
-          -DUTF8_TESTS=Off ..
-make -j4
+          -DUTF8_TESTS=OFF ..
+make -j$(nproc)
 sudo make install
 sudo ldconfig
 cd ../../..
@@ -527,7 +511,7 @@ LDFLAGS="${SIODB_TP_LDFLAGS} -Wl,-rpath -Wl,${SIODB_XXHASH_PREFIX}/lib" \
     cmake -DCMAKE_INSTALL_PREFIX=${SIODB_XXHASH_PREFIX} -DCMAKE_BUILD_TYPE=ReleaseWithDebugInfo \
           ../cmake_unofficial
 
-sudo make -j4
+sudo make -j$(nproc)
 sudo make install
 sudo ldconfig
 cd ../../..
@@ -632,8 +616,8 @@ allow_group_permissions_on_config_files = true
 
 ## Compiling Siodb
 
-- Build debug version: `make -j4`. Build outputs will appear in the directory `debug/bin`.
-- Build release version: `make -j4 DEBUG=0`. Build outputs will appear in the directory `release/bin`.
+- Build debug version: `make -j$(nproc)`. Build outputs will appear in the directory `debug/bin`.
+- Build release version: `make -j$(nproc) DEBUG=0`. Build outputs will appear in the directory `release/bin`.
 - List all available build commands: `make help`.
 
 **NOTE:** Adjust `-jN` option in the above `make` commands according to available number of CPUs
@@ -654,3 +638,17 @@ There are some sample configurations in the directory `config` that may be used 
 
 - Run Siodb server: `siodb --instance <configuration-name>`
 - Run Siodb client in the admin mode: `siocli --admin <configuration-name>`
+
+## Links to the Third-Party Library Sources
+
+- [ANTLR4 JAR](https://www.antlr.org/download/antlr-4.9.2-complete.jar)
+- [ANTLR4 Runtime](https://github.com/antlr/antlr4)
+- [Google Test](https://github.com/google/googletest/)
+- [OpenSSL](https://www.openssl.org)
+- [Protobuf](https://github.com/protocolbuffers/protobuf)
+- [UTF8-CPP](https://github.com/nemtrif/utfcpp)
+- [xxHash](https://github.com/Cyan4973/xxHash)
+
+## Special Instruction for the Third-Party Libraries
+
+Nothing here at the moment.

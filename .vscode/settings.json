@@ -165,4 +165,19 @@
         "alignLabels": true,
         "alignTrailers": false
     },
+    "terminal.integrated.localEchoExcludePrograms": [
+        "vim",
+        "vi",
+        "nano",
+        "emacs",
+        "tmux",
+        "git",
+        "ssh",
+        "gitwip",
+        "mc",
+        "mcedit",
+        "ssh-askpass"
+    ],
+    "files.trimTrailingWhitespace": true,
+    "terminal.integrated.localEchoLatencyThreshold": -1,
 }

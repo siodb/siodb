@@ -116,8 +116,8 @@ void ConnWorkerConnectionHandler::run()
                 if (!utils::isExitEventSignaled()) {
                     LOG_ERROR << kLogContext << ex.what() << '.';
                 } else {
-                    LOG_INFO << kLogContext << "Exit signal # " << utils::getExitSignal()
-                             << " received";
+                    LOG_INFO << kLogContext << "Exit signal # " << utils::getExitSignalNumber()
+                             << " received from PID " << utils::getExitSignalSenderPid();
                 }
                 closeConnection();
                 return;

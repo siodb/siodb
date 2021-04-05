@@ -10,6 +10,6 @@ namespace {
  * Termination signal handler. Must initiate correct database shutdown.
  * @param signal Signal number.
  */
-void terminationSignalHandler(int signal);
+void connWorkerTerminationSignalChainHandler(int signal);
 
 }  // anonymous namespace

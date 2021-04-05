@@ -9,11 +9,12 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"siodbproto"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/proto"
+
+	"siodb.io/siodb/siodbproto"
 )
 
 var (
