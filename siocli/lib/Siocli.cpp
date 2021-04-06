@@ -246,39 +246,6 @@ int commandPrompt(const ClientParameters& params)
         std::string commandHolder;
         std::string* command = &commandHolder;
 
-        // Connect to server
-        if (!connection || !connection->isValid()) {
-            if (params.m_instance.empty()) {
-                auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
-                std::cout << '\n'
-                          << "Connected to " << params.m_host << ':' << params.m_port << std::endl;
-
-                if (params.m_encryption) {
-                    tlsClient = std::make_unique<siodb::crypto::TlsClient>();
-
-                    if (params.m_verifyCertificates) tlsClient->enableCertificateVerification();
-
-                    auto tlsConnection = tlsClient->connectToServer(connectionFd);
-
-                    auto x509Certificate = SSL_get_peer_certificate(tlsConnection->getSsl());
-                    if (x509Certificate == nullptr)
-                        throw siodb::crypto::OpenSslError("SSL_get_peer_certificate failed");
-
-                    connection = std::move(tlsConnection);
-                } else
-                    connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
-            } else {
-                // Admin connection is always non-secure
-                const auto instanceSocketPath = siodb::composeInstanceSocketPath(params.m_instance);
-                auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
-                std::cout << "Connected to SIODB instance " << params.m_instance << " at "
-                          << instanceSocketPath << " in the admin mode." << std::endl;
-                connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
-            }
-            authenticate(params.m_identityKey, params.m_user, *connection, serverConnectionInfo);
-            requestId = 1;
-        }
-
         try {
             auto singleWordCommand = SingleWordCommandType::kUnknownCommand;
             if (singleCommand) {
@@ -408,6 +375,42 @@ int commandPrompt(const ClientParameters& params)
                     continue;
                 }
                 case SingleWordCommandType::kUnknownCommand: break;
+            }
+
+            // Connect to server
+            if (!connection || !connection->isValid()) {
+                if (params.m_instance.empty()) {
+                    auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
+                    std::cout << '\n'
+                              << "Connected to " << params.m_host << ':' << params.m_port
+                              << std::endl;
+
+                    if (params.m_encryption) {
+                        tlsClient = std::make_unique<siodb::crypto::TlsClient>();
+
+                        if (params.m_verifyCertificates) tlsClient->enableCertificateVerification();
+
+                        auto tlsConnection = tlsClient->connectToServer(connectionFd);
+
+                        auto x509Certificate = SSL_get_peer_certificate(tlsConnection->getSsl());
+                        if (x509Certificate == nullptr)
+                            throw siodb::crypto::OpenSslError("SSL_get_peer_certificate failed");
+
+                        connection = std::move(tlsConnection);
+                    } else
+                        connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
+                } else {
+                    // Admin connection is always non-secure
+                    const auto instanceSocketPath =
+                            siodb::composeInstanceSocketPath(params.m_instance);
+                    auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
+                    std::cout << "Connected to Siodb instance " << params.m_instance << " at "
+                              << instanceSocketPath << " in the admin mode." << std::endl;
+                    connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
+                }
+                authenticate(
+                        params.m_identityKey, params.m_user, *connection, serverConnectionInfo);
+                requestId = 1;
             }
 
             // Execute command
