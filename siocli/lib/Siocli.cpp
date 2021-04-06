@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -71,8 +71,10 @@ namespace {
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
 constexpr const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
 constexpr const char* kSubsequentLinePrompt = "\033[1m      > \033[0m";
-constexpr const char kSQLDelimiter = ';';
+constexpr const char kSqlDelimiter = ';';
 constexpr const char* kCommentStart = "--";
+constexpr const char* kMultilineCommentStart = "/*";
+constexpr const char* kMultilineCommentEnd = "*/";
 constexpr const char* kVariablePrefix = "var:";
 constexpr auto kVariablePrefixLen = ::ct_strlen(kVariablePrefix);
 }  // namespace
@@ -252,18 +254,16 @@ int commandPrompt(const ClientParameters& params)
                 char textLastChar = '\0';
 
                 // Read command text, possibly multiline.
-                // Multiline command-text must end with a semicolon.
                 std::size_t lineNo = 0;
                 const char* prompt = kFirstLinePrompt;
-                std::size_t lineStartsInStringValue = 0;
-                std::size_t lineEndsInStringValue = 0;
-                std::size_t isInStringValue = 0;
+                bool lineStartsInStringValue = false;
+                bool lineEndsInStringValue = false;
+                bool isInStringValue = false;
+                bool isIsolatedMultilineComment = false;
                 do {
                     // Prompt style
-                    if (params.m_stdinIsTerminal && lineNo == 0) std::cout << '\n';
-                    if (lineNo > 0) {
-                        if (params.m_stdinIsTerminal) prompt = kSubsequentLinePrompt;
-                    }
+                    if (params.m_stdinIsTerminal && lineNo == 0) std::cout << std::endl;
+                    if (params.m_stdinIsTerminal && lineNo > 0) prompt = kSubsequentLinePrompt;
 
                     // Read line
                     std::string line;
@@ -285,36 +285,24 @@ int commandPrompt(const ClientParameters& params)
 
                     // Detect string value state
                     lineStartsInStringValue = lineEndsInStringValue;
-                    std::size_t isEscaped = 0;
+                    bool isEscaped = false;
                     for (char c : line) {
                         if (c == '\'' && !isEscaped) {
-                            if (!isInStringValue) {
-                                isInStringValue = 1;
-                            } else {
-                                isInStringValue = 0;
-                            }
+                            isInStringValue = !isInStringValue;
                         }
-                        if (c == '\\') {
-                            isEscaped = 1;
-                        } else {
-                            isEscaped = 0;
-                        }
+                        isEscaped = c == '\\';
                         lineEndsInStringValue = isInStringValue;
                         if (params.m_printDebugMessages) {
                             std::cout << "debug: char: " << c << " | isEscaped:" << isEscaped
                                       << " | isInStringValue:" << isInStringValue
                                       << " | lineStartsInStringValue:" << lineStartsInStringValue
                                       << " | lineEndsInStringValue:" << lineEndsInStringValue
-                                      << "\n";
+                                      << '\n';
                         }
                     }
 
                     // Empty line considered as '\n'
-                    if (line.empty()) {
-                        if (lineNo == 0) {
-                            break;
-                        }
-                    }
+                    if (line.empty() && lineNo == 0) break;
 
                     // Trim line when not in string value
                     if (!lineStartsInStringValue) {
@@ -327,29 +315,39 @@ int commandPrompt(const ClientParameters& params)
                         }
                     }
 
-                    // Never send first line comment to the iomgr
                     if (params.m_printDebugMessages) {
                         std::cout << "debug: lineNo: " << lineNo << "value_for_iomgr_begin>" << line
                                   << "<value_for_iomgr_end\n";
                     }
+
+                    // Never send single line comment to the iomgr
                     if (boost::starts_with(line, kCommentStart) && lineNo == 0) {
                         break;
                     }
+                    // Never send multilines comment to the iomgr
+                    if (boost::starts_with(line, kMultilineCommentStart) && lineNo == 0)
+                        isIsolatedMultilineComment = true;
+                    if (isIsolatedMultilineComment
+                            && boost::ends_with(line, kMultilineCommentEnd)) {
+                        break;
+                    }
 
-                    if (lineNo > 0) {
+                    if (lineNo > 0 && !isIsolatedMultilineComment) {
                         text << '\n';
                     }
-                    text << line;
+                    if (!isIsolatedMultilineComment) {
+                        text << line;
+                    }
                     ++lineNo;
 
                     if (lineNo == 1) {
                         auto command1 = boost::to_lower_copy(line);
-                        // Remove whitespace before kSQLDelimiter and kSQLDelimiter itself
+                        // Remove whitespace before kSqlDelimiter and kSqlDelimiter itself
                         boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
                         singleWordCommand = decodeSingleWordCommand(command1);
                     }
                 } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
-                         && textLastChar != kSQLDelimiter);
+                         && textLastChar != kSqlDelimiter);
                 commandHolder = text.str();
             }  // read command
 
@@ -366,7 +364,7 @@ int commandPrompt(const ClientParameters& params)
                 case SingleWordCommandType::kHelp: {
                     std::cout
                             << "\n"
-                            << "Type SQL statements separated by '" << kSQLDelimiter << "':\n"
+                            << "Type SQL statements separated by '" << kSqlDelimiter << "':\n"
                             << "\n"
                                "    Example 1: select * from sys_dummy;\n"
                                "    Example 2: select * from sys_dummy; select * from sys_dummy;\n"

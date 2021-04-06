@@ -56,6 +56,7 @@ _RunSql "       -- QUERY 1
              just a comment line 1
              */   ;       select name from sys_databases where trid = 1;    "
 
+
 _RunSqlAndValidateOutput "       -- QUERY 2
        select name from sys_databases where trid = 1;    " "^SYS$"
 
@@ -94,6 +95,44 @@ ${line_of_spaces}
 sys_databases
 ${line_of_spaces}
   /* commment */ where trid = 1;    " "^[\]n   [\]n--[\]n   [\]n--[\]n   [\]n$"
+
+
+_RunSqlAndValidateOutput "/*  -- QUERY 5
+    this is a multiline comment
+  -- this is attempt to use comment in comment, but this is in fact part of previously started
+                       -- multiline comment which ends right here*/
+      select
+                 name
+              /* I start multline comment /* multiple /* times
+${line_of_spaces}
+                 but that /* should /* not /*
+${line_of_spaces}
+                 matter
+              */
+${line_of_spaces}
+from
+-- this is single line comments  /* but NOT a multiline comment despite /*
+sys_databases
+${line_of_spaces}
+-- this is single line comments  /* but NOT a multiline comment despite /*
+${line_of_spaces}
+/*
+    this is a multiline comment
+  -- this is attempt to use comment in comment, but this is in fact part of previously started
+-- multiline comment which ends right here*/ where trid = 1
+;${line_of_spaces}
+" "^SYS$"
+
+
+_RunSql "        -- MULTI LINE COMMENT ONLY 1
+         /*${line_of_spaces}
+ aze
+
+azeaze
+${line_of_spaces}
+${line_of_spaces}
+                          */${line_of_spaces}
+"
 
 ## =============================================
 ## TEST FOOTER
