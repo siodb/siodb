@@ -209,7 +209,7 @@ extern "C" int siocliMain(int argc, char** argv)
         // Execute command prompt
         return siodb::sql_client::commandPrompt(params);
     } catch (std::exception& ex) {
-        std::cerr << '\n' << "Error: " << ex.what() << '.' << std::endl;
+        std::cerr << "\nError: " << ex.what() << '.' << std::endl;
         return 2;
     }
 }
@@ -293,13 +293,13 @@ int commandPrompt(const ClientParameters& params)
                         }
                         isEscaped = c == '\\';
                         lineEndsInStringValue = isInStringValue;
-                        if (params.m_printDebugMessages) {
-                            std::cout << "debug: char: " << c << " | isEscaped:" << isEscaped
-                                      << " | isInStringValue:" << isInStringValue
-                                      << " | lineStartsInStringValue:" << lineStartsInStringValue
-                                      << " | lineEndsInStringValue:" << lineEndsInStringValue
-                                      << '\n';
-                        }
+//#define DEBUG_COMMENT_REMOVAL
+#ifdef DEBUG_COMMENT_REMOVAL
+                        std::cout << "debug: char: " << c << " | isEscaped:" << isEscaped
+                                  << " | isInStringValue:" << isInStringValue
+                                  << " | lineStartsInStringValue:" << lineStartsInStringValue
+                                  << " | lineEndsInStringValue:" << lineEndsInStringValue << '\n';
+#endif
                     }
 
                     // Empty line considered as '\n'
@@ -316,10 +316,10 @@ int commandPrompt(const ClientParameters& params)
                         }
                     }
 
-                    if (params.m_printDebugMessages) {
-                        std::cout << "debug: lineNo: " << lineNo << "value_for_iomgr_begin>" << line
-                                  << "<value_for_iomgr_end\n";
-                    }
+#ifdef DEBUG_COMMENT_REMOVAL
+                    std::cout << "debug: lineNo: " << lineNo << "value_for_iomgr_begin>" << line
+                              << "<value_for_iomgr_end\n";
+#endif
 
                     // Never send single line comment to the iomgr
                     if (boost::starts_with(line, kCommentStart) && lineNo == 0) {
@@ -333,12 +333,11 @@ int commandPrompt(const ClientParameters& params)
                         break;
                     }
 
-                    if (lineNo > 0 && !isIsolatedMultilineComment) {
-                        text << '\n';
-                    }
                     if (!isIsolatedMultilineComment) {
+                        if (lineNo > 0) text << '\n';
                         text << line;
                     }
+
                     ++lineNo;
 
                     if (lineNo == 1) {
@@ -418,9 +417,8 @@ int commandPrompt(const ClientParameters& params)
                 executeCommandOnServer(requestId++, std::move(*command), *connection, std::cout,
                         params.m_exitOnError, params.m_printDebugMessages);
             }
-
         } catch (std::exception& ex) {
-            std::cerr << '\n' << "Error: " << ex.what() << '.' << std::endl;
+            std::cerr << "\nError: " << ex.what() << '.' << std::endl;
             if (connection && connection->isValid()) {
                 connection.reset();
                 if (params.m_instance.empty()) {
