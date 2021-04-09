@@ -133,7 +133,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
             const auto endTime = std::chrono::steady_clock::now();
             const auto elapsed =
                     std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-            os << "Command execution time: " << elapsed.count() << " ms." << std::endl;
+            os << "Elapsed time: " << elapsed.count() << " ms." << std::endl;
             startTime = endTime;
             ++responseId;
             if (stopOnError) throw std::runtime_error("SQL error");
@@ -176,6 +176,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
             }
 
             // Print column names
+            os << '\n';
             for (int i = 0; i < columnCount; ++i) {
                 if (i > 0) os << ' ';  // one space
                 const auto& column = response.column_description(i);
@@ -236,7 +237,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                 ++row;
             }
             // Print number of rows
-            os << '\n' << row << " rows.\n" << std::flush;
+            os << '\n' << "Row(s): " << row << "\n\n" << std::flush;
         } else {
             if (response.has_affected_row_count()) {
                 os << response.affected_row_count() << " rows affected" << std::endl;
@@ -246,7 +247,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         const auto endTime = std::chrono::steady_clock::now();
         const auto elapsed =
                 std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-        os << "Command execution time: " << elapsed.count() << " ms." << std::endl;
+        os << "Elapsed time: " << elapsed.count() << " ms." << std::endl;
         startTime = endTime;
 
         // Increment response ID.

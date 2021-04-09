@@ -44,7 +44,6 @@ _RunSql "create table ${database_name}.huge_test ( huge text )"
 user_token=$(openssl rand -hex 64)
 _RunSql "alter user root add token test_token x'${user_token}'"
 
-
 ### Post medium JSON
 medium_json_file="${output_dir}/medium.json"
 echo "[{ \"huge\": \"$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 1m)\" }]" \

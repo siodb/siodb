@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -71,7 +71,10 @@ namespace {
 const std::string kDefaultIdentityFile = siodb::utils::getHomeDir() + "/.ssh/id_rsa";
 constexpr const char* kFirstLinePrompt = "\033[1msiocli> \033[0m";
 constexpr const char* kSubsequentLinePrompt = "\033[1m      > \033[0m";
+constexpr const char kSqlDelimiter = ';';
 constexpr const char* kCommentStart = "--";
+constexpr const char* kMultilineCommentStart = "/*";
+constexpr const char* kMultilineCommentEnd = "*/";
 constexpr const char* kVariablePrefix = "var:";
 constexpr auto kVariablePrefixLen = ::ct_strlen(kVariablePrefix);
 }  // namespace
@@ -206,7 +209,7 @@ extern "C" int siocliMain(int argc, char** argv)
         // Execute command prompt
         return siodb::sql_client::commandPrompt(params);
     } catch (std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << '.' << std::endl;
+        std::cerr << "\nError: " << ex.what() << '.' << std::endl;
         return 2;
     }
 }
@@ -239,31 +242,40 @@ int commandPrompt(const ClientParameters& params)
     const bool singleCommand = static_cast<bool>(params.m_command);
     ServerConnectionInfo serverConnectionInfo;
 
-    if (params.m_stdinIsTerminal) std::cout << '\n';
     do {
         std::string commandHolder;
         std::string* command = &commandHolder;
+
         try {
             auto singleWordCommand = SingleWordCommandType::kUnknownCommand;
             if (singleCommand) {
                 command = params.m_command.get();
             } else {
                 std::ostringstream text;
-                std::size_t textLength = 0;
                 char textLastChar = '\0';
 
                 // Read command text, possibly multiline.
-                // Multiline command-text must end with a semicolon.
                 std::size_t lineNo = 0;
                 const char* prompt = kFirstLinePrompt;
+                bool lineStartsInStringValue = false;
+                bool lineEndsInStringValue = false;
+                bool isInStringValue = false;
+                bool isIsolatedMultilineComment = false;
                 do {
+                    // Prompt style
+                    if (params.m_stdinIsTerminal && lineNo == 0) std::cout << std::endl;
+                    if (params.m_stdinIsTerminal && lineNo > 0) prompt = kSubsequentLinePrompt;
+
+                    // Read line
                     std::string line;
                     if (params.m_stdinIsTerminal && params.m_useReadline) {
                         std::unique_ptr<char, stdext::free_deleter<char>> rltext;
                         while (!rltext)
                             rltext.reset(::readline(prompt));
-                        add_history(rltext.get());
                         line = rltext.get();
+                        if (!line.empty()) {
+                            add_history(rltext.get());
+                        }
                     } else {
                         if (params.m_stdinIsTerminal) std::cout << prompt << std::flush;
                         if (!std::getline(std::cin, line)) {
@@ -272,41 +284,70 @@ int commandPrompt(const ClientParameters& params)
                         }
                     }
 
-                    boost::trim(line);
-                    if (line.empty()) {
-                        if (params.m_stdinIsTerminal && !params.m_useReadline)
-                            std::cout << prompt << std::flush;
-                        continue;
+                    // Detect string value state
+                    lineStartsInStringValue = lineEndsInStringValue;
+                    bool isEscaped = false;
+                    for (char c : line) {
+                        if (c == '\'' && !isEscaped) {
+                            isInStringValue = !isInStringValue;
+                        }
+                        isEscaped = c == '\\';
+                        lineEndsInStringValue = isInStringValue;
+//#define DEBUG_COMMENT_REMOVAL
+#ifdef DEBUG_COMMENT_REMOVAL
+                        std::cout << "debug: char: " << c << " | isEscaped:" << isEscaped
+                                  << " | isInStringValue:" << isInStringValue
+                                  << " | lineStartsInStringValue:" << lineStartsInStringValue
+                                  << " | lineEndsInStringValue:" << lineEndsInStringValue << '\n';
+#endif
                     }
 
-                    // Do not send comments to siodb
-                    if (boost::starts_with(line, kCommentStart)) {
-                        if (params.m_stdinIsTerminal)
-                            prompt = textLength ? kFirstLinePrompt : kSubsequentLinePrompt;
-                        continue;
+                    // Empty line considered as '\n'
+                    if (line.empty() && lineNo == 0) break;
+
+                    // Trim line when not in string value
+                    if (!lineStartsInStringValue) {
+                        boost::trim_left(line);
+                    }
+                    if (!lineEndsInStringValue) {
+                        boost::trim_right(line);
+                        if (!line.empty()) {
+                            textLastChar = line.back();
+                        }
                     }
 
-                    if (line.back() != ';' && params.m_stdinIsTerminal)
-                        prompt = kSubsequentLinePrompt;
+#ifdef DEBUG_COMMENT_REMOVAL
+                    std::cout << "debug: lineNo: " << lineNo << "value_for_iomgr_begin>" << line
+                              << "<value_for_iomgr_end\n";
+#endif
 
-                    if (textLength > 0) {
-                        text << '\n';
-                        ++textLength;
+                    // Never send single line comment to the iomgr
+                    if (boost::starts_with(line, kCommentStart) && lineNo == 0) {
+                        break;
+                    }
+                    // Never send multilines comment to the iomgr
+                    if (boost::starts_with(line, kMultilineCommentStart) && lineNo == 0)
+                        isIsolatedMultilineComment = true;
+                    if (isIsolatedMultilineComment
+                            && boost::ends_with(line, kMultilineCommentEnd)) {
+                        break;
                     }
 
-                    text << line;
-                    textLength += line.length();
-                    if (!line.empty()) textLastChar = line.back();
+                    if (!isIsolatedMultilineComment) {
+                        if (lineNo > 0) text << '\n';
+                        text << line;
+                    }
 
                     ++lineNo;
+
                     if (lineNo == 1) {
                         auto command1 = boost::to_lower_copy(line);
-                        // Remove whitespace before ';' and ';' itself
+                        // Remove whitespace before kSqlDelimiter and kSqlDelimiter itself
                         boost::trim_right_if(command1, boost::is_any_of("\t\v\f ;"));
                         singleWordCommand = decodeSingleWordCommand(command1);
                     }
                 } while (singleWordCommand == SingleWordCommandType::kUnknownCommand
-                         && (textLength == 0 || textLastChar != ';'));
+                         && textLastChar != kSqlDelimiter);
                 commandHolder = text.str();
             }  // read command
 
@@ -317,15 +358,19 @@ int commandPrompt(const ClientParameters& params)
             // Handle single-word commands
             switch (singleWordCommand) {
                 case SingleWordCommandType::kExit: {
-                    std::cout << "Bye" << std::endl;
+                    std::cout << '\n' << "Bye." << '\n' << std::endl;
                     return 0;
                 }
                 case SingleWordCommandType::kHelp: {
-                    std::cout << "Type SQL query with ';' symbol in the end. This query will be "
-                                 "sent to the Siodb server.\n"
-                                 "Example: SELECT * FROM <table_name>;\n"
-                                 "Type exit to stop siocli.\n"
-                              << std::flush;
+                    std::cout
+                            << '\n'
+                            << "Type SQL statements separated by '" << kSqlDelimiter << "':\n"
+                            << '\n'
+                            << "    Example 1: select * from sys_dummy;\n"
+                            << "    Example 2: select * from sys_dummy; select * from sys_dummy;\n"
+                            << '\n'
+                            << "exit|quit: quits siocli." << '\n'
+                            << std::flush;
                     continue;
                 }
                 case SingleWordCommandType::kUnknownCommand: break;
@@ -335,7 +380,8 @@ int commandPrompt(const ClientParameters& params)
             if (!connection || !connection->isValid()) {
                 if (params.m_instance.empty()) {
                     auto connectionFd = siodb::net::openTcpConnection(params.m_host, params.m_port);
-                    std::cout << "Connected to " << params.m_host << ':' << params.m_port
+                    std::cout << '\n'
+                              << "Connected to " << params.m_host << ':' << params.m_port
                               << std::endl;
 
                     if (params.m_encryption) {
@@ -357,7 +403,7 @@ int commandPrompt(const ClientParameters& params)
                     const auto instanceSocketPath =
                             siodb::composeInstanceSocketPath(params.m_instance);
                     auto connectionFd = siodb::net::openUnixConnection(instanceSocketPath);
-                    std::cout << "Connected to SIODB instance " << params.m_instance << " at "
+                    std::cout << "Connected to Siodb instance " << params.m_instance << " at "
                               << instanceSocketPath << " in the admin mode." << std::endl;
                     connection = std::make_unique<siodb::io::FDStream>(connectionFd, true);
                 }
@@ -372,7 +418,7 @@ int commandPrompt(const ClientParameters& params)
                         params.m_exitOnError, params.m_printDebugMessages);
             }
         } catch (std::exception& ex) {
-            std::cerr << "Error: " << ex.what() << '.' << std::endl;
+            std::cerr << "\nError: " << ex.what() << '.' << std::endl;
             if (connection && connection->isValid()) {
                 connection.reset();
                 if (params.m_instance.empty()) {

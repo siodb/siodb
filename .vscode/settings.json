@@ -109,7 +109,8 @@
         "shared_mutex": "cpp",
         "regex": "cpp",
         "*.def": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "csignal": "cpp"
     },
     "C_Cpp.default.cppStandard": "c++17",
     "C_Cpp.default.intelliSenseMode": "gcc-x64",
