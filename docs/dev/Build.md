@@ -13,10 +13,11 @@
   - [Install boost-pretty-printer GDB Extension](#install-boost-pretty-printer-gdb-extension)
 - [Building Third-Party Libraries](#building-third-party-libraries)
   - [C and C++ Libraries](#c-and-c-libraries)
-  - [Go Libraries](#go-libraries)
 - [System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)](#system-setup-debian-ubuntu-centos-rhel-suse-sles)
 - [Compiling Siodb](#compiling-siodb)
 - [Running Siodb](#running-siodb)
+- [Links to the Third-Party Library Sources](#links-to-the-third-party-library-sources)
+- [Special Instruction for the Third-Party Libraries](#special-instruction-for-the-third-party-libraries)
 
 ## Environment Preparation
 
@@ -313,6 +314,10 @@ wget "https://golang.org/dl/go${SIODB_GO_VERSION}.linux-amd64.tar.gz"
 tar xaf go${SIODB_GO_VERSION}.linux-amd64.tar.gz
 mv go go-${SIODB_GO_VERSION}
 sudo mv go-${SIODB_GO_VERSION} /usr/local
+
+# Go Libraries
+/usr/local/go-${SIODB_GO_VERSION}/bin/go get -u github.com/golang/protobuf/protoc-gen-go
+/usr/local/go-${SIODB_GO_VERSION}/bin/go get -u github.com/gin-gonic/gin
 ```
 
 ### Install boost-pretty-printer GDB Extension
@@ -419,7 +424,7 @@ cd ../../..
 # Build and install Google Test library
 cd googletest
 tar --no-same-owner -xaf googletest-${SIODB_GTEST_VERSION}.tar.xz
-cd googletest-release-${SIODB_GTEST_VERSION}/googlemock/scripts
+cd googletest-${SIODB_GTEST_VERSION}/googlemock/scripts
 ./fuse_gmock_files.py include
 sudo mkdir -p "${SIODB_GTEST_PREFIX}"
 sudo cp -Rf include "${SIODB_GTEST_PREFIX}"
@@ -515,16 +520,6 @@ sudo make -j$(nproc)
 sudo make install
 sudo ldconfig
 cd ../../..
-```
-
-### Go Libraries
-
-Run following commands:
-
-```bash
-export GO_VERSION=1.15.3
-/usr/local/go-${GO_VERSION}/bin/go get -u github.com/golang/protobuf/protoc-gen-go
-/usr/local/go-${GO_VERSION}/bin/go get -u github.com/gin-gonic/gin
 ```
 
 ## System Setup (Debian, Ubuntu, CentOS, RHEL, SuSE, SLES)
