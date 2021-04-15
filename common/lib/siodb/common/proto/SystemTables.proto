@@ -9,7 +9,7 @@ import "ColumnDataType.proto";
 package siodb.database_info;
 
 option optimize_for=SPEED;
-option go_package = ".;siodbproto";
+option go_package = "siodb.io/siodb/siodbproto";
 
 /** List of system tables. */
 message SystemObjectList {
