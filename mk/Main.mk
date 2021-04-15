@@ -293,7 +293,7 @@ $(GENERATED_FILES_GO_MODULES)/$(TARGET_PROTO_GO_MODULE)/%.pb.go: $(SRC_DIR)/%.pr
 	@echo PROTOC $@
 	$(NOECHO)$(PROTOC) -I$(COMMON_PROTO_DIR) $(PROTOC_INCLUDE) \
 		--plugin=protoc-gen-go=${HOME}/go/bin/protoc-gen-go \
-		--go_out=$(dir $@) $(realpath $<)
+		--go_out=$(GENERATED_FILES_GO_MODULES) $(realpath $<)
 
 
 # Precompiled headers
