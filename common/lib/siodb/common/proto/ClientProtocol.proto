@@ -11,7 +11,7 @@ import "CommonMessages.proto";
 package siodb.client_protocol;
 
 option optimize_for=SPEED;
-option go_package = ".;siodbproto";
+option go_package = "siodb.io/siodb/siodbproto";
 
 /** Command from client to server. */
 message Command {
@@ -21,13 +21,13 @@ message Command {
 
     /** Command text */
     string text = 2;
-} 
+}
 
 /** Response from server. */
 message ServerResponse {
 
     /** Corresponding request ID. */
-    uint64 request_id = 1; 
+    uint64 request_id = 1;
 
     /** Messages from server. */
     repeated StatusMessage message = 2;
