@@ -314,10 +314,10 @@ wget "https://golang.org/dl/go${SIODB_GO_VERSION}.linux-amd64.tar.gz"
 tar xaf go${SIODB_GO_VERSION}.linux-amd64.tar.gz
 mv go go-${SIODB_GO_VERSION}
 sudo mv go-${SIODB_GO_VERSION} /usr/local
+rm -f go${SIODB_GO_VERSION}.linux-amd64.tar.gz
 
-# Go Libraries
+# Protobuf
 /usr/local/go-${SIODB_GO_VERSION}/bin/go get -u github.com/golang/protobuf/protoc-gen-go
-/usr/local/go-${SIODB_GO_VERSION}/bin/go get -u github.com/gin-gonic/gin
 ```
 
 ### Install boost-pretty-printer GDB Extension

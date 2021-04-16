@@ -3,10 +3,6 @@
 # in the LICENSE file.
 
 gcc_path=$(which gcc)
-if [[ "${gcc_path}" == "/opt/rh/devtoolset-9/root/usr/bin/gcc" ]]; then
-    export RHEL_DTS_CFLAGS=-mcet
-    export RHEL_DTS_CXXFLAGS=-mcet
-fi
 
 distro=$(lsb_release -is)
 distro_version=$(lsb_release -rs)

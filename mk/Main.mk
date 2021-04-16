@@ -119,13 +119,11 @@ endif
 
 # RHEL/CentOS only options
 ifeq ($(RHEL),1)
-# CentOS 7/RHEL 7 + DTS9 only
-# DEFAULT_CXXFLAGS+=-Wno-error=deprecated-copy
 
-# CentOS 7/RHEL 7 + DTS8 only
+# CentOS 7/RHEL 7 + DTS9 only
 ifeq ($(DISTRO_MAJOR),7)
-RH_CFLAGS+=-mcet
-RH_CXXFLAGS+=-mcet
+RH_CFLAGS+=
+RH_CXXFLAGS+=-Wno-error=deprecated-copy
 endif
 
 ECHO_E_OPTION:=-e
