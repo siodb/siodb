@@ -187,6 +187,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
         std::vector<ColumnPtr> m_columns;
     };
     std::unique_ptr<RowRelatedData> rowRelatedData;
+    response.set_rest_status_code(kRestStatusNotFound);
     if (haveRow) {
         ColumnDataAddress mcrAddr;
         mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
@@ -200,9 +201,8 @@ void RequestHandler::executeGetSingleRowRestRequest(
                     rowRelatedData->m_mcr.getColumnCount());
         }
         rowRelatedData->m_columns = table->getColumnsOrderedByPosition();
+        response.set_rest_status_code(kRestStatusOk);
     }
-
-    response.set_rest_status_code(kRestStatusOk);
 
     // Write response message
     {
@@ -215,7 +215,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(jsonWriter);
+    writeGetJsonProlog(haveRow ? kRestStatusOk : kRestStatusNotFound, jsonWriter);
     if (haveRow) {
         jsonWriter.writeObjectBegin();
         jsonWriter.writeFieldName(rowRelatedData->m_columns[0]->getName());

@@ -44,8 +44,11 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
         const auto deleteResult = table->deleteRow(request.m_trid, tp);
         rowDeleted = std::get<0>(deleteResult);
     }
-    if (rowDeleted) response.set_affected_row_count(1);
-    response.set_rest_status_code(kRestStatusOk);
+    response.set_rest_status_code(kRestStatusNotFound);
+    if (rowDeleted) {
+        response.set_affected_row_count(1);
+        response.set_rest_status_code(kRestStatusOk)
+    }
 
     // Write response message
     {

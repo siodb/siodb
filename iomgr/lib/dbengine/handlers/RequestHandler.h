@@ -556,10 +556,11 @@ private:
 
     /**
      * Writes JSON prolog for GET request.
+     * @param statusCode Status code.
      * @param jsonWriter JSON writer object.
      * @throw std::system_error on write error.
      */
-    void writeGetJsonProlog(siodb::io::JsonWriter& jsonWriter);
+    void writeGetJsonProlog(int statusCode, siodb::io::JsonWriter& jsonWriter);
 
     /**
      * Writes JSON prolog for POST, PATCH, DELETE requests.

@@ -791,13 +791,13 @@ void RequestHandler::checkWhereExpression(const requests::ConstExpressionPtr& wh
     }
 }
 
-void RequestHandler::writeGetJsonProlog(siodb::io::JsonWriter& jsonWriter)
+void RequestHandler::writeGetJsonProlog(int statusCode, siodb::io::JsonWriter& jsonWriter)
 {
     // Start top level object
     jsonWriter.writeObjectBegin();
     // Write status
     jsonWriter.writeFieldName(kRestStatusFieldName, ::ct_strlen(kRestStatusFieldName));
-    jsonWriter.writeValue(kRestStatusOk);
+    jsonWriter.writeValue(statusCode);
     // Start rows array
     jsonWriter.writeComma();
     jsonWriter.writeFieldName(kRestRowsFieldName, ::ct_strlen(kRestRowsFieldName));
