@@ -139,11 +139,23 @@ function _testfails {
 }
 
 function _killSiodb {
+  _log "INFO" "Killing -9 Siodb instance ${SIODB_INSTANCE}"
   if [[ $(ps -eo pid,cmd | egrep "\-\-instance ${SIODB_INSTANCE}$" | wc -l) -gt 0 ]]; then
     for siodb_process in $(ps -eo pid,cmd | egrep "\-\-instance ${SIODB_INSTANCE}$" | awk '{print $1}'); do
       kill -9 ${siodb_process}
     done
   fi
+  _log "INFO" "Waiting that Siodb releases lock file /run/lock/siodb/${SIODB_INSTANCE}.lock"
+  siodbLockFileEnabledTimeout=0
+  siodbLockFileEnabled=1
+  while [[ $siodbLockFileEnabled -ne 0 ]]; do
+    siodbLockFileEnabled=$(lslocks | egrep "POSIX.*WRITE.*/run/lock/siodb/${SIODB_INSTANCE}.lock$" | wc -l)
+    if [[ ${siodbLockFileEnabledTimeout} -gt ${siodbLockFileCheckMaxTimeout} ]]; then
+      _log "ERROR" \
+          "Timeout (${siodbLockFileCheckMaxTimeout} seconds) reached releasing lockfile"
+      _failExit
+    fi
+  done
 }
 
 function _SetInstanceParameter {
@@ -254,8 +266,18 @@ function _ShowSiodbProcesses {
 function _StartSiodb {
   _log "INFO" "Starting Siodb instance '${SIODB_INSTANCE}'"
   "${SIODB_BIN}/siodb" --instance ${SIODB_INSTANCE} --daemon
-  numberEntriesInLog=0
   counterTimeout=0
+  numberOfSiodbLogFileCreated=0
+  _log "INFO" "Wait until Siodb creates the log file..."
+  while [[ $numberOfSiodbLogFileCreated -eq 0 ]]; do
+    numberOfSiodbLogFileCreated=$(ls ${SIODB_LOG_DIR}/siodb*.log | wc -l)
+      if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
+        _log "ERROR" \
+            "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
+        _failExit
+      fi
+  done
+  numberEntriesInLog=0
   _log "INFO" "Waiting for Siodb instance to start..."
   while [[ $numberEntriesInLog -eq 0 ]]; do
     LOG_STARTUP=$(cat ${SIODB_LOG_DIR}/*.log \
