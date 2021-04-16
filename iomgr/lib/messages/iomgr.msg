@@ -137,8 +137,8 @@ PMSG Error CannotInsertDuplicateTrid  \
     Can't insert duplicate value %4% into master column '%1%'.'%2%'.'%3%'
 
 # UPDATE
-PMSG Error ValuesListIsEmpty             VALUES list type is empty 
-PMSG Error ColumnsListIsEmpty            '%1%'.'%2%' columns list type is empty 
+PMSG Error ValuesListIsEmpty             VALUES list type is empty
+PMSG Error ColumnsListIsEmpty            '%1%'.'%2%' columns list type is empty
 PMSG Error UpdateInvalidValueExpression  UPDATE SET expression is invalid: %1%
 PMSG Error CannotUpdateSystemTable       Update system table '%1%'.'%2%' is not allowed
 PMSG Error CannotUpdateMasterColumn      Can't update master column in the table '%1%'.'%2%'
@@ -187,6 +187,9 @@ PMSG Error CannotRenameCurrentDatabase  Can't rename current database '%1%'
 # CREATE TABLE
 PMSG Error TableTypeNotSupported  Table type %1% is not supported yet
 PMSG Error CannotCreateUserTablesInSystemDatabase  Can't create user table in the system database
+
+# DROP TABLE
+PMSG Error CannotDropSystemTable   Can't drop system table
 
 # ENCRYPTION
 PMSG Error CipherUnknown     Cipher '%1%' is unknown
@@ -541,7 +544,7 @@ MSG Error NumberOfValuesMistatchOnInsert  \
     Insert to the table '%1%'.'%2%': Number of values (%3%) doesn't match number of columns (%4%)
 MSG Error TooManyColumnsToInsert  \
     Insert to the table '%1%'.'%2%': Too many columns provided (%3%), while maximum possible \
-    number of columns is %4%. 
+    number of columns is %4%.
 MSG Error AdjustedNumberOfValuesMistatchOnInsert  \
     Insert to the table '%1%'.'%2%': Adjusted number of values (%3%) doesn't match \
         number of columns (%4%)
@@ -550,7 +553,7 @@ MSG Error NumberOfNextBlocksMistatchOnRollback  \
     doesn't match number of columns (%4%)
 MSG Error TooManyColumnsToRollback  \
     Rollback last insert in the table '%1%'.'%2%': Too many columns provided (%3%), \
-    while maximum possible number of columns is %4%. 
+    while maximum possible number of columns is %4%.
 
 MSG Error InvalidColumnSetTable  \
     Column set #%1% of table #%2% doesn't belong to the table '%3%'.'%4%' (%5%.%6%)
@@ -620,7 +623,7 @@ MSG Error ColumnDoesNotBelongToColumnSet  \
 MSG Error MasterColumnMainIndexAlreadyExists  \
     Main index of the master column '%1%'.'%2%'.'%3%' (%4%.%5%.%6%) already exist
 
-# Column definition 
+# Column definition
 ID -104000
 MSG Error MissingColumnDefinitionsForColumn \
     Missing column definitions for the column [%1%].[%2%].[%3%]

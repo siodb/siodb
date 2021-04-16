@@ -216,6 +216,10 @@ void RequestHandler::executeDropTableRequest(
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
+    if (database->isSystemTable(request.m_table)) {
+        throwDatabaseError(
+                IOManagerMessageId::kErrorCannotDropSystemTable);
+    }
 
     database->dropTable(request.m_table, !request.m_ifExists, m_userId);
     protobuf::writeMessage(
