@@ -45,7 +45,7 @@ void RequestHandler::executeGetDatabasesRestRequest(
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(jsonWriter);
+    writeGetJsonProlog(kRestStatusOk, jsonWriter);
     bool needComma = false;
     for (const auto& databaseName : databaseNames) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -83,7 +83,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(jsonWriter);
+    writeGetJsonProlog(kRestStatusOk, jsonWriter);
     bool needComma = false;
     for (const auto& tableName : tableNames) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -129,7 +129,7 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(jsonWriter);
+    writeGetJsonProlog(kRestStatusOk, jsonWriter);
     const auto& columns = dataSet.getColumns();
     const auto columnCount = columns.size();
     bool needCommaBeforeRow = false;

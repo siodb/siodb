@@ -47,7 +47,7 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
     response.set_rest_status_code(kRestStatusNotFound);
     if (rowUpdated) {
         response.set_affected_row_count(1);
-        response.set_rest_status_code(kRestStatusOk)
+        response.set_rest_status_code(kRestStatusOk);
     }
 
     // Write response message
