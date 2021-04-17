@@ -17,6 +17,7 @@ CXX_SRC:= \
 	RequestHandlerTest_DML_Update.cpp \
 	RequestHandlerTest_Main.cpp \
 	RequestHandlerTest_Query.cpp \
+	RequestHandlerTest_RestComplex.cpp \
 	RequestHandlerTest_RestDelete.cpp \
 	RequestHandlerTest_RestGet.cpp \
 	RequestHandlerTest_RestPatch.cpp \
