@@ -75,9 +75,9 @@ _RunSql "alter user user1 add token test_token x'${TOKEN}'"
 _RunSql "alter user root add token test_token x'${TOKEN}'"
 
 ## AUTH
-#executeRestRequest_GET "https://root:faketoken@localhost:50443/databases" 401
-#executeRestRequest_GET "https://root:${WRONG_TOKEN}@localhost:50443/databases" 401
-#executeRestRequest_GET "https://fakeuser:${WRONG_TOKEN}@localhost:50443/databases" 401
+executeRestRequest_GET "https://root:faketoken@localhost:50443/databases" 401
+executeRestRequest_GET "https://root:${WRONG_TOKEN}@localhost:50443/databases" 401
+executeRestRequest_GET "https://fakeuser:${WRONG_TOKEN}@localhost:50443/databases" 401
 
 ## GET
 executeRestRequest_GET \
@@ -150,7 +150,7 @@ executeRestRequest_PUT \
     404 '[{"col1":"value"}]'
 executeRestRequest_PUT \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows/999" \
-    404 '[{"col1":"value"}]'
+    403 '[{"col1":"value"}]'
 executeRestRequest_PUT \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows/999" \
     404 '[{"col1":"value"}]'

@@ -586,6 +586,9 @@ public:
     /** REST status "Created" */
     static constexpr int kRestStatusCreated = 201;
 
+    /** REST status "Unauthorized" */
+    static constexpr int kRestStatusUnauthorized = 401;
+
     /** REST status "forbidden" */
     static constexpr int kRestStatusForbidden = 403;
 

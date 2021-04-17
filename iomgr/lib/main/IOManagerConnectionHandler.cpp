@@ -76,12 +76,12 @@ void IOManagerConnectionHandler::sendAuthenticatedReponse(std::uint64_t requestI
 }
 
 void IOManagerConnectionHandler::sendErrorReponse(
-        std::uint64_t requestId, int errorCode, const char* errorMessage)
+        std::uint64_t requestId, int errorCode, int restErrorCode, const char* errorMessage)
 {
     iomgr_protocol::DatabaseEngineResponse response;
     response.set_request_id(requestId);
     response.set_response_count(1);
-    response.set_rest_status_code(dbengine::RequestHandler::kRestStatusInternalServerError);
+    response.set_rest_status_code(restErrorCode);
     const auto message = response.add_message();
     message->set_status_code(errorCode);
     message->set_text(errorMessage);

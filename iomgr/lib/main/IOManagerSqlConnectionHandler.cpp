@@ -73,7 +73,7 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                 parser.parse();
             } catch (std::exception& ex) {
                 LOG_DEBUG << m_logContext << "Sending common parse error: " << ex.what();
-                sendErrorReponse(requestMsg.request_id(), kSqlParseError, ex.what());
+                sendErrorReponse(requestMsg.request_id(), kSqlParseError, 0, ex.what());
                 LOG_DEBUG << m_logContext << "Sent common parse error.";
                 continue;
             }
@@ -96,7 +96,7 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                     dbEngineRequest = factory.createSqlRequest(i);
                 } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                     LOG_ERROR << m_logContext << "SQL parse error: " << ex.what();
-                    sendErrorReponse(requestMsg.request_id(), kSqlParseError, ex.what());
+                    sendErrorReponse(requestMsg.request_id(), kSqlParseError, 0, ex.what());
                     // Stop loop  after error response
                     break;
                 } catch (std::exception& ex) {
@@ -105,7 +105,7 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                               << "' (MSG_UUID " << uuid << ')';
                     const auto msg = "Internal error, see log for details, message UUID "
                                      + boost::uuids::to_string(uuid);
-                    sendErrorReponse(requestMsg.request_id(), kSqlParseError, msg.c_str());
+                    sendErrorReponse(requestMsg.request_id(), kSqlParseError, 0, msg.c_str());
                     // Stop loop  after error response
                     break;
                 }
