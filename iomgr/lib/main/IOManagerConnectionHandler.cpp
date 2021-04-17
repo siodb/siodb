@@ -81,6 +81,7 @@ void IOManagerConnectionHandler::sendErrorReponse(
     iomgr_protocol::DatabaseEngineResponse response;
     response.set_request_id(requestId);
     response.set_response_count(1);
+    response.set_rest_status_code(dbengine::RequestHandler::kRestStatusInternalServerError);
     const auto message = response.add_message();
     message->set_status_code(errorCode);
     message->set_text(errorMessage);

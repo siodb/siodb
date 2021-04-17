@@ -579,6 +579,22 @@ private:
      */
     void writeJsonEpilog(siodb::io::JsonWriter& jsonWriter);
 
+public:
+    /** REST status "OK" */
+    static constexpr int kRestStatusOk = 200;
+
+    /** REST status "Created" */
+    static constexpr int kRestStatusCreated = 201;
+
+    /** REST status "forbidden" */
+    static constexpr int kRestStatusForbidden = 403;
+
+    /** REST status "not found" */
+    static constexpr int kRestStatusNotFound = 404;
+
+    /** REST status "Internal Server Error" */
+    static constexpr int kRestStatusInternalServerError = 500;
+
 private:
     /** DBMS instance */
     Instance& m_instance;
@@ -615,15 +631,6 @@ private:
 
     /** REST status field name */
     static constexpr const char* kRestStatusFieldName = "status";
-
-    /** REST status "OK" */
-    static constexpr int kRestStatusOk = 200;
-
-    /** REST status "Created" */
-    static constexpr int kRestStatusCreated = 201;
-
-    /** REST status "not found" */
-    static constexpr int kRestStatusNotFound = 404;
 
     /** REST rows field name */
     static constexpr const char* kRestRowsFieldName = "rows";

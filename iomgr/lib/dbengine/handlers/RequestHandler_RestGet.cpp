@@ -64,6 +64,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
+    response.set_rest_status_code(kRestStatusNotFound);
 
     // Get table list
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -102,6 +103,7 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
+    response.set_rest_status_code(kRestStatusNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -159,6 +161,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
+    response.set_rest_status_code(kRestStatusNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -187,7 +190,6 @@ void RequestHandler::executeGetSingleRowRestRequest(
         std::vector<ColumnPtr> m_columns;
     };
     std::unique_ptr<RowRelatedData> rowRelatedData;
-    response.set_rest_status_code(kRestStatusNotFound);
     if (haveRow) {
         ColumnDataAddress mcrAddr;
         mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));

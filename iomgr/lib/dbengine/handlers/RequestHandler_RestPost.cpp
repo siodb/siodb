@@ -21,6 +21,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
 {
     response.set_has_affected_row_count(true);
     response.set_affected_row_count(0);
+    response.set_rest_status_code(kRestStatusNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -28,6 +29,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
         if (isSuperUser()) {
+            response.set_rest_status_code(kRestStatusForbidden);
             throwDatabaseError(IOManagerMessageId::kErrorCannotInsertToSystemTable,
                     table->getDatabaseName(), table->getName());
         } else {

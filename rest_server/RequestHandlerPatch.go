@@ -50,9 +50,9 @@ func (worker restWorker) patch(
 		return err
 	}
 
-	if _, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
+	if restStatusCode, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(int(restStatusCode), gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
@@ -65,7 +65,7 @@ func (worker restWorker) patch(
 
 	if restStatusCode, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(int(restStatusCode), gin.H{"error": fmt.Sprintf("%v", err)})
 		return err
 	} else {
 		c.Writer.WriteHeader(int(restStatusCode))
