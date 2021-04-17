@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -27,6 +27,7 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
+
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
         if (isSuperUser()) {
@@ -42,8 +43,7 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
     const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
     const auto updateResult = table->updateRow(request.m_trid, request.m_columnNames,
             std::move(const_cast<std::vector<Variant>&>(request.m_values)), false, tp);
-    const bool rowUpdated = std::get<0>(updateResult);
-    if (rowUpdated) response.set_affected_row_count(1);
+    if (updateResult.m_updated) response.set_affected_row_count(1);
     response.set_rest_status_code(kRestStatusOk);
 
     // Write response message
@@ -57,7 +57,7 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeModificationJsonProlog(rowUpdated ? kRestStatusOk : kRestStatusNotFound,
+    writeModificationJsonProlog(updateResult.m_updated ? kRestStatusOk : kRestStatusNotFound,
             response.affected_row_count(), jsonWriter);
     if (response.affected_row_count() > 0) jsonWriter.writeValue(request.m_trid);
     writeJsonEpilog(jsonWriter);

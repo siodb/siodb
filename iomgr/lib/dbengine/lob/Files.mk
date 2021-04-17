@@ -3,11 +3,11 @@
 # in the LICENSE file.
 
 CXX_SRC+= \
-	lob/ColumnBlobStream.cpp  \
-	lob/ColumnClobStream.cpp  \
+	lob/ColumnBlobStream.cpp \
+	lob/ColumnClobStream.cpp \
 	lob/ColumnLobStream.cpp
 
 CXX_HDR+= \
-	lob/ColumnBlobStream.h  \
-	lob/ColumnClobStream.h  \
+	lob/ColumnBlobStream.h \
+	lob/ColumnClobStream.h \
 	lob/ColumnLobStream.h

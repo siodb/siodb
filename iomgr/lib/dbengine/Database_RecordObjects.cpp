@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -154,7 +154,7 @@ void Database::recordColumnDefinitionConstraint(
 void Database::recordIndexAndColumns(const Index& index, const TransactionParameters& tp)
 {
     bool indexRecorded = false;
-    std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> indexRecordingResult;
+    InsertRowResult indexRecordingResult;
     try {
         indexRecordingResult = recordIndex(index, tp);
         indexRecorded = true;
@@ -162,14 +162,13 @@ void Database::recordIndexAndColumns(const Index& index, const TransactionParame
     } catch (...) {
         if (indexRecorded) {
             m_sysIndicesTable->rollbackLastRow(
-                    *indexRecordingResult.first, indexRecordingResult.second);
+                    *indexRecordingResult.m_mcr, indexRecordingResult.m_nextBlockIds);
         }
         throw;
     }
 }
 
-std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Database::recordIndex(
-        const Index& index, const TransactionParameters& tp)
+InsertRowResult Database::recordIndex(const Index& index, const TransactionParameters& tp)
 {
     LOG_DEBUG << "Database " << m_name << ": Recording index #" << index.getId() << ' '
               << index.getName() << " @" << static_cast<const void*>(&index);
@@ -191,7 +190,7 @@ void Database::recordIndexColumns(const Index& index, const TransactionParameter
 {
     LOG_DEBUG << "Database " << m_name << ": Recording index columns for the index #"
               << index.getId() << ' ' << index.getName();
-    std::vector<std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>>> recordedColumns;
+    std::vector<InsertRowResult> recordedColumns;
     const auto columnCount = index.getColumns().size();
     recordedColumns.reserve(columnCount);
     try {
@@ -199,7 +198,7 @@ void Database::recordIndexColumns(const Index& index, const TransactionParameter
             recordedColumns.push_back(recordIndexColumn(index, i, tp));
     } catch (...) {
         for (auto rit = recordedColumns.rbegin(); rit != recordedColumns.rend(); ++rit) {
-            m_sysIndexColumnsTable->rollbackLastRow(*rit->first, rit->second);
+            m_sysIndexColumnsTable->rollbackLastRow(*rit->m_mcr, rit->m_nextBlockIds);
         }
         throw;
     }
@@ -207,7 +206,7 @@ void Database::recordIndexColumns(const Index& index, const TransactionParameter
               << index.getId();
 }
 
-std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> Database::recordIndexColumn(
+InsertRowResult Database::recordIndexColumn(
         const Index& index, std::size_t columnIndex, const TransactionParameters& tp)
 {
     const auto& indexColumn = *index.getColumns().at(columnIndex);

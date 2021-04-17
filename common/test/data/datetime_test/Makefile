@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -10,10 +10,10 @@ include ../../../../mk/Prolog.mk
 TARGET_EXE:=datetime_test
 
 CXX_SRC:= \
-	ConstructionTest.cpp  \
-	ConversionTest.cpp  \
-	EqualityOperatorTest.cpp  \
-	Main.cpp  \
+	ConstructionTest.cpp \
+	ConversionTest.cpp \
+	EqualityOperatorTest.cpp \
+	Main.cpp \
 	RelationalOperatorTest.cpp
 
 CXXFLAGS+=-I../../lib

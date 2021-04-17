@@ -10,7 +10,7 @@ include ../../../mk/Prolog.mk
 TARGET_EXE:=registry_test
 
 CXX_SRC:= \
-	RegistryTest_Main.cpp  \
+	RegistryTest_Main.cpp \
 	RegistryTest_Serialization.cpp
 
 # CXX_HDR:=

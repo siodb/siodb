@@ -184,4 +184,5 @@
     "gopls": {
         "build.expandWorkspaceToModule": true
     },
+    "editor.fontSize": 16
 }

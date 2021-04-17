@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -13,13 +13,13 @@ C_SRC:= \
 	string_ext.c
 
 CXX_HDR:= \
-	ct_string.h  \
+	ct_string.h \
 
 C_HDR:= \
-	detail/string_ext_detail.h  \
-	compiler_defs.h  \
-	stddef_ext.h  \
-	stdint_ext.h  \
+	detail/string_ext_detail.h \
+	compiler_defs.h \
+	stddef_ext.h \
+	stdint_ext.h \
 	string_ext.h
 
 include $(MK)/Main.mk

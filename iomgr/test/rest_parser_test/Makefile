@@ -10,10 +10,10 @@ include ../../../mk/Prolog.mk
 TARGET_EXE:=rest_parser_test
 
 CXX_SRC:= \
-	RestParserTest_Get.cpp  \
-	RestParserTest_Delete.cpp  \
-	RestParserTest_Main.cpp  \
-	RestParserTest_Patch.cpp  \
+	RestParserTest_Get.cpp \
+	RestParserTest_Delete.cpp \
+	RestParserTest_Main.cpp \
+	RestParserTest_Patch.cpp \
 	RestParserTest_Post.cpp
 
 CXX_HDR:=

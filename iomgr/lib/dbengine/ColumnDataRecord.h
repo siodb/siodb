@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -81,8 +81,8 @@ public:
     }
 
     /**
-     * Returns indication that address is null value address.
-     * @return true if address is null value address, false otherwise.
+     * Returns indication that column data is null value.
+     * @return true if column data is null value, false otherwise.
      */
     bool isNullValue() const noexcept
     {

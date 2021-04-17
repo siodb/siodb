@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -12,7 +12,7 @@ include $(MK)/MainTargets.mk
 
 # List of all subdirs to recurse into
 SUBDIRS:= \
-	plain_binary_encoding_test  \
+	plain_binary_encoding_test \
 	string_scanner_test
 
 include $(MK)/ParallelRecurse.mk
