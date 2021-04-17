@@ -363,7 +363,8 @@ git clone git@github.com:siodb/siodb.git
 cd siodb
 
 # Install source code formatting hook for git
-cp -fv tools/git/clang-format.hook .git/hooks/pre-commit
+cp -Rfv tools/git/pre-commit.d .git/hooks
+cp -fv tools/git/pre-commit .git/hooks
 
 # CentOS 7/RHEL 7 ONLY: Enable devtoolset-9
 scl enable devtoolset-9 bash

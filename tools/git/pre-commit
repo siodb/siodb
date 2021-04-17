@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Copyright (C) 2021 Siodb GmbH. All rights reserved.
+# Use of this source code is governed by a license that can be found
+# in the LICENSE file.
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+for hook in $(ls "${script_dir}/pre-commit.d");
+do
+    "${script_dir}/pre-commit.d/${hook}" "$*"
+    exit_code=$?
+    if [[ ${exit_code} -ne 0 ]]; then exit ${exit_code}; fi
+done

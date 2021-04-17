@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
@@ -15,17 +15,17 @@ fi
 
 format_file()
 {
-    local file="$1"
-    local ext="${file##*\.}"
-    if [[ -f $file ]] && ( \
-            [[ $ext == "c" ]] \
-            || [[ $ext == "cpp" ]] \
-            || [[ $ext == "h" ]] \
+    local fpath="$1"
+    local fext="${fpath##*\.}"
+    if [[ -f "${fpath}" ]] && ( \
+            [[ ${fext} == "c" ]] \
+            || [[ ${fext} == "cpp" ]] \
+            || [[ ${fext} == "h" ]] \
         );
     then
-        echo "Formatting $1"
-        ${CLANG_FORMAT} -i ${STYLEARG} $1
-        git add $1
+        echo "Formatting ${fpath}"
+        ${CLANG_FORMAT} -i ${STYLEARG} "$1"
+        git add "$1"
     fi
 }
 
