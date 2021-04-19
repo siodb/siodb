@@ -1,6 +1,12 @@
 2021-XX-XX version 0.10.0
 
+- New feature: Copyright years update in the git pre-commit hook
 - Update: Upgraded third party libraries to actual stable versions
+- Update: Upgraded to Go 1.16.3
+- Update: Improved standalone test scripts
+- Fix: #124 Drop system table must be prohibited
+- Fix: #125 Inserting hyphens doesn't work
+- Fix: #126 code: -1007, message: Invalid column count in master column record in the table
 
 
 2020-12-07 version 0.9.0

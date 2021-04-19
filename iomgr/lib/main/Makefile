@@ -10,30 +10,30 @@ include ../../../mk/Prolog.mk
 TARGET_LIB:=iomgr_main
 
 CXX_SRC:= \
-	IOManagerConnectionHandler.cpp  \
-	IOManagerConnectionManager.cpp  \
-	IOManagerMain.cpp  \
-	IOManagerRequest.cpp  \
-	IOManagerRequestDispatcher.cpp  \
-	IOManagerRequestExecutor.cpp  \
-	IOManagerRequestHandlerBase.cpp  \
-	IOManagerRestConnectionHandler.cpp  \
-	IOManagerRestConnectionHandlerFactory.cpp  \
-	IOManagerSqlConnectionHandler.cpp  \
+	IOManagerConnectionHandler.cpp \
+	IOManagerConnectionManager.cpp \
+	IOManagerMain.cpp \
+	IOManagerRequest.cpp \
+	IOManagerRequestDispatcher.cpp \
+	IOManagerRequestExecutor.cpp \
+	IOManagerRequestHandlerBase.cpp \
+	IOManagerRestConnectionHandler.cpp \
+	IOManagerRestConnectionHandlerFactory.cpp \
+	IOManagerSqlConnectionHandler.cpp \
 	IOManagerSqlConnectionHandlerFactory.cpp
 
 CXX_HDR:= \
-	IOManagerConnectionHandler.h  \
-	IOManagerConnectionHandlerFactory.h  \
-	IOManagerConnectionManager.h  \
-	IOManagerRequest.h  \
-	IOManagerRequestPtr.h  \
-	IOManagerRequestDispatcher.h  \
-	IOManagerRequestExecutor.h  \
-	IOManagerRequestHandlerBase.h  \
-	IOManagerRestConnectionHandler.h  \
-	IOManagerRestConnectionHandlerFactory.h  \
-	IOManagerSqlConnectionHandler.h  \
+	IOManagerConnectionHandler.h \
+	IOManagerConnectionHandlerFactory.h \
+	IOManagerConnectionManager.h \
+	IOManagerRequest.h \
+	IOManagerRequestPtr.h \
+	IOManagerRequestDispatcher.h \
+	IOManagerRequestExecutor.h \
+	IOManagerRequestHandlerBase.h \
+	IOManagerRestConnectionHandler.h \
+	IOManagerRestConnectionHandlerFactory.h \
+	IOManagerSqlConnectionHandler.h \
 	IOManagerSqlConnectionHandlerFactory.h
 
 CXXFLAGS+=-I$(GENERATED_FILES_ROOT)

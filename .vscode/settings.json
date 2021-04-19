@@ -181,4 +181,8 @@
     ],
     "files.trimTrailingWhitespace": true,
     "terminal.integrated.localEchoLatencyThreshold": -1,
+    "gopls": {
+        "build.expandWorkspaceToModule": true
+    },
+    "editor.fontSize": 16
 }

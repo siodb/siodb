@@ -18,6 +18,7 @@ update_siodb_copyright_years()
             || [[ "${fext}" == "mk" ]] \
             || [[ "${fext}" == "sh" ]] \
             || [[ "${fext}" == "g4" ]] \
+            || [[ "${fext}" == "go" ]] \
         );
     then
         echo "Updating copyright years in ${fpath}"

@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -10,11 +10,11 @@ include ../../mk/Prolog.mk
 TARGET_LIB:=conn_worker
 
 CXX_SRC:= \
-	ConnWorker.cpp  \
+	ConnWorker.cpp \
 	ConnWorkerConnectionHandler.cpp
 
 CXX_HDR:= \
-	ConnWorker.h  \
-	ConnWorkerConnectionHandler.h 
+	ConnWorker.h \
+	ConnWorkerConnectionHandler.h
 
 include $(MK)/Main.mk

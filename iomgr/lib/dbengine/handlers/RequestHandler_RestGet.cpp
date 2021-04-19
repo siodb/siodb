@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -68,6 +68,8 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
 
     // Get table list
     const auto database = m_instance.findDatabaseChecked(request.m_database);
+    UseDatabaseGuard databaseGuard(*database);
+
     auto tableNames = database->getTableNames(isSuperUser());
     std::sort(tableNames.begin(), tableNames.end());
 
@@ -108,6 +110,7 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
+
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable() && !isSuperUser()) {
         throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, table->getDatabaseName(),
@@ -166,6 +169,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
+
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable() && !isSuperUser()) {
         throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, table->getDatabaseName(),

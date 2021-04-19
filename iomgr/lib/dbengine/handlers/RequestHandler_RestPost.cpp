@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -26,6 +26,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
+
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
         if (isSuperUser()) {
@@ -70,8 +71,8 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
         }
 
         // Insert row
-        auto result = table->insertRow(columnNames, std::move(rowValues), transactionParams);
-        tridList.push_back(result.first->getTableRowId());
+        const auto result = table->insertRow(columnNames, std::move(rowValues), transactionParams);
+        tridList.push_back(result.m_mcr->getTableRowId());
     }
 
     response.set_affected_row_count(tridList.size());
