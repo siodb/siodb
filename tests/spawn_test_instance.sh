@@ -7,7 +7,7 @@
 ## Global
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_NAME=$(basename "${SCRIPT_DIR}")
-source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
+source "${SCRIPT_DIR}/share/CommonFunctions.sh"
 
 ## Specific test functions
 
@@ -18,19 +18,12 @@ source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 ## =============================================
 _TestBegin
 _Prepare
-#_SetInstanceParameter "data_dir" "${SOURCE_DATA_DIR}"
 _StartSiodb
-
-## =============================================
-## TEST
-## =============================================
-
-# YOUR TEST HERE
-
-## =============================================
-## TEST FOOTER
-## =============================================
-_FinalStopOfSiodb
-_CheckLogFiles
 _TestEnd
+
+echo "Instance ready:"
+echo ""
+echo "${SIODB_BIN}/siocli -r -u root -i ${ROOT_DIR}/tests/share/private_key"
+echo ""
+
 exit 0

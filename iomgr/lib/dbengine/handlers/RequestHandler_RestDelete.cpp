@@ -22,6 +22,7 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
 {
     response.set_has_affected_row_count(true);
     response.set_affected_row_count(0);
+    response.set_rest_status_code(kRestStatusNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -30,6 +31,7 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
         if (isSuperUser()) {
+            response.set_rest_status_code(kRestStatusForbidden);
             throwDatabaseError(IOManagerMessageId::kErrorCannotDeleteFromSystemTable,
                     table->getDatabaseName(), table->getName());
         } else {
@@ -41,8 +43,10 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     // Delete row
     const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
     const auto deleteResult = table->deleteRow(request.m_trid, tp);
-    if (deleteResult.m_deleted) response.set_affected_row_count(1);
-    response.set_rest_status_code(kRestStatusOk);
+    if (deleteResult.m_deleted) {
+        response.set_affected_row_count(1);
+        response.set_rest_status_code(kRestStatusOk);
+    }
 
     // Write response message
     {

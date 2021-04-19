@@ -23,6 +23,7 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
 {
     response.set_has_affected_row_count(true);
     response.set_affected_row_count(0);
+    response.set_rest_status_code(kRestStatusNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -31,6 +32,7 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
         if (isSuperUser()) {
+            response.set_rest_status_code(kRestStatusForbidden);
             throwDatabaseError(IOManagerMessageId::kErrorCannotUpdateSystemTable,
                     table->getDatabaseName(), table->getName());
         } else {
@@ -43,8 +45,10 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
     const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
     const auto updateResult = table->updateRow(request.m_trid, request.m_columnNames,
             std::move(const_cast<std::vector<Variant>&>(request.m_values)), false, tp);
-    if (updateResult.m_updated) response.set_affected_row_count(1);
-    response.set_rest_status_code(kRestStatusOk);
+    if (updateResult.m_updated) {
+        response.set_affected_row_count(1);
+        response.set_rest_status_code(kRestStatusOk);
+    }
 
     // Write response message
     {

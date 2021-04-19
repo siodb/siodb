@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -155,6 +155,7 @@ function _killSiodb {
           "Timeout (${siodbLockFileCheckMaxTimeout} seconds) reached releasing lockfile"
       _failExit
     fi
+    sleep 1
   done
 }
 
@@ -268,7 +269,7 @@ function _StartSiodb {
   "${SIODB_BIN}/siodb" --instance ${SIODB_INSTANCE} --daemon
   counterTimeout=0
   numberOfSiodbLogFileCreated=0
-  _log "INFO" "Wait until Siodb creates the log file..."
+  _log "INFO" "Wait until Siodb creates the log file to check startup status..."
   while [[ $numberOfSiodbLogFileCreated -eq 0 ]]; do
     numberOfSiodbLogFileCreated=$(ls ${SIODB_LOG_DIR}/siodb*.log | wc -l)
       if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
@@ -276,9 +277,10 @@ function _StartSiodb {
             "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
         _failExit
       fi
+    sleep 1
   done
   numberEntriesInLog=0
-  _log "INFO" "Waiting for Siodb instance to start..."
+  _log "INFO" "Waiting for Siodb instance to start watching log file..."
   while [[ $numberEntriesInLog -eq 0 ]]; do
     LOG_STARTUP=$(cat ${SIODB_LOG_DIR}/*.log \
         | awk -v previousInstanceStartTimestamp=${previousInstanceStartTimestamp} \

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -76,11 +76,12 @@ void IOManagerConnectionHandler::sendAuthenticatedReponse(std::uint64_t requestI
 }
 
 void IOManagerConnectionHandler::sendErrorReponse(
-        std::uint64_t requestId, int errorCode, const char* errorMessage)
+        std::uint64_t requestId, int errorCode, int restErrorCode, const char* errorMessage)
 {
     iomgr_protocol::DatabaseEngineResponse response;
     response.set_request_id(requestId);
     response.set_response_count(1);
+    response.set_rest_status_code(restErrorCode);
     const auto message = response.add_message();
     message->set_status_code(errorCode);
     message->set_text(errorMessage);

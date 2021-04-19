@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -10,7 +10,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_GOUPS="$(find ${SCRIPT_DIR} -maxdepth 1 -type d -not -path "*/share" -not -path "${SCRIPT_DIR}" -not -path "*/skeleton")"
 OUTPUT_FILE="${HOME}/tmp/all_tests_$(date +%s)"
 export SIODB_TEST_ALL="yes"
-
 
 # Run tests
 FULL_TEST_START_TIMESTAMP=$(date +%s)
