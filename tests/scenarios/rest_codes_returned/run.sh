@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -81,9 +81,9 @@ executeRestRequest_GET "https://fakeuser:${WRONG_TOKEN}@localhost:50443/database
 
 ## GET
 executeRestRequest_GET \
-    "https://root:${TOKEN}@localhost:50443/databases//tables" 500
+    "https://root:${TOKEN}@localhost:50443/databases//tables" 400
 executeRestRequest_GET \
-    "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables//rows" 500
+    "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables//rows" 400
 executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables" 200
 executeRestRequest_GET \

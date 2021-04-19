@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -121,7 +121,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
             } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                 LOG_DEBUG << m_logContext << "REST request parse error " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), kRestParseError,
-                        dbengine::RequestHandler::kRestStatusInternalServerError, ex.what());
+                        dbengine::RequestHandler::kRestStatusBadRequest, ex.what());
                 LOG_DEBUG << m_logContext << "Sent request parse error";
                 continue;
             } catch (std::exception& ex) {
@@ -131,7 +131,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 const auto msg = "Internal error, see log for details, message UUID "
                                  + boost::uuids::to_string(uuid);
                 sendErrorReponse(requestMsg.request_id(), kRestParseError,
-                        dbengine::RequestHandler::kRestStatusInternalServerError, msg.c_str());
+                        dbengine::RequestHandler::kRestStatusBadRequest, msg.c_str());
                 continue;
             }
 

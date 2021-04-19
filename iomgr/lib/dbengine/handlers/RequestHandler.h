@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -585,6 +585,9 @@ public:
 
     /** REST status "Created" */
     static constexpr int kRestStatusCreated = 201;
+
+    /** REST status "Bad Request" */
+    static constexpr int kRestStatusBadRequest = 400;
 
     /** REST status "Unauthorized" */
     static constexpr int kRestStatusUnauthorized = 401;
