@@ -4,7 +4,6 @@
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
-
 ## Global
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_NAME=$(basename "${SCRIPT_DIR}")

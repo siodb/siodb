@@ -13,7 +13,6 @@ source "${SCRIPT_DIR}/share/CommonFunctions.sh"
 
 ## Specific test parameters
 
-
 ## =============================================
 ## TEST HEADER
 ## =============================================
