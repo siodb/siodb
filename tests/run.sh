@@ -15,7 +15,7 @@ export SIODB_TEST_ALL="yes"
 FULL_TEST_START_TIMESTAMP=$(date +%s)
 for d in ${TEST_GOUPS}; do
     _log "INFO" "Running test group $d"
-    ${d}/run.sh "$@" | tee -a "${OUTPUT_FILE}"
+    ${d}/run.sh "$@" | tee -a "${OUTPUT_FILE}-$(basename ${d})"
 done
 FULL_TEST_END_TIMESTAMP=$(date +%s)
 FULL_TEST_ELAPSED_TIME="$(echo "scale=2; ($FULL_TEST_END_TIMESTAMP-$FULL_TEST_START_TIMESTAMP)/60" | bc -l)"
@@ -27,13 +27,16 @@ echo "## ======================================================="
 echo "## Test results"
 echo "## ======================================================="
 echo ""
-ERROR_COUNT=$(cat "${OUTPUT_FILE}" | egrep '\| TEST\:ERROR \|' | wc -l)
+ls -l ${OUTPUT_FILE}*
+echo ""
+
+ERROR_COUNT=$(cat ${OUTPUT_FILE}* | egrep '\| TEST\:ERROR \|' | wc -l)
 if [[ "${ERROR_COUNT}" -gt 0 ]]; then
-  cat -v "${OUTPUT_FILE}" | egrep --color=never '\| TEST\:ERROR \||\| TEST\:SUCCESS \|'
+  cat -v ${OUTPUT_FILE}* | egrep --color=never '\| TEST\:ERROR \||\| TEST\:SUCCESS \|'
   _log "ERROR" "Not all tests passed (Elapsed time: ${FULL_TEST_ELAPSED_TIME})"
   exit 1
 else
-  cat -v "${OUTPUT_FILE}" | egrep --color=never '\| TEST\:ERROR \||\| TEST\:SUCCESS \|'
+  cat -v ${OUTPUT_FILE}* | egrep --color=never '\| TEST\:ERROR \||\| TEST\:SUCCESS \|'
   _log "INFO" "All tests passed successfully (Elapsed time: ${FULL_TEST_ELAPSED_TIME})"
   exit 0
 fi
