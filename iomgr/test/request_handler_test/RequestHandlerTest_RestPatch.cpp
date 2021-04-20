@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -57,11 +57,11 @@ TEST(RestPatch, PatchExistingRow)
             dbengine::Variant(),
     };
     std::vector<std::uint64_t> trids;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -162,11 +162,11 @@ TEST(RestPatch, PatchNonExistingRow)
             dbengine::Variant(),
     };
     std::vector<std::uint64_t> trids;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -264,11 +264,11 @@ TEST(RestPatch, PatchExstingRowWithInvalidData)
             dbengine::Variant(),
     };
     std::vector<std::uint64_t> trids;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -351,11 +351,11 @@ TEST(RestPatch, PatchExistingRowNonExistingColumn)
             dbengine::Variant(),
     };
     std::vector<std::uint64_t> trids;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -438,11 +438,11 @@ TEST(RestPatch, PatchTrid)
             dbengine::Variant(),
     };
     std::vector<std::uint64_t> trids;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
     values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).first->getTableRowId());
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;

@@ -308,7 +308,7 @@ Now, proceed to the section [All Systems](#all-systems).
 Run following commands:
 
 ```bash
-export SIODB_GO_VERSION=1.16.2
+export SIODB_GO_VERSION=1.16.3
 cd /tmp
 wget "https://golang.org/dl/go${SIODB_GO_VERSION}.linux-amd64.tar.gz"
 tar xaf go${SIODB_GO_VERSION}.linux-amd64.tar.gz
@@ -363,7 +363,8 @@ git clone git@github.com:siodb/siodb.git
 cd siodb
 
 # Install source code formatting hook for git
-cp -fv tools/git/clang-format.hook .git/hooks/pre-commit
+cp -Rfv tools/git/pre-commit.d .git/hooks
+cp -fv tools/git/pre-commit .git/hooks
 
 # CentOS 7/RHEL 7 ONLY: Enable devtoolset-9
 scl enable devtoolset-9 bash

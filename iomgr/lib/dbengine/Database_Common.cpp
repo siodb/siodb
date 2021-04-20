@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -820,9 +820,9 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
             LOG_DEBUG << "Database " << m_table.getDatabaseName()
                       << ": DROP TABLE: " << m_table.getName() << ": Removing TRID #" << trid;
             const auto deleteResult = m_table.deleteRow(trid, m_tp, false);
-            if (std::get<0>(deleteResult)) {
-                if (!m_rollbackAddress) m_rollbackAddress = std::get<2>(deleteResult);
-                m_nextBlockId = std::get<3>(deleteResult).getBlockId();
+            if (deleteResult.m_deleted) {
+                if (!m_rollbackAddress) m_rollbackAddress = deleteResult.m_mcrAddress;
+                m_nextBlockId = deleteResult.m_nextAddress.getBlockId();
             }
         }
 

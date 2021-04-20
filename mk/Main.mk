@@ -221,14 +221,14 @@ SUPPLEMENTARY_TARGETS+=$(TARGET_LIB_FILES)
 endif
 
 .PRECIOUS: \
-	$(PROTO_CXX_HDR)  \
-	$(PROTO_CXX_SRC)  \
-	$(PROTO_GO_SRC)  \
-	$(OBJ_DIRS)  \
-	$(CHK_DIRS)  \
-	$(GENERATED_FILES_DIRS)  \
-	$(C_PCH_DEP)  \
-	$(CXX_PCH_DEP)  \
+	$(PROTO_CXX_HDR) \
+	$(PROTO_CXX_SRC) \
+	$(PROTO_GO_SRC) \
+	$(OBJ_DIRS) \
+	$(CHK_DIRS) \
+	$(GENERATED_FILES_DIRS) \
+	$(C_PCH_DEP) \
+	$(CXX_PCH_DEP) \
 	$(MAIN_TARGET).debug
 
 all: \

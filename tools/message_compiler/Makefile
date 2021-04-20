@@ -12,7 +12,7 @@ COMPILER_VERSION=0.1.5
 TARGET_EXE:=message_compiler
 
 CXX_SRC:=\
-	Compiler.cpp  \
+	Compiler.cpp \
 	CompilerOptions.cpp
 
 DEFS+=-DCOMPILER_VERSION=\"$(COMPILER_VERSION)\"

@@ -3,23 +3,23 @@
 # in the LICENSE file.
 
 CXX_SRC+= \
-	ikt/IndexKeyTraits.cpp  \
-	ikt/Int16IndexKeyTraits.cpp  \
-	ikt/Int32IndexKeyTraits.cpp  \
-	ikt/Int64IndexKeyTraits.cpp  \
-	ikt/Int8IndexKeyTraits.cpp  \
-	ikt/UInt16IndexKeyTraits.cpp  \
-	ikt/UInt32IndexKeyTraits.cpp  \
-	ikt/UInt64IndexKeyTraits.cpp  \
+	ikt/IndexKeyTraits.cpp \
+	ikt/Int16IndexKeyTraits.cpp \
+	ikt/Int32IndexKeyTraits.cpp \
+	ikt/Int64IndexKeyTraits.cpp \
+	ikt/Int8IndexKeyTraits.cpp \
+	ikt/UInt16IndexKeyTraits.cpp \
+	ikt/UInt32IndexKeyTraits.cpp \
+	ikt/UInt64IndexKeyTraits.cpp \
 	ikt/UInt8IndexKeyTraits.cpp
 
 CXX_HDR+= \
-	ikt/IndexKeyTraits.h  \
-	ikt/Int16IndexKeyTraits.h  \
-	ikt/Int32IndexKeyTraits.h  \
-	ikt/Int64IndexKeyTraits.h  \
-	ikt/Int8IndexKeyTraits.h  \
-	ikt/UInt16IndexKeyTraits.h  \
-	ikt/UInt32IndexKeyTraits.h  \
-	ikt/UInt64IndexKeyTraits.h  \
+	ikt/IndexKeyTraits.h \
+	ikt/Int16IndexKeyTraits.h \
+	ikt/Int32IndexKeyTraits.h \
+	ikt/Int64IndexKeyTraits.h \
+	ikt/Int8IndexKeyTraits.h \
+	ikt/UInt16IndexKeyTraits.h \
+	ikt/UInt32IndexKeyTraits.h \
+	ikt/UInt64IndexKeyTraits.h \
 	ikt/UInt8IndexKeyTraits.h

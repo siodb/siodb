@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -11,15 +11,14 @@
 #include "ColumnPtr.h"
 #include "ColumnSetCache.h"
 #include "Database.h"
+#include "DeleteRowResult.h"
 #include "IndexPtr.h"
 #include "TableColumns.h"
 #include "TablePtr.h"
+#include "UpdateRowResult.h"
 
 // Common project headers
 #include <siodb/iomgr/shared/dbengine/Variant.h>
-
-// STL headers
-#include <tuple>
 
 namespace siodb::iomgr::dbengine {
 
@@ -381,12 +380,12 @@ public:
      * @param columnValues Column values. May be modified by this function.
      * @param transactionParameters Transaction parameters.
      * @param customTrid Custom TRID to use. Zero causes automatic generation of new TRID.
-     * @return Pair of (master column record, next block IDs).
+     * @return Insert row result data.
      * @throw DatabaseError if operation has failed.
      */
-    std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> insertRow(
-            const std::vector<std::string>& columnNames, std::vector<Variant>&& columnValues,
-            const TransactionParameters& transactionParameters, std::uint64_t customTrid = 0);
+    InsertRowResult insertRow(const std::vector<std::string>& columnNames,
+            std::vector<Variant>&& columnValues, const TransactionParameters& transactionParameters,
+            std::uint64_t customTrid = 0);
 
     /**
      * Inserts new row into the table. Assumes values correspond to columns in other order
@@ -394,23 +393,22 @@ public:
      * @param columnValues Column values. May be modified by this function.
      * @param transactionParameters Transaction parameters.
      * @param customTrid Custom TRID to use. Zero causes automatic generation of new TRID.
-     * @return Pair of (master column record, next block IDs).
+     * @return Insert row result data.
      * @throw DatabaseError if operation has failed.
      */
-    std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> insertRow(
-            std::vector<Variant>&& columnValues, const TransactionParameters& transactionParameters,
-            std::uint64_t customTrid = 0);
+    InsertRowResult insertRow(std::vector<Variant>&& columnValues,
+            const TransactionParameters& transactionParameters, std::uint64_t customTrid = 0);
 
     /**
      * Deletes existing row from the table.
      * @param trid Table row ID.
      * @param transactionParameters Transaction parameters.
      * @param updateMasterColumnMainIndex Whether to update or not master column main index.
-     * @return Tuple of (success flag (record found), new MCR, new MCR address, next address)
+     * @return Delete row result data.
      * @throw DatabaseError if operation has failed.
      */
-    std::tuple<bool, MasterColumnRecordPtr, ColumnDataAddress, ColumnDataAddress> deleteRow(
-            std::uint64_t trid, const TransactionParameters& transactionParameters,
+    DeleteRowResult deleteRow(std::uint64_t trid,
+            const TransactionParameters& transactionParameters,
             bool updateMasterColumnMainIndex = true);
 
     /**
@@ -419,11 +417,10 @@ public:
      * @param mcrAddress MCR address.
      * @param transactionParameters Transaction parameters.
      * @param updateMasterColumnMainIndex Whether to update or not master column main index.
-     * @return Tuple of (new master column record, its address, next address).
+     * @return Delete row result data.
      * @throw DatabaseError if operation has failed.
      */
-    std::tuple<MasterColumnRecordPtr, ColumnDataAddress, ColumnDataAddress> deleteRow(
-            const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
+    DeleteRowResult deleteRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
             const TransactionParameters& transactionParameters,
             bool updateMasterColumnMainIndex = true);
 
@@ -434,11 +431,10 @@ public:
      * @param columnValues New values.
      * @param allowTrid Allow TRID columns in the list, will be ignored at update.
      * @param tp Transaction parameters.
-     * @return Tuple of (success indicator (row found), master column record, next block IDs).
+     * @return Update row result data.
      * @throw DatabaseError if operation has failed for any other reason than row not found.
      */
-    std::tuple<bool, MasterColumnRecordPtr, std::vector<std::uint64_t>> updateRow(
-            std::uint64_t trid, const std::vector<std::string>& columnNames,
+    UpdateRowResult updateRow(std::uint64_t trid, const std::vector<std::string>& columnNames,
             std::vector<Variant>&& columnValues, bool allowTrid, const TransactionParameters& tp);
 
     /**
@@ -447,11 +443,10 @@ public:
      * @param columnPositions Positions of columns to place values.
      * @param columnValues New values.
      * @param tp Transaction parameters.
-     * @return Tuple of (success indicator (row found), master column record, next block IDs).
+     * @return Update row result data.
      * @throw DatabaseError if operation has failed for any other reason than row not found.
      */
-    std::tuple<bool, MasterColumnRecordPtr, std::vector<std::uint64_t>> updateRow(
-            std::uint64_t trid, const std::vector<std::size_t>& columnPositions,
+    UpdateRowResult updateRow(std::uint64_t trid, const std::vector<std::size_t>& columnPositions,
             std::vector<Variant>&& columnValues, const TransactionParameters& tp);
 
     /**
@@ -461,11 +456,10 @@ public:
      * @param columnPositions Positions of columns to place values.
      * @param columnValues New values.
      * @param tp Transaction parameters.
-     * @return Pair of (master column record, next block IDs).
+     * @return Update row result data.
      * @throw DatabaseError if operation has failed.
      */
-    std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> updateRow(
-            const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
+    UpdateRowResult updateRow(const MasterColumnRecord& mcr, const ColumnDataAddress& mcrAddress,
             const std::vector<std::size_t>& columnPositions, std::vector<Variant>&& columnValues,
             const TransactionParameters& tp);
 
@@ -653,12 +647,11 @@ private:
      * @param columnValues Column values. May be modified by this function.
      * @param tp Transaction parameters.
      * @param customTrid Custom TRID to use. Zero causes automatic generation of new TRID.
-     * @return Pair of (master column record, next block IDs).
+     * @return Insert row result data.
      * @throw DatabaseError if operation has failed.
      */
-    std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> doInsertRowUnlocked(
-            std::vector<Variant>&& columnValues, const TransactionParameters& transactionParameters,
-            std::uint64_t customTrid);
+    InsertRowResult doInsertRowUnlocked(std::vector<Variant>&& columnValues,
+            const TransactionParameters& transactionParameters, std::uint64_t customTrid);
 
 private:
     /** Database to which this table belongs */
@@ -667,7 +660,7 @@ private:
     /** Table name */
     std::string m_name;
 
-    /** Table name */
+    /** Table description */
     std::optional<std::string> m_description;
 
     /** System table flag */

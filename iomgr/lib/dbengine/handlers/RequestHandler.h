@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -556,10 +556,11 @@ private:
 
     /**
      * Writes JSON prolog for GET request.
+     * @param statusCode Status code.
      * @param jsonWriter JSON writer object.
      * @throw std::system_error on write error.
      */
-    void writeGetJsonProlog(siodb::io::JsonWriter& jsonWriter);
+    void writeGetJsonProlog(int statusCode, siodb::io::JsonWriter& jsonWriter);
 
     /**
      * Writes JSON prolog for POST, PATCH, DELETE requests.
@@ -577,6 +578,28 @@ private:
      * @throw std::system_error on write error.
      */
     void writeJsonEpilog(siodb::io::JsonWriter& jsonWriter);
+
+public:
+    /** REST status "OK" */
+    static constexpr int kRestStatusOk = 200;
+
+    /** REST status "Created" */
+    static constexpr int kRestStatusCreated = 201;
+
+    /** REST status "Bad Request" */
+    static constexpr int kRestStatusBadRequest = 400;
+
+    /** REST status "Unauthorized" */
+    static constexpr int kRestStatusUnauthorized = 401;
+
+    /** REST status "forbidden" */
+    static constexpr int kRestStatusForbidden = 403;
+
+    /** REST status "not found" */
+    static constexpr int kRestStatusNotFound = 404;
+
+    /** REST status "Internal Server Error" */
+    static constexpr int kRestStatusInternalServerError = 500;
 
 private:
     /** DBMS instance */
@@ -614,15 +637,6 @@ private:
 
     /** REST status field name */
     static constexpr const char* kRestStatusFieldName = "status";
-
-    /** REST status "OK" */
-    static constexpr int kRestStatusOk = 200;
-
-    /** REST status "Created" */
-    static constexpr int kRestStatusCreated = 201;
-
-    /** REST status "not found" */
-    static constexpr int kRestStatusNotFound = 404;
 
     /** REST rows field name */
     static constexpr const char* kRestRowsFieldName = "rows";

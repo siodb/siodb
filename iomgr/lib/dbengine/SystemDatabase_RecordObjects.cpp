@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -151,8 +151,7 @@ void SystemDatabase::updateUser(
 
     const auto result =
             m_sysUsersTable->updateRow(userId, columnPositions, std::move(columnValues), tp);
-    if (!std::get<0>(result))
-        throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userId);
+    if (!result.m_updated) throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userId);
 }
 
 void SystemDatabase::updateUserAccessKey(std::uint64_t accessKeyId,
@@ -185,7 +184,7 @@ void SystemDatabase::updateUserAccessKey(std::uint64_t accessKeyId,
 
     const auto result = m_sysUserAccessKeysTable->updateRow(
             accessKeyId, columnPositions, std::move(columnValues), tp);
-    if (!std::get<0>(result))
+    if (!result.m_updated)
         throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIdDoesNotExist, accessKeyId);
 }
 
@@ -223,7 +222,7 @@ void SystemDatabase::updateUserToken(
 
     const auto result =
             m_sysUserTokensTable->updateRow(tokenId, columnPositions, std::move(columnValues), tp);
-    if (!std::get<0>(result))
+    if (!result.m_updated)
         throwDatabaseError(IOManagerMessageId::kErrorUserTokenIdDoesNotExist, tokenId);
 }
 

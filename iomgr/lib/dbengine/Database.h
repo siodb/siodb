@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -12,6 +12,7 @@
 #include "DatabaseMetadata.h"
 #include "DatabasePtr.h"
 #include "FirstUserObjectId.h"
+#include "InsertRowResult.h"
 #include "Instance.h"
 #include "MasterColumnRecordPtr.h"
 #include "TablePtr.h"
@@ -804,8 +805,7 @@ protected:
      * @param tp Transaction parameters.
      * @return Pair of (master column record, next block IDs).
      */
-    std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> recordIndex(
-            const Index& index, const TransactionParameters& tp);
+    InsertRowResult recordIndex(const Index& index, const TransactionParameters& tp);
 
     /**
      * Records all index column into the appropriate system table.
@@ -820,9 +820,9 @@ protected:
      * @param index An index columns from which to be recorded.
      * @param columnIndex Index of column in the index columns list.
      * @param tp Transaction parameters.
-     * @return Pair of (master column record, next block IDs).
+     * @return Insert result data.
      */
-    std::pair<MasterColumnRecordPtr, std::vector<std::uint64_t>> recordIndexColumn(
+    InsertRowResult recordIndexColumn(
             const Index& index, std::size_t columnIndex, const TransactionParameters& tp);
 
     /**

@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -10,18 +10,19 @@ include ../../../mk/Prolog.mk
 TARGET_EXE:=request_handler_test
 
 CXX_SRC:= \
-	RequestHandlerTest_DDL.cpp  \
-	RequestHandlerTest_DML_Complex.cpp  \
-	RequestHandlerTest_DML_Delete.cpp  \
-	RequestHandlerTest_DML_Insert.cpp  \
-	RequestHandlerTest_DML_Update.cpp  \
-	RequestHandlerTest_Main.cpp  \
-	RequestHandlerTest_Query.cpp  \
-	RequestHandlerTest_RestDelete.cpp  \
-	RequestHandlerTest_RestGet.cpp  \
-	RequestHandlerTest_RestPatch.cpp  \
-	RequestHandlerTest_RestPost.cpp  \
-	RequestHandlerTest_TestEnv.cpp  \
+	RequestHandlerTest_DDL.cpp \
+	RequestHandlerTest_DML_Complex.cpp \
+	RequestHandlerTest_DML_Delete.cpp \
+	RequestHandlerTest_DML_Insert.cpp \
+	RequestHandlerTest_DML_Update.cpp \
+	RequestHandlerTest_Main.cpp \
+	RequestHandlerTest_Query.cpp \
+	RequestHandlerTest_RestComplex.cpp \
+	RequestHandlerTest_RestDelete.cpp \
+	RequestHandlerTest_RestGet.cpp \
+	RequestHandlerTest_RestPatch.cpp \
+	RequestHandlerTest_RestPost.cpp \
+	RequestHandlerTest_TestEnv.cpp \
 	RequestHandlerTest_UM.cpp
 
 CXX_HDR:= \

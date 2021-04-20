@@ -15,7 +15,7 @@ CXX_SRC:= \
 	SiodbConnectionManager.cpp
 
 CXX_HDR:= \
-	ProcessMonitor.h  \
+	ProcessMonitor.h \
 	SiodbConnectionManager.h
 
 include $(MK)/Main.mk
