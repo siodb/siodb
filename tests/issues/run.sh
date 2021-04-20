@@ -8,14 +8,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../share/LogFunctions.sh"
 
 for d in $(ls -d "${SCRIPT_DIR}/gh-"*/); do
-    _log "INFO" "Running test for the issue $d"
+    _log "INFO" "Running test $d"
     ${d}/run.sh "$@"
     if [[ $? -ne  0 ]]; then
-        _log "TEST:ERROR" "Tests in issue $d failed"
+        _log "TEST:ERROR" "Tests failed for $d"
         if [[ "${SIODB_TEST_ALL}" != "yes" ]]; then
             exit 1
         fi
     else
-        _log "TEST:SUCCESS" "Tests in issue $d succeed"
+        _log "TEST:SUCCESS" "Tests succeed in $d"
     fi
 done
