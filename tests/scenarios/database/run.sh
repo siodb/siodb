@@ -39,11 +39,11 @@ SUPPORTED_CIPHER_IDS="none aes128 aes256 camellia128 camellia256"
 for cipher_id in ${SUPPORTED_CIPHER_IDS}; do
   _RunSqlAndValidateOutput "create temporary database tmp_db_${cipher_id}_with_cipher_id
                             with cipher_id = '${cipher_id}'" \
-                            'Status 2092: Temporary databases are not supported yet'
+                            'Status .*: Temporary databases are not supported yet'
   _RunSqlAndValidateOutput "create temporary database tmp_db_${cipher_id}_with_cipher_id_and_key_seed
                             with cipher_id = '${cipher_id}',
                             cipher_key_seed = 'myencryptionkey${cipher_id}'" \
-                            'Status 2092: Temporary databases are not supported yet'
+                            'Status .*: Temporary databases are not supported yet'
   _RunSql "create database db_${cipher_id}_with_cipher_id
            with cipher_id = '${cipher_id}'"
   _RunSqlAndValidateOutput "select cipher_id from sys_databases

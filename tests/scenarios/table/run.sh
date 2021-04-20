@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -37,15 +37,15 @@ _CheckLogFiles
 
 ## TODO: test rename (if exists) table once gh-11 fixed
 _RunSqlAndValidateOutput "alter table db1.tablealldatatypes add column col100 text" \
-"^Status 6: Not implemented yet$"
+"^Status .*: Not implemented yet$"
 _RunSqlAndValidateOutput "alter table db1.tablealldatatypes alter column col100 rename to col200" \
-"^Status 6: Not implemented yet$"
+"^Status .*: Not implemented yet$"
 _RunSqlAndValidateOutput "alter table db1.tablealldatatypes alter column col100 rename if exists to col200" \
-"^Status 6: Not implemented yet$"
+"^Status .*: Not implemented yet$"
 _RunSqlAndValidateOutput "alter table db1.tablealldatatypes alter column col100 bigint" \
-"^Status 6: Not implemented yet$"
+"^Status .*: Not implemented yet$"
 _RunSqlAndValidateOutput "alter table db1.tablealldatatypes drop column col200" \
-"^Status 6: Not implemented yet$"
+"^Status .*: Not implemented yet$"
 _CheckLogFiles
 
 # Attribute test

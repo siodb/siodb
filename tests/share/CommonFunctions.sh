@@ -25,6 +25,7 @@ previousCheckLogFileEndedAtTimestamp=0
 previousInstanceStartTimestamp=0
 doInstanceConfiguration=1
 defaultClientTimeoutSecond=30
+siodbLockFileCheckMaxTimeout=30
 
 # timeout(1) on Ubuntu 18.04 doesn't support option -v
 # Try to detect this.
@@ -153,7 +154,7 @@ function _killSiodb {
     if [[ ${siodbLockFileEnabledTimeout} -gt ${siodbLockFileCheckMaxTimeout} ]]; then
       _log "ERROR" \
           "Timeout (${siodbLockFileCheckMaxTimeout} seconds) reached releasing lockfile"
-      _failExit
+      exit 3
     fi
     siodbLockFileEnabledTimeout=$((siodbLockFileEnabledTimeout+1))
     sleep 1
