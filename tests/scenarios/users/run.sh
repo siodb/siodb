@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -111,9 +111,9 @@ _RunSqlAndValidateOutput "select DESCRIPTION from SYS.SYS_USERS where name = 'US
 done
 
 #### Create user with wrong chars
-_RunSqlAndValidateOutput "create user 😀😀😀😀😀😀😀" 'Status 2: at .*: mismatched input'
+_RunSqlAndValidateOutput "create user 😀😀😀😀😀😀😀" 'Status .*: at .*: mismatched input'
 _CheckLogFiles
-_RunSqlAndValidateOutput "create user 123456789" 'Status 2: at .*: mismatched input'
+_RunSqlAndValidateOutput "create user 123456789" 'Status .*: at .*: mismatched input'
 _CheckLogFiles
 
 ## -------------------------------------------------------------------------
@@ -157,9 +157,9 @@ for ((i = ${siodbUserTridStartingAt}; i < $((${siodbUserTridStartingAt}+${number
 done
 
 #### Expected error with keys
-_RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename to key3 " 'Status 6: Not implemented yet'
+_RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename to key3 " 'Status .*: Not implemented yet'
 _CheckLogFiles
-_RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename if exists to key3" 'Status 6: Not implemented yet'
+_RunSqlAndValidateOutput "alter user user_test${siodbUserTridStartingAt} alter access key key2 rename if exists to key3" 'Status .*: Not implemented yet'
 _CheckLogFiles
 
 ## -------------------------------------------------------------------------
@@ -223,19 +223,19 @@ done
 
 #### Expected error with Token
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
-                          rename to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
+                          rename to user_token_1_1_renamed_1_if_exists" 'Status .*: Not implemented yet'
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} alter token user_token_1_1
-                          rename if exists to user_token_1_1_renamed_1_if_exists" 'Status 6: Not implemented yet'
+                          rename if exists to user_token_1_1_renamed_1_if_exists" 'Status .*: Not implemented yet'
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} drop token IF EXISTS NOEXISTS"
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1"
-_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1" 'Status 2029: User token'
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_8_1" 'Status .*: User token'
 _CheckLogFiles 'User token .* already exists'
 USERTOKEN=$(openssl rand -hex 64)
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_2 x'${USERTOKEN}'"
-_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_3 x'${USERTOKEN}'" 'Status 2091: Duplicate user token'
+_RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_9_3 x'${USERTOKEN}'" 'Status .*: Duplicate user token'
 _CheckLogFiles 'Duplicate user token'
 _RunSqlAndValidateOutput "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_2_${siodbUserTridStartingAt} x'FAKE'"\
-  'Status 2: at .*: Invalid character in the hex literal'
+  'Status .*: at .*: Invalid character in the hex literal'
 _CheckLogFiles 'Invalid character in the hex literal'
 
 ## -------------------------------------------------------------------------
@@ -257,9 +257,9 @@ done
 USERTOKEN=$(openssl rand -hex 64)
 _RunSql "alter user user_test_1_${siodbUserTridStartingAt} add token user_token_10_1 x'${USERTOKEN}'"
 _RunSql "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'"
-_RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'FAKE'" 'Status 2: .* Invalid character in the hex literal'
+_RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'FAKE'" 'Status .*: .* Invalid character in the hex literal'
 USERTOKEN=$(openssl rand -hex 64)
-_RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'" 'Status 2107: User token .* check failed'
+_RunSqlAndValidateOutput "check token user_test_1_${siodbUserTridStartingAt}.user_token_10_1 x'${USERTOKEN}'" 'Status .*: User token .* check failed'
 _CheckLogFiles 'User token .* check failed|Invalid character in the hex literal'
 
 
