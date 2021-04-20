@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -99,40 +99,40 @@ _CheckLogFiles
 
 # Check unknown cipher id
 _RunSqlAndValidateOutput "create database db_unknown_cipher_id with cipher_id = 'unknown_cipher_id'"  \
-                         "^Status 2103: Cipher .* is unknown$"
+                         "^Status .*: Cipher .* is unknown$"
 # Check database already exists
 _RunSqlAndValidateOutput "create database db_default"  \
-                         "^Status 2021: Database .* already exists$"
+                         "^Status .*: Database .* already exists$"
 # Check database already exists
 _RunSqlAndValidateOutput "create database sys"  \
-                         "^Status 2021: Database .* already exists$"
+                         "^Status .*: Database .* already exists$"
 
 ### Alter database: rename
 for cipher_id in ${SUPPORTED_CIPHER_IDS}; do
   _RunSqlAndValidateOutput "alter database db_${cipher_id}_with_cipher_id
                             rename to db_${cipher_id}_with_cipher_id_renamed" \
-                            "^Status 6: Not implemented yet$"
+                            "^Status .*: Not implemented yet$"
   _RunSqlAndValidateOutput "alter database db_${cipher_id}_with_cipher_id_and_key_seed
                             rename if exists to db_${cipher_id}_with_cipher_id_and_key_seed_renamed" \
-                            "^Status 6: Not implemented yet$"
+                            "^Status .*: Not implemented yet$"
 done
 
 ### Alter database: set description
 for cipher_id in ${SUPPORTED_CIPHER_IDS}; do
   _RunSqlAndValidateOutput "alter database db_${cipher_id}_with_cipher_id
                             set description = 'Description for db_${cipher_id}_with_cipher_id'" \
-                            "^Status 6: Not implemented yet$"
+                            "^Status .*: Not implemented yet$"
   _RunSqlAndValidateOutput "alter database db_${cipher_id}_with_cipher_id_and_key_seed
                             set description = 'Description for db_${cipher_id}_with_cipher_id_and_key_seed'" \
-                            "^Status 6: Not implemented yet$"
+                            "^Status .*: Not implemented yet$"
 done
 
 # Drop database that no exists
 _RunSqlAndValidateOutput "alter database noexists set description = 'noexists'"  \
-                         "^Status 6: Not implemented yet$"
+                         "^Status .*: Not implemented yet$"
 _RunSqlAndValidateOutput "drop database noexists"  \
-                         "^Status 2001: Database .* doesn't exist$"
-_CheckLogFiles '\[2103\]|\[2021\]|\[2001\]'
+                         "^Status .*: Database .* doesn't exist$"
+_CheckLogFiles "Cipher .* is unknown|Database .* already exists|Database .* doesn't exist"
 
 ### Drop each database
 for cipher_id in ${SUPPORTED_CIPHER_IDS}; do

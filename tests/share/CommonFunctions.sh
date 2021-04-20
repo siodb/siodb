@@ -149,12 +149,13 @@ function _killSiodb {
   siodbLockFileEnabledTimeout=0
   siodbLockFileEnabled=1
   while [[ $siodbLockFileEnabled -ne 0 ]]; do
-    siodbLockFileEnabled=$(lslocks | egrep "POSIX.*WRITE.*/run/lock/siodb/${SIODB_INSTANCE}.lock$" | wc -l)
+    siodbLockFileEnabled=$(lslocks | egrep "^siodb.*POSIX.*WRITE.*$" | wc -l)
     if [[ ${siodbLockFileEnabledTimeout} -gt ${siodbLockFileCheckMaxTimeout} ]]; then
       _log "ERROR" \
           "Timeout (${siodbLockFileCheckMaxTimeout} seconds) reached releasing lockfile"
       _failExit
     fi
+    siodbLockFileEnabledTimeout=$((siodbLockFileEnabledTimeout+1))
     sleep 1
   done
 }
