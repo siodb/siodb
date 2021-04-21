@@ -12,16 +12,16 @@ include $(MK)/MainTargets.mk
 
 # List of all subdirs to recurse into
 SUBDIRS:= \
-	builtin_cipher_test  \
-	dbengine_startup_test  \
-	encrypted_file_test  \
-	expression_test  \
-	key_generator_test  \
-	registry_test  \
-	request_handler_test  \
-	rest_parser_test  \
-	sql_parser_test  \
-	token_auth_test  \
+	builtin_cipher_test \
+	dbengine_startup_test \
+	encrypted_file_test \
+	expression_test \
+	key_generator_test \
+	registry_test \
+	request_handler_test \
+	rest_parser_test \
+	sql_parser_test \
+	token_auth_test \
 	variant_test
 
 include $(MK)/ParallelRecurse.mk

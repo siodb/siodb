@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -76,6 +76,7 @@ void RequestHandler::executeCreateTableRequest(iomgr_protocol::DatabaseEngineRes
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
@@ -209,6 +210,7 @@ void RequestHandler::executeDropTableRequest(
 
     const auto& databaseName =
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+
     if (!isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
@@ -216,9 +218,10 @@ void RequestHandler::executeDropTableRequest(
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
     if (database->isSystemTable(request.m_table)) {
-        throwDatabaseError(
-                IOManagerMessageId::kErrorCannotDropSystemTable);
+        throwDatabaseError(IOManagerMessageId::kErrorCannotDropSystemTable);
     }
 
     database->dropTable(request.m_table, !request.m_ifExists, m_userId);
@@ -360,6 +363,8 @@ void RequestHandler::executeSetTableAttributesRequest(
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
     const auto table = database->findTableChecked(request.m_table);
 
     if (request.m_nextTrid) {

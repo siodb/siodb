@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -31,7 +31,7 @@ struct SimpleColumnSpecification {
      * @param defaultValue Default value.
      */
     SimpleColumnSpecification(const std::string& name, ColumnDataType dataType,
-            const std::optional<bool>& notNull, const Variant& defaultValue = {})
+            std::optional<bool> notNull = std::nullopt, const Variant& defaultValue = {})
         : m_name(std::string(name))
         , m_dataType(dataType)
         , m_notNull(notNull)
@@ -47,7 +47,7 @@ struct SimpleColumnSpecification {
      * @param defaultValue Default value.
      */
     SimpleColumnSpecification(std::string&& name, ColumnDataType dataType,
-            std::optional<bool>&& notNull, Variant&& defaultValue = {}) noexcept
+            std::optional<bool> notNull = std::nullopt, Variant&& defaultValue = {}) noexcept
         : m_name(std::move(name))
         , m_dataType(dataType)
         , m_notNull(notNull)

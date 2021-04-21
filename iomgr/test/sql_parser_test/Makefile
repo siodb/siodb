@@ -10,15 +10,15 @@ include ../../../mk/Prolog.mk
 TARGET_EXE:=sql_parser_test
 
 CXX_SRC:= \
-	SqlParserTest_DDL.cpp  \
-	SqlParserTest_DML.cpp  \
-	SqlParserTest_General.cpp  \
-	SqlParserTest_Main.cpp  \
-	SqlParserTest_Other.cpp  \
-	SqlParserTest_Query.cpp  \
-	SqlParserTest_QueryConstExpr.cpp  \
-	SqlParserTest_TC.cpp  \
-	SqlParserTest_UM.cpp  \
+	SqlParserTest_DDL.cpp \
+	SqlParserTest_DML.cpp \
+	SqlParserTest_General.cpp \
+	SqlParserTest_Main.cpp \
+	SqlParserTest_Other.cpp \
+	SqlParserTest_Query.cpp \
+	SqlParserTest_QueryConstExpr.cpp \
+	SqlParserTest_TC.cpp \
+	SqlParserTest_UM.cpp \
 	TestContext.cpp
 
 CXX_HDR:= \

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -53,6 +53,7 @@ void RequestHandler::executeSelectRequest(
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
 
@@ -452,6 +453,8 @@ void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResp
     response.set_affected_row_count(0);
 
     const auto database = m_instance.findDatabaseChecked(m_currentDatabaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
     const auto sysTablesTable = database->findTableChecked(kSysTablesTableName);
     const auto nameColumn = sysTablesTable->findColumnChecked(kSysTables_Name_ColumnName);
     const auto descriptionColumn =

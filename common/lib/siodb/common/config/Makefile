@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -10,11 +10,11 @@ include ../../../../../mk/Prolog.mk
 TARGET_COMMON_LIB:=siodb_common_config
 
 C_HDR:= \
-	Config.h  \
+	Config.h \
 	SiodbVersion.h
 
 CXX_HDR:= \
-	SiodbDataFileDefs.h  \
+	SiodbDataFileDefs.h \
 	SiodbDefs.h
 
 include $(MK)/Main.mk

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -45,7 +45,7 @@ public:
 
     DECLARE_NONCOPYABLE(IOManagerConnectionHandler);
 
-    /** 
+    /**
      * Returns indication that connection still active.
      * @return true if conneciton still active, false otherwise.
      */
@@ -57,7 +57,7 @@ public:
     /** Starts connection handler thread */
     void start();
 
-    /** 
+    /**
      * Executes database engine request.
      * @param request Request to execute.
      * @return true if request execution was successful, false otherwise.
@@ -84,7 +84,8 @@ protected:
      * @throw std::system_error when I/O error happens.
      * @throw ProtocolError when protocol error happens.
      */
-    void sendErrorReponse(std::uint64_t requestId, int errorCode, const char* errorMessage);
+    void sendErrorReponse(
+            std::uint64_t requestId, int errorCode, int restErrorCode, const char* errorMessage);
 
     /** Closes connection. */
     void closeConnection() noexcept;

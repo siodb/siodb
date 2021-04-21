@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -12,21 +12,21 @@ include $(MK)/MainTargets.mk
 
 # List of all subdirs to recurse into
 SUBDIRS:= \
-	boost_ext  \
-	config  \
-	crt_ext  \
-	crypto  \
-	data  \
-	unit_test  \
-	io  \
-	log  \
-	net  \
+	boost_ext \
+	config \
+	crt_ext \
+	crypto \
+	data \
+	unit_test \
+	io \
+	log \
+	net \
 	options \
-	proto  \
-	protobuf  \
-	stl_ext  \
-	stl_wrap  \
-	sys  \
+	proto \
+	protobuf \
+	stl_ext \
+	stl_wrap \
+	sys \
 	utils
 
 include $(MK)/ParallelRecurse.mk

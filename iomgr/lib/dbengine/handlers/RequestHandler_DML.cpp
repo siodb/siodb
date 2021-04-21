@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -49,6 +49,8 @@ void RequestHandler::executeUpdateRequest(
     if (request.m_values.empty()) throwDatabaseError(IOManagerMessageId::kErrorValuesListIsEmpty);
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
     if (!isValidDatabaseObjectName(request.m_table.m_name))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table.m_name);
 
@@ -166,6 +168,7 @@ void RequestHandler::executeDeleteRequest(
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
 
     if (!isValidDatabaseObjectName(request.m_table.m_name))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table.m_name);
@@ -220,6 +223,7 @@ void RequestHandler::executeInsertRequest(
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
 
     const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
 
     if (!isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);

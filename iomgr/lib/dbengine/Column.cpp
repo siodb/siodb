@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -337,7 +337,8 @@ void Column::readMasterColumnRecord(const ColumnDataAddress& addr, MasterColumnR
     std::uint8_t recordSizeBuffer[2];
     auto offset = addr.getOffset();
     block->readData(recordSizeBuffer, 1, offset++);
-    if (recordSizeBuffer[0] > 0x80) block->readData(recordSizeBuffer + 1, 1, offset++);
+    // Here was the bug (issue #126)
+    if (recordSizeBuffer[0] >= 0x80) block->readData(recordSizeBuffer + 1, 1, offset++);
     std::uint16_t recordSize = 0;
     ::decodeVarUInt16(recordSizeBuffer, sizeof(recordSizeBuffer), &recordSize);
 

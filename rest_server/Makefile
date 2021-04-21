@@ -12,20 +12,20 @@ TARGET_GO_EXE:=siodb_rest_server
 VERSION_GO_FILE:=Version.go
 
 GO_SRC:=\
-	$(VERSION_GO_FILE)  \
-	Authentication.go  \
-	Helper.go  \
-	IOMgrConnPool.go  \
-	IOMgrConnection.go  \
-	Main.go  \
-	RequestHandlerDelete.go  \
-	RequestHandlerGet.go  \
-	RequestHandlerPatch.go  \
-	RequestHandlerPost.go  \
-	RestServerConfig.go  \
-	RestWorker.go  \
-	SiodbConfig.go  \
-	SiodbLogger.go  \
+	$(VERSION_GO_FILE) \
+	Authentication.go \
+	Helper.go \
+	IOMgrConnPool.go \
+	IOMgrConnection.go \
+	Main.go \
+	RequestHandlerDelete.go \
+	RequestHandlerGet.go \
+	RequestHandlerPatch.go \
+	RequestHandlerPost.go \
+	RestServerConfig.go \
+	RestWorker.go \
+	SiodbConfig.go \
+	SiodbLogger.go \
 	SiodbLoggerPool.go
 
 include $(MK)/Main.mk

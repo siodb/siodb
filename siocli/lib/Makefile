@@ -11,15 +11,15 @@ TARGET_LIB:=siocli
 
 CXX_SRC:= \
 	Siocli.cpp \
-	SqlClient.cpp  \
+	SqlClient.cpp \
 	SqlDump.cpp
 
 CXX_HDR:= \
-	internal/SqlClientInternal.h  \
-	internal/SqlDumpInternal.h  \
-	Siocli.h  \
-	SqlClient.h  \
-	SqlDump.h  \
+	internal/SqlClientInternal.h \
+	internal/SqlDumpInternal.h \
+	Siocli.h \
+	SqlClient.h \
+	SqlDump.h \
 	SqlQueryException.h
 
 include $(MK)/Main.mk

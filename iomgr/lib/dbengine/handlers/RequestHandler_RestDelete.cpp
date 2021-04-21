@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -22,13 +22,16 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
 {
     response.set_has_affected_row_count(true);
     response.set_affected_row_count(0);
+    response.set_rest_status_code(kRestStatusNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
+
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
         if (isSuperUser()) {
+            response.set_rest_status_code(kRestStatusForbidden);
             throwDatabaseError(IOManagerMessageId::kErrorCannotDeleteFromSystemTable,
                     table->getDatabaseName(), table->getName());
         } else {
@@ -38,14 +41,12 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     }
 
     // Delete row
-    bool rowDeleted;
-    {
-        const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
-        const auto deleteResult = table->deleteRow(request.m_trid, tp);
-        rowDeleted = std::get<0>(deleteResult);
+    const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
+    const auto deleteResult = table->deleteRow(request.m_trid, tp);
+    if (deleteResult.m_deleted) {
+        response.set_affected_row_count(1);
+        response.set_rest_status_code(kRestStatusOk);
     }
-    if (rowDeleted) response.set_affected_row_count(1);
-    response.set_rest_status_code(kRestStatusOk);
 
     // Write response message
     {
@@ -58,7 +59,7 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeModificationJsonProlog(rowDeleted ? kRestStatusOk : kRestStatusNotFound,
+    writeModificationJsonProlog(deleteResult.m_deleted ? kRestStatusOk : kRestStatusNotFound,
             response.affected_row_count(), jsonWriter);
     if (response.affected_row_count() > 0) jsonWriter.writeValue(request.m_trid);
     writeJsonEpilog(jsonWriter);
