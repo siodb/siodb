@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
+# Use of this source code is governed by a license that can be found
+# in the LICENSE file.
+
+## Global
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEST_NAME=$(basename "${SCRIPT_DIR}")
+source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
+
+## Specific test functions
+
+## Specific test parameters
+
+## =============================================
+## TEST HEADER
+## =============================================
+# _TestBegin
+# _Prepare
+# _StartSiodb
+
+## =============================================
+## TEST
+## =============================================
+
+# Lot 2 - 100 times
+# - insert some, random(update some, update other, update all), delete random
+# - insert all, random(update some, update other, update all), delete random
+
+# _RunSqlScript "./setup.sql" 120
+# _CheckLogFiles
+
+columns[0]="col_integer"
+columns[1]="col_int"
+columns[2]="col_uint"
+columns[3]="col_tinyint"
+columns[4]="col_tinyuint"
+columns[5]="col_smallint"
+columns[6]="col_smalluint"
+columns[7]="col_bigint"
+columns[8]="col_biguint"
+columns[9]="col_smallreal"
+columns[10]="col_real"
+columns[11]="col_float"
+columns[12]="col_double"
+columns[13]="col_text"
+columns[14]="col_char"
+columns[15]="col_varchar"
+columns[16]="col_blob"
+columns[17]="col_timestamp"
+
+values[0]="382 "
+values[1]="-182"
+values[2]="4294967295"
+values[3]="-127"
+values[4]="127"
+values[5]="-32767"
+values[6]="65535"
+values[7]="-4611686018427387904"
+values[8]="9223372036854775808"
+values[9]="45.3112"
+values[10]="45.3112"
+values[11]="45.3112"
+values[12]="4125.3112"
+values[13]="'a)&☻❤♫题为'"
+values[14]="'a'"
+values[15]="'a)&☻❤♫题为'"
+values[16]="'0x73696f62'"
+values[17]="'2016-02-29 12:10:29.123456789'"
+
+
+
+for i in {1..50}; do
+    index=$(($RANDOM % ${#values[@]}))
+    echo "$i  ===>   ${values[$index]}"
+done
+
+
+## =============================================
+## TEST FOOTER
+## =============================================
+_FinalStopOfSiodb
+_CheckLogFiles
+_TestEnd
+exit 0
