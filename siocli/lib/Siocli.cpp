@@ -415,7 +415,7 @@ int commandPrompt(const ClientParameters& params)
             // Execute command
             if (!command->empty()) {
                 executeCommandOnServer(requestId++, std::move(*command), *connection, std::cout,
-                        params.m_exitOnError, params.m_printDebugMessages);
+                        singleCommand ? true : params.m_exitOnError, params.m_printDebugMessages);
             }
         } catch (std::exception& ex) {
             std::cerr << "\nError: " << ex.what() << '.' << std::endl;
@@ -431,6 +431,7 @@ int commandPrompt(const ClientParameters& params)
                 }
             }
             if (params.m_exitOnError) return 3;
+            if (singleCommand) return 3;
         }
     } while (!singleCommand && hasMoreInput);
     return 0;

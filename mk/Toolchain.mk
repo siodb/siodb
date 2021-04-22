@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -85,5 +85,5 @@ endif
 AR:=ar
 
 # Go
-GO_VERSION:=1.16.2
+GO_VERSION:=1.16.3
 GO:=/usr/local/go-$(GO_VERSION)/bin/go
