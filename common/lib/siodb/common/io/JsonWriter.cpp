@@ -166,7 +166,11 @@ void JsonWriter::writeValue(const char* value, std::size_t length)
 void JsonWriter::writeRawString(const char* s, std::size_t length)
 {
     const auto end = s + length;
+    std::cout << "s=" << s << '\n';
+    std::cout << "length=" << length << '\n';
+    std::cout << "end=" << end << '\n';
     auto p = s;
+    std::cout << "p=" << p << '\n';
 
     char ubuffer[6];
     ubuffer[0] = '\\';
@@ -176,6 +180,8 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
 
     bool previousCharIsEscaped = false;
     while (p != end) {
+        std::cout << "enter while p=" << p << '\n';
+        std::cout << "enter while s=" << s << '\n';
         if (p - s == kStringChunkSize) {
             if (SIODB_UNLIKELY(m_out.write(s, kStringChunkSize) != kStringChunkSize))
                 reportJsonWriteError();
@@ -197,12 +203,14 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
             continue;
         }
 
+        std::cout << "BEFORE1" << '\n';
         if (p != s) {
             const auto n = p - s;
             if (SIODB_UNLIKELY(m_out.write(s, n) != n)) reportJsonWriteError();
             s = p;
         }
 
+        std::cout << "BEFORE2" << '\n';
         if (!previousCharIsEscaped && c == '\\') {
             constexpr const char* kBackSlash = "\\";
             constexpr auto kBackSlashLength = ::ct_strlen(kBackSlash);
@@ -210,6 +218,15 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
                 reportJsonWriteError();
             previousCharIsEscaped = true;
             s = ++p;
+
+            // Escape last '\' if not yet escaped
+            if (p == end) {
+                constexpr const char* kBackSlash = "\\";
+                constexpr auto kBackSlashLength = ::ct_strlen(kBackSlash);
+                if (SIODB_UNLIKELY(m_out.write(kBackSlash, kBackSlashLength) != kBackSlashLength))
+                    reportJsonWriteError();
+                previousCharIsEscaped = true;
+            }
             continue;
         }
         if (previousCharIsEscaped && c != '"' && c != '\\' && c != 'b' && c != 'f' && c != 'n'
@@ -219,6 +236,7 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
             if (SIODB_UNLIKELY(m_out.write(kBackSlash, kBackSlashLength) != kBackSlashLength))
                 reportJsonWriteError();
         }
+        std::cout << "AFTER" << '\n';
 
         switch (c) {
             case '\b': {
