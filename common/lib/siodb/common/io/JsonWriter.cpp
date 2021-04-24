@@ -9,9 +9,6 @@
 #include "../crt_ext/ct_string.h"
 #include "../stl_ext/system_error_ext.h"
 
-// STL headers
-#include <iostream>
-
 // CRT headers
 #include <cfloat>
 #include <cstdio>
@@ -166,11 +163,7 @@ void JsonWriter::writeValue(const char* value, std::size_t length)
 void JsonWriter::writeRawString(const char* s, std::size_t length)
 {
     const auto end = s + length;
-    std::cout << "s=" << s << '\n';
-    std::cout << "length=" << length << '\n';
-    std::cout << "end=" << end << '\n';
     auto p = s;
-    std::cout << "p=" << p << '\n';
 
     char ubuffer[6];
     ubuffer[0] = '\\';
@@ -178,10 +171,7 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
     ubuffer[2] = '0';
     ubuffer[3] = '0';
 
-    bool previousCharIsEscaped = false;
     while (p != end) {
-        std::cout << "enter while p=" << p << '\n';
-        std::cout << "enter while s=" << s << '\n';
         if (p - s == kStringChunkSize) {
             if (SIODB_UNLIKELY(m_out.write(s, kStringChunkSize) != kStringChunkSize))
                 reportJsonWriteError();
@@ -189,68 +179,23 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
         }
 
         const char c = *p;
-        std::cout << "previousCharIsEscaped=" << previousCharIsEscaped << ">" << c << '\n';
-        if (static_cast<unsigned char>(c) >= static_cast<unsigned char>(' ') && c != '"'
-                && c != '\\' && c != 'b' && c != 'f' && c != 'n' && c != 'r' && c != 't') {
-            if (previousCharIsEscaped) {
-                constexpr const char* kBackSlash = "\\";
-                constexpr auto kBackSlashLength = ::ct_strlen(kBackSlash);
-                if (SIODB_UNLIKELY(m_out.write(kBackSlash, kBackSlashLength) != kBackSlashLength))
-                    reportJsonWriteError();
-                previousCharIsEscaped = false;
-            }
+        if (static_cast<unsigned char>(c) >= static_cast<unsigned char>(' ') && c != '/' && c != '"'
+                && c != '\\') {
             ++p;
             continue;
         }
 
-        std::cout << "BEFORE1" << '\n';
         if (p != s) {
             const auto n = p - s;
             if (SIODB_UNLIKELY(m_out.write(s, n) != n)) reportJsonWriteError();
             s = p;
         }
 
-        std::cout << "BEFORE2" << '\n';
-        if (!previousCharIsEscaped && c == '\\') {
-            constexpr const char* kBackSlash = "\\";
-            constexpr auto kBackSlashLength = ::ct_strlen(kBackSlash);
-            if (SIODB_UNLIKELY(m_out.write(kBackSlash, kBackSlashLength) != kBackSlashLength))
-                reportJsonWriteError();
-            previousCharIsEscaped = true;
-            s = ++p;
-
-            // Escape last '\' if not yet escaped
-            if (p == end) {
-                constexpr const char* kBackSlash = "\\";
-                constexpr auto kBackSlashLength = ::ct_strlen(kBackSlash);
-                if (SIODB_UNLIKELY(m_out.write(kBackSlash, kBackSlashLength) != kBackSlashLength))
-                    reportJsonWriteError();
-                previousCharIsEscaped = true;
-            }
-            continue;
-        }
-        if (previousCharIsEscaped && c != '"' && c != '\\' && c != 'b' && c != 'f' && c != 'n'
-                && c != 'r' && c != 't') {
-            constexpr const char* kBackSlash = "\\";
-            constexpr auto kBackSlashLength = ::ct_strlen(kBackSlash);
-            if (SIODB_UNLIKELY(m_out.write(kBackSlash, kBackSlashLength) != kBackSlashLength))
-                reportJsonWriteError();
-        }
-        std::cout << "AFTER" << '\n';
-
         switch (c) {
             case '\b': {
                 constexpr const char* kBell = "\\b";
                 constexpr auto kBellLength = ::ct_strlen(kBell);
                 if (SIODB_UNLIKELY(m_out.write(kBell, kBellLength) != kBellLength))
-                    reportJsonWriteError();
-                break;
-            }
-
-            case 'b': {
-                constexpr const char* kLetterB = "b";
-                constexpr auto kLetterBLength = ::ct_strlen(kLetterB);
-                if (SIODB_UNLIKELY(m_out.write(kLetterB, kLetterBLength) != kLetterBLength))
                     reportJsonWriteError();
                 break;
             }
@@ -263,26 +208,10 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
                 break;
             }
 
-            case 'f': {
-                constexpr const char* kLetterF = "f";
-                constexpr auto kLetterFLength = ::ct_strlen(kLetterF);
-                if (SIODB_UNLIKELY(m_out.write(kLetterF, kLetterFLength) != kLetterFLength))
-                    reportJsonWriteError();
-                break;
-            }
-
             case '\n': {
                 constexpr const char* kLineFeed = "\\n";
                 constexpr auto kLineFeedLength = ::ct_strlen(kLineFeed);
                 if (SIODB_UNLIKELY(m_out.write(kLineFeed, kLineFeedLength) != kLineFeedLength))
-                    reportJsonWriteError();
-                break;
-            }
-
-            case 'n': {
-                constexpr const char* kLetterN = "n";
-                constexpr auto kLetterNLength = ::ct_strlen(kLetterN);
-                if (SIODB_UNLIKELY(m_out.write(kLetterN, kLetterNLength) != kLetterNLength))
                     reportJsonWriteError();
                 break;
             }
@@ -296,27 +225,11 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
                 break;
             }
 
-            case 'r': {
-                constexpr const char* kLetterR = "r";
-                constexpr auto kLetterRLength = ::ct_strlen(kLetterR);
-                if (SIODB_UNLIKELY(m_out.write(kLetterR, kLetterRLength) != kLetterRLength))
-                    reportJsonWriteError();
-                break;
-            }
-
             case '\t': {
                 constexpr const char* kHorizintalTab = "\\t";
                 constexpr auto kHorizintalTabLength = ::ct_strlen(kHorizintalTab);
                 if (SIODB_UNLIKELY(m_out.write(kHorizintalTab, kHorizintalTabLength)
                                    != kHorizintalTabLength))
-                    reportJsonWriteError();
-                break;
-            }
-
-            case 't': {
-                constexpr const char* kLetterT = "t";
-                constexpr auto kLetterTLength = ::ct_strlen(kLetterT);
-                if (SIODB_UNLIKELY(m_out.write(kLetterT, kLetterTLength) != kLetterTLength))
                     reportJsonWriteError();
                 break;
             }
@@ -330,19 +243,28 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
                 break;
             }
 
+            case '/': {
+                constexpr const char* kSlash = "\\/";
+                constexpr auto kSlashLength = ::ct_strlen(kSlash);
+                if (SIODB_UNLIKELY(m_out.write(kSlash, kSlashLength) != kSlashLength))
+                    reportJsonWriteError();
+                break;
+            }
+
+            case '\\': {
+                constexpr const char* kBackSlash = "\\\\";
+                constexpr auto kBackSlashLength = ::ct_strlen(kBackSlash);
+                if (SIODB_UNLIKELY(m_out.write(kBackSlash, kBackSlashLength) != kBackSlashLength))
+                    reportJsonWriteError();
+                break;
+            }
+
             case '"': {
                 constexpr const char* kDoubleQuoteEscaped = "\\\"";
                 constexpr auto kDoubleQuoteEscapedLength = ::ct_strlen(kDoubleQuoteEscaped);
-                if (previousCharIsEscaped) {
-                    constexpr auto kDoubleQuoteLength = ::ct_strlen(kDoubleQuote);
-                    if (SIODB_UNLIKELY(m_out.write(kDoubleQuote, kDoubleQuoteLength)
-                                       != kDoubleQuoteEscapedLength))
-                        reportJsonWriteError();
-                } else {
-                    if (SIODB_UNLIKELY(m_out.write(kDoubleQuoteEscaped, kDoubleQuoteEscapedLength)
-                                       != kDoubleQuoteEscapedLength))
-                        reportJsonWriteError();
-                }
+                if (SIODB_UNLIKELY(m_out.write(kDoubleQuoteEscaped, kDoubleQuoteEscapedLength)
+                                   != kDoubleQuoteEscapedLength))
+                    reportJsonWriteError();
                 break;
             }
 
@@ -356,7 +278,6 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
             }
         }
         s = ++p;
-        previousCharIsEscaped = false;
     }  // while
 
     if (p != s) {
