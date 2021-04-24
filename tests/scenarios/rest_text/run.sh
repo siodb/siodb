@@ -85,9 +85,6 @@ test_value_from_rest '\\\"' '\\\"'
 test_value_from_siocli '""""""""""' '\"\"\"\"\"\"\"\"\"\"'
 test_value_from_rest '\"\"\"\"\"\"\"\"\"\"' '\"\"\"\"\"\"\"\"\"\"'
 
-# Slash
-test_value_from_rest '\/' '\/'
-test_value_from_rest '/' '\/'
 
 # Escaped chars
 test_value_from_siocli '
@@ -101,6 +98,7 @@ test_value_from_siocli '\r' '\\r'
 test_value_from_rest '\r' '\r'
 test_value_from_siocli '\t' '\\t'
 test_value_from_rest '\t' '\t'
+test_value_from_siocli '\v' '\v'
 
 # Mix
 test_value_from_siocli '\t\\""\\\"

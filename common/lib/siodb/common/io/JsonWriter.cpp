@@ -179,7 +179,7 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
         }
 
         const char c = *p;
-        if (static_cast<unsigned char>(c) >= static_cast<unsigned char>(' ') && c != '/' && c != '"'
+        if (static_cast<unsigned char>(c) >= static_cast<unsigned char>(' ') && c != '"'
                 && c != '\\') {
             ++p;
             continue;
@@ -230,23 +230,6 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
                 constexpr auto kHorizintalTabLength = ::ct_strlen(kHorizintalTab);
                 if (SIODB_UNLIKELY(m_out.write(kHorizintalTab, kHorizintalTabLength)
                                    != kHorizintalTabLength))
-                    reportJsonWriteError();
-                break;
-            }
-
-            case '\v': {
-                constexpr const char* kVerticalTab = "\\v";
-                constexpr auto kVerticalTabLength = ::ct_strlen(kVerticalTab);
-                if (SIODB_UNLIKELY(
-                            m_out.write(kVerticalTab, kVerticalTabLength) != kVerticalTabLength))
-                    reportJsonWriteError();
-                break;
-            }
-
-            case '/': {
-                constexpr const char* kSlash = "\\/";
-                constexpr auto kSlashLength = ::ct_strlen(kSlash);
-                if (SIODB_UNLIKELY(m_out.write(kSlash, kSlashLength) != kSlashLength))
                     reportJsonWriteError();
                 break;
             }
