@@ -28,7 +28,6 @@ inline std::string& unquoteString(std::string& s)
     size_t position = 0;
     while (position != std::string::npos) {
         position = s.find("''", position);
-        std::cout << "position=" << position << '\n';
         if (position == std::string::npos) continue;
         s.erase(position, 1);
         position++;
@@ -50,7 +49,6 @@ inline std::string&& unquoteString(std::string&& s)
     size_t position = 0;
     while (position != std::string::npos) {
         position = s.find("''", position);
-        std::cout << "position=" << position << '\n';
         if (position == std::string::npos) continue;
         s.erase(position, 1);
         position++;
