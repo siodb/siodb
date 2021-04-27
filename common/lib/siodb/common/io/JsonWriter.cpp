@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -179,7 +179,8 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
         }
 
         const char c = *p;
-        if (static_cast<unsigned char>(c) >= static_cast<unsigned char>(' ') && c != '/') {
+        if (static_cast<unsigned char>(c) >= static_cast<unsigned char>(' ') && c != '"'
+                && c != '\\') {
             ++p;
             continue;
         }
@@ -233,19 +234,19 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
                 break;
             }
 
-            case '\v': {
-                constexpr const char* kVerticalTab = "\\v";
-                constexpr auto kVerticalTabLength = ::ct_strlen(kVerticalTab);
-                if (SIODB_UNLIKELY(
-                            m_out.write(kVerticalTab, kVerticalTabLength) != kVerticalTabLength))
+            case '\\': {
+                constexpr const char* kBackSlash = "\\\\";
+                constexpr auto kBackSlashLength = ::ct_strlen(kBackSlash);
+                if (SIODB_UNLIKELY(m_out.write(kBackSlash, kBackSlashLength) != kBackSlashLength))
                     reportJsonWriteError();
                 break;
             }
 
-            case '/': {
-                constexpr const char* kSlash = "\\/";
-                constexpr auto kSlashLength = ::ct_strlen(kSlash);
-                if (SIODB_UNLIKELY(m_out.write(kSlash, kSlashLength) != kSlashLength))
+            case '"': {
+                constexpr const char* kDoubleQuoteEscaped = "\\\"";
+                constexpr auto kDoubleQuoteEscapedLength = ::ct_strlen(kDoubleQuoteEscaped);
+                if (SIODB_UNLIKELY(m_out.write(kDoubleQuoteEscaped, kDoubleQuoteEscapedLength)
+                                   != kDoubleQuoteEscapedLength))
                     reportJsonWriteError();
                 break;
             }
