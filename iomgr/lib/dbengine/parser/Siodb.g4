@@ -72,7 +72,6 @@ sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
 		| show_databases_stmt
 		| show_tables_stmt
 		| update_stmt
-		| update_stmt_limited
 		| use_database_stmt1
 		| use_database_stmt2
 		| vacuum_stmt
@@ -344,24 +343,9 @@ update_stmt:
 		| K_OR K_REPLACE
 		| K_OR K_FAIL
 		| K_OR K_IGNORE
-	)? aliased_qualified_table_name K_SET column_name '=' expr (
-		',' column_name '=' expr
+	)? aliased_qualified_table_name K_SET column_name '=' simple_expr (
+		',' column_name '=' simple_expr
 	)* (K_WHERE expr)?;
-
-update_stmt_limited:
-	with_clause? K_UPDATE (
-		K_OR K_ROLLBACK
-		| K_OR K_ABORT
-		| K_OR K_REPLACE
-		| K_OR K_FAIL
-		| K_OR K_IGNORE
-	)? aliased_qualified_table_name K_SET column_name '=' expr (
-		',' column_name '=' expr
-	)* (K_WHERE expr)? (
-		(K_ORDER K_BY ordering_term ( ',' ordering_term)*)? K_LIMIT expr (
-			( K_OFFSET | ',') expr
-		)?
-	)?;
 
 use_database_stmt1: K_USE database_name;
 use_database_stmt2: K_USE K_DATABASE database_name;
