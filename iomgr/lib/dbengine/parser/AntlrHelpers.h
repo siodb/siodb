@@ -15,22 +15,12 @@ constexpr std::size_t kInvalidNodeType = std::numeric_limits<std::size_t>::max()
 namespace helpers {
 
 /**
- * Convert double quote to single quote from string.
+ * Converts inplace two single quote into one single quote, as per SQL string literal syntax.
  * NOTE: in SQL, a single quote is escaped with a single quote.
  * @param s A string.
  * @return Same string.
  */
-inline std::string& fixSingleQuotes(std::string& s)
-{
-    std::size_t position = 0;
-    while (position != s.length()) {
-        position = s.find("''", position);
-        if (position == std::string::npos) break;
-        s.erase(position, 1);
-        ++position;
-    }
-    return s;
-}
+std::string& fixSingleQuotes(std::string& s);
 
 /**
  * Removes leading and trailing quotes from string.
