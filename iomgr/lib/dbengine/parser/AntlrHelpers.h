@@ -15,6 +15,24 @@ constexpr std::size_t kInvalidNodeType = std::numeric_limits<std::size_t>::max()
 namespace helpers {
 
 /**
+ * Convert double quote to single quote from string.
+ * NOTE: in SQL, a single quote is escaped with a single quote.
+ * @param s A string.
+ * @return Same string.
+ */
+inline std::string& fixSingleQuotes(std::string& s)
+{
+    std::size_t position = 0;
+    while (position != s.length()) {
+        position = s.find("''", position);
+        if (position == std::string::npos) break;
+        s.erase(position, 1);
+        ++position;
+    }
+    return s;
+}
+
+/**
  * Removes leading and trailing quotes from string.
  * NOTE: String must be quoted.
  * @param s A string.
@@ -24,15 +42,7 @@ inline std::string& unquoteString(std::string& s)
 {
     s.pop_back();
     s.erase(0, 1);
-
-    size_t position = 0;
-    while (position != std::string::npos) {
-        position = s.find("''", position);
-        if (position == std::string::npos) continue;
-        s.erase(position, 1);
-        position++;
-    }
-    return s;
+    return fixSingleQuotes(s);
 }
 
 /**
@@ -45,15 +55,7 @@ inline std::string&& unquoteString(std::string&& s)
 {
     s.pop_back();
     s.erase(0, 1);
-
-    size_t position = 0;
-    while (position != std::string::npos) {
-        position = s.find("''", position);
-        if (position == std::string::npos) continue;
-        s.erase(position, 1);
-        position++;
-    }
-    return std::move(s);
+    return std::move(fixSingleQuotes(s));
 }
 
 /**

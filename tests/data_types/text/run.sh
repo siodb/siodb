@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -34,8 +34,17 @@ _RunSql "create table ${database_name}.t1 ( ctext text )"
 user_token=$(openssl rand -hex 64)
 _RunSql "alter user root add token test_token x'${user_token}'"
 
-# insert utf8 string
 _RunSql "insert into ${database_name}.t1 values ( '' )"
+
+# insert utf8 string
+_RunSql "update ${database_name}.t1 set ctext = '👍 😅 👏 😁 ♥️ 🔥 💔 💖 💙 😢 🤔 😆 🙄 💪 😉 ☺️ 👌 🤗'"
+_RunSqlAndValidateOutput "select ctext from ${database_name}.t1 where trid = 1" '👍 😅 👏 😁 ♥️ 🔥 💔 💖 💙 😢 🤔 😆 🙄 💪 😉 ☺️ 👌 🤗'
+
+_RunSql "update ${database_name}.t1 set ctext = ''''"
+_RunSqlAndValidateOutput "select ctext from ${database_name}.t1 where trid = 1" "'"
+
+_RunSql "update ${database_name}.t1 set ctext = '''-''''-''''''-'''''''''''''"
+_RunSqlAndValidateOutput "select ctext from ${database_name}.t1 where trid = 1" "'-''-'''-''''''"
 
 # Read utf8 string with REST
 STATUS=$(curl --write-out '%{http_code}' -o ${output_dir}/output.log \

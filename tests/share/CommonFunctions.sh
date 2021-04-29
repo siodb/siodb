@@ -454,16 +454,17 @@ function _RunSqlAndValidateOutput {
   # $2: The expected output
   # $3: Optional timeout
   if [[ ! -z "${3}" ]]; then TIMEOUT_SECOND="${3}"; else TIMEOUT_SECOND=${defaultClientTimeoutSecond}; fi
-  _log "INFO" "Executing SQL: >$1<"
+  _log "INFO" "Executing SQL: >${1}<"
   SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
     -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
-  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}" | wc -l | bc)
+  EXPECTED_RESULT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}")
+  EXPECTED_RESULT_COUNT=$(echo "${EXPECTED_RESULT}" | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
-    _failExit "${2}"
+    _failExit
   else
-    _log "INFO" "Siocli output matched expected output."
+    _log "INFO" "Siocli output >${EXPECTED_RESULT}< matched expected output >${2}<."
   fi
 }
 
