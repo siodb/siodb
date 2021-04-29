@@ -506,5 +506,65 @@ void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResp
     codedOutput.WriteVarint64(kNoMoreRows);
     rawOutput.CheckNoError();
 }
+void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        [[maybe_unused]] const requests::DescribeTableRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    response.set_affected_row_count(0);
+
+    const auto database = m_instance.findDatabaseChecked(m_currentDatabaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto sysColumnsTableName = database->findTableChecked(kSysColumnsTableName);
+    const auto nameColumn = sysColumnsTableName->findColumnChecked(kSysColumns_Name_ColumnName);
+    const auto dataTypeColumn =
+            sysColumnsTableName->findColumnChecked(kSysColumns_DataType_ColumnName);
+
+    addColumnToResponse(response, *nameColumn, "");
+    addColumnToResponse(response, *dataTypeColumn, "");
+
+    const bool nullNotAllowed = nameColumn->isNotNull() && dataTypeColumn->isNotNull();
+
+    const auto columnRecords = database->getColumnsRecordsOrderedByName();
+
+    utils::DefaultErrorCodeChecker errorChecker;
+    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+
+    std::vector<Variant> values(2);
+    stdext::bitmask nullMask;
+    if (!nullNotAllowed) nullMask.resize(values.size(), false);
+
+    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
+    for (const auto& columnRecord : columnRecords) {
+        values[0] = columnRecord.m_name;
+        values[1] = columnRecord.m_dataType;
+
+        if (!nullNotAllowed) {
+            nullMask.set(0, values[0].isNull());
+            nullMask.set(1, values[1].isNull());
+        }
+
+        const std::size_t rowSize =
+                getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();
+        codedOutput.WriteVarint64(rowSize);
+
+        if (!nullNotAllowed) {
+            codedOutput.WriteRaw(nullMask.data(), nullMask.size());
+            rawOutput.CheckNoError();
+        }
+
+        rawOutput.CheckNoError();
+
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            writeVariant(values[i], codedOutput);
+            rawOutput.CheckNoError();
+        }
+    }
+
+    codedOutput.WriteVarint64(kNoMoreRows);
+    rawOutput.CheckNoError();
+}
 
 }  // namespace siodb::iomgr::dbengine

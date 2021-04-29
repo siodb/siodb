@@ -250,6 +250,12 @@ public:
     std::vector<TableRecord> getTableRecordsOrderedByName(bool includeSystemTables = true) const;
 
     /**
+     * Returns list of column records ordered by id.
+     * @return List of columns.
+     */
+    std::vector<ColumnRecord> getColumnsRecordsOrderedByName() const;
+
+    /**
      * Returns indication that user table can be created in this database.
      * @return true if user table can be created in this database, false otherwise.
      */

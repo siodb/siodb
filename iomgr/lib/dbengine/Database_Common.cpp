@@ -98,6 +98,16 @@ std::vector<TableRecord> Database::getTableRecordsOrderedByName(bool includeSyst
     return result;
 }
 
+std::vector<ColumnRecord> Database::getColumnsRecordsOrderedByName() const
+{
+    std::lock_guard lock(m_mutex);
+    const auto& index = m_columnRegistry.byId();
+    std::vector<ColumnRecord> columnRecords(index.cbegin(), index.cend());
+    std::sort(columnRecords.begin(), columnRecords.end(),
+            [](const auto& left, const auto& right) noexcept { return left.m_id < right.m_id; });
+    return columnRecords;
+}
+
 TablePtr Database::findTableChecked(const std::string& tableName)
 {
     std::lock_guard lock(m_mutex);
