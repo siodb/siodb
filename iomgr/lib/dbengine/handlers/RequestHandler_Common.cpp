@@ -82,6 +82,11 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::ShowTablesRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kDescribeTable: {
+                // executeShowDatabasesRequest(
+                //         response, dynamic_cast<const requests::ShowDatabasesRequest&>(request));
+                break;
+            }
             case requests::DBEngineRequestType::kInsert: {
                 executeInsertRequest(
                         response, dynamic_cast<const requests::InsertRequest&>(request));

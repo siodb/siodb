@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -1473,6 +1473,15 @@ struct ShowTablesRequest : public DBEngineRequest {
     /** Initializes object of class ShowTablesRequest */
     ShowTablesRequest() noexcept
         : DBEngineRequest(DBEngineRequestType::kShowTables)
+    {
+    }
+};
+
+/** DESCRIBE TABLE request */
+struct DescribeTableRequest : public DBEngineRequest {
+    /** Initializes object of class DescribeTableRequest */
+    DescribeTableRequest() noexcept
+        : DBEngineRequest(DBEngineRequestType::kDescribeTable)
     {
     }
 };
