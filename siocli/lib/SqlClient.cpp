@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -237,17 +237,17 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                 ++row;
             }
             // Print number of rows
-            os << '\n' << "Row(s): " << row << "\n\n" << std::flush;
+            os << '\n' << "Row(s): " << row << "\n" << std::flush;
         } else {
             if (response.has_affected_row_count()) {
-                os << response.affected_row_count() << " rows affected" << std::endl;
+                os << '\n' << response.affected_row_count() << " rows affected" << std::endl;
             }
         }
 
         const auto endTime = std::chrono::steady_clock::now();
         const auto elapsed =
                 std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-        os << "Elapsed time: " << elapsed.count() << " ms." << std::endl;
+        os << '\n' << "Elapsed time: " << elapsed.count() << " ms." << std::endl;
         startTime = endTime;
 
         // Increment response ID.

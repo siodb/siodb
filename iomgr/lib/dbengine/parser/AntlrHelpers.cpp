@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -11,6 +11,18 @@
 #include <boost/algorithm/string/case_conv.hpp>
 
 namespace siodb::iomgr::dbengine::parser::helpers {
+
+std::string& fixSingleQuotes(std::string& s)
+{
+    std::size_t position = 0;
+    while (position != s.length()) {
+        position = s.find("''", position);
+        if (position == std::string::npos) break;
+        s.erase(position, 1);
+        ++position;
+    }
+    return s;
+}
 
 std::string extractObjectName(const antlr4::tree::ParseTree* node, std::size_t childNodeIndex)
 {

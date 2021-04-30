@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -15,7 +15,15 @@ constexpr std::size_t kInvalidNodeType = std::numeric_limits<std::size_t>::max()
 namespace helpers {
 
 /**
- * Removes leading and trailing quotes from string.
+ * Converts inplace two single quote into one single quote, as per SQL string literal syntax.
+ * NOTE: in SQL, a single quote is escaped with a single quote.
+ * @param s A string.
+ * @return Same string.
+ */
+std::string& fixSingleQuotes(std::string& s);
+
+/**
+ * Removes leading and trailing quotes and fixes single quotes as per SQL string literal syntax.
  * NOTE: String must be quoted.
  * @param s A string.
  * @return Same string.
@@ -24,11 +32,11 @@ inline std::string& unquoteString(std::string& s)
 {
     s.pop_back();
     s.erase(0, 1);
-    return s;
+    return fixSingleQuotes(s);
 }
 
 /**
- * Removes leading and trailing quotes from string.
+ * Removes leading and trailing quotes and fixes single quotes as per SQL string literal syntax.
  * NOTE: String must be quoted.
  * @param s A string.
  * @return Same string.
@@ -37,7 +45,7 @@ inline std::string&& unquoteString(std::string&& s)
 {
     s.pop_back();
     s.erase(0, 1);
-    return std::move(s);
+    return std::move(fixSingleQuotes(s));
 }
 
 /**
