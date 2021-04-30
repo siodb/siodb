@@ -23,7 +23,7 @@ namespace helpers {
 std::string& fixSingleQuotes(std::string& s);
 
 /**
- * Removes leading and trailing quotes from string.
+ * Removes leading and trailing quotes and fixes single quotes as per SQL string literal syntax.
  * NOTE: String must be quoted.
  * @param s A string.
  * @return Same string.
@@ -36,7 +36,7 @@ inline std::string& unquoteString(std::string& s)
 }
 
 /**
- * Removes leading and trailing quotes from string.
+ * Removes leading and trailing quotes and fixes single quotes as per SQL string literal syntax.
  * NOTE: String must be quoted.
  * @param s A string.
  * @return Same string.
