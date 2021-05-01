@@ -796,7 +796,7 @@ void RequestHandler::writeGetJsonProlog(int statusCode, siodb::io::JsonWriter& j
     // Start top level object
     jsonWriter.writeObjectBegin();
     // Write status
-    jsonWriter.writeFieldName(kRestStatusFieldName, ::ct_strlen(kRestStatusFieldName));
+    jsonWriter.writeFieldName(kRestStatusCodeFieldName, ::ct_strlen(kRestStatusCodeFieldName));
     jsonWriter.writeValue(statusCode);
     // Start rows array
     jsonWriter.writeComma();
@@ -811,7 +811,7 @@ void RequestHandler::writeModificationJsonProlog(
     jsonWriter.writeObjectBegin();
 
     // Write status
-    jsonWriter.writeFieldName(kRestStatusFieldName, ::ct_strlen(kRestStatusFieldName));
+    jsonWriter.writeFieldName(kRestStatusCodeFieldName, ::ct_strlen(kRestStatusCodeFieldName));
     jsonWriter.writeValue(statusCode);
 
     // Write affected row count

@@ -13,6 +13,7 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/ConnectionError.h>
 #include <siodb/common/net/EpollHelpers.h>
+#include <siodb/common/net/HttpStatus.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/utils/ErrorCodeChecker.h>
 #include <siodb/common/utils/SignalHandlers.h>
@@ -71,7 +72,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                           << "] " << ex.what();
                 LOG_DEBUG << m_logContext << "Sending authentication error";
                 sendErrorReponse(requestMsg.request_id(), ex.getErrorCode(),
-                        dbengine::RequestHandler::kRestStatusUnauthorized, ex.what());
+                        net::HttpStatus::kUnauthorized, ex.what());
                 LOG_DEBUG << m_logContext << "Sent request parse error";
                 continue;
             } catch (dbengine::DatabaseError& ex) {
@@ -82,7 +83,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 const auto msg = "Internal error, see log for details, message UUID "
                                  + boost::uuids::to_string(uuid);
                 sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError,
-                        dbengine::RequestHandler::kRestStatusUnauthorized, msg.c_str());
+                        net::HttpStatus::kUnauthorized, msg.c_str());
                 LOG_DEBUG << m_logContext << "Sent authentication error";
                 continue;
             } catch (std::exception& ex) {
@@ -92,7 +93,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 const auto msg = "Internal error, see log for details, message UUID "
                                  + boost::uuids::to_string(uuid);
                 sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError,
-                        dbengine::RequestHandler::kRestStatusUnauthorized, msg.c_str());
+                        net::HttpStatus::kUnauthorized, msg.c_str());
                 LOG_DEBUG << m_logContext << "Sent authentication error";
                 continue;
             }
@@ -121,7 +122,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
             } catch (dbengine::parser::DBEngineRequestFactoryError& ex) {
                 LOG_DEBUG << m_logContext << "REST request parse error " << ex.what();
                 sendErrorReponse(requestMsg.request_id(), kRestParseError,
-                        dbengine::RequestHandler::kRestStatusBadRequest, ex.what());
+                        net::HttpStatus::kBadRequest, ex.what());
                 LOG_DEBUG << m_logContext << "Sent request parse error";
                 continue;
             } catch (std::exception& ex) {
@@ -131,7 +132,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 const auto msg = "Internal error, see log for details, message UUID "
                                  + boost::uuids::to_string(uuid);
                 sendErrorReponse(requestMsg.request_id(), kRestParseError,
-                        dbengine::RequestHandler::kRestStatusBadRequest, msg.c_str());
+                        net::HttpStatus::kBadRequest, msg.c_str());
                 continue;
             }
 
