@@ -243,10 +243,10 @@ void JsonWriter::writeRawString(const char* s, std::size_t length)
             }
 
             case '"': {
-                constexpr const char* kDoubleQuoteEscaped = "\\\"";
-                constexpr auto kDoubleQuoteEscapedLength = ::ct_strlen(kDoubleQuoteEscaped);
-                if (SIODB_UNLIKELY(m_out.write(kDoubleQuoteEscaped, kDoubleQuoteEscapedLength)
-                                   != kDoubleQuoteEscapedLength))
+                constexpr const char* kDoubleQuote = "\\\"";
+                constexpr auto kDoubleQuoteLength = ::ct_strlen(kDoubleQuote);
+                if (SIODB_UNLIKELY(
+                            m_out.write(kDoubleQuote, kDoubleQuoteLength) != kDoubleQuoteLength))
                     reportJsonWriteError();
                 break;
             }
