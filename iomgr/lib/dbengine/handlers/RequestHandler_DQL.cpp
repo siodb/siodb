@@ -512,8 +512,11 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    const auto database = m_instance.findDatabaseChecked(m_currentDatabaseName);
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    const auto database = m_instance.findDatabaseChecked(databaseName);
     UseDatabaseGuard databaseGuard(*database);
+    const auto table = database->findTableChecked(request.m_table);
 
     const auto sysColumnsTableName = database->findTableChecked(kSysColumnsTableName);
     const auto nameColumn = sysColumnsTableName->findColumnChecked(kSysColumns_Name_ColumnName);
@@ -521,11 +524,14 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
             sysColumnsTableName->findColumnChecked(kSysColumns_DataType_ColumnName);
 
     addColumnToResponse(response, *nameColumn, "");
-    addColumnToResponse(response, *dataTypeColumn, "");
+    auto columnDescription = response.add_column_description();
+    columnDescription->set_name("DATA_TYPE");
+    columnDescription->set_is_null(true);
+    columnDescription->set_type(ColumnDataType::COLUMN_DATA_TYPE_TEXT);
 
     const bool nullNotAllowed = nameColumn->isNotNull() && dataTypeColumn->isNotNull();
 
-    const auto columnRecords = database->getColumnsRecordsOrderedByName();
+    const auto columnRecords = database->getColumnsRecordsOrderedByName(table->getId());
 
     utils::DefaultErrorCodeChecker errorChecker;
     protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
@@ -539,12 +545,20 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
     protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
     for (const auto& columnRecord : columnRecords) {
         values[0] = columnRecord.m_name;
-        values[1] = columnRecord.m_dataType;
+        values[1] = getColumnDataTypeName(columnRecord.m_dataType);
 
         if (!nullNotAllowed) {
             nullMask.set(0, values[0].isNull());
             nullMask.set(1, values[1].isNull());
         }
+
+        // Get data type name from id
+        // const dbengine::Variant dataTypeName;
+        // for (auto it = parser::DBEngineSqlRequestFactory::m_siodbDataTypeMap.cbegin();
+        //         it != parser::DBEngineSqlRequestFactory::m_siodbDataTypeMap.cend(); ++it) {
+        //     if (it->second == dbengine::Variant::binaryToInt8(values[1]))
+        //         dataTypeName = dbengine::Variant(it->first);
+        // }
 
         const std::size_t rowSize =
                 getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();

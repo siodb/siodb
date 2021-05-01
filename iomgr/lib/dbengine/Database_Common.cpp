@@ -98,13 +98,20 @@ std::vector<TableRecord> Database::getTableRecordsOrderedByName(bool includeSyst
     return result;
 }
 
-std::vector<ColumnRecord> Database::getColumnsRecordsOrderedByName() const
+std::vector<ColumnRecord> Database::getColumnsRecordsOrderedByName(std::uint32_t tableId) const
 {
     std::lock_guard lock(m_mutex);
     const auto& index = m_columnRegistry.byId();
-    std::vector<ColumnRecord> columnRecords(index.cbegin(), index.cend());
+    std::vector<ColumnRecord> columnRecords;
+
+    std::copy_if(index.begin(), index.end(), std::back_inserter(columnRecords),
+            [&tableId](const auto& ColumnRecord) noexcept {
+                return ColumnRecord.m_tableId == tableId;
+            });
+
     std::sort(columnRecords.begin(), columnRecords.end(),
             [](const auto& left, const auto& right) noexcept { return left.m_id < right.m_id; });
+
     return columnRecords;
 }
 

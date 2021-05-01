@@ -1479,11 +1479,22 @@ struct ShowTablesRequest : public DBEngineRequest {
 
 /** DESCRIBE TABLE request */
 struct DescribeTableRequest : public DBEngineRequest {
-    /** Initializes object of class DescribeTableRequest */
-    DescribeTableRequest() noexcept
+    /** Initializes object of class DescribeTableRequest
+     * @param database Database name.
+     * @param table Table name.
+     */
+    DescribeTableRequest(std::string&& database, std::string&& table) noexcept
         : DBEngineRequest(DBEngineRequestType::kDescribeTable)
+        , m_database(std::move(database))
+        , m_table(std::move(table))
     {
     }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
 };
 
 }  // namespace siodb::iomgr::dbengine::requests

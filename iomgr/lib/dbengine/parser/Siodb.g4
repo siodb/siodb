@@ -239,7 +239,7 @@ delete_stmt_limited:
 		)?
 	)?;
 
-describe_table_stmt: (K_DESCRIBE | K_DESC) (database_name '.')? table_name;
+describe_table_stmt: (K_DESCRIBE | K_DESC) table_spec;
 
 detach_stmt: K_DETACH K_DATABASE database_name;
 
