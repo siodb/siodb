@@ -526,7 +526,7 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
     addColumnToResponse(response, *nameColumn, "");
     auto columnDescription = response.add_column_description();
     columnDescription->set_name("DATA_TYPE");
-    columnDescription->set_is_null(true);
+    columnDescription->set_is_null(false);
     columnDescription->set_type(ColumnDataType::COLUMN_DATA_TYPE_TEXT);
 
     const bool nullNotAllowed = nameColumn->isNotNull() && dataTypeColumn->isNotNull();
@@ -551,14 +551,6 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
             nullMask.set(0, values[0].isNull());
             nullMask.set(1, values[1].isNull());
         }
-
-        // Get data type name from id
-        // const dbengine::Variant dataTypeName;
-        // for (auto it = parser::DBEngineSqlRequestFactory::m_siodbDataTypeMap.cbegin();
-        //         it != parser::DBEngineSqlRequestFactory::m_siodbDataTypeMap.cend(); ++it) {
-        //     if (it->second == dbengine::Variant::binaryToInt8(values[1]))
-        //         dataTypeName = dbengine::Variant(it->first);
-        // }
 
         const std::size_t rowSize =
                 getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();
