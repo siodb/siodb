@@ -358,7 +358,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDescribeTableReque
                     table = tableNameNode->getText();
                     boost::to_upper(table);
                 } else
-                    throw DBEngineRequestFactoryError("UPDATE: missing table ID");
+                    throw DBEngineRequestFactoryError("DESCRIBE TABLE: missing table name");
                 break;
             }
             default: continue;

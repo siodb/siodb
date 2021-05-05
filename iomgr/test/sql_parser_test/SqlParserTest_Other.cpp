@@ -48,6 +48,20 @@ TEST(Query, ShowDatabases)
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kShowDatabases);
 }
 
+TEST(Query, ShowDbs)
+{
+    // Parse statement and prepare request
+    const std::string statement("SHOW DBS");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kShowDatabases);
+}
+
 TEST(Query, ShowTables)
 {
     // Parse statement and prepare request
@@ -62,10 +76,24 @@ TEST(Query, ShowTables)
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kShowTables);
 }
 
+TEST(Query, DescTable)
+{
+    // Parse statement and prepare request
+    const std::string statement("DESC TABLE SYS.SYS_TABLES");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDescribeTable);
+}
+
 TEST(Query, DescribeTable)
 {
     // Parse statement and prepare request
-    const std::string statement("DESCRIBE SYS.SYS_TABLES");
+    const std::string statement("DESCRIBE TABLE SYS.SYS_TABLES");
     parser_ns::SqlParser parser(statement);
     parser.parse();
 

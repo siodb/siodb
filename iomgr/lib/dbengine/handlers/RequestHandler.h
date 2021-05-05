@@ -399,8 +399,7 @@ private:
      * @param response Response object.
      * @param request Request object.
      */
-    void executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
-            const requests::ShowTablesRequest& request);
+    void executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response);
 
     /**
      * Executes SQL DESCRIBE TABLE request.

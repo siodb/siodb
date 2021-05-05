@@ -78,13 +78,12 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                 break;
             }
             case requests::DBEngineRequestType::kShowTables: {
-                executeShowTablesRequest(
-                        response, dynamic_cast<const requests::ShowTablesRequest&>(request));
+                executeShowTablesRequest(response);
                 break;
             }
             case requests::DBEngineRequestType::kDescribeTable: {
-                executeDescribeTableRequest(response,
-                        dynamic_cast<const requests::DescribeTableRequest&>(request));
+                executeDescribeTableRequest(
+                        response, dynamic_cast<const requests::DescribeTableRequest&>(request));
                 break;
             }
             case requests::DBEngineRequestType::kInsert: {
@@ -375,7 +374,7 @@ void RequestHandler::addIoErrorToResponse(
 void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse& response,
         const Column& column, const std::string& alias)
 {
-    auto columnDescription = response.add_column_description();
+    const auto columnDescription = response.add_column_description();
     columnDescription->set_name(alias.empty() ? column.getName() : alias);
     columnDescription->set_is_null(!column.isNotNull());
     columnDescription->set_type(column.getDataType());

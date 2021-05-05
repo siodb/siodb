@@ -446,8 +446,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     rawOutput.CheckNoError();
 }
 
-void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::ShowTablesRequest& request)
+void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response)
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
@@ -506,8 +505,9 @@ void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResp
     codedOutput.WriteVarint64(kNoMoreRows);
     rawOutput.CheckNoError();
 }
+
 void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::DescribeTableRequest& request)
+        const requests::DescribeTableRequest& request)
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
@@ -524,14 +524,10 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
             sysColumnsTableName->findColumnChecked(kSysColumns_DataType_ColumnName);
 
     addColumnToResponse(response, *nameColumn, "");
-    auto columnDescription = response.add_column_description();
+    const auto columnDescription = response.add_column_description();
     columnDescription->set_name("DATA_TYPE");
     columnDescription->set_is_null(false);
     columnDescription->set_type(ColumnDataType::COLUMN_DATA_TYPE_TEXT);
-
-    const bool nullNotAllowed = nameColumn->isNotNull() && dataTypeColumn->isNotNull();
-
-    const auto columnRecords = database->getColumnsRecordsOrderedByName(table->getId());
 
     utils::DefaultErrorCodeChecker errorChecker;
     protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
@@ -539,27 +535,15 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
 
     std::vector<Variant> values(2);
-    stdext::bitmask nullMask;
-    if (!nullNotAllowed) nullMask.resize(values.size(), false);
 
     protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
-    for (const auto& columnRecord : columnRecords) {
-        values[0] = columnRecord.m_name;
-        values[1] = getColumnDataTypeName(columnRecord.m_dataType);
+    const auto columns = table->getColumnsOrderedByPosition();
+    for (const auto& column : columns) {
+        values[0] = column->getName();
+        values[1] = getColumnDataTypeName(column->getDataType());
 
-        if (!nullNotAllowed) {
-            nullMask.set(0, values[0].isNull());
-            nullMask.set(1, values[1].isNull());
-        }
-
-        const std::size_t rowSize =
-                getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();
+        const std::size_t rowSize = getVariantSize(values[0]) + getVariantSize(values[1]);
         codedOutput.WriteVarint64(rowSize);
-
-        if (!nullNotAllowed) {
-            codedOutput.WriteRaw(nullMask.data(), nullMask.size());
-            rawOutput.CheckNoError();
-        }
 
         rawOutput.CheckNoError();
 
