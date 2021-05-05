@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -88,6 +88,11 @@ TEST(Query, DescTable)
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDescribeTable);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::DescribeTableRequest&>(*dbeRequest);
+    ASSERT_EQ(request.m_database, "SYS");
+    ASSERT_EQ(request.m_table, "SYS_TABLES");
 }
 
 TEST(Query, DescribeTable)
@@ -102,4 +107,9 @@ TEST(Query, DescribeTable)
 
     // Check request type
     ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kDescribeTable);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::DescribeTableRequest&>(*dbeRequest);
+    ASSERT_EQ(request.m_database, "SYS");
+    ASSERT_EQ(request.m_table, "SYS_TABLES");
 }
