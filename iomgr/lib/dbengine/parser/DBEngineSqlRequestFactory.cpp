@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -116,6 +116,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
             return std::make_unique<requests::ShowDatabasesRequest>();
         case SiodbParser::RuleShow_tables_stmt:
             return std::make_unique<requests::ShowTablesRequest>();
+        case SiodbParser::RuleDescribe_table_stmt: return createDescribeTableRequest(node);
         case SiodbParser::RuleInsert_stmt: return createInsertRequest(node);
         case SiodbParser::RuleUpdate_stmt: return createUpdateRequest(node);
         case SiodbParser::RuleDelete_stmt: return createDeleteRequest(node);
@@ -333,6 +334,38 @@ DBEngineSqlRequestFactory::createSelectRequestForFactoredSelectStatement(
     // TODO: Capture GROUP BY values
     // TODO: Capture HAVING values
     // TODO: Capture ORDER BY values
+}
+
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDescribeTableRequest(
+        antlr4::tree::ParseTree* node)
+{
+    std::string database, table;
+
+    for (std::size_t i = 0; i < node->children.size(); ++i) {
+        const auto e = node->children[i];
+        const auto nonTerminalType = helpers::getNonTerminalType(e);
+        switch (nonTerminalType) {
+            case SiodbParser::RuleTable_spec: {
+                const auto databaseNode = helpers::findTerminal(
+                        e, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+                if (databaseNode) {
+                    database = databaseNode->getText();
+                    boost::to_upper(database);
+                }
+                const auto tableNameNode = helpers::findTerminal(
+                        e, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+                if (tableNameNode) {
+                    table = tableNameNode->getText();
+                    boost::to_upper(table);
+                } else
+                    throw DBEngineRequestFactoryError("DESCRIBE TABLE: missing table name");
+                break;
+            }
+            default: continue;
+        }
+    }
+
+    return std::make_unique<requests::DescribeTableRequest>(std::move(database), std::move(table));
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(

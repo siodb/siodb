@@ -29,6 +29,7 @@ create table table_all_datatypes (
     col_timestamp timestamp
 );
 
+desc table table_all_datatypes;
 show tables;
 
 create table table_100_cols_all_datatypes (
@@ -134,6 +135,7 @@ create table table_100_cols_all_datatypes (
     col_100_smallreal smallreal
 );
 
+desc table table_100_cols_all_datatypes;
 show tables;
 
 create table table_1 (
@@ -141,6 +143,7 @@ create table table_1 (
     col_text text
 );
 
+desc table table_1;
 show tables;
 
 insert into table_1 values(1, 'a');
@@ -157,6 +160,7 @@ create table table_2 (
     col_text text not null default 'hello world!!!'
 );
 
+desc table table_2;
 show tables;
 
 drop table table_2;
@@ -168,6 +172,7 @@ create table table_1 (
     col_int2 real
 );
 
+describe table table_1;
 show tables;
 
 insert into table_1 values('x', 100.51);

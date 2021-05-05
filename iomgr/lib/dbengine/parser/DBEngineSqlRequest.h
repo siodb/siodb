@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -1475,6 +1475,26 @@ struct ShowTablesRequest : public DBEngineRequest {
         : DBEngineRequest(DBEngineRequestType::kShowTables)
     {
     }
+};
+
+/** DESCRIBE TABLE request */
+struct DescribeTableRequest : public DBEngineRequest {
+    /** Initializes object of class DescribeTableRequest
+     * @param database Database name.
+     * @param table Table name.
+     */
+    DescribeTableRequest(std::string&& database, std::string&& table) noexcept
+        : DBEngineRequest(DBEngineRequestType::kDescribeTable)
+        , m_database(std::move(database))
+        , m_table(std::move(table))
+    {
+    }
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
 };
 
 }  // namespace siodb::iomgr::dbengine::requests
