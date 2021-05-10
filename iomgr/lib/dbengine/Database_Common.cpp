@@ -1013,8 +1013,9 @@ io::FilePtr Database::createFile(
     if (m_cipher) {
         return std::make_unique<io::EncryptedFile>(path, extraFlags, createMode,
                 m_encryptionContext, m_decryptionContext, initialSize);
-    } else
+    } else {
         return std::make_unique<io::NormalFile>(path, extraFlags, createMode, initialSize);
+    }
 }
 
 io::FilePtr Database::openFile(const std::string& path, int extraFlags) const
@@ -1022,8 +1023,20 @@ io::FilePtr Database::openFile(const std::string& path, int extraFlags) const
     if (m_cipher) {
         return std::make_unique<io::EncryptedFile>(
                 path, extraFlags, m_encryptionContext, m_decryptionContext);
-    } else
+    } else {
         return std::make_unique<io::NormalFile>(path, extraFlags);
+    }
+}
+
+Uuid Database::computeDatabaseUuid(const char* databaseName, std::time_t createTimestamp) noexcept
+{
+    MD5_CTX ctx;
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, databaseName, std::strlen(databaseName));
+    MD5_Update(&ctx, &createTimestamp, sizeof(createTimestamp));
+    Uuid result;
+    MD5_Final(result.data, &ctx);
+    return result;
 }
 
 // ---- internal ----
@@ -1062,18 +1075,6 @@ TablePtr Database::loadSystemTable(const std::string& name)
     auto table = findTableUnlocked(name);
     if (table) return table;
     throwDatabaseError(IOManagerMessageId::kErrorMissingSystemTable, m_name, name, m_id, 0);
-}
-
-Uuid Database::computeDatabaseUuid(
-        const std::string& databaseName, std::time_t createTimestamp) noexcept
-{
-    MD5_CTX ctx;
-    MD5_Init(&ctx);
-    MD5_Update(&ctx, databaseName.c_str(), databaseName.length());
-    MD5_Update(&ctx, &createTimestamp, sizeof(createTimestamp));
-    Uuid result;
-    MD5_Final(result.data, &ctx);
-    return result;
 }
 
 void Database::createInitializationFlagFile() const
@@ -1407,12 +1408,12 @@ ConstraintDefinitionPtr Database::loadConstraintDefinitionUnlocked(
     return constraintDefinition;
 }
 
-std::string Database::ensureDataDir(bool create) const
+std::string Database::ensureDataDir(bool mustExist, bool initialize) const
 {
     auto dataDir = utils::constructPath(m_instance.getDataDir(), kDatabaseDataDirPrefix, m_uuid);
     const auto initFlagFile = utils::constructPath(dataDir, kInitializationFlagFile);
     const auto initFlagFileExists = fs::exists(initFlagFile);
-    if (create) {
+    if (initialize) {
         // Check that database doesn't exist
         if (initFlagFileExists)
             throwDatabaseError(IOManagerMessageId::kErrorDatabaseAlreadyExists, m_name);
@@ -1420,7 +1421,14 @@ std::string Database::ensureDataDir(bool create) const
         // Create data directory
         try {
             const fs::path dataDirPath(dataDir);
-            if (fs::exists(dataDirPath)) fs::remove_all(dataDirPath);
+
+            if (fs::exists(dataDirPath))
+                fs::remove_all(dataDirPath);
+            else if (mustExist) {
+                throwDatabaseError(
+                        IOManagerMessageId::kErrorDatabaseDataDirDoesNotExist, dataDir, m_name);
+            }
+
             fs::create_directories(dataDirPath);
         } catch (fs::filesystem_error& ex) {
             throwDatabaseError(IOManagerMessageId::kErrorCannotCreateDatabaseDataDir, dataDir,

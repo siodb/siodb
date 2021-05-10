@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -120,7 +120,7 @@ TEST(Query, SelectFromSys_Databases)
     ASSERT_NE(instance, nullptr);
 
     instance->createDatabase(
-            "TEST", "none", siodb::BinaryValue(), {}, 0, dbengine::User::kSuperUserId);
+            "TEST", "none", siodb::BinaryValue(), {}, 0, {}, false, dbengine::User::kSuperUserId);
 
     const auto requestHandler = TestEnvironment::makeRequestHandler();
 

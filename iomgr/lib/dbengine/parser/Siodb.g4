@@ -1,4 +1,15 @@
 /*
+ * Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
+ * Use of this source code is governed by a license that can be found
+ * in the LICENSE file.
+ *
+ * This work is based on the following work:
+ *
+ * Project : sqlite-parser; an ANTLR4 grammar for SQLite https://github.com/bkiers/sqlite-parser
+ * Developed by : Bart Kiers, bart@big-o.nl
+ *
+ * Licensed under the following terms:
+ *
  * The MIT License (MIT)
  *
  * Copyright (c) 2014 by Bart Kiers
@@ -17,9 +28,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * Project : sqlite-parser; an ANTLR4 grammar for SQLite https://github.com/bkiers/sqlite-parser
- * Developed by : Bart Kiers, bart@big-o.nl
  */
 
 grammar Siodb;
@@ -168,7 +176,9 @@ compound_select_stmt: (
 
 create_database_attr:
 	K_CIPHER_ID '=' simple_expr
-	| K_CIPHER_KEY_SEED '=' simple_expr;
+	| K_CIPHER_KEY_SEED '=' simple_expr
+	| K_UUID '=' simple_expr
+	| K_DATA_DIRECTORY_MUST_EXIST '=' simple_expr;
 
 create_database_attr_list:
 	create_database_attr (',' create_database_attr)*;
@@ -742,11 +752,13 @@ keyword:
 attribute:
 	K_CIPHER_ID
 	| K_CIPHER_KEY_SEED
+	| K_DATA_DIRECTORY_MUST_EXIST
 	| K_EXPIRATION_TIMESTAMP
 	| K_DESCRIPTION
 	| K_NEXT_TRID
 	| K_REAL_NAME
-	| K_STATE;
+	| K_STATE
+	| K_UUID;
 
 name: any_name;
 
@@ -907,6 +919,8 @@ K_CURRENT_TIME: C U R R E N T '_' T I M E;
 K_CURRENT_TIMESTAMP: C U R R E N T '_' T I M E S T A M P;
 K_DATABASE: D A T A B A S E;
 K_DATABASES: D A T A B A S E S;
+K_DATA_DIRECTORY_MUST_EXIST:
+	D A T A '_' D I R E C T O R Y '_' M U S T '_' E X I S T;
 K_DBS: D B S;
 K_DEFAULT: D E F A U L T;
 K_DEFERRABLE: D E F E R R A B L E;
@@ -1001,6 +1015,7 @@ K_UPDATE: U P D A T E;
 K_USE: U S E;
 K_USER: U S E R;
 K_USING: U S I N G;
+K_UUID: U U I D;
 K_VACUUM: V A C U U M;
 K_VALUES: V A L U E S;
 K_VIEW: V I E W;

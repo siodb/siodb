@@ -436,15 +436,20 @@ struct CreateDatabaseRequest : public DBEngineRequest {
      * @param cipherId Cipher identifier.
      * @param cipherKeySeed Cipher key seed.
      * @param maxTableCount Maximum table count.
+     * @param uuid Explicit database UUID.
+     * @param dataDirectoryMustExist Indication that pre-created data directory must exist.
      */
     CreateDatabaseRequest(std::string&& database, bool isTemporary, ConstExpressionPtr&& cipherId,
-            ConstExpressionPtr&& cipherKeySeed, std::uint32_t maxTableCount) noexcept
+            ConstExpressionPtr&& cipherKeySeed, std::uint32_t maxTableCount,
+            ConstExpressionPtr&& uuid, ConstExpressionPtr&& dataDirectoryMustExist) noexcept
         : DBEngineRequest(DBEngineRequestType::kCreateDatabase)
         , m_database(database)
         , m_isTemporary(isTemporary)
         , m_cipherId(std::move(cipherId))
         , m_cipherKeySeed(std::move(cipherKeySeed))
         , m_maxTableCount(maxTableCount)
+        , m_uuid(std::move(uuid))
+        , m_dataDirectoryMustExist(std::move(dataDirectoryMustExist))
     {
     }
 
@@ -462,6 +467,12 @@ struct CreateDatabaseRequest : public DBEngineRequest {
 
     /** Maximum number of tables */
     const std::uint32_t m_maxTableCount;
+
+    /** Explicit database UUID */
+    const ConstExpressionPtr m_uuid;
+
+    /** Indication that pre-created data directory must exist */
+    const ConstExpressionPtr m_dataDirectoryMustExist;
 };
 
 /** DROP DATABASE request */

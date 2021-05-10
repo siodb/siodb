@@ -827,7 +827,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
     auto database = helpers::extractObjectName(node, databaseNodeIndex);
 
     //  <name> + WITH + <List of options>
-    requests::ConstExpressionPtr cipherId, cipherKeySeed;
+    requests::ConstExpressionPtr cipherId, cipherKeySeed, uuid, dataDirectoryMustExist;
     if (node->children.size() == databaseNodeIndex + 3) {
         if (helpers::getNonTerminalType(node->children[databaseNodeIndex + 2])
                 != SiodbParser::RuleCreate_database_attr_list)
@@ -846,6 +846,14 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
                     cipherKeySeed = exprFactory.createExpression(attrNode->children.at(2));
                     break;
                 }
+                case SiodbParser::K_UUID: {
+                    uuid = exprFactory.createExpression(attrNode->children.at(2));
+                    break;
+                }
+                case SiodbParser::K_DATA_DIRECTORY_MUST_EXIST: {
+                    dataDirectoryMustExist = exprFactory.createExpression(attrNode->children.at(2));
+                    break;
+                }
                 default: throw DBEngineRequestFactoryError("CREATE DATABASE: invalid attribute");
             }
         }
@@ -853,7 +861,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
         throw DBEngineRequestFactoryError("CREATE DATABASE: malformed statement");
 
     return std::make_unique<requests::CreateDatabaseRequest>(std::move(database), isTemporary,
-            std::move(cipherId), std::move(cipherKeySeed), maxTableCount);
+            std::move(cipherId), std::move(cipherKeySeed), maxTableCount, std::move(uuid),
+            std::move(dataDirectoryMustExist));
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropDatabaseRequest(

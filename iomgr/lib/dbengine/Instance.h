@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -168,13 +168,16 @@ public:
      * @param cipherKey Key used for encryption of this database.
      * @param description Database description.
      * @param maxTableCount Maximum table count.
+     * @param uuid Optional explicit database UUID.
+     * @param dataDirectoryMustExist Indicates that data directory must exist.
      * @param currentUserId Current user ID.
      * @return New database object.
      * @throw DatabaseError if some error has occurrred.
      */
     DatabasePtr createDatabase(std::string&& name, const std::string& cipherId,
             BinaryValue&& cipherKey, std::optional<std::string>&& description,
-            std::uint32_t maxTableCount, std::uint32_t currentUserId);
+            std::uint32_t maxTableCount, const std::optional<Uuid>& uuid,
+            bool dataDirectoryMustExist, std::uint32_t currentUserId);
 
     /**
      * Deletes existing database.
@@ -316,7 +319,7 @@ public:
      * @param userName User name.
      * @param tokenName Token name.
      * @param tokenValue Token value.
-     * @param currentUserId Current user ID. 
+     * @param currentUserId Current user ID.
      * @throw DatabaseError if token mismatched.
      */
     void checkUserToken(const std::string& userName, const std::string& tokenName,
@@ -410,11 +413,11 @@ private:
     /** Records superuser into the system database. */
     void recordSuperUser();
 
-    /** 
+    /**
      * Loads master encryption key.
      * @param keyPath Key path.
      * @return Master encryption key.
-     * @throw DatabaseError In the following cases: 
+     * @throw DatabaseError In the following cases:
      *                      - If file doesn't not exist or could not be open.
      *                      - If Read error happens.
      *                      - If key data is invalid.
@@ -423,7 +426,7 @@ private:
 
     /**
      * Loads initial super-user access key.
-     * @return Access key text 
+     * @return Access key text
      * @throw DatabaseError If file does not exist or could not be read
      */
     std::string loadSuperUserInitialAccessKey() const;

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -104,7 +104,8 @@ TEST(DDL, CreateDatabaseWithOptions)
     // Parse statement and prepare request
     const std::string statement(
             "CREATE DATABASE my_database with CIPHER_ID='aes128k128', CIPHER_KEY_SEED = "
-            "'fksgksgjrekgjerkglerjg'");
+            "'fksgksgjrekgjerkglerjg', UUID='b8371ef2-0075-4eeb-bab6-0eec0e3adfde', "
+            "DATA_DIRECTORY_MUST_EXIST=true");
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
@@ -117,11 +118,18 @@ TEST(DDL, CreateDatabaseWithOptions)
     // Check request
     const auto& request = dynamic_cast<const requests::CreateDatabaseRequest&>(*dbeRequest);
 
+    ASSERT_FALSE(!request.m_cipherId);
+    ASSERT_FALSE(!request.m_cipherKeySeed);
+    ASSERT_FALSE(!request.m_uuid);
+    ASSERT_FALSE(!request.m_dataDirectoryMustExist);
+
     requests::EmptyExpressionEvaluationContext emptyContext;
     EXPECT_EQ(request.m_database, "MY_DATABASE");
     EXPECT_FALSE(request.m_isTemporary);
     EXPECT_EQ(request.m_cipherId->evaluate(emptyContext), "aes128k128");
     EXPECT_EQ(request.m_cipherKeySeed->evaluate(emptyContext), "fksgksgjrekgjerkglerjg");
+    EXPECT_EQ(request.m_uuid->evaluate(emptyContext), "b8371ef2-0075-4eeb-bab6-0eec0e3adfde");
+    EXPECT_EQ(request.m_dataDirectoryMustExist->evaluate(emptyContext), true);
 }
 
 TEST(DDL, DropDatabase)

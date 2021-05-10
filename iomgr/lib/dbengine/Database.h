@@ -70,15 +70,17 @@ protected:
     /**
      * Initializes object of class Database for a new database.
      * @param instance Instance object.
+     * @param uuid Database UUID.
      * @param name Database name.
      * @param cipherId Cipher ID used for encryption of this database.
      * @param cipherKey Key used for encryption of this database.
      * @param description Database description.
      * @param maxTableCount Maximum table count.
+     * @param dataDirectoryMustExist Indicates that data directory must exist.
      */
-    Database(Instance& instance, std::string&& name, const std::string& cipherId,
+    Database(Instance& instance, const Uuid& uuid, std::string&& name, const std::string& cipherId,
             BinaryValue&& cipherKey, std::optional<std::string>&& description,
-            std::uint32_t maxTableCount);
+            std::uint32_t maxTableCount, bool dataDirectoryMustExist);
 
     /**
      * Initializes object of class Database for an existing non-system database.
@@ -701,6 +703,14 @@ public:
      */
     io::FilePtr openFile(const std::string& path, int extraFlags = 0) const;
 
+    /**
+     * Computes unique database ID.
+     * @param databaseName Database name.
+     * @param createTimestamp Creation timestamp.
+     * @return Unique database ID.
+     */
+    static Uuid computeDatabaseUuid(const char* databaseName, std::time_t createTimestamp) noexcept;
+
 protected:
     /**
      * Checks that table belongs to this database.
@@ -837,15 +847,6 @@ protected:
 
     /** Save information about system tables into the special file. */
     void saveSystemObjectsInfo() const;
-
-    /**
-     * Computes unique database ID.
-     * @param databaseName Database name.
-     * @param createTimestamp Creation timestamp.
-     * @return Unique database ID.
-     */
-    static Uuid computeDatabaseUuid(
-            const std::string& databaseName, std::time_t createTimestamp) noexcept;
 
     /** Creates initialization flag file. */
     void createInitializationFlagFile() const;
@@ -1007,10 +1008,11 @@ private:
 
     /**
      * Ensures that data directory exists and initialized if required.
-     * @param create Indicates that data directoty must be created.
+     * @param mustExist Indicates that data directory must exist.
+     * @param create Indicates that data directoty must be initialized.
      * @return Data directory path.
      */
-    std::string ensureDataDir(bool create) const;
+    std::string ensureDataDir(bool mustExist = true, bool initialize = false) const;
 
 protected:
     /** Temporary TRID counters are used until appropriate table is created. */

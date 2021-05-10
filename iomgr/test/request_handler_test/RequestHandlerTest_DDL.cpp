@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -17,6 +17,7 @@
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
 // STL headers
@@ -152,6 +153,459 @@ TEST(DDL, CreateDatabase)
             EXPECT_EQ(response.response_id(), 0U);
             EXPECT_EQ(response.response_count(), 1U);
         }
+    }
+}
+
+TEST(DDL, CreateDatabaseWithUuid)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    const auto creationTime = std::time(nullptr);
+
+    std::random_device rd;
+    std::string databaseName;
+    {
+        std::ostringstream oss;
+        oss << "TEST_DB_" << creationTime << '_' << static_cast<std::uint32_t>(rd());
+        databaseName = oss.str();
+        boost::to_upper(databaseName);
+    }
+
+    const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
+
+    {
+        /// ----------- CREATE DATABASE -----------
+        const std::string statement =
+                stdext::string_builder()
+                << "CREATE DATABASE " << databaseName
+                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+
+    /// ----------- SELECT -----------
+    {
+        const std::string statement = stdext::string_builder()
+                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
+                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        ASSERT_EQ(response.column_description_size(), 1);
+        EXPECT_FALSE(response.has_affected_row_count());
+
+        EXPECT_EQ(response.column_description(0).name(), "NAME");
+
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
+        std::uint64_t rowLength = 0;
+
+        // Only one row with a single just created database
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_GT(rowLength, 0U);
+
+        std::string name;
+        ASSERT_TRUE(codedInput.Read(&name));
+        ASSERT_EQ(name, databaseName);
+
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_TRUE(rowLength == 0U);
+    }
+}
+
+TEST(DDL, CreateDatabaseWithExistingUuid)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    const auto creationTime = std::time(nullptr);
+
+    std::random_device rd;
+    std::string databaseName;
+    {
+        std::ostringstream oss;
+        oss << "TEST_DB_" << creationTime << '_' << static_cast<std::uint32_t>(rd());
+        databaseName = oss.str();
+        boost::to_upper(databaseName);
+    }
+
+    const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
+
+    {
+        /// ----------- CREATE DATABASE -----------
+        const std::string statement =
+                stdext::string_builder()
+                << "CREATE DATABASE " << databaseName
+                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+
+    /// ----------- SELECT -----------
+    {
+        const std::string statement = stdext::string_builder()
+                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
+                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        ASSERT_EQ(response.column_description_size(), 1);
+        EXPECT_FALSE(response.has_affected_row_count());
+
+        EXPECT_EQ(response.column_description(0).name(), "NAME");
+
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
+        std::uint64_t rowLength = 0;
+
+        // Only one row with a single just created database
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_GT(rowLength, 0U);
+
+        std::string name;
+        ASSERT_TRUE(codedInput.Read(&name));
+        ASSERT_EQ(name, databaseName);
+
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_TRUE(rowLength == 0U);
+    }
+
+    {
+        /// ----------- CREATE DATABASE (once again with the same UUID) -----------
+        const auto databaseName2 = databaseName + "_2";
+        const std::string statement =
+                stdext::string_builder()
+                << "CREATE DATABASE " << databaseName2
+                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 1);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+}
+
+TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    const auto creationTime = std::time(nullptr);
+
+    std::random_device rd;
+    std::string databaseName;
+    {
+        std::ostringstream oss;
+        oss << "TEST_DB_" << creationTime << '_' << static_cast<std::uint32_t>(rd());
+        databaseName = oss.str();
+        boost::to_upper(databaseName);
+    }
+
+    const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
+
+    {
+        /// ----------- CREATE DATABASE -----------
+        const std::string statement =
+                stdext::string_builder()
+                << "CREATE DATABASE " << databaseName
+                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
+                << "', DATA_DIRECTORY_MUST_EXIST=false";
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+
+    /// ----------- SELECT -----------
+    {
+        const std::string statement = stdext::string_builder()
+                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
+                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        ASSERT_EQ(response.column_description_size(), 1);
+        EXPECT_FALSE(response.has_affected_row_count());
+
+        EXPECT_EQ(response.column_description(0).name(), "NAME");
+
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
+        std::uint64_t rowLength = 0;
+
+        // Only one row with a single just created database
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_GT(rowLength, 0U);
+
+        std::string name;
+        ASSERT_TRUE(codedInput.Read(&name));
+        ASSERT_EQ(name, databaseName);
+
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_TRUE(rowLength == 0U);
+    }
+}
+
+TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_ButDoesNotExist)
+{
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    const auto creationTime = std::time(nullptr);
+
+    std::random_device rd;
+    std::string databaseName;
+    {
+        std::ostringstream oss;
+        oss << "TEST_DB_" << creationTime << '_' << static_cast<std::uint32_t>(rd());
+        databaseName = oss.str();
+        boost::to_upper(databaseName);
+    }
+
+    const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
+
+    {
+        /// ----------- CREATE DATABASE -----------
+        const std::string statement =
+                stdext::string_builder()
+                << "CREATE DATABASE " << databaseName
+                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
+                << "', DATA_DIRECTORY_MUST_EXIST=true";
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 1);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+}
+
+TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
+{
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+
+    const auto creationTime = std::time(nullptr);
+
+    std::random_device rd;
+    std::string databaseName;
+    {
+        std::ostringstream oss;
+        oss << "TEST_DB_" << creationTime << '_' << static_cast<std::uint32_t>(rd());
+        databaseName = oss.str();
+        boost::to_upper(databaseName);
+    }
+
+    const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
+
+    // Create expected data directory
+    const auto dataDir =
+            fs::path(instance->getDataDir())
+            / fs::path(dbengine::Database::kDatabaseDataDirPrefix + boost::uuids::to_string(uuid));
+    fs::create_directories(dataDir);
+
+    {
+        /// ----------- CREATE DATABASE -----------
+        const std::string statement =
+                stdext::string_builder()
+                << "CREATE DATABASE " << databaseName
+                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
+                << "', DATA_DIRECTORY_MUST_EXIST=true";
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        EXPECT_EQ(response.response_id(), 0U);
+        EXPECT_EQ(response.response_count(), 1U);
+    }
+
+    /// ----------- SELECT -----------
+    {
+        const std::string statement = stdext::string_builder()
+                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
+                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::iomgr_protocol::DatabaseEngineResponse response;
+        siodb::protobuf::StreamInputStream inputStream(
+                TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        ASSERT_EQ(response.column_description_size(), 1);
+        EXPECT_FALSE(response.has_affected_row_count());
+
+        EXPECT_EQ(response.column_description(0).name(), "NAME");
+
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+
+        std::uint64_t rowLength = 0;
+
+        // Only one row with a single just created database
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_GT(rowLength, 0U);
+
+        std::string name;
+        ASSERT_TRUE(codedInput.Read(&name));
+        ASSERT_EQ(name, databaseName);
+
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        ASSERT_TRUE(rowLength == 0U);
     }
 }
 
