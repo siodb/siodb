@@ -1422,9 +1422,9 @@ std::string Database::ensureDataDir(bool mustExist, bool initialize) const
         try {
             const fs::path dataDirPath(dataDir);
 
-            if (fs::exists(dataDirPath))
+            if (fs::exists(dataDirPath)) {
                 fs::remove_all(dataDirPath);
-            else if (mustExist) {
+            } else if (mustExist) {
                 throwDatabaseError(
                         IOManagerMessageId::kErrorDatabaseDataDirDoesNotExist, dataDir, m_name);
             }

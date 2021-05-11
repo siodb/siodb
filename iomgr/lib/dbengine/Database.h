@@ -86,8 +86,6 @@ protected:
      * Initializes object of class Database for an existing non-system database.
      * @param instance Instance object.
      * @param dbRecord Database record.
-     * @param cipherId Cipher ID used for encryption of this database.
-     * @param cipherKey Key used for encryption of this database.
      */
     Database(Instance& instance, const DatabaseRecord& dbRecord);
 
@@ -1009,7 +1007,7 @@ private:
     /**
      * Ensures that data directory exists and initialized if required.
      * @param mustExist Indicates that data directory must exist.
-     * @param create Indicates that data directoty must be initialized.
+     * @param initialize Indicates that data directory must be initialized.
      * @return Data directory path.
      */
     std::string ensureDataDir(bool mustExist = true, bool initialize = false) const;
