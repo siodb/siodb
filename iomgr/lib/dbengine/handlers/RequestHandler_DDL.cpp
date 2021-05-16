@@ -33,33 +33,65 @@ void RequestHandler::executeCreateDatabaseRequest(iomgr_protocol::DatabaseEngine
     if (request.m_isTemporary)
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateTemporaryDatabase);
 
-    auto cipherId = m_instance.getDefaultDatabaseCipherId();
-
-    // Empty seed makes generateCipherKey using default key seed
-    std::string cipherKeySeed;
     requests::EmptyExpressionEvaluationContext emptyContext;
+
+    auto cipherId = m_instance.getDefaultDatabaseCipherId();
     if (request.m_cipherId) {
         const auto cipherIdValue = request.m_cipherId->evaluate(emptyContext);
         if (cipherIdValue.isString())
             cipherId = cipherIdValue.getString();
         else
-            throwDatabaseError(IOManagerMessageId::kErrorCipherIdTypeIsNotString);
+            throwDatabaseError(IOManagerMessageId::kErrorWrongAttributeType, "CIPHER_ID", "STRING");
     }
 
+    // Empty seed makes generateCipherKey using default key seed
+    std::string cipherKeySeed;
     if (request.m_cipherKeySeed) {
         const auto cipherKeySeedValue = request.m_cipherKeySeed->evaluate(emptyContext);
         if (cipherKeySeedValue.isString())
             cipherKeySeed = cipherKeySeedValue.getString();
-        else
-            throwDatabaseError(IOManagerMessageId::kErrorCipherKeySeedIsNotString);
+        else {
+            throwDatabaseError(
+                    IOManagerMessageId::kErrorWrongAttributeType, "CIPHER_KEY_SEED", "STRING");
+        }
     }
 
-    // nullptr is possible in the case of 'none' cipher
+    // Empty uuid makes Siodb calculate database UUID in the standard way
+    std::optional<Uuid> uuid;
+    if (request.m_uuid) {
+        const auto uuidValue = request.m_uuid->evaluate(emptyContext);
+        if (uuidValue.isString()) {
+            std::istringstream iss(uuidValue.getString());
+            Uuid tmpUuid;
+            iss >> tmpUuid;
+            if (!iss) throwDatabaseError(IOManagerMessageId::kErrorInvalidAttributeValue, "UUID");
+            char c = 0;
+            iss >> c;
+            if (!iss.eof())
+                throwDatabaseError(IOManagerMessageId::kErrorInvalidAttributeValue, "UUID");
+            uuid = tmpUuid;
+        } else
+            throwDatabaseError(IOManagerMessageId::kErrorWrongAttributeType, "UUID", "STRING");
+    }
+
+    bool dataDirectoryMustExist = false;
+    if (request.m_dataDirectoryMustExist) {
+        const auto dataDirectoryMustExistValue =
+                request.m_dataDirectoryMustExist->evaluate(emptyContext);
+        if (dataDirectoryMustExistValue.isBool())
+            dataDirectoryMustExist = dataDirectoryMustExistValue.getBool();
+        else {
+            throwDatabaseError(IOManagerMessageId::kErrorWrongAttributeType,
+                    "DATA_DIRECTORY_MUST_EXIST", "BOOLEAN");
+        }
+    }
+
+    // nullptr value of the "cipher" is possible here if the cipher is 'none'
     const auto cipher = crypto::getCipher(cipherId);
     const auto keyLength = cipher ? cipher->getKeySizeInBits() : 0;
     auto cipherKey = cipher ? crypto::generateCipherKey(keyLength, cipherKeySeed) : BinaryValue();
     m_instance.createDatabase(std::string(request.m_database), cipherId, std::move(cipherKey), {},
-            request.m_maxTableCount, m_userId);
+            request.m_maxTableCount, uuid, dataDirectoryMustExist, m_userId);
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);

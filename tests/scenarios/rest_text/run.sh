@@ -104,6 +104,10 @@ test_value_from_siocli '\t\\""\\\"
 "\' '\\t\\\\\"\"\\\\\\\"\n\"\\'
 test_value_from_rest '\\t\\\\\"\"\\\\\\\"\n\"\\' '\\t\\\\\"\"\\\\\\\"\n\"\\'
 
+# http://www.unicode.org/emoji/charts/full-emoji-list.html
+test_value_from_siocli '😀🤣' '😀🤣'
+test_value_from_rest '😀🤣' '😀🤣'
+
 ## =============================================
 ## TEST FOOTER
 ## =============================================

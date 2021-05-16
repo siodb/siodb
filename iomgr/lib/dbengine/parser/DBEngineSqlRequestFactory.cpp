@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -116,6 +116,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
             return std::make_unique<requests::ShowDatabasesRequest>();
         case SiodbParser::RuleShow_tables_stmt:
             return std::make_unique<requests::ShowTablesRequest>();
+        case SiodbParser::RuleDescribe_table_stmt: return createDescribeTableRequest(node);
         case SiodbParser::RuleInsert_stmt: return createInsertRequest(node);
         case SiodbParser::RuleUpdate_stmt: return createUpdateRequest(node);
         case SiodbParser::RuleDelete_stmt: return createDeleteRequest(node);
@@ -333,6 +334,38 @@ DBEngineSqlRequestFactory::createSelectRequestForFactoredSelectStatement(
     // TODO: Capture GROUP BY values
     // TODO: Capture HAVING values
     // TODO: Capture ORDER BY values
+}
+
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDescribeTableRequest(
+        antlr4::tree::ParseTree* node)
+{
+    std::string database, table;
+
+    for (std::size_t i = 0; i < node->children.size(); ++i) {
+        const auto e = node->children[i];
+        const auto nonTerminalType = helpers::getNonTerminalType(e);
+        switch (nonTerminalType) {
+            case SiodbParser::RuleTable_spec: {
+                const auto databaseNode = helpers::findTerminal(
+                        e, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
+                if (databaseNode) {
+                    database = databaseNode->getText();
+                    boost::to_upper(database);
+                }
+                const auto tableNameNode = helpers::findTerminal(
+                        e, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
+                if (tableNameNode) {
+                    table = tableNameNode->getText();
+                    boost::to_upper(table);
+                } else
+                    throw DBEngineRequestFactoryError("DESCRIBE TABLE: missing table name");
+                break;
+            }
+            default: continue;
+        }
+    }
+
+    return std::make_unique<requests::DescribeTableRequest>(std::move(database), std::move(table));
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
@@ -794,7 +827,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
     auto database = helpers::extractObjectName(node, databaseNodeIndex);
 
     //  <name> + WITH + <List of options>
-    requests::ConstExpressionPtr cipherId, cipherKeySeed;
+    requests::ConstExpressionPtr cipherId, cipherKeySeed, uuid, dataDirectoryMustExist;
     if (node->children.size() == databaseNodeIndex + 3) {
         if (helpers::getNonTerminalType(node->children[databaseNodeIndex + 2])
                 != SiodbParser::RuleCreate_database_attr_list)
@@ -813,6 +846,14 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
                     cipherKeySeed = exprFactory.createExpression(attrNode->children.at(2));
                     break;
                 }
+                case SiodbParser::K_UUID: {
+                    uuid = exprFactory.createExpression(attrNode->children.at(2));
+                    break;
+                }
+                case SiodbParser::K_DATA_DIRECTORY_MUST_EXIST: {
+                    dataDirectoryMustExist = exprFactory.createExpression(attrNode->children.at(2));
+                    break;
+                }
                 default: throw DBEngineRequestFactoryError("CREATE DATABASE: invalid attribute");
             }
         }
@@ -820,7 +861,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
         throw DBEngineRequestFactoryError("CREATE DATABASE: malformed statement");
 
     return std::make_unique<requests::CreateDatabaseRequest>(std::move(database), isTemporary,
-            std::move(cipherId), std::move(cipherKeySeed), maxTableCount);
+            std::move(cipherId), std::move(cipherKeySeed), maxTableCount, std::move(uuid),
+            std::move(dataDirectoryMustExist));
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropDatabaseRequest(

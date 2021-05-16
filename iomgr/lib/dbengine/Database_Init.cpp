@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -165,16 +165,16 @@ const std::unordered_set<std::string> Database::m_systemDatabaseOnlySystemTables
 };
 
 // New database
-Database::Database(Instance& instance, std::string&& name, const std::string& cipherId,
-        BinaryValue&& cipherKey, std::optional<std::string>&& description,
-        std::uint32_t maxTableCount)
+Database::Database(Instance& instance, const Uuid& uuid, std::string&& name,
+        const std::string& cipherId, BinaryValue&& cipherKey,
+        std::optional<std::string>&& description, std::uint32_t maxTableCount,
+        bool dataDirectoryMustExist)
     : m_instance(instance)
-    , m_uuid(computeDatabaseUuid(
-              name, name == kSystemDatabaseName ? kSystemDatabaseCreationTime : std::time(nullptr)))
+    , m_uuid(uuid)
     , m_name(validateDatabaseName(std::move(name)))
     , m_description(std::move(description))
     , m_id(instance.generateNextDatabaseId(name == kSystemDatabaseName))
-    , m_dataDir(ensureDataDir(true))
+    , m_dataDir(ensureDataDir(dataDirectoryMustExist, true))
     , m_cipher(crypto::getCipher(cipherId))
     , m_cipherKey(std::move(cipherKey))
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)
@@ -200,7 +200,7 @@ Database::Database(Instance& instance, const DatabaseRecord& dbRecord)
     , m_name(dbRecord.m_name)
     , m_description(dbRecord.m_description)
     , m_id(dbRecord.m_id)
-    , m_dataDir(ensureDataDir(false))
+    , m_dataDir(ensureDataDir())
     , m_cipher(crypto::getCipher(dbRecord.m_cipherId))
     , m_cipherKey(loadCipherKey())
     , m_encryptionContext(m_cipher ? m_cipher->createEncryptionContext(m_cipherKey) : nullptr)

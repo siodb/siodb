@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -134,7 +134,7 @@ DatabasePtr Instance::findDatabase(const std::string& databaseName)
     const auto it = index.find(databaseName);
     if (it == index.end()) return nullptr;
 
-    auto itdb = m_databases.find(it->m_id);
+    const auto itdb = m_databases.find(it->m_id);
     if (itdb != m_databases.end()) return itdb->second;
 
     auto database = std::make_shared<UserDatabase>(*this, *it);
@@ -144,7 +144,8 @@ DatabasePtr Instance::findDatabase(const std::string& databaseName)
 
 DatabasePtr Instance::createDatabase(std::string&& name, const std::string& cipherId,
         BinaryValue&& cipherKey, std::optional<std::string>&& description,
-        std::uint32_t maxTableCount, std::uint32_t currentUserId)
+        std::uint32_t maxTableCount, const std::optional<Uuid>& uuid, bool dataDirectoryMustExist,
+        std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
 
@@ -154,14 +155,29 @@ DatabasePtr Instance::createDatabase(std::string&& name, const std::string& ciph
     if (m_databaseRegistry.byName().count(name) > 0)
         throwDatabaseError(IOManagerMessageId::kErrorDatabaseAlreadyExists, name);
 
+    const auto& databasesByUuid = m_databaseRegistry.byUuid();
+    Uuid realUuid;
+    if (uuid.has_value()) {
+        if (databasesByUuid.count(*uuid) > 0)
+            throwDatabaseError(IOManagerMessageId::kErrorDatabaseUuidAlreadyExists, *uuid);
+        realUuid = *uuid;
+    } else {
+        auto t = std::time(nullptr);
+        do {
+            realUuid = Database::computeDatabaseUuid(name.c_str(), t++);
+        } while (databasesByUuid.count(realUuid) > 0);
+    }
+
     if (maxTableCount == 0) maxTableCount = m_maxTableCountPerDatabase;
 
-    auto database = std::make_shared<UserDatabase>(*this, std::move(name), cipherId,
-            std::move(cipherKey), std::move(description), maxTableCount);
+    auto database = std::make_shared<UserDatabase>(*this, realUuid, std::move(name), cipherId,
+            std::move(cipherKey), std::move(description), maxTableCount, dataDirectoryMustExist);
     m_databaseRegistry.emplace(*database);
+
     const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
     m_systemDatabase->recordDatabase(*database, tp);
     m_databases.emplace(database->getId(), database);
+
     return database;
 }
 
@@ -227,8 +243,8 @@ std::uint32_t Instance::createUser(const std::string& name,
         throwDatabaseError(IOManagerMessageId::kErrorUserAlreadyExists, name);
 
     // Create and register user
-    auto user = std::make_shared<User>(*m_systemDatabase, std::string(name), stdext::copy(realName),
-            stdext::copy(description), active);
+    const auto user = std::make_shared<User>(*m_systemDatabase, std::string(name),
+            stdext::copy(realName), stdext::copy(description), active);
     m_userRegistry.emplace(*user);
     const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
     m_systemDatabase->recordUser(*user, tp);

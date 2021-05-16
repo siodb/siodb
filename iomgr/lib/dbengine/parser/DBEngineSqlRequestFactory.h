@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -63,6 +63,13 @@ private:
      */
     requests::DBEngineRequestPtr createSelectRequestForFactoredSelectStatement(
             antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates DESCRIBE TABLE request.
+     * @param node Parse tree node with SQL statement.
+     * @return DESCRIBE TABLE request.
+     */
+    requests::DBEngineRequestPtr createDescribeTableRequest(antlr4::tree::ParseTree* node);
 
     /**
      * Creates INSERT request.

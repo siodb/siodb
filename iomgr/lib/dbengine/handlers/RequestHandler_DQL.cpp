@@ -446,8 +446,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     rawOutput.CheckNoError();
 }
 
-void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
-        [[maybe_unused]] const requests::ShowTablesRequest& request)
+void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response)
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
@@ -494,6 +493,57 @@ void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResp
             codedOutput.WriteRaw(nullMask.data(), nullMask.size());
             rawOutput.CheckNoError();
         }
+
+        rawOutput.CheckNoError();
+
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            writeVariant(values[i], codedOutput);
+            rawOutput.CheckNoError();
+        }
+    }
+
+    codedOutput.WriteVarint64(kNoMoreRows);
+    rawOutput.CheckNoError();
+}
+
+void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::DescribeTableRequest& request)
+{
+    response.set_has_affected_row_count(false);
+    response.set_affected_row_count(0);
+
+    const auto& databaseName =
+            request.m_database.empty() ? m_currentDatabaseName : request.m_database;
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+    const auto table = database->findTableChecked(request.m_table);
+
+    const auto sysColumnsTableName = database->findTableChecked(kSysColumnsTableName);
+    const auto nameColumn = sysColumnsTableName->findColumnChecked(kSysColumns_Name_ColumnName);
+    const auto dataTypeColumn =
+            sysColumnsTableName->findColumnChecked(kSysColumns_DataType_ColumnName);
+
+    addColumnToResponse(response, *nameColumn, "");
+    const auto columnDescription = response.add_column_description();
+    columnDescription->set_name("DATA_TYPE");
+    columnDescription->set_is_null(false);
+    columnDescription->set_type(ColumnDataType::COLUMN_DATA_TYPE_TEXT);
+
+    utils::DefaultErrorCodeChecker errorChecker;
+    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+    protobuf::writeMessage(
+            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+
+    std::vector<Variant> values(2);
+
+    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
+    const auto columns = table->getColumnsOrderedByPosition();
+    for (const auto& column : columns) {
+        values[0] = column->getName();
+        values[1] = getColumnDataTypeName(column->getDataType());
+
+        const std::size_t rowSize = getVariantSize(values[0]) + getVariantSize(values[1]);
+        codedOutput.WriteVarint64(rowSize);
 
         rawOutput.CheckNoError();
 

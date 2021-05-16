@@ -11,6 +11,7 @@
 // Common project headers
 #include <siodb/common/io/BufferedChunkedOutputStream.h>
 #include <siodb/common/io/JsonWriter.h>
+#include <siodb/common/net/HttpStatus.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 
@@ -21,7 +22,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
 {
     response.set_has_affected_row_count(true);
     response.set_affected_row_count(0);
-    response.set_rest_status_code(kRestStatusNotFound);
+    response.set_rest_status_code(net::HttpStatus::kNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -30,7 +31,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
         if (isSuperUser()) {
-            response.set_rest_status_code(kRestStatusForbidden);
+            response.set_rest_status_code(net::HttpStatus::kForbidden);
             throwDatabaseError(IOManagerMessageId::kErrorCannotInsertToSystemTable,
                     table->getDatabaseName(), table->getName());
         } else {
@@ -76,7 +77,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     }
 
     response.set_affected_row_count(tridList.size());
-    response.set_rest_status_code(kRestStatusCreated);
+    response.set_rest_status_code(net::HttpStatus::kCreated);
 
     // Write response message
     {
@@ -89,7 +90,7 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeModificationJsonProlog(kRestStatusCreated, tridList.size(), jsonWriter);
+    writeModificationJsonProlog(net::HttpStatus::kCreated, tridList.size(), jsonWriter);
     bool needComma = false;
     for (const auto& trid : tridList) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();

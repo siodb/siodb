@@ -11,6 +11,7 @@
 // Common project headers
 #include <siodb/common/io/BufferedChunkedOutputStream.h>
 #include <siodb/common/io/JsonWriter.h>
+#include <siodb/common/net/HttpStatus.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
@@ -22,7 +23,7 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
 {
     response.set_has_affected_row_count(true);
     response.set_affected_row_count(0);
-    response.set_rest_status_code(kRestStatusNotFound);
+    response.set_rest_status_code(net::HttpStatus::kNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -31,7 +32,7 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     const auto table = database->findTableChecked(request.m_table);
     if (table->isSystemTable()) {
         if (isSuperUser()) {
-            response.set_rest_status_code(kRestStatusForbidden);
+            response.set_rest_status_code(net::HttpStatus::kForbidden);
             throwDatabaseError(IOManagerMessageId::kErrorCannotDeleteFromSystemTable,
                     table->getDatabaseName(), table->getName());
         } else {
@@ -45,7 +46,7 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     const auto deleteResult = table->deleteRow(request.m_trid, tp);
     if (deleteResult.m_deleted) {
         response.set_affected_row_count(1);
-        response.set_rest_status_code(kRestStatusOk);
+        response.set_rest_status_code(net::HttpStatus::kOk);
     }
 
     // Write response message
@@ -59,7 +60,8 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeModificationJsonProlog(deleteResult.m_deleted ? kRestStatusOk : kRestStatusNotFound,
+    writeModificationJsonProlog(
+            deleteResult.m_deleted ? net::HttpStatus::kOk : net::HttpStatus::kNotFound,
             response.affected_row_count(), jsonWriter);
     if (response.affected_row_count() > 0) jsonWriter.writeValue(request.m_trid);
     writeJsonEpilog(jsonWriter);

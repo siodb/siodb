@@ -65,6 +65,7 @@ PMSG Error UserTokenIdDoesNotExist  User token #%1% doesn't exist
 # OBJECT ALREADY EXISTS
 PMSG Error InstanceAlreadyExists  Instance already exists
 PMSG Error DatabaseAlreadyExists  Database '%1%' already exists
+PMSG Error DatabaseUuidAlreadyExists  Database with UUID '%1%' already exists
 PMSG Error TableAlreadyExists     Table '%1%'.'%2%' already exists
 PMSG Error ColumnAlreadyExists    Column %1%'.'%2%'.'%3%' already exists
 PMSG Error ColumnDataBlockAlreadyExists  Column data block '%1%'.'%2%'.'%3%'.'%4%' already exists
@@ -171,8 +172,8 @@ PMSG Error DuplicateUserToken        Duplicate user token
 
 # CREATE DATABASE
 PMSG Error CannotCreateTemporaryDatabase  Temporary databases are not supported yet
-PMSG Error CipherIdTypeIsNotString        CIPHER_ID must be string
-PMSG Error CipherKeySeedIsNotString       CIPHER_KEY_SEED must be string
+PMSG Error WrongAttributeType             Attribute '%1%' must be '%2%'
+PMSG Error InvalidAttributeValue          Invalid value of the attribute '%1%'
 
 # DROP DATABASE
 PMSG Error CannotDropSystemDatabase   Can't drop system database
@@ -281,6 +282,8 @@ MSG Error CannotClearInstanceDataDir    Can't clear instance directory '%1%': (%
 MSG Error InstanceDataDirIsNotDir       Instance directory path '%1%' is not a directory
 MSG Error CannotCreateDatabaseDataDir \
     Can't create data directory '%1%' for the database '%2%' (%3%): (%4%) %5%
+MSG Error DatabaseDataDirDoesNotExist \
+    Data directory '%1%' for the database '%2%' doesn't exist
 MSG Error CannotCreateTableDataDir  \
     Can't create data directory '%1%' for the table '%2%'.'%3%' (%4%.%5%): (%6%) %7%
 MSG Error CannotCreateColumnDataDir \

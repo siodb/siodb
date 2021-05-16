@@ -399,8 +399,15 @@ private:
      * @param response Response object.
      * @param request Request object.
      */
-    void executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response,
-            const requests::ShowTablesRequest& request);
+    void executeShowTablesRequest(iomgr_protocol::DatabaseEngineResponse& response);
+
+    /**
+     * Executes SQL DESCRIBE TABLE request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeDescribeTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::DescribeTableRequest& request);
 
     // REST request handlers
 
@@ -579,28 +586,6 @@ private:
      */
     void writeJsonEpilog(siodb::io::JsonWriter& jsonWriter);
 
-public:
-    /** REST status "OK" */
-    static constexpr int kRestStatusOk = 200;
-
-    /** REST status "Created" */
-    static constexpr int kRestStatusCreated = 201;
-
-    /** REST status "Bad Request" */
-    static constexpr int kRestStatusBadRequest = 400;
-
-    /** REST status "Unauthorized" */
-    static constexpr int kRestStatusUnauthorized = 401;
-
-    /** REST status "forbidden" */
-    static constexpr int kRestStatusForbidden = 403;
-
-    /** REST status "not found" */
-    static constexpr int kRestStatusNotFound = 404;
-
-    /** REST status "Internal Server Error" */
-    static constexpr int kRestStatusInternalServerError = 500;
-
 private:
     /** DBMS instance */
     Instance& m_instance;
@@ -635,8 +620,8 @@ private:
     /** Token prefix in the freetext message */
     static constexpr const char* kTokenResponsePrefix = "token: ";
 
-    /** REST status field name */
-    static constexpr const char* kRestStatusFieldName = "status";
+    /** REST status code field name */
+    static constexpr const char* kRestStatusCodeFieldName = "status";
 
     /** REST rows field name */
     static constexpr const char* kRestRowsFieldName = "rows";

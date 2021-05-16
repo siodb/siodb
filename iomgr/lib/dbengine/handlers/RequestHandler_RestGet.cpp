@@ -15,6 +15,7 @@
 #include <siodb/common/io/BufferedChunkedOutputStream.h>
 #include <siodb/common/io/JsonWriter.h>
 #include <siodb/common/log/Log.h>
+#include <siodb/common/net/HttpStatus.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/utils/PlainBinaryEncoding.h>
@@ -32,7 +33,7 @@ void RequestHandler::executeGetDatabasesRestRequest(
     // Get databases
     const auto databaseNames = m_instance.getDatabaseNames(isSuperUser());
 
-    response.set_rest_status_code(kRestStatusOk);
+    response.set_rest_status_code(net::HttpStatus::kOk);
 
     // Write response message
     {
@@ -45,7 +46,7 @@ void RequestHandler::executeGetDatabasesRestRequest(
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(kRestStatusOk, jsonWriter);
+    writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
     bool needComma = false;
     for (const auto& databaseName : databaseNames) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -64,7 +65,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
-    response.set_rest_status_code(kRestStatusNotFound);
+    response.set_rest_status_code(net::HttpStatus::kNotFound);
 
     // Get table list
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -73,7 +74,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     auto tableNames = database->getTableNames(isSuperUser());
     std::sort(tableNames.begin(), tableNames.end());
 
-    response.set_rest_status_code(kRestStatusOk);
+    response.set_rest_status_code(net::HttpStatus::kOk);
 
     // Write response message
     {
@@ -86,7 +87,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(kRestStatusOk, jsonWriter);
+    writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
     bool needComma = false;
     for (const auto& tableName : tableNames) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -105,7 +106,7 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
-    response.set_rest_status_code(kRestStatusNotFound);
+    response.set_rest_status_code(net::HttpStatus::kNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -121,7 +122,7 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     TableDataSet dataSet(table);
     dataSet.fillColumnInfosFromTable();
 
-    response.set_rest_status_code(kRestStatusOk);
+    response.set_rest_status_code(net::HttpStatus::kOk);
 
     // Write response message
     {
@@ -134,7 +135,7 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(kRestStatusOk, jsonWriter);
+    writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
     const auto& columns = dataSet.getColumns();
     const auto columnCount = columns.size();
     bool needCommaBeforeRow = false;
@@ -164,7 +165,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
 {
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
-    response.set_rest_status_code(kRestStatusNotFound);
+    response.set_rest_status_code(net::HttpStatus::kNotFound);
 
     // Find table
     const auto database = m_instance.findDatabaseChecked(request.m_database);
@@ -207,7 +208,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
                     rowRelatedData->m_mcr.getColumnCount());
         }
         rowRelatedData->m_columns = table->getColumnsOrderedByPosition();
-        response.set_rest_status_code(kRestStatusOk);
+        response.set_rest_status_code(net::HttpStatus::kOk);
     }
 
     // Write response message
@@ -221,7 +222,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(haveRow ? kRestStatusOk : kRestStatusNotFound, jsonWriter);
+    writeGetJsonProlog(haveRow ? net::HttpStatus::kOk : net::HttpStatus::kNotFound, jsonWriter);
     if (haveRow) {
         jsonWriter.writeObjectBegin();
         jsonWriter.writeFieldName(rowRelatedData->m_columns[0]->getName());
