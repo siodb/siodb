@@ -141,8 +141,8 @@ function _testfails {
 
 function _killSiodb {
   _log "INFO" "Killing -9 Siodb instance ${SIODB_INSTANCE}"
-  if [[ $(ps -eo pid,cmd | egrep "\-\-instance ${SIODB_INSTANCE}$" | wc -l) -gt 0 ]]; then
-    for siodb_process in $(ps -eo pid,cmd | egrep "\-\-instance ${SIODB_INSTANCE}$" | awk '{print $1}'); do
+  if [[ $(ps -eo pid,cmd | (egrep "\-\-instance ${SIODB_INSTANCE}$" || true) | wc -l) -gt 0 ]]; then
+    for siodb_process in $(ps -eo pid,cmd | (egrep "\-\-instance ${SIODB_INSTANCE}$" || true) | awk '{print $1}'); do
       kill -9 ${siodb_process}
     done
   fi
@@ -150,7 +150,7 @@ function _killSiodb {
   siodbLockFileEnabledTimeout=0
   siodbLockFileEnabled=1
   while [[ $siodbLockFileEnabled -ne 0 ]]; do
-    siodbLockFileEnabled=$(lslocks | egrep "^siodb.*POSIX.*WRITE.*$" | wc -l)
+    siodbLockFileEnabled=$(lslocks | (egrep "^siodb.*POSIX.*WRITE.*$" || true) | wc -l)
     if [[ ${siodbLockFileEnabledTimeout} -gt ${siodbLockFileCheckMaxTimeout} ]]; then
       _log "ERROR" \
           "Timeout (${siodbLockFileCheckMaxTimeout} seconds) reached releasing lockfile"
@@ -297,8 +297,9 @@ function _StartSiodb {
             }
           }
         ')
-    numberEntriesInLog=$(echo "${LOG_STARTUP}" | egrep 'Listening for (TCP|UNIX) connections' \
-        | wc -l | bc)
+    numberEntriesInLog=$(echo "${LOG_STARTUP}" \
+      | (egrep 'Listening for (TCP|UNIX) connections' || true) \
+      | wc -l | bc)
     if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
       _log "ERROR" \
           "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
@@ -383,7 +384,7 @@ function _CheckLogFiles {
     if [[ "${1}" == "" ]]; then
       ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | wc -l)
     else
-      ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | egrep -v "${1}" | wc -l)
+      ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | (egrep -v "${1}" || true) | wc -l)
     fi
 
     if [[ ${ERROR_COUNT} -ne 0 ]]; then
@@ -458,12 +459,17 @@ function _RunSqlAndValidateOutput {
   SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
     -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
-  EXPECTED_RESULT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}")
-  EXPECTED_RESULT_COUNT=$(echo "${EXPECTED_RESULT}" | wc -l | bc)
+  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" \
+                          | sed 's/^ *//;s/ *$//' \
+                          | (egrep "${2}" || true) \
+                          | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
     _failExit
   else
+    EXPECTED_RESULT=$(echo "${SIOCLI_OUTPUT}" \
+                            | sed 's/^ *//;s/ *$//' \
+                            | (egrep "${2}" || true))
     _log "INFO" "Siocli output >${EXPECTED_RESULT}< matched expected output >${2}<."
   fi
 }
