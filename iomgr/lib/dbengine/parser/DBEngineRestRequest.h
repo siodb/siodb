@@ -1,11 +1,11 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
 #pragma once
 
 // Project headers
-#include "DBEngineRequest.h"
+#include "DBEngineSqlRequest.h"
 
 // Common project headers
 #include <siodb/iomgr/shared/dbengine/Variant.h>
@@ -180,6 +180,22 @@ struct PatchRowRestRequest : public DBEngineRequest {
 
     /** New column values */
     const std::vector<Variant> m_values;
+};
+
+/** SQL query request via REST */
+struct GetSqlQueryRowsRestRequest : public DBEngineRequest {
+    /**
+     * Initializes object of class GetSqlQueryRowsRestRequest.
+     * @param queries List of queries.
+     */
+    explicit GetSqlQueryRowsRestRequest(const std::shared_ptr<SelectRequest>& query)
+        : DBEngineRequest(DBEngineRequestType::kRestGetSqlQueryRows)
+        , m_query(query)
+    {
+    }
+
+    /** A query*/
+    const std::shared_ptr<SelectRequest> m_query;
 };
 
 }  // namespace siodb::iomgr::dbengine::requests

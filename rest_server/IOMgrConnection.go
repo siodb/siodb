@@ -126,7 +126,7 @@ func (ioMgrConn *ioMgrConnection) writeIOMgrRequest(
 	databaseEngineRestRequest.Token = token
 
 	if len(objectName) > 0 {
-		databaseEngineRestRequest.ObjectName = objectName
+		databaseEngineRestRequest.ObjectNameOrQuery = objectName
 	}
 	if objectID > 0 {
 		databaseEngineRestRequest.ObjectId = objectID

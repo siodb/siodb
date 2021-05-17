@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -6,6 +6,13 @@
 
 // Project headers
 #include <siodb/iomgr/shared/dbengine/Variant.h>
+
+// JSON library issue workaround
+// https://github.com/nlohmann/json/issues/2755
+#include <cstdio>
+#include <string>
+#undef EOF
+static constexpr auto EOF = std::char_traits<char>::eof();
 
 // JSON library
 #include <nlohmann/json.hpp>
@@ -151,7 +158,7 @@ private:
     /**
      * Ensures parser is in the expected state.
      * @param requiredState Required state.
-     * @param event Event description. 
+     * @param event Event description.
      * @throw JsonParserError if parser is in the invalid state.
      */
     void checkParserState(ParserState requiredState, const char* event) const;

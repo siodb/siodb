@@ -6,6 +6,9 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
+#include "JsonOutput.h"
+#include "RequestHandlerSharedConstants.h"
+#include "VariantOutput.h"
 #include "../Index.h"
 #include "../TableDataSet.h"
 #include "../ThrowDatabaseError.h"
@@ -33,7 +36,8 @@ void RequestHandler::executeGetDatabasesRestRequest(
     // Get databases
     const auto databaseNames = m_instance.getDatabaseNames(isSuperUser());
 
-    response.set_rest_status_code(net::HttpStatus::kOk);
+    response.set_rest_status_code(
+            databaseNames.empty() ? net::HttpStatus::kNotFound : net::HttpStatus::kOk);
 
     // Write response message
     {
@@ -46,7 +50,7 @@ void RequestHandler::executeGetDatabasesRestRequest(
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
+    writeGetJsonProlog(response.rest_status_code(), jsonWriter);
     bool needComma = false;
     for (const auto& databaseName : databaseNames) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -74,7 +78,8 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     auto tableNames = database->getTableNames(isSuperUser());
     std::sort(tableNames.begin(), tableNames.end());
 
-    response.set_rest_status_code(net::HttpStatus::kOk);
+    response.set_rest_status_code(
+            tableNames.empty() ? net::HttpStatus::kNotFound : net::HttpStatus::kOk);
 
     // Write response message
     {
@@ -87,7 +92,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
+    writeGetJsonProlog(response.rest_status_code(), jsonWriter);
     bool needComma = false;
     for (const auto& tableName : tableNames) {
         if (SIODB_LIKELY(needComma)) jsonWriter.writeComma();
@@ -124,38 +129,52 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
 
     response.set_rest_status_code(net::HttpStatus::kOk);
 
-    // Write response message
-    {
-        utils::DefaultErrorCodeChecker errorChecker;
-        protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
-        protobuf::writeMessage(
-                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
-    }
-
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
     const auto& columns = dataSet.getColumns();
     const auto columnCount = columns.size();
     bool needCommaBeforeRow = false;
     for (dataSet.resetCursor(); dataSet.hasCurrentRow(); dataSet.moveToNextRow()) {
         dataSet.readCurrentRow();
         const auto& values = dataSet.getValues();
-        if (SIODB_LIKELY(needCommaBeforeRow)) jsonWriter.writeComma();
+        if (SIODB_LIKELY(needCommaBeforeRow)) {
+            jsonWriter.writeComma();
+        } else {
+            needCommaBeforeRow = true;
+            // Write response message
+            {
+                utils::DefaultErrorCodeChecker errorChecker;
+                protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+                protobuf::writeMessage(protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                        response, rawOutput);
+            }
+            writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
+        }
         jsonWriter.writeObjectBegin();
-        needCommaBeforeRow = true;
         bool needCommaBeforeColumn = false;
-        for (std::size_t i = 0; i < columnCount; ++i) {
+        for (std::size_t i = 0; i != columnCount; ++i) {
             const auto& column = columns[i];
             if (SIODB_LIKELY(needCommaBeforeColumn)) jsonWriter.writeComma();
-            jsonWriter.writeFieldName(column->getName());
-            writeVariantAsJson(values.at(i), jsonWriter);
             needCommaBeforeColumn = true;
+            jsonWriter.writeFieldName(column->getName());
+            writeVariant(values.at(i), jsonWriter);
         }
         jsonWriter.writeObjectEnd();
     }
+
+    if (!needCommaBeforeRow) {
+        // Write response message
+        response.set_rest_status_code(net::HttpStatus::kNotFound);
+        utils::DefaultErrorCodeChecker errorChecker;
+        protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+        writeGetJsonProlog(net::HttpStatus::kNotFound, jsonWriter);
+    }
+
     writeJsonEpilog(jsonWriter);
+
     if (chunkedOutput.close() != 0) stdext::throw_system_error("Failed to send JSON payload");
 }
 
@@ -222,7 +241,7 @@ void RequestHandler::executeGetSingleRowRestRequest(
     // Write JSON payload
     siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
     siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    writeGetJsonProlog(haveRow ? net::HttpStatus::kOk : net::HttpStatus::kNotFound, jsonWriter);
+    writeGetJsonProlog(response.rest_status_code(), jsonWriter);
     if (haveRow) {
         jsonWriter.writeObjectBegin();
         jsonWriter.writeFieldName(rowRelatedData->m_columns[0]->getName());
@@ -234,11 +253,12 @@ void RequestHandler::executeGetSingleRowRestRequest(
             jsonWriter.writeFieldName(column->getName());
             Variant v;
             column->readRecord(columnRecords[i].getAddress(), v);
-            writeVariantAsJson(v, jsonWriter);
+            writeVariant(v, jsonWriter);
         }
         jsonWriter.writeObjectEnd();
     }
     writeJsonEpilog(jsonWriter);
+
     if (chunkedOutput.close() != 0) stdext::throw_system_error("Failed to send JSON payload");
 }
 

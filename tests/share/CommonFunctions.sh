@@ -476,52 +476,54 @@ function _RunSqlAndValidateOutput {
 
 function _RunRestRequest1 {
   _log "INFO" "Executing REST request: $1 $2"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -u $3 -T $4
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -u "$3" -T "$4"
 }
 
 function _RunRestRequest2 {
   _log "INFO" "Executing REST request: $1 $2 $3"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -u $4 -T $5
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -u "$4" -T "$5"
 }
 
 function _RunRestRequest3 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i "$4"\
+     -u "$5" -T "$6"
 }
 
 function _RunRestRequest4 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -P ''"$4"'' \
-    -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -P ''"$4"'' \
+    -u "$5" -T "$6"
 }
 
 function _RunRestRequest5 {
   _log "INFO" "Executing REST request: $1 $2 $3 @$4"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -f "$4" -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -f "$4" \
+    -u "$5" -T "$6"
 }
 
 function _RunRestRequest6 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' \
-    -u $6 -T $7
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i "$4"\
+    -P ''"$5"'' -u "$6" -T "$7"
 }
 
 function _RunRestRequest6d {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' \
-    -u $6 -T $7 --drop
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i $4 -P ''"$5"'' \
+    -u "$6" -T "$7" --drop
 }
 
 function _RunRestRequest7 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 \
-    -T $7
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i "$4" -f "$5" \
+    -u "$6" -T "$7"
 }
 
 function _RunRestRequest7d {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 \
-    -T $7 --drop
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i "$4" -f "$5" \
+    -u "$6" -T "$7" --drop
 }
 
 function _RunCurlGetDatabasesRequest {

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -27,7 +27,7 @@ TEST(Post, PostSingleRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::POST);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("Abcd.efGh");
+    requestMsg.set_object_name_or_query("Abcd.efGh");
 
     // Create JSON payload
     stdext::buffer<std::uint8_t> payloadBuffer(4096);
@@ -95,7 +95,7 @@ TEST(Post, PostMultipleRows)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::POST);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("AbcD.efGh");
+    requestMsg.set_object_name_or_query("AbcD.efGh");
 
     // Create JSON payload
     stdext::buffer<std::uint8_t> payloadBuffer(4096);

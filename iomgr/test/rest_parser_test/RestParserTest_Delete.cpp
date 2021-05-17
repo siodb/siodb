@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -20,7 +20,7 @@ TEST(Delete, DeleteRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::DELETE);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("abcd.efgh");
+    requestMsg.set_object_name_or_query("abcd.efgh");
     requestMsg.set_object_id(1);
 
     // Create request object

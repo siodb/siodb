@@ -68,7 +68,7 @@ TEST(RestPatch, PatchExistingRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create JSON payload
@@ -173,7 +173,7 @@ TEST(RestPatch, PatchNonExistingRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(1001);  // non-existing TRID
 
     // Create JSON payload
@@ -275,7 +275,7 @@ TEST(RestPatch, PatchExstingRowWithInvalidData)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create JSON payload
@@ -362,7 +362,7 @@ TEST(RestPatch, PatchExistingRowNonExistingColumn)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create JSON payload
@@ -449,7 +449,7 @@ TEST(RestPatch, PatchTrid)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create JSON payload

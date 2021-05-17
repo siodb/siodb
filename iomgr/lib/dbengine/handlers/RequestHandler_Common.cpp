@@ -6,6 +6,7 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
+#include "SqlClientProtocolRowsetWriterFactory.h"
 #include "../Column.h"
 #include "../DatabaseError.h"
 #include "../Index.h"
@@ -27,10 +28,6 @@
 
 // STL headers
 #include <functional>
-
-// Boost headers
-#include <boost/algorithm/hex.hpp>
-#include <boost/endian/conversion.hpp>
 
 namespace siodb::iomgr::dbengine {
 
@@ -68,8 +65,9 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
         response.set_response_count(responseCount);
         switch (request.m_requestType) {
             case requests::DBEngineRequestType::kSelect: {
-                executeSelectRequest(
-                        response, dynamic_cast<const requests::SelectRequest&>(request));
+                SqlClientProtocolRowsetWriterFactory rowsetWriterFactory;
+                executeSelectRequest(response,
+                        dynamic_cast<const requests::SelectRequest&>(request), rowsetWriterFactory);
                 break;
             }
             case requests::DBEngineRequestType::kShowDatabases: {
@@ -291,6 +289,11 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         response, dynamic_cast<const requests::GetSingleRowRestRequest&>(request));
                 break;
             }
+            case requests::DBEngineRequestType::kRestGetSqlQueryRows: {
+                executeGetSqlQueryRowsRestRequest(response,
+                        dynamic_cast<const requests::GetSqlQueryRowsRestRequest&>(request));
+                break;
+            }
             case requests::DBEngineRequestType::kRestPostRows: {
                 executePostRowsRestRequest(
                         response, dynamic_cast<const requests::PostRowsRestRequest&>(request));
@@ -343,7 +346,7 @@ void RequestHandler::addUserVisibleDatabaseErrorToResponse(
         iomgr_protocol::DatabaseEngineResponse& response, int errorCode, const char* errorMessage)
 {
     LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage;
-    auto msg = response.add_message();
+    const auto msg = response.add_message();
     msg->set_status_code(errorCode);
     msg->set_text(errorMessage);
 }
@@ -354,7 +357,7 @@ void RequestHandler::addInternalDatabaseErrorToResponse(
     const auto uuid = boost::uuids::random_generator()();
     LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage << " (MSG_UUID " << uuid
               << ')';
-    auto msg = response.add_message();
+    const auto msg = response.add_message();
     msg->set_status_code(1);
     msg->set_text(
             "Internal error, see log for details, message UUID " + boost::uuids::to_string(uuid));
@@ -366,7 +369,7 @@ void RequestHandler::addIoErrorToResponse(
     const auto uuid = boost::uuids::random_generator()();
     LOG_ERROR << kLogContext << '[' << errorCode << "] " << errorMessage << " (MSG_UUID " << uuid
               << ')';
-    auto msg = response.add_message();
+    const auto msg = response.add_message();
     msg->set_status_code(1);
     msg->set_text("IO error, see log for details, message UUID " + boost::uuids::to_string(uuid));
 }
@@ -382,254 +385,11 @@ void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse&
 
 void RequestHandler::sendNotImplementedYet(iomgr_protocol::DatabaseEngineResponse& response)
 {
-    auto msg = response.add_message();
+    const auto msg = response.add_message();
     msg->set_status_code(kFeatureNotImplementedErrorCode);
     msg->set_text("Not implemented yet");
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
-}
-
-std::size_t RequestHandler::getVariantSize(const Variant& value)
-{
-    switch (value.getValueType()) {
-        case VariantType::kNull: return 0;
-        case VariantType::kBool:
-        case VariantType::kInt8:
-        case VariantType::kUInt8: return 1;
-        case VariantType::kInt16:
-        case VariantType::kUInt16: return 2;
-        case VariantType::kInt32:
-            return google::protobuf::io::CodedOutputStream::VarintSize32(value.getInt32());
-        case VariantType::kUInt32:
-            return google::protobuf::io::CodedOutputStream::VarintSize32(value.getUInt32());
-        case VariantType::kInt64:
-            return google::protobuf::io::CodedOutputStream::VarintSize64(value.getInt64());
-        case VariantType::kUInt64:
-            return google::protobuf::io::CodedOutputStream::VarintSize64(value.getUInt64());
-        case VariantType::kFloat: return 4;
-        case VariantType::kDouble: return 8;
-        case VariantType::kDateTime: return value.getDateTime().getSerializedSize();
-        case VariantType::kString: {
-            return google::protobuf::io::CodedOutputStream::VarintSize32(value.getString().size())
-                   + value.getString().size();
-        }
-        case VariantType::kBinary: {
-            return google::protobuf::io::CodedOutputStream::VarintSize32(value.getBinary().size())
-                   + value.getBinary().size();
-        }
-        case VariantType::kClob: {
-            return google::protobuf::io::CodedOutputStream::VarintSize32(value.getClob().getSize())
-                   + value.getClob().getSize();
-        }
-        case VariantType::kBlob: {
-            return google::protobuf::io::CodedOutputStream::VarintSize32(value.getBlob().getSize())
-                   + value.getBlob().getSize();
-        }
-        default: {
-            throwDatabaseError(IOManagerMessageId::kErrorInvalidValueType,
-                    static_cast<int>(value.getValueType()));
-        }
-    }
-}
-
-void RequestHandler::writeVariant(
-        const Variant& value, protobuf::ExtendedCodedOutputStream& codedOutput)
-{
-    switch (value.getValueType()) {
-        case VariantType::kNull: break;
-        case VariantType::kBool: {
-            codedOutput.Write(value.getBool());
-            break;
-        }
-        case VariantType::kInt8: {
-            codedOutput.Write(value.getInt8());
-            break;
-        }
-        case VariantType::kUInt8: {
-            codedOutput.Write(value.getUInt8());
-            break;
-        }
-        case VariantType::kInt16: {
-            codedOutput.Write(value.getInt16());
-            break;
-        }
-        case VariantType::kUInt16: {
-            codedOutput.Write(value.getUInt16());
-            break;
-        }
-        case VariantType::kInt32: {
-            codedOutput.Write(value.getInt32());
-            break;
-        }
-        case VariantType::kUInt32: {
-            codedOutput.Write(value.getUInt32());
-            break;
-        }
-        case VariantType::kInt64: {
-            codedOutput.Write(value.getInt64());
-            break;
-        }
-        case VariantType::kUInt64: {
-            codedOutput.Write(value.getUInt64());
-            break;
-        }
-        case VariantType::kFloat: {
-            codedOutput.Write(value.getFloat());
-            break;
-        }
-        case VariantType::kDouble: {
-            codedOutput.Write(value.getDouble());
-            break;
-        }
-        case VariantType::kDateTime: {
-            protobuf::writeRawDateTime(codedOutput, value.getDateTime());
-            break;
-        }
-        case VariantType::kString: {
-            codedOutput.Write(value.getString());
-            break;
-        }
-        case VariantType::kBinary: {
-            codedOutput.Write(value.getBinary());
-            break;
-        }
-        case VariantType::kClob: {
-            std::unique_ptr<ClobStream> clob(value.getClob().clone());
-            auto size = clob->getRemainingSize();
-            stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
-            codedOutput.WriteVarint32(size);
-            while (size > 0) {
-                auto chunkSize = std::min(size, kLobChunkSize);
-                chunkSize = clob->read(buffer.data(), chunkSize);
-                size -= chunkSize;
-                codedOutput.WriteRaw(buffer.data(), chunkSize);
-            }
-            break;
-        }
-        case VariantType::kBlob: {
-            std::unique_ptr<BlobStream> blob(value.getBlob().clone());
-            auto size = blob->getRemainingSize();
-            stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
-            codedOutput.WriteVarint32(size);
-            while (size > 0) {
-                auto chunkSize = std::min(size, kLobChunkSize);
-                chunkSize = blob->read(buffer.data(), chunkSize);
-                size -= chunkSize;
-                codedOutput.WriteRaw(buffer.data(), chunkSize);
-            }
-            break;
-        }
-        default: {
-            throwDatabaseError(IOManagerMessageId::kErrorInvalidValueType,
-                    static_cast<int>(value.getValueType()));
-        }
-    }
-}
-
-void RequestHandler::writeVariantAsJson(const Variant& value, siodb::io::JsonWriter& jsonWriter)
-{
-    switch (value.getValueType()) {
-        case VariantType::kNull: {
-            jsonWriter.writeNullValue();
-            break;
-        }
-        case VariantType::kBool: {
-            jsonWriter.writeValue(value.getBool());
-            break;
-        }
-        case VariantType::kInt8: {
-            jsonWriter.writeValue(value.getInt8());
-            break;
-        }
-        case VariantType::kUInt8: {
-            jsonWriter.writeValue(value.getUInt8());
-            break;
-        }
-        case VariantType::kInt16: {
-            jsonWriter.writeValue(value.getInt16());
-            break;
-        }
-        case VariantType::kUInt16: {
-            jsonWriter.writeValue(value.getUInt16());
-            break;
-        }
-        case VariantType::kInt32: {
-            jsonWriter.writeValue(value.getInt32());
-            break;
-        }
-        case VariantType::kUInt32: {
-            jsonWriter.writeValue(value.getUInt32());
-            break;
-        }
-        case VariantType::kInt64: {
-            jsonWriter.writeValue(value.getInt64());
-            break;
-        }
-        case VariantType::kUInt64: {
-            jsonWriter.writeValue(value.getUInt64());
-            break;
-        }
-        case VariantType::kFloat: {
-            jsonWriter.writeValue(value.getFloat());
-            break;
-        }
-        case VariantType::kDouble: {
-            jsonWriter.writeValue(value.getDouble());
-            break;
-        }
-        case VariantType::kDateTime: {
-            // TODO HERE and forward
-            jsonWriter.writeValue(value.getDateTime().formatDefault());
-            break;
-        }
-        case VariantType::kString: {
-            jsonWriter.writeValue(value.getString());
-            break;
-        }
-        case VariantType::kBinary: {
-            jsonWriter.writeValue(*value.asString());
-            break;
-        }
-        case VariantType::kClob: {
-            std::unique_ptr<ClobStream> clob(value.getClob().clone());
-            auto size = clob->getRemainingSize();
-            stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
-            jsonWriter.writeDoubleQuote();
-            while (size > 0) {
-                auto chunkSize = std::min(size, kLobChunkSize);
-                chunkSize = clob->read(buffer.data(), chunkSize);
-                size -= chunkSize;
-                if (SIODB_LIKELY(chunkSize > 0)) {
-                    jsonWriter.writeRawString(
-                            reinterpret_cast<const char*>(buffer.data()), chunkSize);
-                }
-            }
-            jsonWriter.writeDoubleQuote();
-            break;
-        }
-        case VariantType::kBlob: {
-            std::unique_ptr<BlobStream> blob(value.getBlob().clone());
-            auto size = blob->getRemainingSize();
-            stdext::buffer<std::uint8_t> buffer(std::min(size, kLobChunkSize));
-            stdext::buffer<char> hexBuffer(buffer.size() * 2);
-            jsonWriter.writeDoubleQuote();
-            while (size > 0) {
-                auto chunkSize = std::min(size, kLobChunkSize);
-                chunkSize = blob->read(buffer.data(), chunkSize);
-                size -= chunkSize;
-                if (SIODB_LIKELY(chunkSize > 0)) {
-                    boost::algorithm::hex_lower(buffer.begin(), buffer.end(), hexBuffer.begin());
-                    jsonWriter.writeBytes(hexBuffer.data(), chunkSize * 2);
-                }
-            }
-            jsonWriter.writeDoubleQuote();
-            break;
-        }
-        default: {
-            throwDatabaseError(IOManagerMessageId::kErrorInvalidValueType,
-                    static_cast<int>(value.getValueType()));
-        }
-    }
 }
 
 ColumnSpecification RequestHandler::convertTableColumnDefinition(
@@ -793,50 +553,6 @@ void RequestHandler::checkWhereExpression(const requests::ConstExpressionPtr& wh
         throwDatabaseError(
                 IOManagerMessageId::kErrorInvalidWhereCondition, "Result is not boolean value");
     }
-}
-
-void RequestHandler::writeGetJsonProlog(int statusCode, siodb::io::JsonWriter& jsonWriter)
-{
-    // Start top level object
-    jsonWriter.writeObjectBegin();
-    // Write status
-    jsonWriter.writeFieldName(kRestStatusCodeFieldName, ::ct_strlen(kRestStatusCodeFieldName));
-    jsonWriter.writeValue(statusCode);
-    // Start rows array
-    jsonWriter.writeComma();
-    jsonWriter.writeFieldName(kRestRowsFieldName, ::ct_strlen(kRestRowsFieldName));
-    jsonWriter.writeArrayBegin();
-}
-
-void RequestHandler::writeModificationJsonProlog(
-        int statusCode, std::size_t affectedRowCount, siodb::io::JsonWriter& jsonWriter)
-{
-    // Start top level object
-    jsonWriter.writeObjectBegin();
-
-    // Write status
-    jsonWriter.writeFieldName(kRestStatusCodeFieldName, ::ct_strlen(kRestStatusCodeFieldName));
-    jsonWriter.writeValue(statusCode);
-
-    // Write affected row count
-    constexpr const char* kAffectedRowCountFieldName = "affectedRowCount";
-    jsonWriter.writeComma();
-    jsonWriter.writeFieldName(kAffectedRowCountFieldName, ::ct_strlen(kAffectedRowCountFieldName));
-    jsonWriter.writeValue(affectedRowCount);
-
-    // Start rows array
-    jsonWriter.writeComma();
-    constexpr const char* kTridsFieldName = "trids";
-    jsonWriter.writeFieldName(kTridsFieldName, ::ct_strlen(kTridsFieldName));
-    jsonWriter.writeArrayBegin();
-}
-
-void RequestHandler::writeJsonEpilog(siodb::io::JsonWriter& jsonWriter)
-{
-    // End rows array
-    jsonWriter.writeArrayEnd();
-    // End top level object
-    jsonWriter.writeObjectEnd();
 }
 
 }  // namespace siodb::iomgr::dbengine

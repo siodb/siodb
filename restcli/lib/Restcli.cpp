@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -66,6 +66,8 @@ extern "C" int restcliMain(int argc, char** argv)
                 boost::program_options::value<std::string>()->default_value("ROW"), "Object type");
         desc.add_options()("object-name,n",
                 boost::program_options::value<std::string>()->default_value(""), "Object name");
+        desc.add_options()("query,q",
+                boost::program_options::value<std::string>()->default_value(""), "SQL query");
         desc.add_options()("object-id,i",
                 boost::program_options::value<std::uint64_t>()->default_value(0),
                 "Object identifier");
@@ -108,7 +110,12 @@ extern "C" int restcliMain(int argc, char** argv)
         params.m_requestId = vm["request-id"].as<std::uint64_t>();
         params.m_objectType = vm["object-type"].as<std::string>();
         boost::to_upper(params.m_objectType);
-        params.m_objectName = vm["object-name"].as<std::string>();
+        {
+            auto objectName = vm["object-name"].as<std::string>();
+            auto query = vm["query"].as<std::string>();
+            params.m_objectName = objectName.empty() ? query : objectName;
+            if (!query.empty()) params.m_objectType = "SQL";
+        }
         params.m_objectId = vm["object-id"].as<std::uint64_t>();
         params.m_user = vm["user"].as<std::string>();
         params.m_token = vm["token"].as<std::string>();
@@ -188,13 +195,17 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
         objectType = iomgr_protocol::TABLE;
     else if (params.m_objectType == "ROW" || params.m_objectType == "ROWS")
         objectType = iomgr_protocol::ROW;
-    else if (!(params.m_objectType == "DATABASE" || params.m_objectType == "DATABASES"
-                     || params.m_objectType == "DB")) {
+    else if (params.m_objectType == "DATABASE" || params.m_objectType == "DATABASES"
+             || params.m_objectType == "DB") {
+        // already set to "database"
+    } else if (params.m_objectType == "SQL") {
+        objectType = iomgr_protocol::SQL;
+    } else {
         throw std::invalid_argument("Invalid object type: " + params.m_objectType);
     }
-    restRequest.set_object_type(objectType);
 
-    restRequest.set_object_name(params.m_objectName);
+    restRequest.set_object_type(objectType);
+    restRequest.set_object_name_or_query(params.m_objectName);
     if (params.m_objectId != 0) restRequest.set_object_id(params.m_objectId);
 
     restRequest.set_user_name(params.m_user);
@@ -238,16 +249,13 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
         protobuf::readMessage(
                 siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, input);
         if (params.m_printDebugMessages) {
-            std::cerr << "\ndebug: "
-                         "==================================================================="
-                         "====\n"
-                      << "debug: Expecting response: requestId=" << params.m_requestId
-                      << " responseId=" << kExpectedResponseId
+            std::cerr << "\ndebug: ==============================================================="
+                         "========\ndebug: Expecting response: requestId="
+                      << params.m_requestId << " responseId=" << kExpectedResponseId
                       << "\ndebug: Received response: requestId=" << response.request_id()
                       << " responseId=" << response.response_id()
-                      << "\ndebug: "
-                         "==================================================================="
-                         "====\n"
+                      << "\ndebug: ==============================================================="
+                         "========\n"
                       << std::flush;
         }
 
@@ -300,7 +308,7 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
         if (errorOccurred) return 3;
 
         // Send payload
-        // With some probability higher buffer will send later
+        // With some probability bigger buffer will be sent slower
         std::size_t chunkSize = params.m_dropConnection ? 1024 * 1024 : 65536;
         io::BufferedChunkedOutputStream chunkedOutput(chunkSize, connection);
         if (!params.m_payload.empty()) {

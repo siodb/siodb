@@ -54,7 +54,7 @@ TEST(RestDelete, DeleteExistingRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::DELETE);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create request object
@@ -138,7 +138,7 @@ TEST(RestDelete, DeleteNonExistingRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::DELETE);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(1001);  // non-existing TRID
 
     // Create request object

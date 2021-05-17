@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -107,5 +107,17 @@ void writeMessage(ProtocolMessageType messageType, const google::protobuf::Messa
  */
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
         StreamOutputStream& output);
+
+/**
+ * Writes protocol message to a coded stream.
+ * @param messageType message type identifier
+ * @param message a message
+ * @param output Output stream.
+ * @param codedOutput Coded output stream, linked with "output".
+ * @throw std::system_error when I/O error happens.
+ * @throw ProtocolError when protocol error happens.
+ */
+void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
+        StreamOutputStream& output, google::protobuf::io::CodedOutputStream& codedOutput);
 
 }  // namespace siodb::protobuf

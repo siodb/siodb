@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -7,6 +7,7 @@
 // Project headers
 #include "DBEngineRequestFactoryError.h"
 #include "DBEngineRestRequest.h"
+#include "DBEngineSqlRequestFactory.h"
 #include "JsonParserError.h"
 #include "RowDataJsonSaxParser.h"
 
@@ -40,6 +41,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createRestRequest(
                     return msg.object_id() == 0 ? createGetAllRowsRequest(msg)
                                                 : createGetSingleRowRequest(msg);
                 }
+                case iomgr_protocol::SQL: return createSqlQueryRequest(msg);
                 default: {
                     throw DBEngineRequestFactoryError(
                             "REST request: Invalid object type for the GET request");
@@ -118,17 +120,17 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetDatabasesReque
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetTablesRequest(
         const iomgr_protocol::DatabaseEngineRestRequest& msg)
 {
-    if (!isValidDatabaseObjectName(msg.object_name()))
+    if (!isValidDatabaseObjectName(msg.object_name_or_query()))
         throw DBEngineRequestFactoryError("GET TABLES: Invalid database name");
     return std::make_shared<requests::GetTablesRestRequest>(
-            boost::to_upper_copy(msg.object_name()));
+            boost::to_upper_copy(msg.object_name_or_query()));
 }
 
 requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetAllRowsRequest(
         const iomgr_protocol::DatabaseEngineRestRequest& msg)
 {
     std::vector<std::string> components;
-    boost::split(components, msg.object_name(), boost::is_any_of("."));
+    boost::split(components, msg.object_name_or_query(), boost::is_any_of("."));
     if (components.size() != 2)
         throw DBEngineRequestFactoryError("GET ALL ROWS: Invalid object name");
 
@@ -151,7 +153,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetSingleRowReque
         const iomgr_protocol::DatabaseEngineRestRequest& msg)
 {
     std::vector<std::string> components;
-    boost::split(components, msg.object_name(), boost::is_any_of("."));
+    boost::split(components, msg.object_name_or_query(), boost::is_any_of("."));
     if (components.size() != 2)
         throw DBEngineRequestFactoryError("GET SINGLE ROW: Invalid object name");
 
@@ -171,6 +173,35 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createGetSingleRowReque
 
     return std::make_shared<requests::GetSingleRowRestRequest>(
             std::move(components[0]), std::move(components[1]), msg.object_id());
+}
+
+requests::DBEngineRequestPtr DBEngineRestRequestFactory::createSqlQueryRequest(
+        const iomgr_protocol::DatabaseEngineRestRequest& msg)
+{
+    SqlParser parser(msg.object_name_or_query());
+    parser.parse();
+
+    const auto statementCount = parser.getStatementCount();
+    if (statementCount != 1) {
+        if (statementCount == 0) {
+            throw DBEngineRequestFactoryError("SQL QUERY: No query");
+        } else {
+            std::ostringstream err;
+            err << "SQL QUERY: Too many statements (" << statementCount << ')';
+            throw DBEngineRequestFactoryError(err.str());
+        }
+    }
+
+    DBEngineSqlRequestFactory factory(parser);
+    auto request = factory.createSqlRequest();
+
+    if (request->m_requestType == requests::DBEngineRequestType::kSelect) {
+        auto query = std::shared_ptr<requests::SelectRequest>(
+                request, static_cast<requests::SelectRequest*>(request.get()));
+        return std::make_shared<requests::GetSqlQueryRowsRestRequest>(query);
+    } else {
+        throw DBEngineRequestFactoryError("SQL QUERY: Not a SELECT statement");
+    }
 }
 
 namespace {
@@ -205,11 +236,10 @@ void parseJsonPayload(siodb::io::InputStream& input, std::size_t maxRowCount,
             if (totalPayloadSize <= maxJsonPayloadSize) storedPayloadSize += n;
             totalPayloadSize += n;
         }
-        LOG_DEBUG << "DBEngineRestRequestFactory: JSON payload read, " << totalPayloadSize
-                  << " bytes";
+        LOG_DEBUG << "DBEngineRestRequestFactory: JSON payload read, length " << totalPayloadSize;
         if (totalPayloadSize > maxJsonPayloadSize) {
             std::ostringstream err;
-            err << "JSON payload is too long, " << totalPayloadSize << " bytes, while maximum "
+            err << "JSON payload is too long: " << totalPayloadSize << " bytes, while max. "
                 << maxJsonPayloadSize << " bytes is allowed";
             throw DBEngineRequestFactoryError(err.str());
         }
@@ -240,7 +270,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPostRowsRequest(
         const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input)
 {
     std::vector<std::string> components;
-    boost::split(components, msg.object_name(), boost::is_any_of("."));
+    boost::split(components, msg.object_name_or_query(), boost::is_any_of("."));
     if (components.size() != 2) throw DBEngineRequestFactoryError("POST ROWS: Invalid object name");
 
     boost::trim(components[0]);
@@ -267,7 +297,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createDeleteRowRequest(
         const iomgr_protocol::DatabaseEngineRestRequest& msg)
 {
     std::vector<std::string> components;
-    boost::split(components, msg.object_name(), boost::is_any_of("."));
+    boost::split(components, msg.object_name_or_query(), boost::is_any_of("."));
     if (components.size() != 2)
         throw DBEngineRequestFactoryError("DELETE ROW: Invalid object name");
 
@@ -292,7 +322,7 @@ requests::DBEngineRequestPtr DBEngineRestRequestFactory::createPatchRowRequest(
         const iomgr_protocol::DatabaseEngineRestRequest& msg, siodb::io::InputStream& input)
 {
     std::vector<std::string> components;
-    boost::split(components, msg.object_name(), boost::is_any_of("."));
+    boost::split(components, msg.object_name_or_query(), boost::is_any_of("."));
     if (components.size() != 2) throw DBEngineRequestFactoryError("PATCH ROW: Invalid object name");
 
     boost::trim(components[0]);

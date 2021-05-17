@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -111,22 +111,28 @@ void writeMessage(ProtocolMessageType messageType, const google::protobuf::Messa
 void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
         StreamOutputStream& output)
 {
-    {
-        google::protobuf::io::CodedOutputStream codedOutput(&output);
+    google::protobuf::io::CodedOutputStream codedOutput(&output);
+    writeMessage(messageType, message, output, codedOutput);
+}
 
-        // Write message type
-        codedOutput.WriteVarint32(static_cast<std::uint32_t>(messageType));
-        output.CheckNoError();
+void writeMessage(ProtocolMessageType messageType, const google::protobuf::MessageLite& message,
+        StreamOutputStream& output, google::protobuf::io::CodedOutputStream& codedOutput)
+{
+    // Write message type
+    codedOutput.WriteVarint32(static_cast<std::uint32_t>(messageType));
+    output.CheckNoError();
 
-        // Write message size
-        const auto messageSize = message.ByteSizeLong();
-        codedOutput.WriteVarint32(static_cast<int>(messageSize));
-        output.CheckNoError();
+    // Write message size
+    const auto messageSize = message.ByteSizeLong();
+    codedOutput.WriteVarint32(static_cast<int>(messageSize));
+    output.CheckNoError();
 
-        // Write message itself
-        message.SerializeToCodedStream(&codedOutput);
-        output.CheckNoError();
-    }
+    // Write message itself
+    message.SerializeToCodedStream(&codedOutput);
+    output.CheckNoError();
+
+    codedOutput.Trim();
+    output.CheckNoError();
 
     output.Flush();
     output.CheckNoError();

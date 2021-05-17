@@ -4,6 +4,7 @@
 
 // Project headers
 #include "RequestHandlerTest_TestEnv.h"
+#include "dbengine/SystemDatabase.h"
 #include "dbengine/handlers/RequestHandler.h"
 #include "dbengine/parser/DBEngineRestRequestFactory.h"
 
@@ -92,7 +93,7 @@ TEST(RestGet, GetTables)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::GET);
     requestMsg.set_object_type(siodb::iomgr_protocol::TABLE);
-    requestMsg.set_object_name("sys");
+    requestMsg.set_object_name_or_query("sys");
 
     // Create request object
     parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
@@ -173,7 +174,7 @@ TEST(RestGet, GetAllRows)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::GET);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("SYS.rest_GET_ALL_ROWS_1");
+    requestMsg.set_object_name_or_query("SYS.rest_GET_ALL_ROWS_1");
 
     // Create request object
     parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
@@ -219,11 +220,9 @@ TEST(RestGet, GetAllRows)
     }
 }
 
-TEST(RestGet, GetAllRowsFromSystemTable)
+TEST(RestGet, GetAllRowsFromSysTables)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     requestHandler->suppressSuperUserRights();
 
@@ -232,7 +231,7 @@ TEST(RestGet, GetAllRowsFromSystemTable)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::GET);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("SYS.SYS_tables");
+    requestMsg.set_object_name_or_query("SYS.SYS_tables");
 
     // Create request object
     parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
@@ -255,6 +254,87 @@ TEST(RestGet, GetAllRowsFromSystemTable)
     EXPECT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_EQ(response.message_size(), 1);
+}
+
+TEST(RestGet, GetSingleRowNoMatch)
+{
+    // Create request handler
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    requestHandler->suppressSuperUserRights();
+
+    // Find database
+    const std::string kDatabaseName("SYS");
+    const auto database = instance->findDatabaseChecked(kDatabaseName);
+
+    // Create table
+    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
+            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
+            {"B", siodb::COLUMN_DATA_TYPE_TEXT, true},
+    };
+    const std::string kTableName("REST_GET_SINGLE_ROW_2");
+    const auto table = database->createUserTable(std::string(kTableName),
+            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
+
+    // Insert data into table
+    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+            database->generateNextTransactionId(), std::time(nullptr));
+    std::vector<dbengine::Variant> values {
+            dbengine::Variant(1),
+            dbengine::Variant("hello"),
+    };
+    std::vector<std::uint64_t> trids;
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
+    values[0] = values[0].getInt32() + 1;
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
+    values[0] = values[0].getInt32() + 1;
+    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
+
+    // Create source protobuf message
+    siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
+    requestMsg.set_request_id(1);
+    requestMsg.set_verb(siodb::iomgr_protocol::GET);
+    requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_id(*std::max_element(trids.cbegin(), trids.cend()) + 1);
+
+    // Create request object
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
+
+    // Execute request
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+    // Receive response message
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::StreamInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    // Validate response message
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+    ASSERT_EQ(response.column_description_size(), 0);
+    ASSERT_EQ(response.message_size(), 0);
+
+    // Read JSON
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
+
+    // Valdiate JSON
+    ASSERT_FALSE(jsonPayload.empty());
+    const auto j = nlohmann::json::parse(jsonPayload);
+
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 404);
+
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
+    ASSERT_EQ(jRows.size(), 0U);
 }
 
 TEST(RestGet, GetSingleRowWithMatch)
@@ -298,7 +378,7 @@ TEST(RestGet, GetSingleRowWithMatch)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::GET);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
     requestMsg.set_object_id(trids.at(kCheckedRowIndex));
 
     // Create request object
@@ -343,92 +423,9 @@ TEST(RestGet, GetSingleRowWithMatch)
     ASSERT_EQ(static_cast<std::uint64_t>(jRows[0]["TRID"]), trids.at(kCheckedRowIndex));
 }
 
-TEST(RestGet, GetSingleRowNoMatch)
+TEST(RestGet, GetSingleRowFromSysTables)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
-
-    // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
-
-    // Create table
-    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
-            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
-            {"B", siodb::COLUMN_DATA_TYPE_TEXT, true},
-    };
-    const std::string kTableName("REST_GET_SINGLE_ROW_2");
-    const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-
-    // Insert data into table
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
-            database->generateNextTransactionId(), std::time(nullptr));
-    std::vector<dbengine::Variant> values {
-            dbengine::Variant(1),
-            dbengine::Variant("hello"),
-    };
-    std::vector<std::uint64_t> trids;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
-    values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
-    values[0] = values[0].getInt32() + 1;
-    trids.push_back(table->insertRow(stdext::copy(values), tp).m_mcr->getTableRowId());
-
-    // Create source protobuf message
-    siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
-    requestMsg.set_request_id(1);
-    requestMsg.set_verb(siodb::iomgr_protocol::GET);
-    requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(kDatabaseName + "." + kTableName);
-    requestMsg.set_object_id(*std::max_element(trids.cbegin(), trids.cend()) + 1);
-
-    // Create request object
-    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
-    const auto request = requestFactory.createRestRequest(requestMsg);
-
-    // Execute request
-    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-    // Receive response message
-    siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-    siodb::protobuf::readMessage(
-            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
-
-    // Validate response message
-    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-    EXPECT_FALSE(response.has_affected_row_count());
-    EXPECT_EQ(response.response_id(), 0U);
-    EXPECT_EQ(response.response_count(), 1U);
-    ASSERT_EQ(response.column_description_size(), 0);
-    ASSERT_EQ(response.message_size(), 0);
-
-    // Read JSON
-    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
-
-    // Valdiate JSON
-    ASSERT_FALSE(jsonPayload.empty());
-    const auto j = nlohmann::json::parse(jsonPayload);
-
-    const auto& jStatus = j["status"];
-    ASSERT_TRUE(jStatus.is_number());
-    ASSERT_EQ(static_cast<int>(jStatus), 404);
-
-    const auto& jRows = j["rows"];
-    ASSERT_TRUE(jRows.is_array());
-    ASSERT_EQ(jRows.size(), 0U);
-}
-
-TEST(RestGet, GetSingleRowFromSystemTable)
-{
-    // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandler();
     requestHandler->suppressSuperUserRights();
 
@@ -437,7 +434,7 @@ TEST(RestGet, GetSingleRowFromSystemTable)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::GET);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("SYS.sys_TABLES");
+    requestMsg.set_object_name_or_query("SYS.sys_TABLES");
     requestMsg.set_object_id(1);
 
     // Create request object
@@ -461,4 +458,179 @@ TEST(RestGet, GetSingleRowFromSystemTable)
     EXPECT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_EQ(response.message_size(), 1);
+}
+
+TEST(RestGet, GetSqlQueryRowsFromSysTablesNoMatch)
+{
+    // Create request handler
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    requestHandler->suppressSuperUserRights();
+
+    // Create source protobuf message
+    siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
+    requestMsg.set_request_id(1);
+    requestMsg.set_verb(siodb::iomgr_protocol::GET);
+    requestMsg.set_object_type(siodb::iomgr_protocol::SQL);
+    requestMsg.set_object_name_or_query(
+            "SELECT TRID, NAME FROM SYS.SYS_TABLES WHERE NAME LIKE '%ZZZZ%'");
+
+    // Create request object
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
+
+    // Execute request
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+    // Receive response message
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::StreamInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    // Validate response message
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+    ASSERT_EQ(response.column_description_size(), 2U);
+    ASSERT_EQ(response.message_size(), 0);
+
+    // Read JSON
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
+
+    // Valdiate JSON
+    ASSERT_FALSE(jsonPayload.empty());
+    const auto j = nlohmann::json::parse(jsonPayload);
+
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 404);
+
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
+    ASSERT_EQ(jRows.size(), 0U);
+}
+
+TEST(RestGet, GetSqlQueryRowsFromSysTablesWithMatch1)
+{
+    // Create request handler
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    requestHandler->suppressSuperUserRights();
+
+    // Create source protobuf message
+    siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
+    requestMsg.set_request_id(1);
+    requestMsg.set_verb(siodb::iomgr_protocol::GET);
+    requestMsg.set_object_type(siodb::iomgr_protocol::SQL);
+    requestMsg.set_object_name_or_query(
+            "SELECT TRID, NAME FROM SYS.SYS_TABLES WHERE NAME LIKE '%COL%'");
+
+    // Create request object
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
+
+    // Execute request
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+    // Receive response message
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::StreamInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    // Validate response message
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+    ASSERT_EQ(response.column_description_size(), 2U);
+    ASSERT_EQ(response.message_size(), 0);
+
+    // Read JSON
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
+
+    // Valdiate JSON
+    ASSERT_FALSE(jsonPayload.empty());
+    const auto j = nlohmann::json::parse(jsonPayload);
+
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 200);
+
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
+    ASSERT_FALSE(jRows.empty());
+
+    for (const auto& jRow : jRows) {
+        ASSERT_TRUE(jRow.is_object());
+        ASSERT_TRUE(jRow.count("TRID") == 1);
+        ASSERT_TRUE(jRow.count("NAME") == 1);
+        ASSERT_TRUE(jRow["TRID"].is_number());
+        ASSERT_TRUE(jRow["NAME"].is_string());
+    }
+}
+
+TEST(RestGet, GetSqlQueryRowsFromSysTablesWithMatch2)
+{
+    // Create request handler
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    requestHandler->suppressSuperUserRights();
+
+    // Create source protobuf message
+    siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
+    requestMsg.set_request_id(1);
+    requestMsg.set_verb(siodb::iomgr_protocol::GET);
+    requestMsg.set_object_type(siodb::iomgr_protocol::SQL);
+    requestMsg.set_object_name_or_query("SELECT * FROM SYS.SYS_TABLES WHERE NAME LIKE '%COL%'");
+
+    // Create request object
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg);
+
+    // Execute request
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+    // Receive response message
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::StreamInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    // Validate response message
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    EXPECT_FALSE(response.has_affected_row_count());
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+    const auto sysTablesColumnCount =
+            instance->getSystemDatabase().findTableChecked("SYS_TABLES")->getColumnCount();
+    ASSERT_EQ(response.column_description_size(), sysTablesColumnCount);
+    ASSERT_EQ(response.message_size(), 0);
+
+    // Read JSON
+    const auto jsonPayload = siodb::io::readChunkedString(inputStream);
+
+    // Valdiate JSON
+    ASSERT_FALSE(jsonPayload.empty());
+    const auto j = nlohmann::json::parse(jsonPayload);
+
+    const auto& jStatus = j["status"];
+    ASSERT_TRUE(jStatus.is_number());
+    ASSERT_EQ(static_cast<int>(jStatus), 200);
+
+    const auto& jRows = j["rows"];
+    ASSERT_TRUE(jRows.is_array());
+    ASSERT_FALSE(jRows.empty());
+
+    for (const auto& jRow : jRows) {
+        ASSERT_TRUE(jRow.is_object());
+        ASSERT_TRUE(jRow.count("TRID") == 1);
+        ASSERT_TRUE(jRow.count("NAME") == 1);
+        ASSERT_TRUE(jRow["TRID"].is_number());
+        ASSERT_TRUE(jRow["NAME"].is_string());
+    }
 }
