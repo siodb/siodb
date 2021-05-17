@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -27,7 +27,7 @@ TEST(Patch, PatchSingleRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("Abcd.efGh");
+    requestMsg.set_object_name_or_query("Abcd.efGh");
     requestMsg.set_object_id(1);
 
     // Create JSON payload
@@ -102,7 +102,7 @@ TEST(Patch, TryPatchMultipleRows)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("Abcd.efGh");
+    requestMsg.set_object_name_or_query("Abcd.efGh");
     requestMsg.set_object_id(1);
 
     // Create JSON payload
@@ -151,7 +151,7 @@ TEST(Patch, TryPatchNoRows)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name("Abcd.efGh");
+    requestMsg.set_object_name_or_query("Abcd.efGh");
     requestMsg.set_object_id(1);
 
     // Create JSON payload

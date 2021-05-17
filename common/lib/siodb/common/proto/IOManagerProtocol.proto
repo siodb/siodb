@@ -133,6 +133,7 @@ enum DatabaseObjectType {
     DATABASE = 0;
     TABLE = 1;
     ROW = 2;
+    SQL = 3;
 };
 
 /** Request from REST server to IOMgr. */
@@ -150,8 +151,8 @@ message DatabaseEngineRestRequest {
     /** Numeric object ID */
     uint64 object_id = 4;
 
-    /** Object name */
-    string object_name = 5;
+    /** Object name or query */
+    string object_name_or_query = 5;
 
     /** User name */
     string user_name = 6;

@@ -121,7 +121,7 @@
         "${workspaceFolder}/build/debug/generated-src",
         "${workspaceFolder}/build/debug/generated-src/siodb-generated/common/lib",
         "${workspaceFolder}/build/debug/generated-src/siodb-generated/iomgr/lib",
-        "/opt/siodb/lib/antlr4-cpp-runtime-4.9.2/include",
+        "/opt/siodb/lib/antlr4-cpp-runtime-4.9.2/include/antlr4-runtime",
         "/opt/siodb/lib/date-3.0.1-git~77bd6b9/include",
         "/opt/siodb/lib/googletest-1.10.0/include",
         "/opt/siodb/lib/json-3.9.1/include",
@@ -185,5 +185,6 @@
     "gopls": {
         "build.expandWorkspaceToModule": true
     },
-    "editor.fontSize": 16
+    "editor.fontSize": 16,
+    "terminal.integrated.tabs.enabled": true
 }

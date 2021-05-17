@@ -6,6 +6,8 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
+#include "RequestHandlerSharedConstants.h"
+#include "VariantOutput.h"
 #include "../Column.h"
 #include "../ColumnSet.h"
 #include "../Index.h"
@@ -42,8 +44,8 @@ bool moveToNextRow(const std::vector<DataSetPtr>& tableDataSets)
 
 }  // namespace
 
-void RequestHandler::executeSelectRequest(
-        iomgr_protocol::DatabaseEngineResponse& response, const requests::SelectRequest& request)
+void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse& response,
+        const requests::SelectRequest& request, RowsetWriterFactory& rowsetWriterFactory)
 {
     response.set_has_affected_row_count(false);
 
@@ -93,7 +95,7 @@ void RequestHandler::executeSelectRequest(
     tableColumnRecordLists.reserve(request.m_tables.size());
 
     // Number of columns to be sent to the server
-    std::size_t columnCountToSend = 0;
+    std::size_t columnToSendCount = 0;
 
     for (const auto& tableDataSet : dataSets) {
         const auto table = database->findTableChecked(tableDataSet->getDataSourceId());
@@ -119,7 +121,7 @@ void RequestHandler::executeSelectRequest(
                 continue;
             }
 
-            auto allColumnsExpression =
+            const auto allColumnsExpression =
                     stdext::as_mutable_ptr(dynamic_cast<const requests::AllColumnsExpression*>(
                             resultExpr.m_expression.get()));
             if (!allColumnsExpression) {
@@ -149,9 +151,9 @@ void RequestHandler::executeSelectRequest(
                 hasNullableColumns |= !tableColumn.m_column->isNotNull();
             }
 
-            columnCountToSend += tableColumnRecordLists[tableIndex].size();
+            columnToSendCount += tableColumnRecordLists[tableIndex].size();
         } else if (resultExprType == requests::ExpressionType::kSingleColumnReference) {
-            auto columnExpression =
+            const auto columnExpression =
                     stdext::as_mutable_ptr(dynamic_cast<const requests::SingleColumnExpression*>(
                             resultExpr.m_expression.get()));
 
@@ -216,7 +218,7 @@ void RequestHandler::executeSelectRequest(
                 dataSets[tableIndex]->emplaceColumnInfo(
                         it->m_position, it->m_column->getName(), resultExpr.m_alias);
                 hasNullableColumns |= !it->m_column->isNotNull();
-                ++columnCountToSend;
+                ++columnToSendCount;
             }
         } else {
             // Expression case
@@ -230,7 +232,7 @@ void RequestHandler::executeSelectRequest(
             columnDescription->set_is_null(true);
             columnDescription->set_type(dataType);
             hasNullableColumns = true;
-            ++columnCountToSend;
+            ++columnToSendCount;
         }
     }
 
@@ -243,44 +245,35 @@ void RequestHandler::executeSelectRequest(
 
     checkWhereExpression(request.m_where, *dbContext);
 
-    std::optional<std::uint64_t> limit;
-    std::optional<std::uint64_t> offset;
+    std::optional<std::uint64_t> limit, offset;
 
     if (request.m_limit != nullptr) {
         requests::EmptyExpressionEvaluationContext emptyContext;
         request.m_limit->validate(emptyContext);
-
         const auto limitValue = request.m_limit->evaluate(emptyContext);
         if (!limitValue.isInteger())
             throwDatabaseError(IOManagerMessageId::kErrorLimitValueTypeNotInteger);
-
         if (limitValue.isNegative())
             throwDatabaseError(IOManagerMessageId::kErrorLimitValueIsNegative);
-
         limit = limitValue.asUInt64();
-        if (request.m_offset != nullptr) {
-            request.m_offset->validate(emptyContext);
-
-            const auto offsetValue = request.m_offset->evaluate(emptyContext);
-            if (!offsetValue.isInteger())
-                throwDatabaseError(IOManagerMessageId::kErrorOffsetValueTypeNotInteger);
-
-            if (offsetValue.isNegative())
-                throwDatabaseError(IOManagerMessageId::kErrorOffsetValueIsNegative);
-
-            offset = offsetValue.asUInt64();
-        }
     }
 
-    utils::DefaultErrorCodeChecker errorChecker;
-    protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
-    protobuf::writeMessage(
-            protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
+    if (request.m_offset != nullptr) {
+        requests::EmptyExpressionEvaluationContext emptyContext;
+        request.m_offset->validate(emptyContext);
+        const auto offsetValue = request.m_offset->evaluate(emptyContext);
+        if (!offsetValue.isInteger())
+            throwDatabaseError(IOManagerMessageId::kErrorOffsetValueTypeNotInteger);
+        if (offsetValue.isNegative())
+            throwDatabaseError(IOManagerMessageId::kErrorOffsetValueIsNegative);
+        offset = offsetValue.asUInt64();
+    }
 
-    protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
+    const auto rowsetWriter = rowsetWriterFactory.createRowsetWriter(m_connection);
 
-    std::uint64_t inputRowCount = 0;
-    std::uint64_t outputRowCount = 0;
+    bool rowsetStarted = false;
+    std::uint64_t inputRowCount = 0, outputRowCount = 0;
+
     try {
         bool rowDataAvailable = true;
         for (auto& tableDataSet : dataSets) {
@@ -289,13 +282,14 @@ void RequestHandler::executeSelectRequest(
         }
 
         stdext::bitmask nullMask;
-        if (hasNullableColumns) nullMask.resize(columnCountToSend);
+        if (hasNullableColumns) {
+            nullMask.resize(columnToSendCount);
+        }
 
-        std::vector<Variant> values(columnCountToSend);
+        std::vector<Variant> values(columnToSendCount);
 
         while (rowDataAvailable && (!limit.has_value() || *limit > 0)) {
             ++inputRowCount;
-            std::size_t rowLength = 0;
             if (request.m_where) {
                 try {
                     if (isNullType(request.m_where->getResultValueType(*dbContext))) {
@@ -317,7 +311,7 @@ void RequestHandler::executeSelectRequest(
                 }
             }
 
-            if (offset && *offset > 0) {
+            if (offset.has_value() && *offset > 0) {
                 --(*offset);
                 rowDataAvailable = moveToNextRow(dataSets);
                 continue;
@@ -336,35 +330,25 @@ void RequestHandler::executeSelectRequest(
                     for (const auto& rowValue : dataSet.getValues()) {
                         auto& value = values[valueIndex];
                         value = rowValue;
-                        rowLength += getVariantSize(value);
                         if (hasNullableColumns) nullMask.set(valueIndex, value.isNull());
                         ++valueIndex;
                     }
                 } else {
                     auto& value = values[valueIndex];
                     value = expr.m_expression->evaluate(*dbContext);
-                    rowLength += getVariantSize(value);
                     if (hasNullableColumns) nullMask.set(valueIndex, value.isNull());
                     ++valueIndex;
                 }
             }
 
-            rowLength += nullMask.size();
-
-            codedOutput.WriteVarint64(rowLength);
-            rawOutput.CheckNoError();
-
             //DBG_LOG_DEBUG(">>> OUTPUT: Row# " << rowNumber << ": Length=" << rowLength);
-
-            if (hasNullableColumns) {
-                codedOutput.WriteRaw(nullMask.data(), nullMask.size());
-                rawOutput.CheckNoError();
+            if (!rowsetStarted) {
+                // Begin rowset here to allow JSON output to generate proper status code
+                rowsetWriter->beginRowset(response);
+                rowsetStarted = true;
             }
 
-            for (std::size_t i = 0; i < columnCountToSend; ++i) {
-                writeVariant(values[i], codedOutput);
-                rawOutput.CheckNoError();
-            }
+            rowsetWriter->writeRow(values, nullMask);
 
             ++outputRowCount;
 
@@ -376,13 +360,19 @@ void RequestHandler::executeSelectRequest(
         // DatabaseError exception is only possible before data serialization and writing,
         // so data shouldn't be sent to the server at that moment.
         // All other exceptions are caught on the upper level.
-        codedOutput.WriteVarint64(kNoMoreRows);
-        rawOutput.CheckNoError();
+
+        // maybe we were double doing this? (see below the same statement)
+        // rowsetWriter->endRowset();
+
         // NOTE: Do not re-throw here to prevent double response.
     }
 
-    codedOutput.WriteVarint64(kNoMoreRows);
-    rawOutput.CheckNoError();
+    if (!rowsetStarted) {
+        // If we got here - there are no rows
+        rowsetWriter->beginRowset(response, false);
+    }
+
+    rowsetWriter->endRowset();
 
     LOG_DEBUG << "RequestHandler::executeSelectRequest: " << inputRowCount << " rows in, "
               << outputRowCount << " rows out";
@@ -426,7 +416,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
         }
 
         const std::size_t rowSize =
-                getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();
+                getSerializedSize(values[0]) + getSerializedSize(values[1]) + nullMask.size();
         codedOutput.WriteVarint64(rowSize);
 
         if (!nullNotAllowed) {
@@ -486,7 +476,7 @@ void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResp
         }
 
         const std::size_t rowSize =
-                getVariantSize(values[0]) + getVariantSize(values[1]) + nullMask.size();
+                getSerializedSize(values[0]) + getSerializedSize(values[1]) + nullMask.size();
         codedOutput.WriteVarint64(rowSize);
 
         if (!nullNotAllowed) {
@@ -542,7 +532,7 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
         values[0] = column->getName();
         values[1] = getColumnDataTypeName(column->getDataType());
 
-        const std::size_t rowSize = getVariantSize(values[0]) + getVariantSize(values[1]);
+        const std::size_t rowSize = getSerializedSize(values[0]) + getSerializedSize(values[1]);
         codedOutput.WriteVarint64(rowSize);
 
         rawOutput.CheckNoError();

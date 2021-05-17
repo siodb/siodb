@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -60,6 +60,8 @@ void CreateAndLoadInstance(const char* cipherId)
     const auto home = ::getenv("HOME");
     const std::string baseDir = stdext::string_builder()
                                 << home << "/tmp/siodb_" << std::time(nullptr) << '_' << ::getpid();
+    std::cout << "Base directory: " << baseDir << std::endl;
+
     instanceOptions.m_generalOptions.m_dataDirectory = baseDir + "/data";
     instanceOptions.m_generalOptions.m_superUserInitialAccessKey =
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMiRClOWfWD4kC6cy5IvxscUm17g5ECaXDUe5KVuIFEz "
@@ -71,15 +73,19 @@ void CreateAndLoadInstance(const char* cipherId)
     {
         siodb::config::LogChannelOptions channel;
 
+#if 0
+        // Uncomment for debugging
         channel.m_name = "console";
         channel.m_type = siodb::config::LogChannelType::kConsole;
         channel.m_destination = "stdout";
         channel.m_severity = boost::log::trivial::debug;
         instanceOptions.m_logOptions.m_logChannels.push_back(channel);
+#endif
 
         channel.m_name = "file";
         channel.m_type = siodb::config::LogChannelType::kFile;
         channel.m_destination = baseDir + "/log";
+        channel.m_severity = boost::log::trivial::debug;
         instanceOptions.m_logOptions.m_logChannels.push_back(channel);
     }
 

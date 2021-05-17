@@ -5,6 +5,7 @@
 #pragma once
 
 // Project headers
+#include "RowsetWriterFactory.h"
 #include "../DatabaseError.h"
 #include "../Instance.h"
 #include "../MasterColumnRecord.h"
@@ -73,6 +74,15 @@ private:
     {
         return m_userId == User::kSuperUserId && !m_suppressSuperUserRights;
     }
+
+    /**
+     * Executes SQL SELECT request.
+     * @param response Response object.
+     * @param request Request object.
+     * @param rowsetWriterFactory Rowset writer factory object.
+     */
+    void executeSelectRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::SelectRequest& request, RowsetWriterFactory& rowsetWriterFactory);
 
     // DDL requests
 
@@ -213,14 +223,6 @@ private:
             const requests::SetTableAttributesRequest& request);
 
     // DML requests
-
-    /**
-     * Executes SQL SELECT request.
-     * @param response Response object.
-     * @param request Request object.
-     */
-    void executeSelectRequest(iomgr_protocol::DatabaseEngineResponse& response,
-            const requests::SelectRequest& request);
 
     /**
      * Executes SQL UPDATE request.
@@ -467,6 +469,14 @@ private:
     void executePatchRowRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::PatchRowRestRequest& request);
 
+    /**
+     * Executes REST SQL query request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeGetSqlQueryRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GetSqlQueryRowsRestRequest& request);
+
     // Helpers
 
     /**
@@ -512,29 +522,6 @@ private:
     void sendNotImplementedYet(iomgr_protocol::DatabaseEngineResponse& response);
 
     /**
-     * Return variant value size for protocol value data.
-     * @param value A value.
-     * @return Variant value size for protocol value data.
-     */
-    static std::size_t getVariantSize(const Variant& value);
-
-    /**
-     * Writes variant value into coded output stream in the binary format.
-     * @param value A value.
-     * @param codedOutput Output stream.
-     */
-    static void writeVariant(
-            const Variant& value, protobuf::ExtendedCodedOutputStream& codedOutput);
-
-    /**
-     * Writes variant value as JSON.
-     * @param fieldName Field name.
-     * @param value A value.
-     * @param jsonWriter JSON writer object.
-     */
-    static void writeVariantAsJson(const Variant& value, siodb::io::JsonWriter& jsonWriter);
-
-    /**
      * Converts request column definition to database engine column info.
      * @param columnDefinition Protocol column definition.
      * @return Column info.
@@ -561,31 +548,6 @@ private:
     void checkWhereExpression(const requests::ConstExpressionPtr& whereExpression,
             requests::DBExpressionEvaluationContext& context);
 
-    /**
-     * Writes JSON prolog for GET request.
-     * @param statusCode Status code.
-     * @param jsonWriter JSON writer object.
-     * @throw std::system_error on write error.
-     */
-    void writeGetJsonProlog(int statusCode, siodb::io::JsonWriter& jsonWriter);
-
-    /**
-     * Writes JSON prolog for POST, PATCH, DELETE requests.
-     * @param statusCode Status code.
-     * @param affectedRowCount Affected row count to include.
-     * @param jsonWriter JSON writer object.
-     * @throw std::system_error on write error.
-     */
-    void writeModificationJsonProlog(
-            int statusCode, std::size_t affectedRowCount, siodb::io::JsonWriter& jsonWriter);
-
-    /**
-     * Writes JSON epilog.
-     * @param jsonWriter JSON writer object.
-     * @throw std::system_error on write error.
-     */
-    void writeJsonEpilog(siodb::io::JsonWriter& jsonWriter);
-
 private:
     /** DBMS instance */
     Instance& m_instance;
@@ -605,26 +567,11 @@ private:
     /** Log context name */
     static constexpr const char* kLogContext = "RequestHandler: ";
 
-    /** Row size that indicates "no more rows" */
-    static constexpr std::uint64_t kNoMoreRows = 0;
-
     /** "Not implemented" error code */
     static constexpr int kFeatureNotImplementedErrorCode = 6;
 
-    /** LOB chunk size */
-    static constexpr std::uint32_t kLobChunkSize = 4096;
-
-    /** JSON chunk size */
-    static constexpr std::size_t kJsonChunkSize = 65536;
-
     /** Token prefix in the freetext message */
     static constexpr const char* kTokenResponsePrefix = "token: ";
-
-    /** REST status code field name */
-    static constexpr const char* kRestStatusCodeFieldName = "status";
-
-    /** REST rows field name */
-    static constexpr const char* kRestRowsFieldName = "rows";
 
     /** Database name field name */
     static constexpr const char* kDatabaseNameFieldName = "name";

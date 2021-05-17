@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -65,6 +65,14 @@ private:
      * @return GET single row request.
      */
     requests::DBEngineRequestPtr createGetSingleRowRequest(
+            const iomgr_protocol::DatabaseEngineRestRequest& msg);
+
+    /**
+     * Creates SQL query request.
+     * @param msg Request message.
+     * @return SQL query request.
+     */
+    requests::DBEngineRequestPtr createSqlQueryRequest(
             const iomgr_protocol::DatabaseEngineRestRequest& msg);
 
     /**

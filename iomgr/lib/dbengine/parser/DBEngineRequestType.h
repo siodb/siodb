@@ -60,6 +60,7 @@ enum class DBEngineRequestType {
     kRestGetTables,
     kRestGetAllRows,
     kRestGetSingleRow,
+    kRestGetSqlQueryRows,
     kRestPostRows,
     kRestDeleteRow,
     kRestPatchRow,

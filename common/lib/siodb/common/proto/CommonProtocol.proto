@@ -31,4 +31,7 @@ message ServerInformation {
 
     /** Server version "patch" component */
     uint32 version_patch = 4;
+
+    /** Additional server capabilities */
+    repeated string server_capability = 5;
 }

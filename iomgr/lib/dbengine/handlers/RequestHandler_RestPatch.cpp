@@ -6,6 +6,8 @@
 
 // Project headers
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
+#include "JsonOutput.h"
+#include "RequestHandlerSharedConstants.h"
 #include "../Index.h"
 #include "../ThrowDatabaseError.h"
 
