@@ -20,7 +20,7 @@ func (worker restWorker) deleteRow(c *gin.Context) {
 	var rowID uint64
 	var err error
 	if rowID, err = strconv.ParseUint(c.Param("row_id"), 10, 64); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Error:": "Invalid row_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"Error:": "Invalid row_id"})
 		log.Error("%v", err)
 	} else {
 		worker.delete(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)

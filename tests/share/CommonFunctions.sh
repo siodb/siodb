@@ -542,9 +542,68 @@ function _RunCurlGetTablesRequest {
   echo ""
 }
 
+function _RunCurlGetSqlQuery {
+  q=$(_UrlEncode ''"$3"'')
+  url="http://$1:$2@localhost:50080/query?q=$q"
+  _log "DEBUG" "URL: $url"
+  curl -k "$url"
+  if [[ $? -ne 0 ]]; then
+    echo ""
+    _log "ERROR" "Test failed"
+    exit 1
+  fi
+  echo ""
+}
+
+function _RunCurlGetSqlQuery1 {
+  q1=$(_UrlEncode ''"$3"'')
+  url="http://$1:$2@localhost:50080/query?q1=$q1"
+  _log "DEBUG" "URL: $url"
+  curl -k "$url"
+  if [[ $? -ne 0 ]]; then
+    echo ""
+    _log "ERROR" "Test failed"
+    exit 1
+  fi
+  echo ""
+}
+
+function _RunCurlGetSqlQuery2 {
+  q1=$(_UrlEncode ''"$3"'')
+  q2=$(_UrlEncode ''"$4"'')
+  url="http://$1:$2@localhost:50080/query?q1=$q1&q2=$q2"
+  _log "DEBUG" "URL: $url"
+  curl -k "$url"
+  if [[ $? -ne 0 ]]; then
+    echo ""
+    _log "ERROR" "Test failed"
+    exit 1
+  fi
+  echo ""
+}
+
 function _TestExternalAbort {
   _log "INFO" "Testing an external abort $1"
   pkill -9 siodb
+}
+
+# Based on https://stackoverflow.com/a/41405682/1540501
+function _UrlEncode() {
+   awk 'BEGIN {
+      for (n = 0; n < 125; n++) {
+         m[sprintf("%c", n)] = n
+      }
+      n = 1
+      while (1) {
+         s = substr(ARGV[1], n, 1)
+         if (s == "") {
+            break
+         }
+         t = s ~ /[[:alnum:]_.!~*\47()-]/ ? t s : t sprintf("%%%02X", m[s])
+         n++
+      }
+      print t
+   }' ''"$1"''
 }
 
 _log "INFO" "Common parts applied"

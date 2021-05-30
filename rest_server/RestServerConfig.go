@@ -31,54 +31,54 @@ func (restServerConfig *restServerConfig) ParseAndValidateConfiguration(siodbCon
 
 	// REST Ports
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.ipv4_http_port"); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.ipv4_http_port': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.ipv4_http_port': %v", err)
 	}
 	if restServerConfig.ipv4HTTPPort, err = stringToPortNumber(value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.ipv4_http_port': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.ipv4_http_port': %v", err)
 	}
 
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.ipv4_https_port"); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.ipv4_https_port': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.ipv4_https_port': %v", err)
 	}
 	if restServerConfig.ipv4HTTPSPort, err = stringToPortNumber(value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.ipv4_https_port': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.ipv4_https_port': %v", err)
 	}
 
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.ipv6_http_port"); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.ipv6_http_port': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.ipv6_http_port': %v", err)
 	}
 	if restServerConfig.ipv6HTTPPort, err = stringToPortNumber(value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.ipv6_http_port': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.ipv6_http_port': %v", err)
 	}
 
 	if value, err = siodbConfigFile.GetParameterValue("rest_server.ipv6_https_port"); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.ipv6_https_port': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.ipv6_https_port': %v", err)
 	}
 	if restServerConfig.ipv6HTTPSPort, err = stringToPortNumber(value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.ipv6_https_port': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.ipv6_https_port': %v", err)
 	}
 
 	// TLS
 	if restServerConfig.ipv4HTTPSPort != 0 || restServerConfig.ipv6HTTPSPort != 0 {
 		if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate_chain"); err != nil {
 			if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_certificate"); err != nil {
-				return fmt.Errorf("Can't find parameter for TLS certificate: there is no valid parameter " +
+				return fmt.Errorf("can't find parameter for TLS certificate: there is no valid parameter " +
 					"rest_server.tls_certificate_chain or rest_server.tls_certificate")
 			}
 			if restServerConfig.tlsCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
-				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate': %v", err)
+				return fmt.Errorf("invalid parameter 'rest_server.tls_certificate': %v", err)
 			}
 		} else {
 			if restServerConfig.tlsCertificate, err = verifyPath(siodbConfigFile.path, value); err != nil {
-				return fmt.Errorf("Invalid parameter 'rest_server.tls_certificate_chain': %v", err)
+				return fmt.Errorf("invalid parameter 'rest_server.tls_certificate_chain': %v", err)
 			}
 		}
 
 		if value, err = siodbConfigFile.GetParameterValue("rest_server.tls_private_key"); err != nil {
-			return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
+			return fmt.Errorf("invalid parameter 'rest_server.tls_private_key': %v", err)
 		}
 		if restServerConfig.tlsPrivateKey, err = verifyPath(siodbConfigFile.path, value); err != nil {
-			return fmt.Errorf("Invalid parameter 'rest_server.tls_private_key': %v", err)
+			return fmt.Errorf("invalid parameter 'rest_server.tls_private_key': %v", err)
 		}
 	}
 
@@ -87,10 +87,10 @@ func (restServerConfig *restServerConfig) ParseAndValidateConfiguration(siodbCon
 		return err
 	}
 	if restServerConfig.httpChunkSize, err = stringToByteSize(value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.chunk_size': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.chunk_size': %v", err)
 	}
 	if restServerConfig.httpChunkSize < httpChunkSizeMinSize || restServerConfig.httpChunkSize > httpChunkSizeMaxSize {
-		return fmt.Errorf("Invalid parameter: 'rest_server.chunk_size' (%v) is out of range (%v-%v)",
+		return fmt.Errorf("invalid parameter: 'rest_server.chunk_size' (%v) is out of range (%v-%v)",
 			value, httpChunkSizeMinSize, httpChunkSizeMaxSize)
 	}
 
@@ -99,10 +99,10 @@ func (restServerConfig *restServerConfig) ParseAndValidateConfiguration(siodbCon
 		return err
 	}
 	if restServerConfig.requestPayloadBufferSize, err = stringToByteSize(value); err != nil {
-		return fmt.Errorf("Invalid parameter 'rest_server.request_payload_buffer_size': %v", err)
+		return fmt.Errorf("invalid parameter 'rest_server.request_payload_buffer_size': %v", err)
 	}
 	if restServerConfig.requestPayloadBufferSize < requestPayloadMinBufferSize || restServerConfig.requestPayloadBufferSize > requestPayloadMaxBufferSize {
-		return fmt.Errorf("Invalid parameter: 'rest_server.request_payload_buffer_size' (%v) is out of range (%v-%v)",
+		return fmt.Errorf("invalid parameter: 'rest_server.request_payload_buffer_size' (%v) is out of range (%v-%v)",
 			value, requestPayloadMinBufferSize, requestPayloadMaxBufferSize)
 	}
 

@@ -36,7 +36,7 @@ func stringToByteSize(str string) (bytes uint32, err error) {
 
 	var upperBound = math.MaxUint32 / mult
 	if value > upperBound {
-		return 0, fmt.Errorf("Number of bytes is too big: '%v'", str)
+		return 0, fmt.Errorf("number of bytes is too big: '%v'", str)
 	}
 
 	return uint32(value * mult), nil
@@ -67,7 +67,7 @@ func stringToSeconds(str string) (seconds uint64, err error) {
 
 	var upperBound = math.MaxUint64 / mult
 	if value > upperBound {
-		return 0, fmt.Errorf("Number of seconds is too big: '%v'", str)
+		return 0, fmt.Errorf("number of seconds is too big: '%v'", str)
 	}
 
 	return value * mult, nil
@@ -76,10 +76,10 @@ func stringToSeconds(str string) (seconds uint64, err error) {
 func stringToPortNumber(str string) (port uint32, err error) {
 	var ui64 uint64
 	if ui64, err = strconv.ParseUint(str, 10, 32); err != nil {
-		return 0, fmt.Errorf("Invalid port number '%v'", str)
+		return 0, fmt.Errorf("invalid port number '%v'", str)
 	}
-	if ui64 < 0 || port > 65535 {
-		return 0, fmt.Errorf("Invalid port number '%v'", str)
+	if ui64 > 65535 {
+		return 0, fmt.Errorf("invalid port number '%v'", str)
 	}
 	return uint32(ui64), nil
 }
@@ -99,7 +99,7 @@ func stringToSeverityLevel(str string) (level uint, err error) {
 	case "fatal":
 		return 6, nil
 	default:
-		return 0, fmt.Errorf("Invalid severity level %v", str)
+		return 0, fmt.Errorf("invalid severity level %v", str)
 	}
 }
 
@@ -125,7 +125,7 @@ func severityLevelToString(t int) string {
 func verifyPath(SiodbInstanceConfigurationPath string, fileName string) (string, error) {
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		if _, err := os.Stat(filepath.Dir(SiodbInstanceConfigurationPath) + `/` + fileName); os.IsNotExist(err) {
-			return "", fmt.Errorf("Can't stat file %v", fileName)
+			return "", fmt.Errorf("can't stat file %v", fileName)
 		}
 		return filepath.Dir(SiodbInstanceConfigurationPath) + `/` + fileName, nil
 	}

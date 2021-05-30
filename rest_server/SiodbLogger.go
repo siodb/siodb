@@ -85,7 +85,7 @@ func (logger *siodbLogger) Output(logLevel int, message string) error {
 	defer logger.mutex.Unlock()
 
 	//logger.logFileExpirationTimeout
-	if logger.channelType == logChannelTypeFile && logger.logFileExpirationTimeout >= 0 {
+	if logger.channelType == logChannelTypeFile && logger.logFileExpirationTimeout > 0 {
 		if time.Now().Unix() > logger.fileCreatedUnixTime+int64(logger.logFileExpirationTimeout) {
 			logger.closeLogFile()
 			logger.createNewLogFile()

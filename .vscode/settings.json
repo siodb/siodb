@@ -183,8 +183,12 @@
     "files.trimTrailingWhitespace": true,
     "terminal.integrated.localEchoLatencyThreshold": -1,
     "gopls": {
+        "experimentalWorkspaceModule": true,
         "build.expandWorkspaceToModule": true
     },
     "editor.fontSize": 16,
-    "terminal.integrated.tabs.enabled": true
+    "terminal.integrated.tabs.enabled": true,
+    "go.languageServerExperimentalFeatures": {
+        "diagnostics": true
+    }
 }
