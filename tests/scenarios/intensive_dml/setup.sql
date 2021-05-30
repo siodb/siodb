@@ -1,3 +1,7 @@
+-- Copyright (C) 2021 Siodb GmbH. All rights reserved.
+-- Use of this source code is governed by a license that can be found
+-- in the LICENSE file.
+
 create database tdb
 with cipher_id = 'camellia128',
 cipher_key_seed = 'myencryptionkeycamellia128';
