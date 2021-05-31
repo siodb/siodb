@@ -127,50 +127,37 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     TableDataSet dataSet(table);
     dataSet.fillColumnInfosFromTable();
 
+    // Write response message
     response.set_rest_status_code(net::HttpStatus::kOk);
-
-    // Write JSON payload
-    siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
-    siodb::io::JsonWriter jsonWriter(chunkedOutput);
-    const auto& columns = dataSet.getColumns();
-    const auto columnCount = columns.size();
-    bool needCommaBeforeRow = false;
-    for (dataSet.resetCursor(); dataSet.hasCurrentRow(); dataSet.moveToNextRow()) {
-        dataSet.readCurrentRow();
-        const auto& values = dataSet.getValues();
-        if (SIODB_LIKELY(needCommaBeforeRow)) {
-            jsonWriter.writeComma();
-        } else {
-            needCommaBeforeRow = true;
-            // Write response message
-            {
-                utils::DefaultErrorCodeChecker errorChecker;
-                protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
-                protobuf::writeMessage(protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                        response, rawOutput);
-            }
-            writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
-        }
-        jsonWriter.writeObjectBegin();
-        bool needCommaBeforeColumn = false;
-        for (std::size_t i = 0; i != columnCount; ++i) {
-            const auto& column = columns[i];
-            if (SIODB_LIKELY(needCommaBeforeColumn)) jsonWriter.writeComma();
-            needCommaBeforeColumn = true;
-            jsonWriter.writeFieldName(column->getName());
-            writeVariant(values.at(i), jsonWriter);
-        }
-        jsonWriter.writeObjectEnd();
-    }
-
-    if (!needCommaBeforeRow) {
-        // Write response message
-        response.set_rest_status_code(net::HttpStatus::kNotFound);
+    {
         utils::DefaultErrorCodeChecker errorChecker;
         protobuf::StreamOutputStream rawOutput(m_connection, errorChecker);
         protobuf::writeMessage(
                 protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, rawOutput);
-        writeGetJsonProlog(net::HttpStatus::kNotFound, jsonWriter);
+    }
+
+    // Write JSON payload
+    siodb::io::BufferedChunkedOutputStream chunkedOutput(kJsonChunkSize, m_connection);
+    siodb::io::JsonWriter jsonWriter(chunkedOutput);
+    writeGetJsonProlog(net::HttpStatus::kOk, jsonWriter);
+    const auto& columns = dataSet.getColumns();
+    const auto columnCount = columns.size();
+    bool hadFirstRow = false;
+    for (dataSet.resetCursor(); dataSet.hasCurrentRow(); dataSet.moveToNextRow()) {
+        dataSet.readCurrentRow();
+        const auto& values = dataSet.getValues();
+        if (SIODB_LIKELY(hadFirstRow)) jsonWriter.writeComma();
+        hadFirstRow = true;
+        jsonWriter.writeObjectBegin();
+        bool hadFirstColumn = false;
+        for (std::size_t i = 0; i != columnCount; ++i) {
+            const auto& column = columns[i];
+            if (SIODB_LIKELY(hadFirstColumn)) jsonWriter.writeComma();
+            hadFirstColumn = true;
+            jsonWriter.writeFieldName(column->getName());
+            writeVariant(values.at(i), jsonWriter);
+        }
+        jsonWriter.writeObjectEnd();
     }
 
     writeJsonEpilog(jsonWriter);
