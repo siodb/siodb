@@ -18,22 +18,22 @@ func loadAuthenticationData(c *gin.Context) (userName string, token string, err 
 	var headerFields = strings.Fields(header)
 
 	if len(headerFields) != 2 {
-		return userName, token, fmt.Errorf("Invalid authorization information provided")
+		return userName, token, fmt.Errorf("invalid authorization information provided")
 	}
 	if headerFields[0] != "Basic" {
-		return userName, token, fmt.Errorf("Invalid authorization scheme, expecting 'Basic' authorization scheme")
+		return userName, token, fmt.Errorf("invalid authorization scheme, expecting 'Basic' authorization scheme")
 	}
 
 	userPassBytes, err := base64.StdEncoding.DecodeString(headerFields[1])
 	if err != nil {
-		return userName, token, fmt.Errorf("Invalid authorization information provided")
+		return userName, token, fmt.Errorf("invalid authorization information provided")
 	}
 
 	// Important: Remove trailing newline from token, otherwise authentication fails
 	userPassStr = strings.TrimSuffix(string(userPassBytes), "\n")
 
 	if strings.Count(userPassStr, ":") != 1 {
-		return userName, token, fmt.Errorf("Invalid authorization information provided")
+		return userName, token, fmt.Errorf("invalid authorization information provided")
 	}
 
 	splittedUserPass := strings.Split(userPassStr, ":")

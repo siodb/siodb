@@ -25,6 +25,7 @@ func (worker *restWorker) CreateRouter(Port uint32) (err error) {
 	worker.ginEngine.GET("/databases/:database_name/tables", worker.getTables)
 	worker.ginEngine.GET("/databases/:database_name/tables/:table_name/rows", worker.getRows)
 	worker.ginEngine.GET("/databases/:database_name/tables/:table_name/rows/:row_id", worker.getRow)
+	worker.ginEngine.GET("/query", worker.getSqlQuery)
 
 	// POST
 	worker.ginEngine.POST("/databases/:database_name/tables/:table_name/rows", worker.postRows)
@@ -60,5 +61,5 @@ func closeRequest(c *gin.Context, ioMgrConn *ioMgrConnection, start time.Time) {
 	}
 	ioMgrCPool.ReturnTrackedNetConn(ioMgrConn)
 	log.Debug("ioMgrConn: %v", ioMgrConn)
-	log.LogRequest(c, time.Now().Sub(start))
+	log.LogRequest(c, time.Since(start))
 }

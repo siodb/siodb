@@ -118,7 +118,7 @@ func createLog(configFile *siodbConfigFile) (log *siodbLoggerPool, err error) {
 	}
 
 	for _, channel := range channels {
-		value, err := configFile.GetParameterValue("log." + channel + ".type")
+		value, _ := configFile.GetParameterValue("log." + channel + ".type")
 		logger := &siodbLogger{}
 
 		switch strings.ToLower(value) {
@@ -127,19 +127,19 @@ func createLog(configFile *siodbConfigFile) (log *siodbLoggerPool, err error) {
 			logger.channelName = strings.ToLower(value)
 			logger.destination, _ = configFile.GetParameterValue("log." + channel + ".destination")
 			if value, err = configFile.GetParameterValue("log." + channel + ".severity"); err != nil {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
+				return nil, fmt.Errorf("invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			if logger.severityLevel, err = stringToSeverityLevel(value); err != nil {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
+				return nil, fmt.Errorf("invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			if value, err = configFile.GetParameterValue("log." + channel + ".max_file_size"); err != nil {
 				logger.maxLogFileSize = 0
 			} else {
 				if logger.maxLogFileSize, err = stringToByteSize(value); err != nil {
-					return nil, fmt.Errorf("Invalid value for parameter 'log.%s.max_file_size': %v", channel, err)
+					return nil, fmt.Errorf("invalid value for parameter 'log.%s.max_file_size': %v", channel, err)
 				}
 				if logger.maxLogFileSize > 0 && logger.maxLogFileSize < logFileSizeMin {
-					return nil, fmt.Errorf("Invalid value for parameter 'log.%s.max_file_size': %v, expecting > %v",
+					return nil, fmt.Errorf("invalid value for parameter 'log.%s.max_file_size': %v, expecting > %v",
 						channel, logger.maxLogFileSize, logFileSizeMin)
 				}
 			}
@@ -147,10 +147,10 @@ func createLog(configFile *siodbConfigFile) (log *siodbLoggerPool, err error) {
 				logger.logFileExpirationTimeout = 0
 			} else {
 				if logger.logFileExpirationTimeout, err = stringToSeconds(value); err != nil {
-					return nil, fmt.Errorf("Invalid value for parameter 'log.%s.exp_time': %v", channel, err)
+					return nil, fmt.Errorf("invalid value for parameter 'log.%s.exp_time': %v", channel, err)
 				}
 				if logger.logFileExpirationTimeout > 0 && logger.logFileExpirationTimeout < logFileExpirationTimeoutMin {
-					return nil, fmt.Errorf("Invalid value for parameter 'log.%s.max_file_size': %v, expecting > %v",
+					return nil, fmt.Errorf("invalid value for parameter 'log.%s.max_file_size': %v, expecting > %v",
 						channel, logger.logFileExpirationTimeout, logFileExpirationTimeoutMin)
 				}
 			}
@@ -160,14 +160,14 @@ func createLog(configFile *siodbConfigFile) (log *siodbLoggerPool, err error) {
 			logger.channelName = strings.ToLower(value)
 			logger.destination, _ = configFile.GetParameterValue("log." + channel + ".destination")
 			if value, err = configFile.GetParameterValue("log." + channel + ".severity"); err != nil {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
+				return nil, fmt.Errorf("invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 			if logger.severityLevel, err = stringToSeverityLevel(value); err != nil {
-				return nil, fmt.Errorf("Invalid parameter 'log.%s.severity': %v", channel, err)
+				return nil, fmt.Errorf("invalid parameter 'log.%s.severity': %v", channel, err)
 			}
 
 		default:
-			return nil, fmt.Errorf("Invalid channel type '%v'", strings.ToLower(value))
+			return nil, fmt.Errorf("invalid channel type '%v'", strings.ToLower(value))
 		}
 
 		if err := logger.initLogger(); err != nil {

@@ -56,8 +56,9 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                           << "Received request: id: " << requestMsg.request_id()
                           << ", verb: " << static_cast<int>(requestMsg.verb())
                           << ", object_type: " << static_cast<int>(requestMsg.object_type())
-                          << ", object_id: " << requestMsg.object_id() << ", object_name: "
-                          << requestMsg.object_name() << ", user: " << requestMsg.user_name());
+                          << ", object_id: " << requestMsg.object_id() << ", object_name: '"
+                          << requestMsg.object_name_or_query()
+                          << "', user: " << requestMsg.user_name());
 
             // Authenticate user with token
             std::uint32_t userId;

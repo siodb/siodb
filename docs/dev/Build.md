@@ -313,7 +313,7 @@ Now, proceed to the section [All Systems](#all-systems).
 Run following commands:
 
 ```bash
-export SIODB_GO_VERSION=1.16.3
+export SIODB_GO_VERSION=1.16.4
 cd /tmp
 wget "https://golang.org/dl/go${SIODB_GO_VERSION}.linux-amd64.tar.gz"
 tar xaf go${SIODB_GO_VERSION}.linux-amd64.tar.gz

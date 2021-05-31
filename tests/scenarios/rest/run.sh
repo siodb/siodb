@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2020-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -80,6 +80,9 @@ else
 
 
   _log "INFO" "Running USER1 tests"
+
+  _RunRestRequest2 get sql 'select * from db1.t1_2' user1 ${user1_token}
+  _CheckLogFiles
 
   _RunRestRequest1 get db user1 ${user1_token}
   _CheckLogFiles

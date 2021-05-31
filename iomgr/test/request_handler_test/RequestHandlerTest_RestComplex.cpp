@@ -79,7 +79,7 @@ void PostRow(dbengine::RequestHandler& requestHandler, const std::string& tableO
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::POST);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(tableObjectName);
+    requestMsg.set_object_name_or_query(tableObjectName);
 
     // Create JSON payload
     stdext::buffer<std::uint8_t> payloadBuffer(4096);
@@ -145,7 +145,7 @@ void PatchRow(dbengine::RequestHandler& requestHandler, const std::string& table
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name(tableObjectName);
+    requestMsg.set_object_name_or_query(tableObjectName);
     requestMsg.set_object_id(trid);
 
     // Create JSON payload

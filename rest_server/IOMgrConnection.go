@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/proto"
 
 	"siodb.io/siodb/siodbproto"
 )
@@ -101,7 +102,7 @@ func (ioMgrConn *ioMgrConnection) writeJSONPayloadChunk(
 		if bytesWritten, err := ioMgrConn.Write(JSONPayloadBuffer[:size]); err != nil {
 			ioMgrConn.Close()
 			ioMgrConn.trackedNetConn.Conn = nil
-			return uint64(bytesWritten), fmt.Errorf("Can't write payload to IOMgr: %v", err)
+			return uint64(bytesWritten), fmt.Errorf("can't write payload to IOMgr: %v", err)
 		}
 	}
 
@@ -126,7 +127,7 @@ func (ioMgrConn *ioMgrConnection) writeIOMgrRequest(
 	databaseEngineRestRequest.Token = token
 
 	if len(objectName) > 0 {
-		databaseEngineRestRequest.ObjectName = objectName
+		databaseEngineRestRequest.ObjectNameOrQuery = objectName
 	}
 	if objectID > 0 {
 		databaseEngineRestRequest.ObjectId = objectID
@@ -137,7 +138,7 @@ func (ioMgrConn *ioMgrConnection) writeIOMgrRequest(
 	log.Debug("writeIOMgrRequest | ioMgrConn.RequestID: %v", requestID)
 
 	if _, err := ioMgrConn.writeMessage(messageTypeDatabaseEngineRequest, &databaseEngineRestRequest); err != nil {
-		return requestID, fmt.Errorf("Can't write message to IOMgr: %v", err)
+		return requestID, fmt.Errorf("can't write message to IOMgr: %v", err)
 	}
 
 	return requestID, nil
@@ -148,7 +149,7 @@ func (ioMgrConn *ioMgrConnection) readIOMgrResponse(requestID uint64) (restStatu
 	restStatusCode = 0
 
 	if _, err := ioMgrConn.readMessage(messageTypeDatabaseEngineReposnse, &databaseEngineResponse); err != nil {
-		return restStatusCode, fmt.Errorf("Can't read response from IOMgr: %v", err)
+		return restStatusCode, fmt.Errorf("can't read response from IOMgr: %v", err)
 	}
 	log.Debug("readIOMgrResponse | databaseEngineResponse: %v", &databaseEngineResponse)
 	log.Debug("readIOMgrResponse | databaseEngineResponse.RequestId: %v", databaseEngineResponse.RequestId)
@@ -159,7 +160,7 @@ func (ioMgrConn *ioMgrConnection) readIOMgrResponse(requestID uint64) (restStatu
 	if databaseEngineResponse.RequestId != requestID {
 		ioMgrConn.Close()
 		ioMgrConn.trackedNetConn.Conn = nil
-		return restStatusCode, fmt.Errorf("Request ID mismatch: databaseEngineResponse.RequestId (%v) != requestID (%v)",
+		return restStatusCode, fmt.Errorf("request ID mismatch: databaseEngineResponse.RequestId (%v) != requestID (%v)",
 			databaseEngineResponse.RequestId, requestID)
 	}
 
@@ -189,7 +190,7 @@ func (ioMgrConn *ioMgrConnection) readChunkedJSON(c *gin.Context) (err error) {
 
 		// Get Current IOMgr chunk Size
 		if _, ioMgrReceivedChunkSize, err = ioMgrConn.readVarint32(); err != nil {
-			return fmt.Errorf("Can't read chunk size from IOMgr: %v", err)
+			return fmt.Errorf("can't read chunk size from IOMgr: %v", err)
 		}
 		log.Debug("readChunkedJSON | New chunk with size: %v", ioMgrReceivedChunkSize)
 
@@ -294,9 +295,10 @@ func (ioMgrConn *ioMgrConnection) readVarint32() (bytesRead int, ruint32 uint32,
 	return bytesRead, uint32(ruint64), err
 }
 
-func (ioMgrConn *ioMgrConnection) readVarint64() (bytesRead int, ruint64 uint64, err error) {
-	return ioMgrConn.readVarint(binary.MaxVarintLen64)
-}
+// comment out meanwhile to avoid static code check warnings
+// func (ioMgrConn *ioMgrConnection) readVarint64() (bytesRead int, ruint64 uint64, err error) {
+// 	return ioMgrConn.readVarint(binary.MaxVarintLen64)
+// }
 
 func (ioMgrConn *ioMgrConnection) readVarint(maxVarintLen int) (bytesRead int, ruint64 uint64, err error) {
 	// Function readVarint()
@@ -320,8 +322,9 @@ func (ioMgrConn *ioMgrConnection) readVarint(maxVarintLen int) (bytesRead int, r
 	var varIntBytes int
 	for varIntBytes == 0 { // i.e. no varint has been decoded yet.
 		if bytesRead >= len(prefixBuf) {
-			return bytesRead, ruint64, fmt.Errorf("Invalid varint (size %v) encountered", maxVarintLen)
+			return bytesRead, ruint64, fmt.Errorf("invalid varint (size %v) encountered", maxVarintLen)
 		}
+
 		// We have to read byte by byte here to avoid reading more bytes
 		// than required. Each read byte is appended to what we have
 		// read before.
@@ -334,8 +337,8 @@ func (ioMgrConn *ioMgrConnection) readVarint(maxVarintLen int) (bytesRead int, r
 				return bytesRead, ruint64, fmt.Errorf("readVarint | Protocol error (read timeout): %v", err)
 			}
 			return bytesRead, ruint64, fmt.Errorf("readVarint | Protocol error: %v", err)
-
 		}
+
 		if newBytesRead == 0 {
 			if io.EOF == err {
 				return bytesRead, ruint64, nil
@@ -347,10 +350,16 @@ func (ioMgrConn *ioMgrConnection) readVarint(maxVarintLen int) (bytesRead int, r
 			// Reader contract). So let's go on...
 			continue
 		}
+
 		bytesRead += newBytesRead
+
 		// Now present everything read so far to the varint decoder and
 		// see if a varint can be decoded already.
-		ruint64, varIntBytes = proto.DecodeVarint(prefixBuf[:bytesRead])
+		ruint64, varIntBytes = protowire.ConsumeVarint(prefixBuf[:bytesRead])
+		// simulate old package behaviour to not break things
+		if varIntBytes < 0 {
+			varIntBytes = 0
+		}
 	}
 
 	return bytesRead, ruint64, err
@@ -364,7 +373,7 @@ func (ioMgrConn *ioMgrConnection) writeMessage(
 	var err error
 	var buf [binary.MaxVarintLen32]byte
 	encodedLength := binary.PutUvarint(buf[:], uint64(messageTypeID))
-	bytesWritten, err = ioMgrConn.Write(buf[:encodedLength])
+	_, err = ioMgrConn.Write(buf[:encodedLength])
 	if nil != err {
 		ioMgrConn.Close()
 		ioMgrConn.trackedNetConn.Conn = nil

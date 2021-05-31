@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -32,11 +32,10 @@ void checkColumnNameAndAlias(
 
 }  // namespace
 
-TEST(SqlParser_Query, SelectSimple)
+TEST(SqlParser_Query, SelectSimpleAllColumns)
 {
     // Parse statement and prepare request
-    const std::string statement(
-            "SELECT column1, column2 AS column_2222 FROM my_database.my_table;");
+    const std::string statement("SELECT * FROM my_database.my_table;");
     parser_ns::SqlParser parser(statement);
     parser.parse();
 
@@ -49,13 +48,39 @@ TEST(SqlParser_Query, SelectSimple)
     // Check request
     const auto& request = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
     EXPECT_EQ(request.m_database, "MY_DATABASE");
+    ASSERT_EQ(request.m_tables.size(), 1U);
+    EXPECT_EQ(request.m_tables[0].m_name, "MY_TABLE");
+
+    // Check columns
+    ASSERT_EQ(request.m_resultExpressions.size(), 1U);
+    ASSERT_EQ(request.m_resultExpressions[0].m_expression->getType(),
+            dbengine::requests::ExpressionType::kAllColumnsReference);
+}
+
+TEST(SqlParser_Query, SelectSimpleConcreteColumns)
+{
+    // Parse statement and prepare request
+    const std::string statement("SELECT col1, col2 AS col_222 FROM my_database.my_table;");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
+
+    // Check request type
+    ASSERT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kSelect);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "MY_DATABASE");
+    ASSERT_EQ(request.m_tables.size(), 1U);
     EXPECT_EQ(request.m_tables[0].m_name, "MY_TABLE");
 
     // Check columns
     ASSERT_EQ(request.m_resultExpressions.size(), 2U);
 
-    checkColumnNameAndAlias(request.m_resultExpressions[0], "COLUMN1", "");
-    checkColumnNameAndAlias(request.m_resultExpressions[1], "COLUMN2", "COLUMN_2222");
+    checkColumnNameAndAlias(request.m_resultExpressions[0], "COL1", "");
+    checkColumnNameAndAlias(request.m_resultExpressions[1], "COL2", "COL_222");
 
     // TODO: implement: ORDER BY, GROUP BY, HAVING, LIMIT
 }
@@ -77,6 +102,7 @@ TEST(SqlParser_Query, SelectWithExpression)
     // Check request
     const auto& request = dynamic_cast<const requests::SelectRequest&>(*dbeRequest);
     EXPECT_EQ(request.m_database, "MY_DATABASE");
+    ASSERT_EQ(request.m_tables.size(), 1U);
     EXPECT_EQ(request.m_tables[0].m_name, "MY_TABLE");
 
     // Check columns

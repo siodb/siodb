@@ -141,8 +141,8 @@ function _testfails {
 
 function _killSiodb {
   _log "INFO" "Killing -9 Siodb instance ${SIODB_INSTANCE}"
-  if [[ $(ps -eo pid,cmd | egrep "\-\-instance ${SIODB_INSTANCE}$" | wc -l) -gt 0 ]]; then
-    for siodb_process in $(ps -eo pid,cmd | egrep "\-\-instance ${SIODB_INSTANCE}$" | awk '{print $1}'); do
+  if [[ $(ps -eo pid,cmd | (egrep "\-\-instance ${SIODB_INSTANCE}$" || true) | wc -l) -gt 0 ]]; then
+    for siodb_process in $(ps -eo pid,cmd | (egrep "\-\-instance ${SIODB_INSTANCE}$" || true) | awk '{print $1}'); do
       kill -9 ${siodb_process}
     done
   fi
@@ -150,7 +150,7 @@ function _killSiodb {
   siodbLockFileEnabledTimeout=0
   siodbLockFileEnabled=1
   while [[ $siodbLockFileEnabled -ne 0 ]]; do
-    siodbLockFileEnabled=$(lslocks | egrep "^siodb.*POSIX.*WRITE.*$" | wc -l)
+    siodbLockFileEnabled=$(lslocks | (egrep "^siodb.*POSIX.*WRITE.*$" || true) | wc -l)
     if [[ ${siodbLockFileEnabledTimeout} -gt ${siodbLockFileCheckMaxTimeout} ]]; then
       _log "ERROR" \
           "Timeout (${siodbLockFileCheckMaxTimeout} seconds) reached releasing lockfile"
@@ -297,8 +297,9 @@ function _StartSiodb {
             }
           }
         ')
-    numberEntriesInLog=$(echo "${LOG_STARTUP}" | egrep 'Listening for (TCP|UNIX) connections' \
-        | wc -l | bc)
+    numberEntriesInLog=$(echo "${LOG_STARTUP}" \
+      | (egrep 'Listening for (TCP|UNIX) connections' || true) \
+      | wc -l | bc)
     if [[ ${counterTimeout} -gt ${instanceStartupTimeout} ]]; then
       _log "ERROR" \
           "Timeout (${instanceStartupTimeout} seconds) reached while starting the instance..."
@@ -383,7 +384,7 @@ function _CheckLogFiles {
     if [[ "${1}" == "" ]]; then
       ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | wc -l)
     else
-      ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | egrep -v "${1}" | wc -l)
+      ERROR_COUNT=$(echo "${LOG_ERROR}" | grep error | (egrep -v "${1}" || true) | wc -l)
     fi
 
     if [[ ${ERROR_COUNT} -ne 0 ]]; then
@@ -458,64 +459,71 @@ function _RunSqlAndValidateOutput {
   SIOCLI_OUTPUT=$(timeout ${_timeout_verbose} --preserve-status ${TIMEOUT_SECOND} ${SIODB_BIN}/siocli \
     ${SIOCLI_DEBUG} --nologo --admin ${SIODB_INSTANCE} -u root --keep-going \
     -i "${ROOT_DIR}/tests/share/private_key" <<< ''"${1}"'')
-  EXPECTED_RESULT=$(echo "${SIOCLI_OUTPUT}" | sed 's/^ *//;s/ *$//' | egrep "${2}")
-  EXPECTED_RESULT_COUNT=$(echo "${EXPECTED_RESULT}" | wc -l | bc)
+  EXPECTED_RESULT_COUNT=$(echo "${SIOCLI_OUTPUT}" \
+                          | sed 's/^ *//;s/ *$//' \
+                          | (egrep "${2}" || true) \
+                          | wc -l | bc)
   if [[ ${EXPECTED_RESULT_COUNT} -eq 0 ]]; then
     _log "ERROR" "Siocli output does not match expected output. Output is: ${SIOCLI_OUTPUT}"
     _failExit
   else
+    EXPECTED_RESULT=$(echo "${SIOCLI_OUTPUT}" \
+                            | sed 's/^ *//;s/ *$//' \
+                            | (egrep "${2}" || true))
     _log "INFO" "Siocli output >${EXPECTED_RESULT}< matched expected output >${2}<."
   fi
 }
 
 function _RunRestRequest1 {
   _log "INFO" "Executing REST request: $1 $2"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -u $3 -T $4
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -u "$3" -T "$4"
 }
 
 function _RunRestRequest2 {
   _log "INFO" "Executing REST request: $1 $2 $3"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -u $4 -T $5
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -u "$4" -T "$5"
 }
 
 function _RunRestRequest3 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i "$4"\
+     -u "$5" -T "$6"
 }
 
 function _RunRestRequest4 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -P ''"$4"'' \
-    -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -P ''"$4"'' \
+    -u "$5" -T "$6"
 }
 
 function _RunRestRequest5 {
   _log "INFO" "Executing REST request: $1 $2 $3 @$4"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -f "$4" -u $5 -T $6
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -f "$4" \
+    -u "$5" -T "$6"
 }
 
 function _RunRestRequest6 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' \
-    -u $6 -T $7
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i "$4"\
+    -P ''"$5"'' -u "$6" -T "$7"
 }
 
 function _RunRestRequest6d {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 $5"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -P ''"$5"'' \
-    -u $6 -T $7 --drop
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i $4 -P ''"$5"'' \
+    -u "$6" -T "$7" --drop
 }
 
 function _RunRestRequest7 {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 \
-    -T $7
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i "$4" -f "$5" \
+    -u "$6" -T "$7"
 }
 
 function _RunRestRequest7d {
   _log "INFO" "Executing REST request: $1 $2 $3 $4 @$5"
-  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m $1 -t $2 -n $3 -i $4 -f "$5" -u $6 \
-    -T $7 --drop
+  "${SIODB_BIN}/restcli" ${RESTCLI_DEBUG} --nologo -m "$1" -t "$2" -n ''"$3"'' -i "$4" -f "$5" \
+    -u "$6" -T "$7" --drop
 }
 
 function _RunCurlGetDatabasesRequest {
@@ -534,9 +542,68 @@ function _RunCurlGetTablesRequest {
   echo ""
 }
 
+function _RunCurlGetSqlQuery {
+  q=$(_UrlEncode ''"$3"'')
+  url="http://$1:$2@localhost:50080/query?q=$q"
+  _log "DEBUG" "URL: $url"
+  curl -k "$url"
+  if [[ $? -ne 0 ]]; then
+    echo ""
+    _log "ERROR" "Test failed"
+    exit 1
+  fi
+  echo ""
+}
+
+function _RunCurlGetSqlQuery1 {
+  q1=$(_UrlEncode ''"$3"'')
+  url="http://$1:$2@localhost:50080/query?q1=$q1"
+  _log "DEBUG" "URL: $url"
+  curl -k "$url"
+  if [[ $? -ne 0 ]]; then
+    echo ""
+    _log "ERROR" "Test failed"
+    exit 1
+  fi
+  echo ""
+}
+
+function _RunCurlGetSqlQuery2 {
+  q1=$(_UrlEncode ''"$3"'')
+  q2=$(_UrlEncode ''"$4"'')
+  url="http://$1:$2@localhost:50080/query?q1=$q1&q2=$q2"
+  _log "DEBUG" "URL: $url"
+  curl -k "$url"
+  if [[ $? -ne 0 ]]; then
+    echo ""
+    _log "ERROR" "Test failed"
+    exit 1
+  fi
+  echo ""
+}
+
 function _TestExternalAbort {
   _log "INFO" "Testing an external abort $1"
   pkill -9 siodb
+}
+
+# Based on https://stackoverflow.com/a/41405682/1540501
+function _UrlEncode() {
+   awk 'BEGIN {
+      for (n = 0; n < 125; n++) {
+         m[sprintf("%c", n)] = n
+      }
+      n = 1
+      while (1) {
+         s = substr(ARGV[1], n, 1)
+         if (s == "") {
+            break
+         }
+         t = s ~ /[[:alnum:]_.!~*\47()-]/ ? t s : t sprintf("%%%02X", m[s])
+         n++
+      }
+      print t
+   }' ''"$1"''
 }
 
 _log "INFO" "Common parts applied"

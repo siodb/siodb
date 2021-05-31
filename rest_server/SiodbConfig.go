@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"testing"
 )
 
 type siodbConfigFile struct {
@@ -83,6 +82,8 @@ func (configFile *siodbConfigFile) ParseParameters() (err error) {
 	return nil
 }
 
+// comment out to avoid code analysis warnings
+/*
 func testConfig(t *testing.T) {
 	siodbConfigFile := &siodbConfigFile{}
 	siodbConfigFile.path = "/etc/siodb/instances/siodb000/config"
@@ -93,3 +94,4 @@ func testConfig(t *testing.T) {
 	c, e := siodbConfigFile.ParseLogChannelsName()
 	fmt.Printf("Channel: %v | error: %v\n", c, e)
 }
+*/
