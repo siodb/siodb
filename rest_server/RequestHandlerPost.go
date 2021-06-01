@@ -30,7 +30,9 @@ func (worker restWorker) post(
 	var userName, token string
 	if userName, token, err = loadAuthenticationData(c); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusUnauthorized,
+			gin.H{"status": http.StatusUnauthorized,
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
@@ -38,26 +40,34 @@ func (worker restWorker) post(
 	if requestID, err = ioMgrConn.writeIOMgrRequest(
 		siodbproto.RestVerb_POST, ObjectType, userName, token, ObjectName, ObjectID); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusInternalServerError,
+			gin.H{"status": http.StatusInternalServerError,
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	if restStatusCode, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
-		c.JSON(int(restStatusCode), gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(int(restStatusCode),
+			gin.H{"status": int(restStatusCode),
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	// Write Payload
 	if err := ioMgrConn.writeJSONPayload(requestID, c); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusInternalServerError,
+			gin.H{"status": http.StatusInternalServerError,
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	if restStatusCode, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
-		c.JSON(int(restStatusCode), gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(int(restStatusCode),
+			gin.H{"status": int(restStatusCode),
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	} else {
 		c.Writer.WriteHeader(int(restStatusCode))
@@ -66,7 +76,9 @@ func (worker restWorker) post(
 	// Read and stream chunked JSON
 	if err := ioMgrConn.readChunkedJSON(c); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusInternalServerError,
+			gin.H{"status": http.StatusInternalServerError,
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 

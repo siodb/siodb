@@ -20,7 +20,9 @@ func (worker restWorker) patchRow(c *gin.Context) {
 	var rowID uint64
 	var err error
 	if rowID, err = strconv.ParseUint(c.Param("row_id"), 10, 64); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Error:": "Invalid row_id"})
+		c.JSON(http.StatusBadRequest,
+			gin.H{"status": http.StatusBadRequest,
+				"error:": "Invalid row_id"})
 		log.Error("%v", err)
 	} else {
 		worker.patch(c, siodbproto.DatabaseObjectType_ROW, c.Param("database_name")+"."+c.Param("table_name"), rowID)
@@ -38,7 +40,9 @@ func (worker restWorker) patch(
 	var userName, token string
 	if userName, token, err = loadAuthenticationData(c); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusUnauthorized,
+			gin.H{"status": http.StatusUnauthorized,
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
@@ -46,26 +50,34 @@ func (worker restWorker) patch(
 	if requestID, err = ioMgrConn.writeIOMgrRequest(
 		siodbproto.RestVerb_PATCH, ObjectType, userName, token, ObjectName, ObjectID); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusInternalServerError,
+			gin.H{"status": http.StatusInternalServerError,
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	if restStatusCode, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
-		c.JSON(int(restStatusCode), gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(int(restStatusCode),
+			gin.H{"status": int(restStatusCode),
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	// Write Payload
 	if err := ioMgrConn.writeJSONPayload(requestID, c); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusInternalServerError,
+			gin.H{"status": http.StatusInternalServerError,
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
 	if restStatusCode, err := ioMgrConn.readIOMgrResponse(requestID); err != nil {
 		log.Error("%v", err)
-		c.JSON(int(restStatusCode), gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(int(restStatusCode),
+			gin.H{"status": int(restStatusCode),
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	} else {
 		c.Writer.WriteHeader(int(restStatusCode))
@@ -74,7 +86,9 @@ func (worker restWorker) patch(
 	// Read and stream chunked JSON
 	if err := ioMgrConn.readChunkedJSON(c); err != nil {
 		log.Error("%v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusInternalServerError,
+			gin.H{"status": http.StatusInternalServerError,
+				"error": fmt.Sprintf("%v", err)})
 		return err
 	}
 
