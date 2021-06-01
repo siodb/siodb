@@ -140,6 +140,11 @@ executeRestRequest_GET \
 &q3=$(urlencode "${QUERY_2}")\
 &q4=$(urlencode "${QUERY_1}")" 200
 
+///////////////////////////
+///////////////////////////  Add in README a snippet with SQL / REST
+///////////////////////////
+
+
 ## POST
 executeRestRequest_POST \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
