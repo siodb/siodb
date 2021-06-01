@@ -68,8 +68,7 @@ func (worker restWorker) getSqlQuery(c *gin.Context) {
 
 	// Multiple queries found
 	c.Writer.WriteHeader(200) // always 200, but see actual JSON then
-	_, err = c.Writer.WriteString("[")
-	if err != nil {
+	if _, err = c.Writer.WriteString("["); err != nil {
 		log.Error("%v", err)
 		return
 	}
@@ -81,21 +80,17 @@ func (worker restWorker) getSqlQuery(c *gin.Context) {
 			break
 		}
 		if i > 1 {
-			_, err = c.Writer.WriteString(",")
-			if err != nil {
+			if _, err = c.Writer.WriteString(","); err != nil {
 				log.Error("%v", err)
 				return
 			}
 		}
-		err = worker.get(c, siodbproto.DatabaseObjectType_SQL, q, 0, false)
-		if err != nil {
+		if err = worker.get(c, siodbproto.DatabaseObjectType_SQL, q, 0, false); err != nil {
 			log.Error("%v", err)
-			return
 		}
 		i = i + 1
 	}
-	_, err = c.Writer.WriteString("]")
-	if err != nil {
+	if _, err = c.Writer.WriteString("]"); err != nil {
 		log.Error("%v", err)
 		return
 	}
