@@ -67,18 +67,22 @@ _StartSiodb
 ## TEST
 ## =============================================
 
-### Preparation
+### Vars
 database_name=db1
 table_name=table1
 TOKEN="$(openssl rand -hex 64)"
 WRONG_TOKEN="$(openssl rand -hex 64)"
-QUERY_SYS="select t.name tname, c.name cname from sys_tables t, sys_columns c where t.trid = c.table_id"
-QUERY_TABLE1="select * from ${database_name}.${table_name}"
+QUERY_1="select t.name tname, c.name cname from sys_tables t, sys_columns c where t.trid = c.table_id"
+QUERY_2="select * from ${database_name}.${table_name}"
+QUERY_3="select * from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3 where tab1.trid = tab2.trid and tab2.trid=tab3.trid"
+
+## Data model
 _RunSql "create database ${database_name}"
 _RunSql "create table ${database_name}.${table_name} ( col1 text )"
 _RunSql "create user user1"
 _RunSql "alter user user1 add token test_token x'${TOKEN}'"
 _RunSql "alter user root add token test_token x'${TOKEN}'"
+_RunSqlScript "${SCRIPT_DIR}/create_objects.sql" 90
 
 ## AUTH
 executeRestRequest_GET "https://root:faketoken@localhost:50443/databases" 401
@@ -117,9 +121,13 @@ executeRestRequest_GET \
 
 ## GET Query
 executeRestRequest_GET \
-    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_TABLE1}")" 200
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "select * from not_exists")" 400
 executeRestRequest_GET \
-    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_SYS}")" 200
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_1}")" 200
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_2}")" 200
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_3}")" 200
 
 
 ## POST
