@@ -75,6 +75,7 @@ WRONG_TOKEN="$(openssl rand -hex 64)"
 QUERY_1="select t.name tname, c.name cname from sys_tables t, sys_columns c where t.trid = c.table_id"
 QUERY_2="select * from ${database_name}.${table_name}"
 QUERY_3="select * from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3 where tab1.trid = tab2.trid and tab2.trid=tab3.trid"
+QUERY_WITH_ERROR="select * from not_exists"
 
 ## Data model
 _RunSql "create database ${database_name}"
@@ -121,14 +122,23 @@ executeRestRequest_GET \
 
 ## GET Query
 executeRestRequest_GET \
-    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "select * from not_exists")" 400
-executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_1}")" 200
 executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_2}")" 200
 executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_3}")" 200
-
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_WITH_ERROR}")" 400
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q1=$(urlencode "${QUERY_1}")\
+&q2=$(urlencode "${QUERY_2}")\
+&q3=$(urlencode "${QUERY_3}")\
+&q4=$(urlencode "${QUERY_WITH_ERROR}")" 200
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q1=$(urlencode "${QUERY_WITH_ERROR}")\
+&q2=$(urlencode "${QUERY_3}")\
+&q3=$(urlencode "${QUERY_2}")\
+&q4=$(urlencode "${QUERY_1}")" 200
 
 ## POST
 executeRestRequest_POST \
