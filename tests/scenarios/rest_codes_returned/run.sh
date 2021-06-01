@@ -10,6 +10,10 @@ TEST_NAME=$(basename "${SCRIPT_DIR}")
 source "${SCRIPT_DIR}/../../share/CommonFunctions.sh"
 
 ## Specific test functions
+urlencode (){
+   echo "${1}" | curl -Gso /dev/null -w %{url_effective} --data-urlencode @- "" | cut -c 3-
+}
+
 executeRestRequest_GET (){
     curl_options="-k -s -o /dev/null -w %{http_code}"
     _log "INFO" "curl ${curl_options} ${1}"
@@ -68,6 +72,8 @@ database_name=db1
 table_name=table1
 TOKEN="$(openssl rand -hex 64)"
 WRONG_TOKEN="$(openssl rand -hex 64)"
+QUERY_SYS="select t.name tname, c.name cname from sys_tables t, sys_columns c where t.trid = c.table_id"
+QUERY_TABLE1="select * from ${database_name}.${table_name}"
 _RunSql "create database ${database_name}"
 _RunSql "create table ${database_name}.${table_name} ( col1 text )"
 _RunSql "create user user1"
@@ -108,6 +114,13 @@ executeRestRequest_GET \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/faketable/rows" 404
 executeRestRequest_GET \
     "https://user1:${TOKEN}@localhost:50443/databases/fakedatabase/tables/faketable/rows" 404
+
+## GET Query
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_TABLE1}")" 200
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_SYS}")" 200
+
 
 ## POST
 executeRestRequest_POST \
