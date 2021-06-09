@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -41,7 +41,7 @@ public:
             const std::weak_ptr<IOManagerConnectionHandler>& connectionHandler,
             std::shared_ptr<dbengine::RequestHandler> requestHandler,
             const dbengine::requests::ConstDBEngineRequestPtr& dbeRequest) noexcept
-        : m_id(++s_idCounter)
+        : m_id(++s_requestIdCounter)
         , m_requestId(requestId)
         , m_responseId(responseId)
         , m_statementCount(statementCount)
@@ -159,7 +159,7 @@ private:
     std::shared_future<ExecutionResult> m_future;
 
     /** Request object ID counter */
-    static std::atomic<std::uint64_t> s_idCounter;
+    static std::atomic<std::uint64_t> s_requestIdCounter;
 };
 
 /** Request executuon result assignment guard. */
