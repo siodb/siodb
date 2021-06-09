@@ -505,7 +505,7 @@ TEST(RestGet, GetSqlQueryRowsFromSysTablesNoMatch)
 
     const auto& jStatus = j["status"];
     ASSERT_TRUE(jStatus.is_number());
-    ASSERT_EQ(static_cast<int>(jStatus), 404);
+    ASSERT_EQ(static_cast<int>(jStatus), 200);
 
     const auto& jRows = j["rows"];
     ASSERT_TRUE(jRows.is_array());

@@ -271,10 +271,11 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
         offset = offsetValue.asUInt64();
     }
 
-    response.set_rest_status_code(net::HttpStatus::kInternalServerError);
     const auto rowsetWriter = rowsetWriterFactory.createRowsetWriter(m_connection);
 
-    bool rowsetStarted = false;
+    response.set_rest_status_code(net::HttpStatus::kOk);
+    rowsetWriter->beginRowset(response);
+
     std::uint64_t inputRowCount = 0, outputRowCount = 0;
 
     try {
@@ -344,14 +345,6 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
                 }
             }
 
-            //DBG_LOG_DEBUG(">>> OUTPUT: Row# " << rowNumber << ": Length=" << rowLength);
-            if (!rowsetStarted) {
-                // Begin rowset here to allow JSON output to generate proper status code
-                response.set_rest_status_code(net::HttpStatus::kOk);
-                rowsetWriter->beginRowset(response);
-                rowsetStarted = true;
-            }
-
             rowsetWriter->writeRow(values, nullMask);
 
             ++outputRowCount;
@@ -369,11 +362,6 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
         // rowsetWriter->endRowset();
 
         // NOTE: Do not re-throw here to prevent double response.
-    }
-
-    if (!rowsetStarted) {
-        // If we got here - there are no rows
-        rowsetWriter->beginRowset(response, false);
     }
 
     rowsetWriter->endRowset();
