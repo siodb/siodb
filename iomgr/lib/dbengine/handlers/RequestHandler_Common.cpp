@@ -376,8 +376,8 @@ void RequestHandler::addInternalDatabaseErrorToResponse(
               << ')';
     const auto msg = response.add_message();
     msg->set_status_code(1);
-    msg->set_text(
-            "Internal error, see log for details, message UUID " + boost::uuids::to_string(uuid));
+    msg->set_text("Internal error, see Siodb server log for details, message UUID "
+                  + boost::uuids::to_string(uuid));
 }
 
 void RequestHandler::addIoErrorToResponse(
@@ -388,7 +388,8 @@ void RequestHandler::addIoErrorToResponse(
               << ')';
     const auto msg = response.add_message();
     msg->set_status_code(1);
-    msg->set_text("IO error, see log for details, message UUID " + boost::uuids::to_string(uuid));
+    msg->set_text("IO error, see Siodb server log for details, message UUID "
+                  + boost::uuids::to_string(uuid));
 }
 
 void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse& response,
