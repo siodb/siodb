@@ -45,12 +45,21 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
     }
 
     // Update row
-    const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
-    const auto updateResult = table->updateRow(request.m_trid, request.m_columnNames,
-            std::move(const_cast<std::vector<Variant>&>(request.m_values)), false, tp);
-    if (updateResult.m_updated) {
-        response.set_affected_row_count(1);
-        response.set_rest_status_code(net::HttpStatus::kOk);
+    UpdateRowResult updateResult;
+    try {
+        const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
+        updateResult = table->updateRow(request.m_trid, request.m_columnNames,
+                std::move(const_cast<std::vector<Variant>&>(request.m_values)), false, tp);
+        if (updateResult.m_updated) {
+            response.set_rest_status_code(net::HttpStatus::kOk);
+            response.set_affected_row_count(1);
+        }
+    } catch (DatabaseError& ex) {
+        response.set_rest_status_code(net::HttpStatus::kBadRequest);
+        throw;
+    } catch (std::exception& ex) {
+        response.set_rest_status_code(net::HttpStatus::kInternalServerError);
+        throw;
     }
 
     // Write response message
