@@ -19,6 +19,7 @@
 
 // Common project headers
 #include <siodb/common/log/Log.h>
+#include <siodb/common/net/HttpStatus.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/bitmask.h>
 #include <siodb/common/utils/EmptyString.h>
@@ -48,6 +49,7 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
         const requests::SelectRequest& request, RowsetWriterFactory& rowsetWriterFactory)
 {
     response.set_has_affected_row_count(false);
+    response.set_rest_status_code(net::HttpStatus::kBadRequest);
 
     const std::string& databaseName =
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
@@ -224,7 +226,7 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
             // Expression case
             updateColumnsFromExpression(dataSets, resultExpr.m_expression, errors);
 
-            // getExpectedResultType() does not require column value to be read
+            // getColumnDataType() does not require column value to be read
             const auto dataType = resultExpr.m_expression->getColumnDataType(*dbContext);
             const auto columnDescription = response.add_column_description();
             columnDescription->set_name(resultExpr.m_alias);
@@ -271,7 +273,9 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
 
     const auto rowsetWriter = rowsetWriterFactory.createRowsetWriter(m_connection);
 
-    bool rowsetStarted = false;
+    response.set_rest_status_code(net::HttpStatus::kOk);
+    rowsetWriter->beginRowset(response);
+
     std::uint64_t inputRowCount = 0, outputRowCount = 0;
 
     try {
@@ -341,13 +345,6 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
                 }
             }
 
-            //DBG_LOG_DEBUG(">>> OUTPUT: Row# " << rowNumber << ": Length=" << rowLength);
-            if (!rowsetStarted) {
-                // Begin rowset here to allow JSON output to generate proper status code
-                rowsetWriter->beginRowset(response);
-                rowsetStarted = true;
-            }
-
             rowsetWriter->writeRow(values, nullMask);
 
             ++outputRowCount;
@@ -365,11 +362,6 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
         // rowsetWriter->endRowset();
 
         // NOTE: Do not re-throw here to prevent double response.
-    }
-
-    if (!rowsetStarted) {
-        // If we got here - there are no rows
-        rowsetWriter->beginRowset(response, false);
     }
 
     rowsetWriter->endRowset();

@@ -92,28 +92,49 @@ antlr4::tree::ParseTree* findNonTerminalChild(
     return nullptr;
 }
 
-antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* tree, const size_t nonTerminalType,
-        const size_t terminalType) noexcept
+antlr4::tree::TerminalNode* findTerminal(antlr4::tree::ParseTree* tree,
+        const size_t nonTerminalType, const size_t terminalType) noexcept
 {
     const auto nonTerminal = findNonTerminal(tree, nonTerminalType);
     return nonTerminal ? findTerminal(nonTerminal, terminalType) : nullptr;
 }
 
-antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* node, std::size_t type) noexcept
+antlr4::tree::TerminalNode* findTerminal(antlr4::tree::ParseTree* node, std::size_t type) noexcept
 {
     // If this node is a terminal, check its type.
     // If type doesn't match, there is no way forward.
     if (!node) return nullptr;
-    const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
+    auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
     if (terminal) {
         const auto symbol = terminal->getSymbol();
-        return (symbol && (type == 0 || symbol->getType() == type)) ? node : nullptr;
+        return (symbol && (type == 0 || symbol->getType() == type)) ? terminal : nullptr;
     }
 
     // Search for the terminal recursively.
     for (const auto childNode : node->children) {
-        const auto node1 = findTerminal(childNode, type);
-        if (node1) return node1;
+        terminal = findTerminal(childNode, type);
+        if (terminal) return terminal;
+    }
+    return nullptr;
+}
+
+antlr4::tree::TerminalNode* findTerminal(
+        antlr4::tree::ParseTree* node, const std::size_t* types, std::size_t n) noexcept
+{
+    // If this node is a terminal, check its type.
+    // If type doesn't match, there is no way forward.
+    if (!node) return nullptr;
+    auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
+    if (terminal) {
+        const auto symbol = terminal->getSymbol();
+        return (symbol && std::find(types, types + n, symbol->getType()) != types + n) ? terminal
+                                                                                       : nullptr;
+    }
+
+    // Search for the terminal recursively.
+    for (const auto childNode : node->children) {
+        terminal = findTerminal(childNode, types, n);
+        if (terminal) return terminal;
     }
     return nullptr;
 }
@@ -148,16 +169,13 @@ bool hasTerminalChild(
 }
 
 bool captureTerminalPosition(
-        antlr4::tree::ParseTree* node, std::size_t& line, std::size_t& column) noexcept
+        antlr4::tree::TerminalNode* terminal, std::size_t& line, std::size_t& column) noexcept
 {
-    const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
-    if (terminal) {
-        const auto symbol = terminal->getSymbol();
-        if (symbol) {
-            line = symbol->getLine();
-            column = symbol->getCharPositionInLine() + 1;
-            return true;
-        }
+    const auto symbol = terminal->getSymbol();
+    if (symbol) {
+        line = symbol->getLine();
+        column = symbol->getCharPositionInLine() + 1;
+        return true;
     }
     return false;
 }
@@ -175,18 +193,24 @@ std::size_t getNonTerminalType(antlr4::tree::ParseTree* node) noexcept
     return context ? context->getRuleIndex() : kInvalidNodeType;
 }
 
-std::size_t getTerminalType(antlr4::tree::ParseTree* node) noexcept
+std::size_t getMaybeTerminalType(antlr4::tree::ParseTree* node) noexcept
 {
-    const auto terminal = dynamic_cast<antlr4::tree::TerminalNode*>(node);
-    if (!terminal) return kInvalidNodeType;
-    const auto symbol = terminal->getSymbol();
-    return symbol ? symbol->getType() : kInvalidNodeType;
+    return getTerminalType(dynamic_cast<antlr4::tree::TerminalNode*>(node));
+}
+
+std::size_t getTerminalType(antlr4::tree::TerminalNode* terminal) noexcept
+{
+    if (terminal) {
+        const auto symbol = terminal->getSymbol();
+        if (symbol) return symbol->getType();
+    }
+    return kInvalidNodeType;
 }
 
 std::string getAnyNameText(antlr4::tree::ParseTree* node)
 {
     const auto firstChild = node->children.at(0);
-    switch (helpers::getTerminalType(firstChild)) {
+    switch (helpers::getMaybeTerminalType(firstChild)) {
         case SiodbParser::IDENTIFIER: return node->getText();
         case SiodbParser::STRING_LITERAL: return unquoteString(node->getText());
         default: break;

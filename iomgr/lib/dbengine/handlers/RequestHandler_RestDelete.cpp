@@ -44,11 +44,20 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     }
 
     // Delete row
-    const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
-    const auto deleteResult = table->deleteRow(request.m_trid, tp);
-    if (deleteResult.m_deleted) {
-        response.set_affected_row_count(1);
-        response.set_rest_status_code(net::HttpStatus::kOk);
+    DeleteRowResult deleteResult;
+    try {
+        const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
+        deleteResult = table->deleteRow(request.m_trid, tp);
+        if (deleteResult.m_deleted) {
+            response.set_affected_row_count(1);
+            response.set_rest_status_code(net::HttpStatus::kOk);
+        }
+    } catch (DatabaseError& ex) {
+        response.set_rest_status_code(net::HttpStatus::kBadRequest);
+        throw;
+    } catch (std::exception& ex) {
+        response.set_rest_status_code(net::HttpStatus::kInternalServerError);
+        throw;
     }
 
     // Write response message

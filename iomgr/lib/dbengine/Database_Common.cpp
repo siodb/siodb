@@ -1421,15 +1421,23 @@ std::string Database::ensureDataDir(bool mustExist, bool initialize) const
         // Create data directory
         try {
             const fs::path dataDirPath(dataDir);
-
             if (fs::exists(dataDirPath)) {
-                fs::remove_all(dataDirPath);
+                if (mustExist) {
+                    // Remove directory content but not the directory itself
+                    std::vector<fs::path> paths;
+                    for (const auto& path : fs::directory_iterator(dataDirPath))
+                        paths.push_back(path);
+                    for (const auto& path : paths)
+                        fs::remove_all(path);
+                } else {
+                    // Can remove existing directory too
+                    fs::remove_all(dataDirPath);
+                }
             } else if (mustExist) {
                 throwDatabaseError(
                         IOManagerMessageId::kErrorDatabaseDataDirDoesNotExist, dataDir, m_name);
             }
-
-            fs::create_directories(dataDirPath);
+            if (!fs::exists(dataDirPath)) fs::create_directories(dataDirPath);
         } catch (fs::filesystem_error& ex) {
             throwDatabaseError(IOManagerMessageId::kErrorCannotCreateDatabaseDataDir, dataDir,
                     m_name, m_uuid, ex.code().value(), ex.code().message());
@@ -1440,7 +1448,6 @@ std::string Database::ensureDataDir(bool mustExist, bool initialize) const
             throwDatabaseError(
                     IOManagerMessageId::kErrorDatabaseDataFolderDoesNotExist, m_name, dataDir);
         }
-
         if (!initFlagFileExists) {
             throwDatabaseError(
                     IOManagerMessageId::kErrorDatabaseInitFileDoesNotExist, m_name, initFlagFile);

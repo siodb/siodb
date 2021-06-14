@@ -74,8 +74,17 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
         }
 
         // Insert row
-        const auto result = table->insertRow(columnNames, std::move(rowValues), transactionParams);
-        tridList.push_back(result.m_mcr->getTableRowId());
+        try {
+            const auto result =
+                    table->insertRow(columnNames, std::move(rowValues), transactionParams);
+            tridList.push_back(result.m_mcr->getTableRowId());
+        } catch (DatabaseError& ex) {
+            response.set_rest_status_code(net::HttpStatus::kBadRequest);
+            throw;
+        } catch (std::exception& ex) {
+            response.set_rest_status_code(net::HttpStatus::kInternalServerError);
+            throw;
+        }
     }
 
     response.set_affected_row_count(tridList.size());

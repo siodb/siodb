@@ -18,6 +18,7 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
+#include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/Uuid.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/BinaryOperator.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
@@ -339,6 +340,22 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
         }
         protobuf::writeMessage(
                 protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
+    } catch (fs::filesystem_error& ex) {
+        addIoErrorToResponse(response, ex.code().value(), ex.what());
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
+    } catch (boost::system::system_error& ex) {
+        addInternalDatabaseErrorToResponse(response, ex.code().value(), ex.what());
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
+    } catch (std::system_error& ex) {
+        addInternalDatabaseErrorToResponse(response, ex.code().value(), ex.what());
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
+    } catch (std::exception& ex) {
+        addInternalDatabaseErrorToResponse(response, -1, ex.what());
+        protobuf::writeMessage(
+                protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
     }
 }
 
@@ -359,8 +376,8 @@ void RequestHandler::addInternalDatabaseErrorToResponse(
               << ')';
     const auto msg = response.add_message();
     msg->set_status_code(1);
-    msg->set_text(
-            "Internal error, see log for details, message UUID " + boost::uuids::to_string(uuid));
+    msg->set_text("Internal error, see Siodb server log for details, message UUID "
+                  + boost::uuids::to_string(uuid));
 }
 
 void RequestHandler::addIoErrorToResponse(
@@ -371,7 +388,8 @@ void RequestHandler::addIoErrorToResponse(
               << ')';
     const auto msg = response.add_message();
     msg->set_status_code(1);
-    msg->set_text("IO error, see log for details, message UUID " + boost::uuids::to_string(uuid));
+    msg->set_text("IO error, see Siodb server log for details, message UUID "
+                  + boost::uuids::to_string(uuid));
 }
 
 void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse& response,
