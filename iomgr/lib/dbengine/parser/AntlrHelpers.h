@@ -80,7 +80,17 @@ antlr4::tree::ParseTree* findStatement(const antlr4::tree::ParseTree* node,
  * @param type Type of the terminal.
  * @return Node of the terminal, if found, nullptr otherwise.
  */
-antlr4::tree::ParseTree* findTerminal(antlr4::tree::ParseTree* node, std::size_t type) noexcept;
+antlr4::tree::TerminalNode* findTerminal(antlr4::tree::ParseTree* node, std::size_t type) noexcept;
+
+/**
+ * Finds the first terminal of one of a given types from a given point of the tree.
+ * @param node Starting node.
+ * @param types Types of the terminal.
+ * @param n Number of terminal types.
+ * @return Node of the terminal, if found, nullptr otherwise.
+ */
+antlr4::tree::TerminalNode* findTerminal(
+        antlr4::tree::ParseTree* node, const std::size_t* types, std::size_t n) noexcept;
 
 /**
  * Finds the first terminal child node from a given point of the tree.
@@ -102,13 +112,13 @@ bool hasTerminalChild(
 
 /**
  * Captures terminal position.
- * @param node Terminal node.
+ * @param terminal Terminal node.
  * @param[out] line Terminal line.
  * @param[out] column Terminal column.
  * @return true if position captured, false otherwise.
  */
 bool captureTerminalPosition(
-        antlr4::tree::ParseTree* node, std::size_t& line, std::size_t& column) noexcept;
+        antlr4::tree::TerminalNode* node, std::size_t& line, std::size_t& column) noexcept;
 
 /**
  * Finds first terminal and gets its position.
@@ -146,15 +156,22 @@ antlr4::tree::ParseTree* findNonTerminalChild(
  * @param type Type of the terminal as it is defined in the SQLiteParser class.
  * @return Node of the terminal, if found, nullptr otherwise.
  */
-antlr4::tree::ParseTree* findTerminal(
+antlr4::tree::TerminalNode* findTerminal(
         antlr4::tree::ParseTree* node, size_t nonTerminalType, size_t terminalType) noexcept;
 
 /**
- * Returns the type of a terminal.
+ * Returns the type of a maybe terminal node.
  * @param node The node to check.
  * @return Type of the terminal if node is terminal, kInvalidNodeType otherwise.
  */
-std::size_t getTerminalType(antlr4::tree::ParseTree* node) noexcept;
+std::size_t getMaybeTerminalType(antlr4::tree::ParseTree* node) noexcept;
+
+/**
+ * Returns the type of a terminal node.
+ * @param terminal A terminal node to check.
+ * @return Type of the terminal if node is terminal, kInvalidNodeType otherwise.
+ */
+std::size_t getTerminalType(antlr4::tree::TerminalNode* terminal) noexcept;
 
 /**
  * Returns the type of a non-terminal.

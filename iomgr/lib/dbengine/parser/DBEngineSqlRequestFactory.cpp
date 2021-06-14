@@ -31,14 +31,14 @@ namespace {
 
 /**
  * Parses active/inactive state.
- * @param node A node to parse from.
+ * @param terminal Source terminal node.
  * @param errorMessage Error message to use if parse error occurs.
  * @return true for the ACTIVE state, false for the INACTIVE state.
  * @throw DBEngineRequestFactoryError if state could not be parsed.
  */
-bool parseState(antlr4::tree::ParseTree* node, const char* errorMessage)
+bool parseState(antlr4::tree::TerminalNode* terminal, const char* errorMessage)
 {
-    switch (helpers::getTerminalType(node)) {
+    switch (helpers::getTerminalType(terminal)) {
         case SiodbParser::K_ACTIVE: return true;
         case SiodbParser::K_INACTIVE: return false;
         default: throw DBEngineRequestFactoryError(errorMessage);
@@ -51,7 +51,7 @@ bool parseState(antlr4::tree::ParseTree* node, const char* errorMessage)
  * @return Expiration timestamp as epoch seconds.
  * @throw DBEngineRequestFactoryError if parsing failed.
  */
-time_t parseExpirationTimestamp(const std::string& s)
+std::time_t parseExpirationTimestamp(const std::string& s)
 {
     const Variant t(s, Variant::AsDateTime());
     return t.getDateTime().toEpochTimestamp();
@@ -96,14 +96,13 @@ const std::unordered_map<std::string, siodb::ColumnDataType>
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(std::size_t index)
 {
-    return createSqlRequest(m_parser.findStatement(index));
+    return createSqlRequest(CreateFromNodeTag(), m_parser.findStatement(index));
 }
 
 requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
-        antlr4::tree::ParseTree* node)
+        [[maybe_unused]] CreateFromNodeTag tag, antlr4::tree::ParseTree* node)
 {
     if (!node) throw DBEngineRequestFactoryError("Statement doesn't exist");
-
     const auto statementType = helpers::getNonTerminalType(node);
     switch (statementType) {
         case SiodbParser::RuleSelect_stmt:
@@ -163,10 +162,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
         case SiodbParser::RuleCreate_user_stmt: return createCreateUserRequest(node);
         case SiodbParser::RuleDrop_user_stmt: return createDropUserRequest(node);
         case SiodbParser::RuleAlter_user_stmt: {
-            const auto operationType = helpers::getTerminalType(node->children.at(3));
+            const auto operationType = helpers::getMaybeTerminalType(node->children.at(3));
             switch (operationType) {
                 case SiodbParser::K_ADD: {
-                    const auto objectType = helpers::getTerminalType(node->children.at(4));
+                    const auto objectType = helpers::getMaybeTerminalType(node->children.at(4));
                     switch (objectType) {
                         case SiodbParser::K_ACCESS: return createAddUserAccessKeyRequest(node);
                         case SiodbParser::K_TOKEN: return createAddUserTokenRequest(node);
@@ -176,7 +175,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
                     }
                 }
                 case SiodbParser::K_DROP: {
-                    const auto objectType = helpers::getTerminalType(node->children.at(4));
+                    const auto objectType = helpers::getMaybeTerminalType(node->children.at(4));
                     switch (objectType) {
                         case SiodbParser::K_ACCESS: return createDropUserAccessKeyRequest(node);
                         case SiodbParser::K_TOKEN: return createDropUserTokenRequest(node);
@@ -186,10 +185,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
                     }
                 }
                 case SiodbParser::K_ALTER: {
-                    const auto objectType = helpers::getTerminalType(node->children.at(4));
+                    const auto objectType = helpers::getMaybeTerminalType(node->children.at(4));
                     switch (objectType) {
                         case SiodbParser::K_ACCESS: {
-                            const auto actionType = helpers::getTerminalType(node->children.at(7));
+                            const auto actionType =
+                                    helpers::getMaybeTerminalType(node->children.at(7));
                             switch (actionType) {
                                 case SiodbParser::K_SET: {
                                     return createSetUserAccessKeyAttributesRequest(node);
@@ -204,7 +204,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
                             }
                         }
                         case SiodbParser::K_TOKEN: {
-                            const auto actionType = helpers::getTerminalType(node->children.at(6));
+                            const auto actionType =
+                                    helpers::getMaybeTerminalType(node->children.at(6));
                             switch (actionType) {
                                 case SiodbParser::K_SET:
                                     return createSetUserTokenAttributesRequest(node);
@@ -266,7 +267,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSelectRequestForSi
         if (childTerminalType == SiodbParser::RuleSelect_core)
             parseSelectCore(child, database, tables, columns, where);
         else if (childTerminalType == kInvalidNodeType) {
-            const auto terminalType = helpers::getTerminalType(child);
+            const auto terminalType = helpers::getMaybeTerminalType(child);
             switch (terminalType) {
                 case SiodbParser::K_LIMIT: {
                     ++i;
@@ -275,7 +276,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSelectRequestForSi
                                 "SELECT: LIMIT does not contain expression");
 
                     if (node->children.size() > i + 2
-                            && helpers::getTerminalType(node->children[i + 1])
+                            && helpers::getMaybeTerminalType(node->children[i + 1])
                                        == SiodbParser::COMMA) {
                         // '... LIMIT <OFFSET> , <LIMIT> ...' case
                         offset = exprFactory.createExpression(node->children[i]);
@@ -397,7 +398,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
     while (index < node->children.size()) {
         const auto e = node->children[index++];
         if (helpers::getNonTerminalType(e) != SiodbParser::RuleColumn_name) {
-            if (helpers::getTerminalType(e) == SiodbParser::K_VALUES) {
+            if (helpers::getMaybeTerminalType(e) == SiodbParser::K_VALUES) {
                 valuesFound = true;
                 break;
             } else
@@ -421,7 +422,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
     while (index < node->children.size()) {
         const auto e = node->children[index++];
         // Handle opening and closing value group
-        const auto terminalType = helpers::getTerminalType(e);
+        const auto terminalType = helpers::getMaybeTerminalType(e);
         if (terminalType == SiodbParser::OPEN_PAR) {
             if (inValueGroup)
                 throw DBEngineRequestFactoryError("INSERT: unexpected opening parenthesis");
@@ -492,7 +493,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                 break;
             }
             case kInvalidNodeType: {
-                auto terminalType = helpers::getTerminalType(e);
+                auto terminalType = helpers::getMaybeTerminalType(e);
                 if (terminalType == SiodbParser::K_SET) {
                     ++i;
                     std::size_t updateValueCount = 0;
@@ -503,7 +504,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                             // WHERE + expr
 
                             const auto whereNode = node->children[i];
-                            terminalType = helpers::getTerminalType(whereNode);
+                            terminalType = helpers::getMaybeTerminalType(whereNode);
                             if (terminalType == SiodbParser::K_WHERE) {
                                 ++i;
                                 if (i >= node->children.size()) {
@@ -542,7 +543,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
 
                         /// --------- Parse '=' ---------
                         const auto assignNode = node->children[i + 1];
-                        terminalType = helpers::getTerminalType(assignNode);
+                        terminalType = helpers::getMaybeTerminalType(assignNode);
                         if (terminalType != SiodbParser::ASSIGN)
                             throw DBEngineRequestFactoryError("UPDATE: missing = in SET");
 
@@ -557,7 +558,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                         // +4, for Column, '=', expr', ',' + 3 for new set expr
                         if (i + 7 <= node->children.size()) {
                             const auto commaNode = node->children[i + 3];
-                            terminalType = helpers::getTerminalType(commaNode);
+                            terminalType = helpers::getMaybeTerminalType(commaNode);
                             if (terminalType != SiodbParser::COMMA) {
                                 throw DBEngineRequestFactoryError(
                                         "UPDATE: missing comma separator");
@@ -629,7 +630,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDeleteRequest(
                 break;
             }
             case kInvalidNodeType: {
-                const auto terminalType = helpers::getTerminalType(e);
+                const auto terminalType = helpers::getMaybeTerminalType(e);
                 if (terminalType == SiodbParser::K_WHERE) {
                     ++i;
                     if (i >= node->children.size()) {
@@ -837,7 +838,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateDatabaseRequ
         ExpressionFactory exprFactory(m_parser);
         for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
             auto attrNode = attrListNode->children[i];
-            switch (helpers::getTerminalType(attrNode->children.at(0))) {
+            switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
                 case SiodbParser::K_CIPHER_ID: {
                     cipherId = exprFactory.createExpression(attrNode->children.at(2));
                     break;
@@ -891,10 +892,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetDatabaseAttribu
     const auto attrListNode = node->children.at(4);
     for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
         const auto attrNode = attrListNode->children[i];
-        switch (helpers::getTerminalType(attrNode->children.at(0))) {
+        switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
             case SiodbParser::K_DESCRIPTION: {
                 const auto valueNode = attrNode->children.at(2);
-                description = (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                description = (helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL)
                                       ? std::optional<std::string>()
                                       : std::optional<std::string>(
                                               helpers::unquoteString(valueNode->getText()));
@@ -1036,7 +1037,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
                 //DBG_LOG_DEBUG("Parsing default value for column " << columnName);
                 auto expressionIndex = terminalIndex + 1;
                 const auto terminalType =
-                        helpers::getTerminalType(constraintNode->children[expressionIndex]);
+                        helpers::getMaybeTerminalType(constraintNode->children[expressionIndex]);
                 if (terminalType == SiodbParser::OPEN_PAR) ++expressionIndex;
                 ExpressionFactory exprFactory(m_parser);
                 auto defaultValue =
@@ -1201,7 +1202,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetTableAttributes
         throw DBEngineRequestFactoryError("ALTER TABLE SET ATTRIBUTES: missing attribute list");
     for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
         const auto attrNode = attrListNode->children[i];
-        switch (helpers::getTerminalType(attrNode->children.at(0))) {
+        switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
             case SiodbParser::K_NEXT_TRID: {
                 const auto value = attrNode->children.at(2)->getText();
                 try {
@@ -1506,10 +1507,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateUserRequest(
         const auto attrListNode = node->children[4];
         for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
             const auto attrNode = attrListNode->children[i];
-            switch (helpers::getTerminalType(attrNode->children.at(0))) {
+            switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
                 case SiodbParser::K_REAL_NAME: {
                     const auto valueNode = attrNode->children.at(2);
-                    if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                    if (helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL)
                         realName.reset();
                     else
                         realName = helpers::unquoteString(valueNode->getText());
@@ -1517,15 +1518,16 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateUserRequest(
                 }
                 case SiodbParser::K_DESCRIPTION: {
                     const auto valueNode = attrNode->children.at(2);
-                    if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                    if (helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL)
                         description.reset();
                     else
                         description = helpers::unquoteString(attrNode->children.at(2)->getText());
                     break;
                 }
                 case SiodbParser::K_STATE: {
-                    active =
-                            parseState(attrNode->children.at(2), "CREATE USER: invalid user state");
+                    active = parseState(
+                            dynamic_cast<antlr4::tree::TerminalNode*>(attrNode->children.at(2)),
+                            "CREATE USER: invalid user state");
                     break;
                 }
                 default: throw DBEngineRequestFactoryError("CREATE USER: invalid attribute");
@@ -1565,10 +1567,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAttributesR
     // skip comma (option ',' option ... )
     for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
         const auto attrNode = attrListNode->children[i];
-        switch (helpers::getTerminalType(attrNode->children.at(0))) {
+        switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
             case SiodbParser::K_REAL_NAME: {
                 const auto valueNode = attrNode->children.at(2);
-                realName = (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                realName = (helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL)
                                    ? std::optional<std::string>()
                                    : std::optional<std::string>(
                                            helpers::unquoteString(valueNode->getText()));
@@ -1576,14 +1578,16 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAttributesR
             }
             case SiodbParser::K_DESCRIPTION: {
                 const auto valueNode = attrNode->children.at(2);
-                description = (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                description = (helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL)
                                       ? std::optional<std::string>()
                                       : std::optional<std::string>(
                                               helpers::unquoteString(valueNode->getText()));
                 break;
             }
             case SiodbParser::K_STATE: {
-                active = parseState(attrNode->children.at(2), "ALTER USER: invalid user state");
+                active = parseState(
+                        dynamic_cast<antlr4::tree::TerminalNode*>(attrNode->children.at(2)),
+                        "ALTER USER: invalid user state");
                 break;
             }
             default: throw DBEngineRequestFactoryError("ALTER USER: invalid attribute");
@@ -1607,17 +1611,18 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserAccessKeyRe
         const auto attrListNode = node->children[9];
         for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
             const auto attrNode = attrListNode->children[i];
-            switch (helpers::getTerminalType(attrNode->children.at(0))) {
+            switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
                 case SiodbParser::K_DESCRIPTION: {
                     const auto valueNode = attrNode->children.at(2);
-                    if (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                    if (helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL)
                         description.reset();
                     else
                         description = helpers::unquoteString(attrNode->children.at(2)->getText());
                     break;
                 }
                 case SiodbParser::K_STATE: {
-                    active = parseState(attrNode->children.at(2),
+                    active = parseState(
+                            dynamic_cast<antlr4::tree::TerminalNode*>(attrNode->children.at(2)),
                             "ALTER USER ADD ACCESS KEY: invalid key state");
                     break;
                 }
@@ -1653,10 +1658,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAccessKeyAt
     const auto attrListNode = node->children.at(8);
     for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
         const auto attrNode = attrListNode->children[i];
-        switch (helpers::getTerminalType(attrNode->children.at(0))) {
+        switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
             case SiodbParser::K_DESCRIPTION: {
                 const auto valueNode = attrNode->children.at(2);
-                description = (helpers::getTerminalType(valueNode) == SiodbParser::K_NULL)
+                description = (helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL)
                                       ? std::optional<std::string>()
                                       : std::optional<std::string>(helpers::unquoteString(
                                               attrNode->children.at(2)->getText()));
@@ -1664,7 +1669,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAccessKeyAt
             }
             case SiodbParser::K_STATE: {
                 active = parseState(
-                        attrNode->children.at(2), "ALTER USER ALTER ACCESS KEY: invalid key state");
+                        dynamic_cast<antlr4::tree::TerminalNode*>(attrNode->children.at(2)),
+                        "ALTER USER ALTER ACCESS KEY: invalid key state");
                 break;
             }
             default:
@@ -1700,7 +1706,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserTokenReques
 
     if (node->children.size() > 6) {
         auto node6 = node->children.at(6);
-        if (helpers::getTerminalType(node6) == SiodbParser::K_WITH)
+        if (helpers::getMaybeTerminalType(node6) == SiodbParser::K_WITH)
             attrListNode = node->children.at(7);
         else {
             auto v = exprFactory.createConstantValue(node6->children.at(0));
@@ -1713,8 +1719,9 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddUserTokenReques
         for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
             const auto attrNode = attrListNode->children[i];
             const auto valueNode = attrNode->children.at(2);
-            const bool isNullValue = helpers::getTerminalType(valueNode) == SiodbParser::K_NULL;
-            switch (helpers::getTerminalType(attrNode->children.at(0))) {
+            const bool isNullValue =
+                    helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL;
+            switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
                 case SiodbParser::K_DESCRIPTION: {
                     if (isNullValue)
                         description.reset();
@@ -1764,8 +1771,9 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserTokenAttrib
         for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
             const auto attrNode = attrListNode->children[i];
             const auto valueNode = attrNode->children.at(2);
-            const bool isNullValue = helpers::getTerminalType(valueNode) == SiodbParser::K_NULL;
-            switch (helpers::getTerminalType(attrNode->children.at(0))) {
+            const bool isNullValue =
+                    helpers::getMaybeTerminalType(valueNode) == SiodbParser::K_NULL;
+            switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
                 case SiodbParser::K_DESCRIPTION: {
                     description = isNullValue ? std::optional<std::string>()
                                               : std::optional<std::string>(helpers::unquoteString(
@@ -1828,11 +1836,11 @@ requests::ResultExpression DBEngineSqlRequestFactory::createResultExpression(
     std::string alias;
     const auto childrenCount = node->children.size();
     // case: '*'
-    if (childrenCount == 1 && helpers::getTerminalType(node->children[0]) == SiodbParser::STAR)
+    if (childrenCount == 1 && helpers::getMaybeTerminalType(node->children[0]) == SiodbParser::STAR)
         expression = std::make_unique<requests::AllColumnsExpression>("");
     // case: table_name '.' '*'
     else if (childrenCount == 3
-             && helpers::getTerminalType(node->children[2]) == SiodbParser::STAR) {
+             && helpers::getMaybeTerminalType(node->children[2]) == SiodbParser::STAR) {
         expression = std::make_unique<requests::AllColumnsExpression>(
                 helpers::extractObjectName(node, 0));
     }
@@ -1890,7 +1898,7 @@ void DBEngineSqlRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node,
                 break;
             }
             case kInvalidNodeType: {
-                const auto terminalType = helpers::getTerminalType(e);
+                const auto terminalType = helpers::getMaybeTerminalType(e);
                 if (terminalType == SiodbParser::K_WHERE) {
                     ++i;
                     if (i >= node->children.size()) {
