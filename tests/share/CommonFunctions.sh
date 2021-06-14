@@ -546,7 +546,7 @@ function _RunCurlGetSqlQuery {
   q=$(_UrlEncode ''"$3"'')
   url="http://$1:$2@localhost:50080/query?q=$q"
   _log "DEBUG" "URL: $url"
-  curl -k "$url"
+  curl -k -w " http_status=%{http_code}" "$url"
   if [[ $? -ne 0 ]]; then
     echo ""
     _log "ERROR" "Test failed"
@@ -555,25 +555,22 @@ function _RunCurlGetSqlQuery {
   echo ""
 }
 
-function _RunCurlGetSqlQuery1 {
-  q1=$(_UrlEncode ''"$3"'')
-  url="http://$1:$2@localhost:50080/query?q1=$q1"
+function _RunCurlGetSqlQueries {
+  url="http://$1:$2@localhost:50080/query"
+  qcount="$3"
+  shift
+  shift
+  shift
+  _log "DEBUG" "initial_url=$url qcount=$qcount"
+  delimiter=?
+  for ((i = 1; i <= $qcount; ++i)); do
+    q=$(_UrlEncode ''"$1"'')
+    shift
+    url="${url}${delimiter}q${i}=${q}"
+    delimiter="&"
+  done
   _log "DEBUG" "URL: $url"
-  curl -k "$url"
-  if [[ $? -ne 0 ]]; then
-    echo ""
-    _log "ERROR" "Test failed"
-    exit 1
-  fi
-  echo ""
-}
-
-function _RunCurlGetSqlQuery2 {
-  q1=$(_UrlEncode ''"$3"'')
-  q2=$(_UrlEncode ''"$4"'')
-  url="http://$1:$2@localhost:50080/query?q1=$q1&q2=$q2"
-  _log "DEBUG" "URL: $url"
-  curl -k "$url"
+  curl -k -w " http_status=%{http_code}" "$url"
   if [[ $? -ne 0 ]]; then
     echo ""
     _log "ERROR" "Test failed"

@@ -1419,3 +1419,11 @@ TEST(SqlParser_Query, SelectWithLimitAndOffset_2)
             dynamic_cast<const requests::ConstantExpression&>(*selectRequest.m_limit);
     ASSERT_TRUE(limitExpr.getValue().compatibleEqual(10));
 }
+
+TEST(SqlParser_Query, SelectWithFollowingMalformedStatement)
+{
+    // Parse statement and prepare request
+    const std::string statement("SELECT * FROM my_database.my_table; whatever;");
+    parser_ns::SqlParser parser(statement);
+    ASSERT_THROW(parser.parse(), std::exception);
+}
