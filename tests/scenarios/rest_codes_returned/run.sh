@@ -106,6 +106,8 @@ executeRestRequest_GET \
 executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" 200
 executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_2}")" 200
+executeRestRequest_GET \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" 200
 executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/1" 404
@@ -127,6 +129,10 @@ executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_2}")" 200
 executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_3}")" 200
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_1}; whatever;")" 400
+executeRestRequest_GET \
+    "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_1}; ${QUERY_1};")" 400
 executeRestRequest_GET \
     "https://root:${TOKEN}@localhost:50443/query?q=$(urlencode "${QUERY_WITH_ERROR}")" 400
 executeRestRequest_GET \
