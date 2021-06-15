@@ -51,13 +51,12 @@ _CheckLogFiles
 # Attribute test
 for ((i = 99999999; i < $((${nbOfNextTRIDToTest}*99999999)); i=i+99999999)); do
   _RunSql "alter table db1.tablealldatatypes set next_trid = ${i}"
-  _CheckLogFiles
 done
 _CheckLogFiles
 
 _RunSqlAndValidateOutput "create table db1.tablealldatatypes ( col text )" \
 "Status .*: Table .* already exists"
-_CheckLogFiles '\[2022\]'
+_CheckLogFiles "Table .* already exists"
 
 # Uncomment when gh-26 ready
 # _RunSql "create table db1.tableasselect as select * from sys_databases"
@@ -74,7 +73,7 @@ _RunSql "drop table if exists db1.tablealldatatypes"
 
 _RunSqlAndValidateOutput "drop table db1.tablealldatatypes" \
 "Status .*: Table .* doesn't exist"
-_CheckLogFiles '\[2002\]'
+_CheckLogFiles "Table .* doesn't exist"
 
 _RunSqlScript "${SHARED_DIR}/sql/test-db1-table-tablealldatatypes.sql"
 _RestartSiodb
