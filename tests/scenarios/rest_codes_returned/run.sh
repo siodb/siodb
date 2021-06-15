@@ -79,7 +79,7 @@ QUERY_WITH_ERROR="select * from not_exists"
 
 ## Data model
 _RunSql "create database ${database_name}"
-_RunSql "create table ${database_name}.${table_name} ( col1 text )"
+_RunSql "create table ${database_name}.${table_name} ( col_text text, col_int int )"
 _RunSql "create user user1"
 _RunSql "alter user user1 add token test_token x'${TOKEN}'"
 _RunSql "alter user root add token test_token x'${TOKEN}'"
@@ -140,68 +140,75 @@ executeRestRequest_GET \
 &q3=$(urlencode "${QUERY_2}")\
 &q4=$(urlencode "${QUERY_1}")" 200
 
-///////////////////////////
-///////////////////////////  Add in README a snippet with SQL / REST
-///////////////////////////
-
-
 ## POST
 executeRestRequest_POST \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
-    201 '[{"col1":"value"}]'
+    201 '[{"col_text":"value", "col_int": 1}]'
 executeRestRequest_POST \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
-    201 '[{"col1":"value"}]'
+    201 '[{"col_text":"value", "col_int": 1}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    201 '[{"col_text": 3, "col_int": 2}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    400 '[{"col_text":"value", "col_int": "2"}]'
 executeRestRequest_POST \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows" \
-    403 '[{"col1":"value"}]'
+    403 '[{"col_text":"value", "col_int": 1}]'
 executeRestRequest_POST \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 1}]'
 executeRestRequest_POST \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/faketable/rows" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 1}]'
 executeRestRequest_POST \
     "https://root:${TOKEN}@localhost:50443/databases/fakedatabase/tables/faketable/rows" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 1}]'
 executeRestRequest_POST \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/faketable/rows" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 1}]'
 executeRestRequest_POST \
     "https://user1:${TOKEN}@localhost:50443/databases/fakedatabase/tables/faketable/rows" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 1}]'
 
 ## PUT
 executeRestRequest_PUT \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/1" \
-    200 '[{"col1":"value_updated"}]'
+    200 '[{"col_text":"value_updated", "col_int": 2}]'
 executeRestRequest_PUT \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/1" \
-    200 '[{"col1":"value_updated"}]'
+    200 '[{"col_text":"value_updated", "col_int": 2}]'
+executeRestRequest_PUT \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/1" \
+    200 '[{"col_text": 3, "col_int": 2}]'
+executeRestRequest_PUT \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/1" \
+    400 '[{"col_text":"value", "col_int": "2"}]'
 executeRestRequest_PUT \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows/1" \
-    403 '[{"col1":"value"}]'
+    403 '[{"col_text":"value", "col_int": 2}]'
 executeRestRequest_PUT \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows/1" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 2}]'
 executeRestRequest_PUT \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows/999" \
-    403 '[{"col1":"value"}]'
+    403 '[{"col_text":"value", "col_int": 2}]'
 executeRestRequest_PUT \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows/999" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 2}]'
 executeRestRequest_PUT \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/faketable/rows/1" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 2}]'
 executeRestRequest_PUT \
     "https://root:${TOKEN}@localhost:50443/databases/fakedatabase/tables/faketable/rows/1" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 2}]'
 executeRestRequest_PUT \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/faketable/rows/1" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 2}]'
 executeRestRequest_PUT \
     "https://user1:${TOKEN}@localhost:50443/databases/fakedatabase/tables/faketable/rows/1" \
-    404 '[{"col1":"value"}]'
+    404 '[{"col_text":"value", "col_int": 2}]'
 
 ## GET Rows
 executeRestRequest_GET \
