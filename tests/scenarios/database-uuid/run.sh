@@ -94,8 +94,18 @@ _RunSqlAndValidateOutput "create database DB9
                          "Status .*: Attribute .* must be 'BOOLEAN'"
 _CheckLogFiles "Attribute .* must be 'BOOLEAN'"
 
+# Verify ERROR for wrong permissions on directory
+UUID="$(cat /proc/sys/kernel/random/uuid)"
+mkdir "${SOURCE_DATA_DIR}/db-${UUID}"
+chmod 550 "${SOURCE_DATA_DIR}/db-${UUID}"
+_RunSqlAndValidateOutput "create database DB10
+                          with uuid = '${UUID}',
+                          data_directory_must_exist = true" \
+                         "Status .*: Can't create metadata file .* Permission denied"
+_CheckLogFiles "error .* Permission denied"
+
 # purging
-for db in db1 db2 db3 db4 db5 db6 db7 db8 db9; do
+for db in db1 db2 db3 db4 db5 db6 db7 db8 db9 db10; do
     _RunSql "drop database if exists ${db}"
 done
 

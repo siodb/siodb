@@ -2,9 +2,61 @@
 
 ## Deliver safer and faster with Siodb, a Swiss-knife database to eliminate database complexity
 
-- **Performance automation:** Years of experience automated in Siodb (indexing, defragmentation, etc)
-- **Easy integration in your project:** Get the simplicity of REST and the power of SQL combined
-- **Full encryption:** Keep your data always encrypted at rest and in-transit with the safest protocols and cipher algorithms
+- **Fully automated:** Automatic primary key, data sizing, indexing, defragmentation, etc
+- **Fully encrypted:** Your data always encrypted at rest and in-transit
+- **Easy integration:** The best of both worlds with REST and SQL combined
+
+```bash
+curl -X POST \
+-d '[
+      {
+         "EMAIL" : "dwain.jonhson@gmail.com",
+         "FIRST_NAME" : "Dwain",
+         "LAST_NAME" : "Jonhson",
+         "USERNAME" : "dwainjonhson"
+      }
+]' \
+https://${USER}:${TOKEN}@localhost:50443/database/my_app/tables/users/rows
+```
+
+```bash
+curl https://${USER}:${TOKEN}@localhost:50443/query?q='select * from my_app.users;'
+```
+
+```json
+{
+   "status" : 200,
+   "rows" : [
+      {
+         "TRID" : 1,
+         "EMAIL" : "jason.statham@gmail.com",
+         "FIRST_NAME" : "Jason",
+         "LAST_NAME" : "Statham",
+         "USERNAME" : "jasonstatham"
+      },
+      {
+         "TRID" : 2,
+         "EMAIL" : "dwain.jonhson@gmail.com",
+         "FIRST_NAME" : "Dwain",
+         "LAST_NAME" : "Jonhson",
+         "USERNAME" : "dwainjonhson"
+      }
+   ]
+}
+```
+
+```sql
+siocli> select * from my_app.users;
+
+TRID   EMAIL                       FIRST_NAME     LAST_NAME     USERNAME
+------ --------------------------- -------------- ------------- --------------
+     1 jason.statham@gmail.com     Jason          Statham       jasonstatham
+     2 dwain.jonhson@gmail.com     Dwain          Jonhson       dwainjonhson
+
+Row(s): 2
+
+Elapsed time: 15 ms.
+```
 
 ## Help Siodb
 
