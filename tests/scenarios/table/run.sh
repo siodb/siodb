@@ -51,6 +51,7 @@ _CheckLogFiles
 # Attribute test
 for ((i = 99999999; i < $((${nbOfNextTRIDToTest}*99999999)); i=i+99999999)); do
   _RunSql "alter table db1.tablealldatatypes set next_trid = ${i}"
+  _CheckLogFiles
 done
 _CheckLogFiles
 
