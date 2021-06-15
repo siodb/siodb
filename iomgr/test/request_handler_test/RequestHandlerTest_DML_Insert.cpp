@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -346,8 +346,6 @@ TEST(DML_Insert, InsertMultipleRecords)
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT64);
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_TEXT);
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_TEXT);
-
-        // Table order
         EXPECT_EQ(response.column_description(0).name(), "TRID");
         EXPECT_EQ(response.column_description(1).name(), "FIRST_NAME");
         EXPECT_EQ(response.column_description(2).name(), "LAST_NAME");
@@ -457,7 +455,6 @@ TEST(DML_Insert, InsertDataTypesWithLength)
     ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT64);
     ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_BINARY);
     ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_TEXT);
-    // Table order
     EXPECT_EQ(response.column_description(0).name(), "TRID");
     EXPECT_EQ(response.column_description(1).name(), "DIGITAL_SIGNATURE");
     EXPECT_EQ(response.column_description(2).name(), "BOOK_TEXT");
@@ -912,8 +909,6 @@ TEST(DML_Insert, InsertNullValue)
         ASSERT_FALSE(response.column_description(0).is_null());
         ASSERT_FALSE(response.column_description(1).is_null());
         ASSERT_TRUE(response.column_description(2).is_null());
-
-        // Table order
         EXPECT_EQ(response.column_description(0).name(), "TRID");
         EXPECT_EQ(response.column_description(1).name(), "I");
         EXPECT_EQ(response.column_description(2).name(), "T");
@@ -1005,11 +1000,8 @@ TEST(DML_Insert, InsertDefaultNullValue)
         ASSERT_EQ(response.column_description_size(), 2);  // + TRID
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT32);
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_UINT32);
-
         ASSERT_FALSE(response.column_description(0).is_null());
         ASSERT_TRUE(response.column_description(1).is_null());
-
-        // Table order
         EXPECT_EQ(response.column_description(0).name(), "U1");
         EXPECT_EQ(response.column_description(1).name(), "U2");
 
