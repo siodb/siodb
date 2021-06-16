@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -32,7 +32,7 @@ requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseT
             bool negate = false;
             if (childCount > 1) {
                 literalNodeIndex = 1;
-                negate = helpers::getTerminalType(node->children[0]) == SiodbParser::MINUS;
+                negate = helpers::getMaybeTerminalType(node->children[0]) == SiodbParser::MINUS;
             }
             return createConstant(node, literalNodeIndex, negate);
         }
@@ -47,7 +47,8 @@ requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseT
                 const bool rightNodeValid =
                         helpers::getNonTerminalType(rightNode) == SiodbParser::RuleColumn_name
                         || helpers::getNonTerminalType(rightNode) == SiodbParser::RuleExpr;
-                if (helpers::getTerminalType(leftNode) == SiodbParser::K_NOT && rightNodeValid) {
+                if (helpers::getMaybeTerminalType(leftNode) == SiodbParser::K_NOT
+                        && rightNodeValid) {
                     return std::make_unique<requests::LogicalNotOperator>(
                             createExpression(rightNode));
                 }
@@ -57,14 +58,14 @@ requests::ExpressionPtr ExpressionFactory::createExpression(antlr4::tree::ParseT
                 const auto rightNode = node->children[2];
                 // Check case: Expr Operator Expr
                 if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleExpr
-                        && isLogicalBinaryOperator(helpers::getTerminalType(midNode))
+                        && isLogicalBinaryOperator(helpers::getMaybeTerminalType(midNode))
                         && helpers::getNonTerminalType(rightNode) == SiodbParser::RuleExpr) {
                     return createLogicalBinaryOperator(leftNode, midNode, rightNode);
                 }
                 // Check case ( expr )
-                else if (helpers::getTerminalType(leftNode) == SiodbParser::OPEN_PAR
+                else if (helpers::getMaybeTerminalType(leftNode) == SiodbParser::OPEN_PAR
                          && helpers::getNonTerminalType(midNode) == SiodbParser::RuleExpr
-                         && helpers::getTerminalType(rightNode) == SiodbParser::CLOSE_PAR) {
+                         && helpers::getMaybeTerminalType(rightNode) == SiodbParser::CLOSE_PAR) {
                     return createExpression(midNode);
                 }
             }
@@ -100,7 +101,7 @@ Variant ExpressionFactory::createConstantValue(antlr4::tree::ParseTree* node)
             bool negate = false;
             if (node->children.size() > 1) {
                 literalNodeIndex = 1;
-                negate = helpers::getTerminalType(node->children[0]) == SiodbParser::MINUS;
+                negate = helpers::getMaybeTerminalType(node->children[0]) == SiodbParser::MINUS;
             }
             return createConstantValue(node, literalNodeIndex, negate);
         }
@@ -342,7 +343,7 @@ requests::ExpressionPtr ExpressionFactory::createUnaryOperator(
                 "Expression malformed: Unary operator should have exactly one operand"));
     }
 
-    auto type = helpers::getTerminalType(operatorNode->children.front());
+    const auto type = helpers::getMaybeTerminalType(operatorNode->children.front());
     switch (type) {
         case SiodbParser::PLUS:
             return std::make_unique<requests::UnaryPlusOperator>(
@@ -368,7 +369,7 @@ requests::ExpressionPtr ExpressionFactory::createNonLogicalBinaryOperator(
         antlr4::tree::ParseTree* leftNode, antlr4::tree::ParseTree* operatorNode,
         antlr4::tree::ParseTree* rightNode)
 {
-    switch (helpers::getTerminalType(operatorNode)) {
+    switch (helpers::getMaybeTerminalType(operatorNode)) {
         case SiodbParser::LT: {
             return std::make_unique<requests::LessOperator>(
                     createSimpleExpression(leftNode), createSimpleExpression(rightNode));
@@ -458,10 +459,10 @@ requests::ExpressionPtr ExpressionFactory::createNonLogicalBinaryOperator(
 requests::ExpressionPtr ExpressionFactory::createInOperator(antlr4::tree::ParseTree* node)
 {
     auto valueExpr = createSimpleExpression(node->children[0]);
-    const bool notIn = helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT;
+    const bool isNotIn = helpers::getMaybeTerminalType(node->children[1]) == SiodbParser::K_NOT;
 
     std::vector<requests::ExpressionPtr> variants;
-    for (std::size_t i = notIn ? 4 : 3, n = node->children.size(); i < n; i += 2)
+    for (std::size_t i = isNotIn ? 4 : 3, n = node->children.size(); i < n; i += 2)
         variants.push_back(createSimpleExpression(node->children[i]));
 
     if (variants.empty()) {
@@ -471,14 +472,15 @@ requests::ExpressionPtr ExpressionFactory::createInOperator(antlr4::tree::ParseT
                 m_parser.injectError(line, column, "Operator IN has no variants"));
     }
 
-    return std::make_unique<requests::InOperator>(std::move(valueExpr), std::move(variants), notIn);
+    return std::make_unique<requests::InOperator>(
+            std::move(valueExpr), std::move(variants), isNotIn);
 }
 
 requests::ExpressionPtr ExpressionFactory::createLogicalBinaryOperator(
         antlr4::tree::ParseTree* leftNode, antlr4::tree::ParseTree* operatorNode,
         antlr4::tree::ParseTree* rightNode)
 {
-    switch (helpers::getTerminalType(operatorNode)) {
+    switch (helpers::getMaybeTerminalType(operatorNode)) {
         case SiodbParser::K_AND: {
             return std::make_unique<requests::LogicalAndOperator>(
                     createExpression(leftNode), createExpression(rightNode));
@@ -534,19 +536,19 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(antlr4::tree::
             const auto rightNode = node->children[2];
             // Check for the "Expr Operator Expr"
             if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleSimple_expr
-                    && isNonLogicalBinaryOperator(helpers::getTerminalType(midNode))
+                    && isNonLogicalBinaryOperator(helpers::getMaybeTerminalType(midNode))
                     && helpers::getNonTerminalType(rightNode) == SiodbParser::RuleSimple_expr) {
                 return createNonLogicalBinaryOperator(leftNode, midNode, rightNode);
             }
             // Check for the  '(' simple_expr ')'
-            else if (helpers::getTerminalType(leftNode) == SiodbParser::OPEN_PAR
+            else if (helpers::getMaybeTerminalType(leftNode) == SiodbParser::OPEN_PAR
                      && helpers::getNonTerminalType(midNode) == SiodbParser::RuleSimple_expr
-                     && helpers::getTerminalType(rightNode) == SiodbParser::CLOSE_PAR) {
+                     && helpers::getMaybeTerminalType(rightNode) == SiodbParser::CLOSE_PAR) {
                 return createExpression(midNode);
             }
             // Check for the "tableName . columnName"
             else if (helpers::getNonTerminalType(leftNode) == SiodbParser::RuleTable_name
-                     && helpers::getTerminalType(midNode) == SiodbParser::DOT
+                     && helpers::getMaybeTerminalType(midNode) == SiodbParser::DOT
                      && helpers::getNonTerminalType(rightNode) == SiodbParser::RuleColumn_name) {
                 return createColumnValueExpression(leftNode, rightNode);
             }
@@ -560,8 +562,8 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(antlr4::tree::
 
             // Check for the "expr NOT LIKE expr"
             if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
-                    && helpers::getTerminalType(node1) == SiodbParser::K_NOT
-                    && helpers::getTerminalType(node2) == SiodbParser::K_LIKE
+                    && helpers::getMaybeTerminalType(node1) == SiodbParser::K_NOT
+                    && helpers::getMaybeTerminalType(node2) == SiodbParser::K_LIKE
                     && helpers::getNonTerminalType(node3) == SiodbParser::RuleSimple_expr) {
                 return std::make_unique<requests::LikeOperator>(
                         createSimpleExpression(node0), createSimpleExpression(node3), true);
@@ -569,8 +571,8 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(antlr4::tree::
 
             // Check for the "expr IS NOT expr"
             if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
-                    && helpers::getTerminalType(node1) == SiodbParser::K_IS
-                    && helpers::getTerminalType(node2) == SiodbParser::K_NOT
+                    && helpers::getMaybeTerminalType(node1) == SiodbParser::K_IS
+                    && helpers::getMaybeTerminalType(node2) == SiodbParser::K_NOT
                     && helpers::getNonTerminalType(node3) == SiodbParser::RuleSimple_expr) {
                 return std::make_unique<requests::IsOperator>(
                         createSimpleExpression(node0), createSimpleExpression(node3), true);
@@ -586,17 +588,17 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(antlr4::tree::
             const auto& node4 = node->children[4];
 
             if (helpers::getNonTerminalType(node0) == SiodbParser::RuleSimple_expr
-                    && helpers::getTerminalType(node1) == SiodbParser::K_BETWEEN
+                    && helpers::getMaybeTerminalType(node1) == SiodbParser::K_BETWEEN
                     && helpers::getNonTerminalType(node2) == SiodbParser::RuleSimple_expr
-                    && helpers::getTerminalType(node3) == SiodbParser::K_AND
+                    && helpers::getMaybeTerminalType(node3) == SiodbParser::K_AND
                     && helpers::getNonTerminalType(node4) == SiodbParser::RuleSimple_expr) {
                 return createBetweenExpression(node0, node2, node4, false);
             }
             // Check for the "database . table . column"
             else if (helpers::getNonTerminalType(node0) == SiodbParser::RuleDatabase_name
-                     && helpers::getTerminalType(node1) == SiodbParser::DOT
+                     && helpers::getMaybeTerminalType(node1) == SiodbParser::DOT
                      && helpers::getNonTerminalType(node2) == SiodbParser::RuleTable_name
-                     && helpers::getTerminalType(node3) == SiodbParser::DOT
+                     && helpers::getMaybeTerminalType(node3) == SiodbParser::DOT
                      && helpers::getNonTerminalType(node4) == SiodbParser::RuleColumn_name) {
                 std::size_t line = 1, column = 1;
                 helpers::findFirstTerminalAndCapturePosition(node, 0, line, column);
@@ -608,11 +610,11 @@ requests::ExpressionPtr ExpressionFactory::createSimpleExpression(antlr4::tree::
         case 6: {
             // Check for the "expr NOT BETWEEN expr AND expr"
             if (helpers::getNonTerminalType(node->children[0]) == SiodbParser::RuleSimple_expr
-                    && helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT
-                    && helpers::getTerminalType(node->children[2]) == SiodbParser::K_BETWEEN
+                    && helpers::getMaybeTerminalType(node->children[1]) == SiodbParser::K_NOT
+                    && helpers::getMaybeTerminalType(node->children[2]) == SiodbParser::K_BETWEEN
                     && helpers::getNonTerminalType(node->children[3])
                                == SiodbParser::RuleSimple_expr
-                    && helpers::getTerminalType(node->children[4]) == SiodbParser::K_AND
+                    && helpers::getMaybeTerminalType(node->children[4]) == SiodbParser::K_AND
                     && helpers::getNonTerminalType(node->children[5])
                                == SiodbParser::RuleSimple_expr) {
                 return createBetweenExpression(
@@ -672,18 +674,18 @@ bool ExpressionFactory::isInOperator(const antlr4::tree::ParseTree* node) noexce
         return false;
 
     std::size_t openParIndex = 0;
-    if (helpers::getTerminalType(node->children[1]) == SiodbParser::K_IN)
+    if (helpers::getMaybeTerminalType(node->children[1]) == SiodbParser::K_IN)
         openParIndex = 2;
-    else if (helpers::getTerminalType(node->children[1]) == SiodbParser::K_NOT
-             && helpers::getTerminalType(node->children[2]) == SiodbParser::K_IN)
+    else if (helpers::getMaybeTerminalType(node->children[1]) == SiodbParser::K_NOT
+             && helpers::getMaybeTerminalType(node->children[2]) == SiodbParser::K_IN)
         openParIndex = 3;
     else
         return false;
 
-    if (helpers::getTerminalType(node->children[openParIndex]) != SiodbParser::OPEN_PAR)
+    if (helpers::getMaybeTerminalType(node->children[openParIndex]) != SiodbParser::OPEN_PAR)
         return false;
 
-    if (helpers::getTerminalType(node->children[node->children.size() - 1])
+    if (helpers::getMaybeTerminalType(node->children[node->children.size() - 1])
             != SiodbParser::CLOSE_PAR)
         return false;
 

@@ -94,7 +94,7 @@ TEST(Query, SelectWithWhere)
             oss << ", (" << 300 << ',' << bValue + (100 * i) << ')';
         }
 
-        const std::string statement(oss.str());
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -136,8 +136,6 @@ TEST(Query, SelectWithWhere)
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT64);
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_INT32);
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_INT32);
-
-        // Table order
         EXPECT_EQ(response.column_description(0).name(), "TRID");
         EXPECT_EQ(response.column_description(1).name(), "A");
         EXPECT_EQ(response.column_description(2).name(), "B");
@@ -194,7 +192,7 @@ TEST(Query, SelectWithWhereBetweenDatetime)
         oss << "('2015-03-03'),";
         oss << "('2019-03-14')";
 
-        const std::string statement(oss.str());
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -290,7 +288,7 @@ TEST(Query, SelectWithWhereCompoundExpression)
         oss << "(32.0, 64, 10000000),";  // 64 > 32
         oss << "(64.0, 127, 0)";  // 127 > 64
 
-        const std::string statement(oss.str());
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -390,7 +388,7 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
         oss << "(1, 200),";
         oss << "(2, 300)";
 
-        const std::string statement(oss.str());
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -560,8 +558,6 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         EXPECT_FALSE(response.has_affected_row_count());
         ASSERT_EQ(response.column_description_size(), 1);
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_INT32);
-
-        // Table order
         EXPECT_EQ(response.column_description(0).name(), "ALIASED_COLUMN");
 
         siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
@@ -685,7 +681,7 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         oss << "('2015-03-03', 'cab'),";
         oss << "('2019-03-14',  'bac')";
 
-        const std::string statement(oss.str());
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -738,7 +734,7 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_GT(rowLength, 0U);
 
-        // Read 2015-03-02', 'abc'
+        // Read '2015-03-02', 'abc'
         siodb::RawDateTime date;
         ASSERT_TRUE(siodb::protobuf::readRawDateTime(codedInput, date));
         EXPECT_EQ(date.m_datePart.m_year, 2015);
@@ -749,140 +745,6 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         std::string text;
         ASSERT_TRUE(codedInput.Read(&text));
         EXPECT_EQ(text, "abc");
-
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        EXPECT_EQ(rowLength, 0U);
-    }
-}
-
-TEST(Query, SelectFrom2Tables)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    // Create table
-    const std::vector<dbengine::SimpleColumnSpecification> table1Columns {
-            {"I8", siodb::COLUMN_DATA_TYPE_INT8, true},
-    };
-
-    const std::vector<dbengine::SimpleColumnSpecification> table2Columns {
-            {"F", siodb::COLUMN_DATA_TYPE_FLOAT, true},
-            {"B", siodb::COLUMN_DATA_TYPE_BOOL, true},
-    };
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_7_1",
-            dbengine::TableType::kDisk, table1Columns, dbengine::User::kSuperUserId, {});
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_7_2",
-            dbengine::TableType::kDisk, table2Columns, dbengine::User::kSuperUserId, {});
-
-    /// ----------- INSERT_1 -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_1 VALUES (0),(1),(2),(3),(4)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 5U);
-    }
-
-    /// ----------- INSERT_2 -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_2 VALUES (6.0, false), (5.0, false), (4.0, "
-               "false),(3.0, false), (2.0, true), (1.0, true), (0.0, true)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 7U);
-    }
-
-    /// ----------- SELECT -----------
-    {
-        const std::string statement(
-                "SELECT SELECT_WITH_WHERE_7_1.I8, SELECT_WITH_WHERE_7_2.B, SELECT_WITH_WHERE_7_2.F "
-                "FROM SYS.SELECT_WITH_WHERE_7_1, SELECT_WITH_WHERE_7_2 WHERE "
-                "SELECT_WITH_WHERE_7_2.B = true");
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_FALSE(response.has_affected_row_count());
-        ASSERT_EQ(response.column_description_size(), 3);
-        ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_INT8);
-        ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_BOOL);
-        ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_FLOAT);
-
-        EXPECT_EQ(response.column_description(0).name(), "I8");
-        EXPECT_EQ(response.column_description(1).name(), "B");
-        EXPECT_EQ(response.column_description(2).name(), "F");
-
-        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-        std::uint64_t rowLength = 0;
-        for (std::size_t i = 0; i < 5; ++i) {
-            for (int j = 2; j >= 0; --j) {
-                rowLength = 0;
-                ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-                ASSERT_GT(rowLength, 0U);
-
-                std::int8_t int8Value = 0;
-                ASSERT_TRUE(codedInput.Read(&int8Value));
-                EXPECT_EQ(int8Value, static_cast<std::int8_t>(i));
-
-                bool boolValue = false;
-                ASSERT_TRUE(codedInput.Read(&boolValue));
-                EXPECT_EQ(boolValue, true);
-
-                float floatValue = 0;
-                ASSERT_TRUE(codedInput.Read(&floatValue));
-                EXPECT_FLOAT_EQ(floatValue, j * 1.0f);
-            }
-        }
 
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         EXPECT_EQ(rowLength, 0U);
@@ -912,7 +774,7 @@ TEST(Query, SelectWithExpression)
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_8 VALUES (0, 0),(10, 1),(20, 2),(30, 3),(40, 4)";
 
-        const std::string statement(oss.str());
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1054,7 +916,7 @@ TEST(Query, SelectWithExpressionWithNull)
         std::ostringstream oss;
         oss << "INSERT INTO SYS.TEST_EXPRESSION VALUES (10)";
 
-        const std::string statement(oss.str());
+        const auto statement = oss.str();
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1241,8 +1103,6 @@ TEST(Query, SelectWithWhereIsNull)
         ASSERT_FALSE(response.column_description(0).is_null());
         ASSERT_FALSE(response.column_description(1).is_null());
         ASSERT_TRUE(response.column_description(2).is_null());
-
-        // Table order
         EXPECT_EQ(response.column_description(0).name(), "TRID");
         EXPECT_EQ(response.column_description(1).name(), "I");
         EXPECT_EQ(response.column_description(2).name(), "T");
@@ -1339,8 +1199,6 @@ TEST(Query, SelectWithWhereEqualNull)
         ASSERT_FALSE(response.column_description(0).is_null());
         ASSERT_FALSE(response.column_description(1).is_null());
         ASSERT_TRUE(response.column_description(2).is_null());
-
-        // Table order
         EXPECT_EQ(response.column_description(0).name(), "TRID");
         EXPECT_EQ(response.column_description(1).name(), "I");
         EXPECT_EQ(response.column_description(2).name(), "T");
@@ -1351,690 +1209,4 @@ TEST(Query, SelectWithWhereEqualNull)
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_TRUE(rowLength == 0);
     }
-}
-
-TEST(Query, SelectWithLimit)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    // create table
-    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
-            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
-    };
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_1",
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-
-    /// ----------- INSERT -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_1 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
-               "(8), (9)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 10U);
-    }
-
-    /// ----------- SELECT -----------
-    {
-        const std::string statement("SELECT A FROM SYS.SELECT_WITH_LIMIT_1 LIMIT 5");
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_FALSE(response.has_affected_row_count());
-        ASSERT_EQ(response.column_description_size(), 1);
-        ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_INT32);
-
-        EXPECT_EQ(response.column_description(0).name(), "A");
-
-        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-        std::uint64_t rowLength = 0;
-        for (auto i = 0; i < 5; ++i) {
-            rowLength = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_GT(rowLength, 0);
-
-            std::int32_t a = 0;
-            ASSERT_TRUE(codedInput.Read(&a));
-            ASSERT_EQ(a, i);
-        }
-
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        EXPECT_EQ(rowLength, 0U);
-    }
-}
-
-TEST(Query, SelectWithZeroLimit)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    // create table
-    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
-            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
-    };
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_2",
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-
-    /// ----------- INSERT -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
-               "(8), (9)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 10U);
-    }
-
-    /// ----------- SELECT -----------
-    {
-        const std::string statement("SELECT A FROM SYS.SELECT_WITH_LIMIT_2 LIMIT 0");
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_FALSE(response.has_affected_row_count());
-        ASSERT_EQ(response.column_description_size(), 1);
-        ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_INT32);
-
-        EXPECT_EQ(response.column_description(0).name(), "A");
-
-        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-        std::uint64_t rowLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        EXPECT_EQ(rowLength, 0U);
-    }
-}
-
-TEST(Query, SelectWithNegativeLimit)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    // create table
-    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
-            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
-    };
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_3",
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-
-    /// ----------- INSERT -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
-               "(8), (9)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 10U);
-    }
-
-    /// ----------- SELECT -----------
-    {
-        const std::string statement("SELECT A FROM SYS.SELECT_WITH_LIMIT_3 LIMIT -1");
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 1);  // LIMIT -1 Exception message
-    }
-}
-
-TEST(Query, SelectWithLimitAndOffset)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    // create table
-    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
-            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
-    };
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_1",
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-
-    /// ----------- INSERT -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), (4), "
-               "(5), "
-               "(6), (7), "
-               "(8), (9)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 10U);
-    }
-
-    /// ----------- SELECT -----------
-    {
-        const std::string statement(
-                "SELECT A FROM SYS.SELECT_WITH_LIMIT_AND_OFFSET_1 LIMIT 5 OFFSET 5");
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_FALSE(response.has_affected_row_count());
-        ASSERT_EQ(response.column_description_size(), 1);
-        ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_INT32);
-
-        EXPECT_EQ(response.column_description(0).name(), "A");
-
-        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-        std::uint64_t rowLength = 0;
-        for (auto i = 5; i < 10; ++i) {
-            rowLength = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_GT(rowLength, 0);
-
-            std::int32_t a = 0;
-            ASSERT_TRUE(codedInput.Read(&a));
-            ASSERT_EQ(a, i);
-        }
-
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        EXPECT_EQ(rowLength, 0U);
-    }
-}
-
-TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    // create table
-    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
-            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
-    };
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_2",
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-
-    /// ----------- INSERT -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_2 VALUES (0), (1), (2), (3), (4), "
-               "(5), "
-               "(6), (7), "
-               "(8), (9)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 10U);
-    }
-
-    /// ----------- SELECT -----------
-    {
-        const std::string statement(
-                "SELECT A FROM SYS.SELECT_WITH_LIMIT_AND_OFFSET_2 LIMIT 5 OFFSET 10");
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_FALSE(response.has_affected_row_count());
-        ASSERT_EQ(response.column_description_size(), 1);
-        ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_INT32);
-
-        EXPECT_EQ(response.column_description(0).name(), "A");
-
-        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-        std::uint64_t rowLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        EXPECT_EQ(rowLength, 0U);
-    }
-}
-
-TEST(Query, SelectWithNegativeOffset)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    // create table
-    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
-            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
-    };
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_3",
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-
-    /// ----------- INSERT -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_3 VALUES (0), (1), (2), (3), (4), "
-               "(5), "
-               "(6), (7), "
-               "(8), (9)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 10U);
-    }
-
-    /// ----------- SELECT -----------
-    {
-        const std::string statement(
-                "SELECT A FROM SYS.SELECT_WITH_LIMIT_AND_OFFSET_3 LIMIT 10 OFFSET -1");
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 1);  // LIMIT -1 Exception message
-    }
-}
-
-TEST(Query, SelectWithWhere_LimitAndOffset)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-
-    // create table
-    const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
-            {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
-    };
-
-    instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1",
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-
-    /// ----------- INSERT -----------
-    {
-        std::ostringstream oss;
-        oss << "INSERT INTO SYS.SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), "
-               "(4), (5), "
-               "(6), (7), "
-               "(8), (9)";
-
-        const std::string statement(oss.str());
-
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_TRUE(response.has_affected_row_count());
-        ASSERT_EQ(response.affected_row_count(), 10U);
-    }
-
-    /// ----------- SELECT -----------
-    {
-        const std::string statement(
-                "SELECT A FROM SYS.SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1 WHERE A > 3 LIMIT 5 "
-                "OFFSET 5");
-        parser_ns::SqlParser parser(statement);
-        parser.parse();
-
-        parser_ns::DBEngineSqlRequestFactory factory(parser);
-        const auto request = factory.createSqlRequest();
-
-        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-        siodb::iomgr_protocol::DatabaseEngineResponse response;
-        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
-                response, inputStream);
-
-        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-        ASSERT_EQ(response.message_size(), 0);
-        EXPECT_FALSE(response.has_affected_row_count());
-        ASSERT_EQ(response.column_description_size(), 1);
-        ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_INT32);
-
-        EXPECT_EQ(response.column_description(0).name(), "A");
-
-        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-        std::uint64_t rowLength = 0;
-        for (auto i = 9; i < 10; ++i) {
-            rowLength = 0;
-            ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-            ASSERT_GT(rowLength, 0);
-
-            std::int32_t a = 0;
-            ASSERT_TRUE(codedInput.Read(&a));
-            ASSERT_EQ(a, i);
-        }
-
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        EXPECT_EQ(rowLength, 0U);
-    }
-}
-
-TEST(Query, ShowDatabases)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    const std::string statement("SHOW DATABASES");
-    parser_ns::SqlParser parser(statement);
-    parser.parse();
-
-    parser_ns::DBEngineSqlRequestFactory factory(parser);
-    const auto request = factory.createSqlRequest();
-
-    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-    siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-    siodb::protobuf::readMessage(
-            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
-
-    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-    ASSERT_EQ(response.message_size(), 0);
-    EXPECT_FALSE(response.has_affected_row_count());
-    EXPECT_EQ(response.response_id(), 0U);
-    EXPECT_EQ(response.response_count(), 1U);
-    ASSERT_EQ(response.column_description_size(), 2);
-    EXPECT_EQ(response.column_description(0).name(), "NAME");
-    EXPECT_EQ(response.column_description(1).name(), "UUID");
-
-    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-    std::uint64_t rowLength = 0;
-    std::vector<std::uint8_t> rowData;
-    for (std::size_t i = 0, n = instance->getDatbaseCount(); i < n; ++i) {
-        rowLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_GT(rowLength, 0);
-        ASSERT_LT(rowLength, 100);
-        if (rowData.size() < rowLength) rowData.resize(rowLength);
-        ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
-    }
-
-    ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-    EXPECT_EQ(rowLength, 0U);
-}
-
-TEST(Query, ShowTables)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    const std::string statement("SHOW TABLES");
-    parser_ns::SqlParser parser(statement);
-    parser.parse();
-
-    parser_ns::DBEngineSqlRequestFactory factory(parser);
-    const auto request = factory.createSqlRequest();
-
-    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-    siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-    siodb::protobuf::readMessage(
-            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
-
-    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-    ASSERT_EQ(response.message_size(), 0);
-    EXPECT_FALSE(response.has_affected_row_count());
-    EXPECT_EQ(response.response_id(), 0U);
-    EXPECT_EQ(response.response_count(), 1U);
-    ASSERT_EQ(response.column_description_size(), 2);
-    EXPECT_EQ(response.column_description(0).name(), "NAME");
-    EXPECT_EQ(response.column_description(1).name(), "DESCRIPTION");
-
-    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-    std::uint64_t rowLength = 0;
-    std::vector<std::uint8_t> rowData;
-    const auto& systemDatabase = instance->getSystemDatabase();
-    for (std::size_t i = 0, n = systemDatabase.getTableCount(); i < n; ++i) {
-        rowLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_GT(rowLength, 0);
-        ASSERT_LT(rowLength, 2048U);
-        if (rowData.size() < rowLength) rowData.resize(rowLength);
-        ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
-    }
-
-    ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-    EXPECT_EQ(rowLength, 0U);
-}
-
-TEST(Query, DescribeTable)
-{
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-
-    const std::string statement("DESCRIBE TABLE SYS.SYS_TABLES");
-    parser_ns::SqlParser parser(statement);
-    parser.parse();
-
-    parser_ns::DBEngineSqlRequestFactory factory(parser);
-    const auto request = factory.createSqlRequest();
-
-    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
-
-    siodb::iomgr_protocol::DatabaseEngineResponse response;
-    siodb::protobuf::StreamInputStream inputStream(
-            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
-    siodb::protobuf::readMessage(
-            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
-
-    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
-    ASSERT_EQ(response.message_size(), 0);
-    EXPECT_FALSE(response.has_affected_row_count());
-    EXPECT_EQ(response.response_id(), 0U);
-    EXPECT_EQ(response.response_count(), 1U);
-    ASSERT_EQ(response.column_description_size(), 2);
-    EXPECT_EQ(response.column_description(0).name(), "NAME");
-    EXPECT_EQ(response.column_description(1).name(), "DATA_TYPE");
-
-    siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
-
-    std::uint64_t rowLength = 0;
-    std::vector<std::uint8_t> rowData;
-    auto& systemDatabase = instance->getSystemDatabase();
-    auto sysTablesTable = systemDatabase.findTableChecked("SYS_TABLES");
-    for (std::size_t i = 0, n = sysTablesTable->getColumnCount(); i < n; ++i) {
-        rowLength = 0;
-        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-        ASSERT_GT(rowLength, 0);
-        ASSERT_LT(rowLength, 2048U);
-        if (rowData.size() < rowLength) rowData.resize(rowLength);
-        ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
-    }
-
-    ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
-    EXPECT_EQ(rowLength, 0U);
 }

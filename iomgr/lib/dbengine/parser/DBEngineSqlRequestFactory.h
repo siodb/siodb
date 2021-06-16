@@ -13,6 +13,11 @@ namespace siodb::iomgr::dbengine::parser {
 /** DBEngineSqlRequestFactory produces DB Engine requests for the SQL statements. */
 class DBEngineSqlRequestFactory {
 public:
+    /** Helper data structure which allows selecting proper overloaded function. */
+    struct CreateFromNodeTag {
+    };
+
+public:
     /**
      * Initializes object of class DBEngineSqlRequestFactory.
      * @param parser Parser object.
@@ -23,24 +28,25 @@ public:
     }
 
     /**
-     * Creates database engine request from a given statement.
-     * @param node A statement node.
-     * @return Database engine request object filled with parsed data.
-     */
-    requests::DBEngineRequestPtr createSqlRequest(antlr4::tree::ParseTree* node);
-
-    /**
      * Creates database engine request from a given parsed statement.
      * @param index Statement index.
      * @return Database engine request object filled with parsed data.
      */
     requests::DBEngineRequestPtr createSqlRequest(size_t index = 0);
 
+    /**
+     * Creates database engine request from a given statement.
+     * @param tag Helper overload resolution tag.
+     * @param node A statement node.
+     * @return Database engine request object filled with parsed data.
+     */
+    requests::DBEngineRequestPtr createSqlRequest(
+            CreateFromNodeTag tag, antlr4::tree::ParseTree* node);
+
 private:
     /**
      * Creates SELECT request.
      * @param node Parse tree node with SQL statement.
-     * @param tag Tag idicating general form of SELECT statement.
      * @return SELECT request.
      */
     requests::DBEngineRequestPtr createSelectRequestForGeneralSelectStatement(
@@ -49,7 +55,6 @@ private:
     /**
      * Creates SELECT request.
      * @param node Parse tree node with SQL statement.
-     * @param tag Tag idicating simple form of SELECT statement.
      * @return SELECT request.
      */
     requests::DBEngineRequestPtr createSelectRequestForSimpleSelectStatement(
@@ -58,7 +63,6 @@ private:
     /**
      * Creates SELECT request.
      * @param node Parse tree node with SQL statement.
-     * @param tag Tag idicating factored form of SELECT statement.
      * @return SELECT request.
      */
     requests::DBEngineRequestPtr createSelectRequestForFactoredSelectStatement(

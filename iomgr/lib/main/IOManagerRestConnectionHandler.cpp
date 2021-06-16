@@ -81,7 +81,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 const auto uuid = boost::uuids::random_generator()();
                 LOG_ERROR << m_logContext << '[' << ex.getErrorCode() << "] " << ex.what()
                           << " (MSG_UUID " << uuid << ')';
-                const auto msg = "Internal error, see log for details, message UUID "
+                const auto msg = "Internal error, see Siodb server log for details, message UUID "
                                  + boost::uuids::to_string(uuid);
                 sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError,
                         net::HttpStatus::kUnauthorized, msg.c_str());
@@ -91,7 +91,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 LOG_DEBUG << m_logContext << "Sending authentication error";
                 const auto uuid = boost::uuids::random_generator()();
                 LOG_ERROR << m_logContext << ex.what() << " (MSG_UUID " << uuid << ')';
-                const auto msg = "Internal error, see log for details, message UUID "
+                const auto msg = "Internal error, see Siodb server log for details, message UUID "
                                  + boost::uuids::to_string(uuid);
                 sendErrorReponse(requestMsg.request_id(), kRestAuthenticationError,
                         net::HttpStatus::kUnauthorized, msg.c_str());
@@ -130,7 +130,7 @@ void IOManagerRestConnectionHandler::threadLogicImpl()
                 const auto uuid = boost::uuids::random_generator()();
                 LOG_ERROR << m_logContext << "REST request parse error: internal error: '"
                           << ex.what() << "' (MSG_UUID " << uuid << ')';
-                const auto msg = "Internal error, see log for details, message UUID "
+                const auto msg = "Internal error, see Siodb server log for details, message UUID "
                                  + boost::uuids::to_string(uuid);
                 sendErrorReponse(requestMsg.request_id(), kRestParseError,
                         net::HttpStatus::kBadRequest, msg.c_str());

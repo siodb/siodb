@@ -23,11 +23,11 @@
 
 namespace siodb::iomgr {
 
-std::atomic<std::uint64_t> IOManagerConnectionHandler::s_idCounter(0);
+std::atomic<std::uint64_t> IOManagerConnectionHandler::s_requestIdCounter(0);
 
 IOManagerConnectionHandler::IOManagerConnectionHandler(
         IOManagerRequestDispatcher& requestDispatcher, FDGuard&& clientFd)
-    : m_id(++s_idCounter)
+    : m_id(++s_requestIdCounter)
     , m_logContext(createLogContextName(clientFd.getFD()))
     , m_requestDispatcher(requestDispatcher)
     , m_clientEpollFd(net::createEpollFd(clientFd.getFD(), EPOLLIN))

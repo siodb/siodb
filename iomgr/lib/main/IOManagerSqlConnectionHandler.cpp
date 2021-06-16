@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -103,8 +103,9 @@ void IOManagerSqlConnectionHandler::threadLogicImpl()
                     const auto uuid = boost::uuids::random_generator()();
                     LOG_ERROR << m_logContext << "SQL parse error: internal error: '" << ex.what()
                               << "' (MSG_UUID " << uuid << ')';
-                    const auto msg = "Internal error, see log for details, message UUID "
-                                     + boost::uuids::to_string(uuid);
+                    const auto msg =
+                            "Internal error, see Siodb server log for details, message UUID "
+                            + boost::uuids::to_string(uuid);
                     sendErrorReponse(requestMsg.request_id(), kSqlParseError, 0, msg.c_str());
                     // Stop loop  after error response
                     break;

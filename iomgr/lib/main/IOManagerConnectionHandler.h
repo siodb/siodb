@@ -121,7 +121,7 @@ protected:
     std::unique_ptr<std::thread> m_thread;
 
     /** Conneciton handler ID counter */
-    static std::atomic<std::uint64_t> s_idCounter;
+    static std::atomic<std::uint64_t> s_requestIdCounter;
 
     /* Internal error message code */
     static constexpr int kInternalError = 4;
