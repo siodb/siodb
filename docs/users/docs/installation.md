@@ -72,10 +72,10 @@ You can configure that directory in the configuration file with the parameter `d
 This directory must belong to the `siodb` OS user with the read, write, and execute permissions.
 Only user belonging to the `siodb` OS group should be able to read, write and list files from that directory.
 
-## Linux Packages
+## Siodb Packages
 
 Download your the packages for your distribution here
-[website](https://www.siodb.io/packages/siodb_linux_packages.html).
+[website](https://packages.siodb.io).
 There is also an automation script that installs everything for you with the last
 version of Siodb available. To use the automation script, please go to [the
 Quick start page](./../quick_start).
@@ -92,8 +92,6 @@ apt install -y ./siodb-protobuf_<VERSION>-ubuntu1804_amd64.deb
 apt install -y ./siodb-antlr4-runtime_<VERSION>-ubuntu1804_amd64.deb
 apt install -y ./siodb-xxhash_<VERSION>-ubuntu1804_amd64.deb
 ```
-
-Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
 
 #### Siodb installation
 
@@ -112,8 +110,6 @@ apt install -y ./siodb-antlr4-runtime_<VERSION>-ubuntu2004_amd64.deb
 apt install -y ./siodb-xxhash_<VERSION>-ubuntu2004_amd64.deb
 ```
 
-Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
-
 #### Siodb installation
 
 ```bash
@@ -130,8 +126,6 @@ apt install -y ./siodb-protobuf_<VERSION>-debian10_amd64.deb
 apt install -y ./siodb-antlr4-runtime_<VERSION>-debian10_amd64.deb
 apt install -y ./siodb-xxhash_<VERSION>-debian10_amd64.deb
 ```
-
-Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
 
 #### Siodb installation
 
@@ -151,8 +145,6 @@ yum install -y ./siodb-antlr4-runtime-<VERSION>.el7.x86_64.rpm
 yum install -y ./siodb-xxhash-<VERSION>-1.el7.x86_64.rpm
 ```
 
-Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
-
 #### Siodb installation
 
 ```bash
@@ -169,8 +161,6 @@ yum install -y ./siodb-protobuf-<VERSION>-1.el8.x86_64.rpm
 yum install -y ./siodb-antlr4-runtime-<VERSION>.el8.x86_64.rpm
 yum install -y ./siodb-xxhash-<VERSION>-1.el8.x86_64.rpm
 ```
-
-Siodb's dependency packages are available [here](https://www.siodb.io/packages/siodb_linux_packages.html).
 
 #### Siodb installation
 
