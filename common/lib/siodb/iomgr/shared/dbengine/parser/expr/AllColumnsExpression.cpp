@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -31,7 +31,8 @@ std::size_t AllColumnsExpression::getSerializedSize() const noexcept
 void AllColumnsExpression::validate(
         [[maybe_unused]] const ExpressionEvaluationContext& context) const
 {
-    if (!m_datasetTableIndex) throw std::runtime_error("Dataset table index is not set");
+    if (m_datasetTableIndices.empty())
+        throw std::runtime_error("Dataset table indices are not set");
 }
 
 Variant AllColumnsExpression::evaluate([[maybe_unused]] ExpressionEvaluationContext& context) const

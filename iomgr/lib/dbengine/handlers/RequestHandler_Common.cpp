@@ -506,7 +506,7 @@ void RequestHandler::updateColumnsFromExpression(const std::vector<DataSetPtr>& 
                 if (columnPos) {
                     // Required to set column and table indices
                     auto nonConstColumnExpression = stdext::as_mutable_ptr(columnExpression);
-                    nonConstColumnExpression->setDatasetTableIndex(tableIndex);
+                    nonConstColumnExpression->setSingleDatasetTableIndex(tableIndex);
                     const auto newColumnIndex = dataSets[tableIndex]->getColumnCount();
                     nonConstColumnExpression->setDatasetColumnIndex(newColumnIndex);
                     insertIter.first->second = newColumnIndex;
@@ -518,7 +518,7 @@ void RequestHandler::updateColumnsFromExpression(const std::vector<DataSetPtr>& 
             } else if (insertIter.first->second != -1) {
                 // Column already exists
                 const auto nonConstColumnExpression = stdext::as_mutable_ptr(columnExpression);
-                nonConstColumnExpression->setDatasetTableIndex(tableIndex);
+                nonConstColumnExpression->setSingleDatasetTableIndex(tableIndex);
                 nonConstColumnExpression->setDatasetColumnIndex(insertIter.first->second);
             }
         } else if (expression->isUnaryOperator()) {

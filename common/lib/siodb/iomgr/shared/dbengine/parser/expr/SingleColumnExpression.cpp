@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -22,11 +22,11 @@ VariantType SingleColumnExpression::getResultValueType(
     checkHasTableAndColumnIndices();
     // TODO(cxxman): Make this somehow better, take CLOBs into account.
 #if 0
-    const auto& value = context.getColumnValue(*m_datasetTableIndex, *m_datasetColumnIndex);
+    const auto& value = context.getColumnValue(m_datasetTableIndex.at(0), *m_datasetColumnIndex);
     return value.getValueType();
 #else
     return convertColumnDataTypeToVariantType(
-            context.getColumnDataType(*m_datasetTableIndex, *m_datasetColumnIndex));
+            context.getColumnDataType(m_datasetTableIndices.at(0), *m_datasetColumnIndex));
 #endif
 }
 
@@ -34,7 +34,7 @@ ColumnDataType SingleColumnExpression::getColumnDataType(
         const ExpressionEvaluationContext& context) const
 {
     checkHasTableAndColumnIndices();
-    return context.getColumnDataType(*m_datasetTableIndex, *m_datasetColumnIndex);
+    return context.getColumnDataType(m_datasetTableIndices.at(0), *m_datasetColumnIndex);
 }
 
 MutableOrConstantString SingleColumnExpression::getExpressionText() const
@@ -60,7 +60,7 @@ void SingleColumnExpression::validate(
 Variant SingleColumnExpression::evaluate(ExpressionEvaluationContext& context) const
 {
     checkHasTableAndColumnIndices();
-    return context.getColumnValue(*m_datasetTableIndex, *m_datasetColumnIndex);
+    return context.getColumnValue(m_datasetTableIndices.at(0), *m_datasetColumnIndex);
 }
 
 std::uint8_t* SingleColumnExpression::serializeUnchecked(std::uint8_t* buffer) const
@@ -90,7 +90,7 @@ void SingleColumnExpression::dumpImpl(std::ostream& os) const
 
 void SingleColumnExpression::checkHasTableAndColumnIndices() const
 {
-    if (!m_datasetTableIndex) throw std::runtime_error("Dataset table index is not set");
+    if (m_datasetTableIndices.empty()) throw std::runtime_error("Dataset table index is not set");
     if (!m_datasetColumnIndex) throw std::runtime_error("Dataset column index is not set");
 }
 
