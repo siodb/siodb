@@ -232,8 +232,8 @@ TEST(Query, SelectFrom3TablesWithSameColumns)
     /// ----------- SELECT -----------
     {
         const std::string statement(
-                "select * from sys.S3T_1 tab1, sys.S3T_2 tab2, sys.S3T_3 tab3 where tab1.trid = "
-                "tab2.trid and tab2.trid=tab3.trid");
+                "SELECT * FROM SYS.S3T_1 tab1, SYS.S3T_2 tab2, SYS.S3T_3 tab3 "
+                "WHERE tab1.TRID=tab2.TRID AND tab2.TRID=tab3.TRID");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -250,28 +250,53 @@ TEST(Query, SelectFrom3TablesWithSameColumns)
         EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
         ASSERT_EQ(response.message_size(), 0);
         EXPECT_FALSE(response.has_affected_row_count());
-        ASSERT_EQ(response.column_description_size(), 2);  // + TRID
+        ASSERT_EQ(response.column_description_size(), 6);
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT64);
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_TEXT);
+        ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_UINT64);
+        ASSERT_EQ(response.column_description(3).type(), siodb::COLUMN_DATA_TYPE_TEXT);
+        ASSERT_EQ(response.column_description(4).type(), siodb::COLUMN_DATA_TYPE_UINT64);
+        ASSERT_EQ(response.column_description(5).type(), siodb::COLUMN_DATA_TYPE_TEXT);
         EXPECT_EQ(response.column_description(0).name(), "TRID");
         EXPECT_EQ(response.column_description(1).name(), "CTEXT");
+        EXPECT_EQ(response.column_description(2).name(), "TRID");
+        EXPECT_EQ(response.column_description(3).name(), "CTEXT");
+        EXPECT_EQ(response.column_description(4).name(), "TRID");
+        EXPECT_EQ(response.column_description(5).name(), "CTEXT");
 
         siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
 
-        std::uint64_t rowLength = 0;
         char expectedText[3];
-        expectedText[1] = '1';
         expectedText[2] = '\0';
+        std::uint64_t rowLength = 0;
+        std::uint64_t trid = 0;
+        std::string text;
+
         for (auto i = 0U; i < 4U; ++i) {
             ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
             ASSERT_GT(rowLength, 0);
 
-            std::uint64_t trid = 0;
             ASSERT_TRUE(codedInput.Read(&trid));
             ASSERT_EQ(trid, i + 1);
 
             expectedText[0] = 'a' + i;
-            std::string text;
+            expectedText[1] = '1';
+            ASSERT_TRUE(codedInput.Read(&text));
+            EXPECT_EQ(text, expectedText);
+
+            ASSERT_TRUE(codedInput.Read(&trid));
+            ASSERT_EQ(trid, i + 1);
+
+            expectedText[0] = 'a' + i;
+            expectedText[1] = '2';
+            ASSERT_TRUE(codedInput.Read(&text));
+            EXPECT_EQ(text, expectedText);
+
+            ASSERT_TRUE(codedInput.Read(&trid));
+            ASSERT_EQ(trid, i + 1);
+
+            expectedText[0] = 'a' + i;
+            expectedText[1] = '2';
             ASSERT_TRUE(codedInput.Read(&text));
             EXPECT_EQ(text, expectedText);
         }

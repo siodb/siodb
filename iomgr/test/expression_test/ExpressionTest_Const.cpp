@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -96,7 +96,7 @@ TEST(Constants, NullResult)
     }
 
     auto nullColumn = std::make_unique<requests::SingleColumnExpression>("TestTbl", "NullCollumn");
-    nullColumn->setDatasetTableIndex(0);
+    nullColumn->setSingleDatasetTableIndex(0);
     nullColumn->setDatasetColumnIndex(5);
 
     ASSERT_TRUE(isNullType(nullColumn->getResultValueType(context)));

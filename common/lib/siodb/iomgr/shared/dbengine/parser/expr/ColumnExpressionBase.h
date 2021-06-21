@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -39,22 +39,28 @@ public:
     }
 
     /**
-     * Sets dataset table index.
-     * @param datasetTableIndex Table index.
-     */
-    void setDatasetTableIndex(std::size_t datasetTableIndex) noexcept
-    {
-        m_datasetTableIndex = datasetTableIndex;
-    }
-
-    /**
      * Returns dataset table index.
      * @return Dataset table index.
      */
-    const auto& getDatasetTableIndex() const noexcept
+    const auto& getDatasetTableIndices() const noexcept
     {
-        return m_datasetTableIndex;
+        return m_datasetTableIndices;
     }
+
+    /**
+     * Sets dataset table index.
+     * @param datasetTableIndices List of table indices.
+     */
+    void setDatasetTableIndices(std::vector<std::size_t>&& datasetTableIndices) noexcept
+    {
+        m_datasetTableIndices = std::move(datasetTableIndices);
+    }
+
+    /**
+     * Sets dataset table index.
+     * @param datasetTableIndex Table index.
+     */
+    void setSingleDatasetTableIndex(std::size_t datasetTableIndex);
 
 protected:
     /**
@@ -89,8 +95,8 @@ protected:
     /** Table name */
     const std::string m_tableName;
 
-    /** Index of column in dataset,  It is used to get rid of search column by name */
-    std::optional<std::size_t> m_datasetTableIndex;
+    /** Indices of columns in the dataset, stored to avoid searching columns by name */
+    std::vector<std::size_t> m_datasetTableIndices;
 };
 
 }  // namespace siodb::iomgr::dbengine::requests

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -22,7 +22,7 @@ TEST(ColumnExpression, Test1)
 
     // Create TRID column expression, read the value check it's type and value
     requests::SingleColumnExpression columnTrid("TestTbl", "TRID");
-    columnTrid.setDatasetTableIndex(0);
+    columnTrid.setSingleDatasetTableIndex(0);
     columnTrid.setDatasetColumnIndex(0);
     auto result = columnTrid.evaluate(context);
     ASSERT_EQ(result.getValueType(), dbengine::VariantType::kUInt64);
@@ -31,7 +31,7 @@ TEST(ColumnExpression, Test1)
 
     // Create ADDRESS column expression, read the value check it's type and value
     requests::SingleColumnExpression columnAddress("TestTbl", "ADDRESS");
-    columnAddress.setDatasetTableIndex(0);
+    columnAddress.setSingleDatasetTableIndex(0);
     columnAddress.setDatasetColumnIndex(1);
     result = columnAddress.evaluate(context);
     ASSERT_EQ(result.getValueType(), dbengine::VariantType::kString);
@@ -40,7 +40,7 @@ TEST(ColumnExpression, Test1)
 
     // Create COUNT column expression, read the value check it's type and value
     requests::SingleColumnExpression columnCount("TestTbl", "COUNT");
-    columnCount.setDatasetTableIndex(0);
+    columnCount.setSingleDatasetTableIndex(0);
     columnCount.setDatasetColumnIndex(2);
     result = columnCount.evaluate(context);
     ASSERT_EQ(result.getValueType(), dbengine::VariantType::kInt32);
@@ -49,7 +49,7 @@ TEST(ColumnExpression, Test1)
 
     // Create LEVEL column expression, read the value check it's type and value
     requests::SingleColumnExpression columnLevel("TestTbl", "LEVEL");
-    columnLevel.setDatasetTableIndex(0);
+    columnLevel.setSingleDatasetTableIndex(0);
     columnLevel.setDatasetColumnIndex(3);
     columnCount.validate(context);
     result = columnLevel.evaluate(context);
@@ -57,7 +57,7 @@ TEST(ColumnExpression, Test1)
     EXPECT_EQ(result.getDouble(), double(1230.0165432));
 
     requests::SingleColumnExpression columnDate("TestTbl", "Date");
-    columnDate.setDatasetTableIndex(0);
+    columnDate.setSingleDatasetTableIndex(0);
     columnDate.setDatasetColumnIndex(4);
     result = columnDate.evaluate(context);
     ASSERT_EQ(result.getValueType(), dbengine::VariantType::kDateTime);

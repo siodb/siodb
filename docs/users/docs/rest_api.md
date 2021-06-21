@@ -256,3 +256,59 @@ designates a separate row.
     ]
 }
 ```
+
+### Query
+
+Create SQL queries and retrieve the result set in a JSON format.
+
+#### URL structure
+
+`https://<USER_NAME>:<USER_TOKEN>@localhost:50443/query?q=<SQL_QUERY>`
+`https://<USER_NAME>:<USER_TOKEN>@localhost:50443/query?q1=<SQL-QUERY>&qN=<SQL_QUERY>`
+
+#### GET
+
+**Parameters:**
+
+- `q`: SQL query encoded.
+- `qN`: SQL query encoded.
+
+**Description:** Execute the provide query(ies) in parameter(s)
+and returns the result set.
+
+**body:** none.
+
+**Response:**
+
+```json
+{
+    "status": 200,
+    "rows" : [
+        {
+            "col1": "dataCol1Row1",
+            "col2": "dataCol2Row1"
+            // more columns
+        }
+    ]
+}
+```
+
+**Response with multiple queries (parameters `qN`):**
+
+```json
+[{
+    "status": 200,
+    "rows": [{
+        "col1": "dataCol1Row1",
+        "col2": "dataCol2Row1"
+        // more columns
+    }]
+}, {
+    "status": 200,
+    "rows": [{
+        "col1": "dataCol1Row1",
+        "col2": "dataCol2Row1"
+        // more columns
+    }]
+}]
+```

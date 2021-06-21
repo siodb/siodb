@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -106,7 +106,7 @@ TEST(InOperator, DateColumnExpressions)
 
     // columnDate contains 2019-12-19
     auto columnDate = std::make_unique<requests::SingleColumnExpression>("TestTbl", "Date");
-    columnDate->setDatasetTableIndex(0);
+    columnDate->setSingleDatasetTableIndex(0);
     columnDate->setDatasetColumnIndex(4);
     const auto v1 = columnDate->evaluate(context);
 
@@ -119,7 +119,7 @@ TEST(InOperator, DateColumnExpressions)
     EXPECT_EQ(result.getBool(), true);
 
     columnDate = std::make_unique<requests::SingleColumnExpression>("TestTbl", "Date");
-    columnDate->setDatasetTableIndex(0);
+    columnDate->setSingleDatasetTableIndex(0);
     columnDate->setDatasetColumnIndex(4);
     expr = makeInWithColumn<std::string>(
             std::move(columnDate), {"2019-11-19", "2019-12-19", "2019zdazda"}, false);

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -32,6 +32,15 @@ public:
     const auto& getDataSets() const noexcept
     {
         return m_dataSets;
+    }
+
+    /**
+     * Returns number of data sets.
+     * @return Number of data sets.
+     */
+    auto getDataSetCount() const noexcept
+    {
+        return m_dataSets.size();
     }
 
     /**

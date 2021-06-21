@@ -48,9 +48,9 @@ copyright: >
     Copyright &copy; 2018-2020, Siodb GmbH and/or its affiliates.
     All Rights Reserved.
     <br/>
-    <a href="https://siodb.io/privacy-policy-en/">Privacy Policy</a>
+    <a href="https://siodb.io/privacy-policy/">Privacy Policy</a>
     |
-    <a href="https://siodb.io/terms-of-service/">Terms of Service</a>
+    <a href="https://siodb.io/terms/">Terms of Service</a>
 google_analytics: ['UA-139212753-1', 'docs.siodb.io']
 
 plugins:

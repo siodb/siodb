@@ -80,14 +80,13 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
 
     std::unique_ptr<requests::DBExpressionEvaluationContext> dbContext;
     {
-        std::vector<DataSetPtr> tableDataSets;
-        tableDataSets.reserve(request.m_tables.size());
+        std::vector<DataSetPtr> dataSets;
+        dataSets.reserve(request.m_tables.size());
         for (const auto& table : request.m_tables) {
-            tableDataSets.push_back(std::make_shared<TableDataSet>(
+            dataSets.push_back(std::make_shared<TableDataSet>(
                     database->findTableChecked(table.m_name), table.m_alias));
         }
-        dbContext =
-                std::make_unique<requests::DBExpressionEvaluationContext>(std::move(tableDataSets));
+        dbContext = std::make_unique<requests::DBExpressionEvaluationContext>(std::move(dataSets));
     }
     const auto& dataSets = dbContext->getDataSets();
     LOG_DEBUG << "RequestHandler::executeSelectRequest: There are " << dataSets.size()
@@ -95,10 +94,6 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
 
     std::vector<std::vector<TableColumn>> tableColumnRecordLists;
     tableColumnRecordLists.reserve(request.m_tables.size());
-
-    // Number of columns to be sent to the server
-    std::size_t columnToSendCount = 0;
-
     for (const auto& tableDataSet : dataSets) {
         const auto table = database->findTableChecked(tableDataSet->getDataSourceId());
         const auto columnSetId = table->getCurrentColumnSetId();
@@ -111,8 +106,9 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
     }
 
     std::unordered_set<std::string> knownAliases;
-
     bool hasNullableColumns = false;
+    std::size_t resultingColumnCount = 0;
+
     for (const auto& resultExpr : request.m_resultExpressions) {
         const auto resultExprType = resultExpr.m_expression->getType();
 
@@ -132,28 +128,35 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
                         "RequestHandler::executeSelectRequest: allColumnsExpression is nullptr");
             }
 
-            std::size_t tableIndex = 0;
+            std::vector<std::size_t> tableIndices;
             const auto& tableName = allColumnsExpression->getTableName();
-            if (!tableName.empty()) {
+            if (tableName.empty()) {
+                const auto dataSetCount = dbContext->getDataSetCount();
+                tableIndices.reserve(dataSetCount);
+                for (std::size_t i = 0; i < dataSetCount; ++i)
+                    tableIndices.push_back(i);
+            } else {
                 const auto idx = dbContext->getDataSetIndex(tableName);
-                if (idx)
-                    tableIndex = *idx;
-                else {
+                if (idx) {
+                    tableIndices.push_back(*idx);
+                } else {
                     errors.push_back(
                             makeDatabaseError(IOManagerMessageId::kErrorTableDoesNotExistInContext,
                                     databaseName, tableName));
                 }
             }
 
-            allColumnsExpression->setDatasetTableIndex(tableIndex);
-            for (const auto& tableColumn : tableColumnRecordLists[tableIndex]) {
-                addColumnToResponse(response, *tableColumn.m_column);
-                dataSets[tableIndex]->emplaceColumnInfo(tableColumn.m_position,
-                        tableColumn.m_column->getName(), utils::g_emptyString);
-                hasNullableColumns |= !tableColumn.m_column->isNotNull();
-            }
+            allColumnsExpression->setDatasetTableIndices(std::vector<std::size_t>(tableIndices));
 
-            columnToSendCount += tableColumnRecordLists[tableIndex].size();
+            for (const auto tableIndex : tableIndices) {
+                for (const auto& tableColumn : tableColumnRecordLists[tableIndex]) {
+                    addColumnToResponse(response, *tableColumn.m_column);
+                    dataSets[tableIndex]->emplaceColumnInfo(tableColumn.m_position,
+                            tableColumn.m_column->getName(), utils::g_emptyString);
+                    hasNullableColumns |= !tableColumn.m_column->isNotNull();
+                }
+                resultingColumnCount += tableColumnRecordLists[tableIndex].size();
+            }
         } else if (resultExprType == requests::ExpressionType::kSingleColumnReference) {
             const auto columnExpression =
                     stdext::as_mutable_ptr(dynamic_cast<const requests::SingleColumnExpression*>(
@@ -215,12 +218,12 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
                         databaseName, dataSets[tableIndex]->getName(), columnName));
             } else {
                 addColumnToResponse(response, *it->m_column, resultExpr.m_alias);
-                columnExpression->setDatasetTableIndex(tableIndex);
+                columnExpression->setSingleDatasetTableIndex(tableIndex);
                 columnExpression->setDatasetColumnIndex(dataSets[tableIndex]->getColumnCount());
                 dataSets[tableIndex]->emplaceColumnInfo(
                         it->m_position, it->m_column->getName(), resultExpr.m_alias);
                 hasNullableColumns |= !it->m_column->isNotNull();
-                ++columnToSendCount;
+                ++resultingColumnCount;
             }
         } else {
             // Expression case
@@ -234,7 +237,7 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
             columnDescription->set_is_null(true);
             columnDescription->set_type(dataType);
             hasNullableColumns = true;
-            ++columnToSendCount;
+            ++resultingColumnCount;
         }
     }
 
@@ -286,11 +289,9 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
         }
 
         stdext::bitmask nullMask;
-        if (hasNullableColumns) {
-            nullMask.resize(columnToSendCount);
-        }
+        if (hasNullableColumns) nullMask.resize(resultingColumnCount);
 
-        std::vector<Variant> values(columnToSendCount);
+        std::vector<Variant> values(resultingColumnCount);
 
         while (rowDataAvailable && (!limit.has_value() || *limit > 0)) {
             ++inputRowCount;
@@ -328,14 +329,15 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
                     const auto allColumnsExpression =
                             dynamic_cast<const requests::AllColumnsExpression*>(
                                     expr.m_expression.get());
-                    const auto tableIndex = *allColumnsExpression->getDatasetTableIndex();
-                    auto& dataSet = *dataSets[tableIndex];
-                    dataSet.readCurrentRow();
-                    for (const auto& rowValue : dataSet.getValues()) {
-                        auto& value = values[valueIndex];
-                        value = rowValue;
-                        if (hasNullableColumns) nullMask.set(valueIndex, value.isNull());
-                        ++valueIndex;
+                    for (const auto tableIndex : allColumnsExpression->getDatasetTableIndices()) {
+                        auto& dataSet = *dataSets[tableIndex];
+                        dataSet.readCurrentRow();
+                        for (const auto& rowValue : dataSet.getValues()) {
+                            auto& value = values[valueIndex];
+                            value = rowValue;
+                            if (hasNullableColumns) nullMask.set(valueIndex, value.isNull());
+                            ++valueIndex;
+                        }
                     }
                 } else {
                     auto& value = values[valueIndex];
