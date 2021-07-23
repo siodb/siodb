@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -13,7 +13,10 @@ include uli/Files.mk
 
 CXX_SRC+= \
 	BlockRegistry.cpp \
-	Column.cpp \
+	Column_DataBlockManagement.cpp \
+	Column_DataIO.cpp \
+	Column_General.cpp \
+	Column_MasterColumnData.cpp \
 	ColumnConstraint.cpp \
 	ColumnDataAddress.cpp \
 	ColumnDataBlock.cpp \
@@ -32,13 +35,20 @@ CXX_SRC+= \
 	DatabaseMetadata.cpp \
 	Database_Common.cpp \
 	Database_Init.cpp \
-	Database_ReadObjects.cpp \
+	Database_ReadObjects1.cpp \
+	Database_ReadObjects2.cpp \
 	Database_RecordObjects.cpp \
 	Database_SysTablesIO.cpp \
 	Index.cpp \
 	IndexColumn.cpp \
 	IndexFileHeaderBase.cpp \
-	Instance.cpp \
+	Instance_Auth.cpp \
+	Instance_DB.cpp \
+	Instance_General.cpp \
+	Instance_User.cpp \
+	Instance_UserAccessKey.cpp \
+	Instance_UserPermissions.cpp \
+	Instance_UserToken.cpp \
 	LobChunkHeader.cpp \
 	MasterColumnRecord.cpp \
 	NotNullConstraint.cpp \

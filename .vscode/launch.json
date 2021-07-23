@@ -226,7 +226,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/sql_parser_test",
             "args": [
-                "--gtest_filter=UM.AlterUserDropAccessKeyIfExists"
+                "--gtest_filter=AC.GrantPermissionForTable3"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

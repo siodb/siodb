@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -16,7 +16,8 @@
 
 namespace siodb::iomgr::dbengine {
 
-class UserPermission;
+class UserPermissionKey;
+class UserPermissionDataEx;
 
 /** User permission registry record. */
 struct UserPermissionRecord {
@@ -57,9 +58,12 @@ struct UserPermissionRecord {
 
     /**
      * Initializes object of class UserPermissionRecord.
-     * @param userPermission User permission object.
+     * @param userId User ID.
+     * @param permissionKey Permission key.
+     * @param permissionData Permission data.
      */
-    explicit UserPermissionRecord(const UserPermission& userPermission);
+    UserPermissionRecord(std::uint32_t userId, const UserPermissionKey& permissionKey,
+            const UserPermissionDataEx& permissionData);
 
     /**
      * Equality comparison operator.
@@ -87,8 +91,8 @@ struct UserPermissionRecord {
      * @param version Target version.
      * @return Address of byte after last written byte.
      */
-    std::uint8_t* serializeUnchecked(std::uint8_t* buffer, unsigned version = kClassVersion) const
-            noexcept;
+    std::uint8_t* serializeUnchecked(
+            std::uint8_t* buffer, unsigned version = kClassVersion) const noexcept;
 
     /**
      * Deserializes object from buffer.

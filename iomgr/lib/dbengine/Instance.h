@@ -131,7 +131,7 @@ public:
      * Retuns number of known databases.
      * @return Number of databases.
      */
-    std::size_t getDatbaseCount() const;
+    std::size_t getDatabaseCount() const;
 
     /**
      * Returns list of database records ordered by name.
@@ -238,6 +238,31 @@ public:
      */
     void updateUser(const std::string& name, const UpdateUserParameters& params,
             std::uint32_t currentUserId);
+
+    /**
+     * Grants permissions for the specified table to the specified user.
+     * @param userName User name to grant permissions to.
+     * @param databaseName Database name to locate the table in.
+     * @param tableName Table name to grant permissions for.
+     * @param permissions Bitmask of permissions.
+     * @param withGrantOption Inidicates that user will be able
+     *                        to grant same persmissions to other users.
+     * @param currentUserId Current user ID.
+     */
+    void grantTablePermissions(const std::string& userName, const std::string& databaseName,
+            const std::string& tableName, std::uint64_t permissions, bool withGrantOption,
+            std::uint32_t currentUserId);
+
+    /**
+     * Revokes permissions from the specified user.
+     * @param userName User name to grant permissions to.
+     * @param databaseName Database name to locate the table in.
+     * @param tableName Table name to grant permissions for.
+     * @param permissions Bitmask of permissions.
+     * @param currentUserId Current user ID.
+     */
+    void revokeTablePermissions(const std::string& userName, const std::string& databaseName,
+            const std::string& tableName, std::uint64_t permissions, std::uint32_t currentUserId);
 
     /**
      * Creates new user access key.
@@ -506,6 +531,56 @@ private:
      */
     UserPtr findUserUnlocked(const UserRecord& userRecord);
 
+    /**
+     * Performs actual changes in the permission registry in order to grant permissions.
+     * @param user User to grant permissions to.
+     * @param databaseId Database ID to grant permissions for.
+     *                   Zero value may have special meaning "whole instance".
+     * @param objectType Object type to grant permissions for.
+     * @param objectId Object ID to grant permissions for.
+     *                 Zero value may have special meaning "all objects".
+     * @param permissions Bitmask of permissions.
+     * @param withGrantOption Inidication that user will be able
+     *                        to grant same persmissions to others.
+     * @param currentUserId Current user ID.
+     */
+    void grantPermissions(User& user, std::uint32_t databaseId, DatabaseObjectType objectType,
+            std::uint64_t objectId, std::uint64_t permissions, bool withGrantOption,
+            std::uint32_t currentUserId);
+
+    /**
+     * Performs actual changes in the permission registry in order to revoke permissions.
+     * @param user User to revoke permissions from.
+     * @param databaseId Database ID to revoke permissions for.
+     *                   Zero value may have special meaning "whole instance".
+     * @param objectType Object type to revoke permissions for.
+     * @param objectId Object ID to revoke permissions for.
+     *                 Zero value may have special meaning "all objects".
+     * @param permissions Bitmask of permissions.
+     * @param currentUserId Current user ID.
+     */
+    void revokePermissions(User& user, std::uint32_t databaseId, DatabaseObjectType objectType,
+            std::uint64_t objectId, std::uint64_t permissions, std::uint32_t currentUserId);
+
+    /**
+     * Checks applicability of permission to the particular object type.
+     * @param objectType Object type.
+     * @param permissions Permission bitmask.
+     * @throws DatabaseError if at least one permission types is not applicable
+     *         for the given object type.
+     */
+    static void validatePermissions(DatabaseObjectType objectType, std::uint64_t permissions);
+
+    /**
+     * Checks applicability of permission to the particular object type.
+     * @param objectType Object type.
+     * @param permissions Permission bitmask.
+     * @return true if all permission types are applicable for the given object type,
+     *         false if at least one permission type is not applicable.
+     */
+    static bool validatePermissionsNx(
+            DatabaseObjectType objectType, std::uint64_t permissions) noexcept;
+
 private:
     /** Instance identifier */
     const Uuid m_uuid;
@@ -590,6 +665,9 @@ private:
 
     /** Active sessions */
     std::unordered_map<Uuid, std::shared_ptr<ClientSession>> m_activeSessions;
+
+    /** Allowed permission map */
+    static const std::unordered_map<DatabaseObjectType, std::uint64_t> s_allowedPermissions;
 
     /** Metadata version */
     static constexpr std::uint32_t kCurrentMetadataVersion = 1;

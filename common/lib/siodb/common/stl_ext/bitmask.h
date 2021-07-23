@@ -140,6 +140,26 @@ public:
         m_data.swap(other.m_data);
     }
 
+    /**
+     * Equality operator.
+     * @param other Another bitmask.
+     * @return true if this and other bitmasks are equal, false otherwise.
+     */
+    bool operator==(const bitmask& other) const noexcept
+    {
+        return m_data == other.m_data;
+    }
+
+    /**
+     * Inquality operator.
+     * @param other Another bitmask.
+     * @return true if this and other bitmasks are equal, false otherwise.
+     */
+    bool operator!=(const bitmask& other) const noexcept
+    {
+        return m_data != other.m_data;
+    }
+
 private:
     /**
      * Returns minimal number bytes that can hold specified number of bits.
@@ -157,10 +177,10 @@ private:
 };
 
 /**
-  * Swaps two bitmasks.
-  * @param a First bitmask.
-  * @param b Second bitmask.
-  */
+ * Swaps two bitmasks.
+ * @param a First bitmask.
+ * @param b Second bitmask.
+ */
 inline void swap(bitmask& a, bitmask& b) noexcept
 {
     a.swap(b);

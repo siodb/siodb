@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -13,7 +13,7 @@
 namespace dbengine = siodb::iomgr::dbengine;
 namespace parser_ns = dbengine::parser;
 
-TEST(TC, BeginSimpleTransaction)
+TEST(TransactionControl, BeginSimpleTransaction)
 {
     // Parse statement and prepare request
     const std::string statement("BEGIN TRANSACTION");
@@ -32,7 +32,7 @@ TEST(TC, BeginSimpleTransaction)
     ASSERT_TRUE(request.m_transaction.empty());
 }
 
-TEST(TC, BeginDefaultTransaction)
+TEST(TransactionControl, BeginDefaultTransaction)
 {
     // Parse statement and prepare request
     const std::string statement("BEGIN TRANSACTION tx1");
@@ -51,7 +51,7 @@ TEST(TC, BeginDefaultTransaction)
     ASSERT_EQ(request.m_transaction, "TX1");
 }
 
-TEST(TC, BeginDeferredTransaction)
+TEST(TransactionControl, BeginDeferredTransaction)
 {
     // Parse statement and prepare request
     const std::string statement("BEGIN DEFERRED TRANSACTION tx1");
@@ -70,7 +70,7 @@ TEST(TC, BeginDeferredTransaction)
     ASSERT_EQ(request.m_transaction, "TX1");
 }
 
-TEST(TC, BeginImmediateTransaction)
+TEST(TransactionControl, BeginImmediateTransaction)
 {
     // Parse statement and prepare request
     const std::string statement("BEGIN IMMEDIATE TRANSACTION tx1");
@@ -89,7 +89,7 @@ TEST(TC, BeginImmediateTransaction)
     ASSERT_EQ(request.m_transaction, "TX1");
 }
 
-TEST(TC, BeginExclusiveTransaction)
+TEST(TransactionControl, BeginExclusiveTransaction)
 {
     // Parse statement and prepare request
     const std::string statement("BEGIN EXCLUSIVE TRANSACTION tx1");

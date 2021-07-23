@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -6,9 +6,12 @@
 
 // Project headers
 #include "Database.h"
-#include "UserPermission.h"
+#include "UserIdGenerator.h"
+#include "reg/UserPermissionRegistry.h"
 
 namespace siodb::iomgr::dbengine {
+
+class UserPermissionData;
 
 /** System database */
 class SystemDatabase : public Database, public UserIdGenerator {
@@ -37,15 +40,15 @@ public:
 
     /**
      * Reads list of known users from the system table.
-     * @param[out] userRegistry User registry.
+     * @return User registry object.
      */
-    void readAllUsers(UserRegistry& userRegistry);
+    UserRegistry readAllUsers();
 
     /**
      * Reads list of known databases from the system table.
-     * @param[out] databaseRegistry Database registry.
+     * @return Database registry object.
      */
-    void readAllDatabases(DatabaseRegistry& databaseRegistry);
+    DatabaseRegistry readAllDatabases();
 
     /**
      * Generates new unique user ID.
@@ -107,11 +110,15 @@ public:
     void recordDatabase(const Database& database, const TransactionParameters& tp);
 
     /**
-     * Records user permission into the appropriate system table.
-     * @param permission A permission object.
+     * Records existing user permission into the appropriate system table.
+     * @param userId User ID.
+     * @param permissionKey Permission key.
+     * @param permissionData Permission data.
      * @param tp Transaction parameters.
+     * @return User permission record ID.
      */
-    void recordUserPermission(const UserPermission& permission, const TransactionParameters& tp);
+    std::uint64_t recordUserPermission(std::uint32_t userId, const UserPermissionKey& permissionKey,
+            const UserPermissionData& permissionData, const TransactionParameters& tp);
 
     /**
      * Deletes database record.
@@ -142,6 +149,13 @@ public:
     void deleteUserToken(std::uint64_t tokenId, std::uint32_t currentUserId);
 
     /**
+     * Deletes user permissiom record.
+     * @param permissionId User permission ID.
+     * @param currentUserId Current user ID.
+     */
+    void deleteUserPermission(std::uint64_t permissionId, std::uint32_t currentUserId);
+
+    /**
      * Updates existing user.
      * @param userId User ID.
      * @param params Update parameters.
@@ -169,12 +183,23 @@ public:
     void updateUserToken(std::uint64_t tokenId, const UpdateUserTokenParameters& params,
             std::uint32_t currentUserId);
 
+    /**
+     * Updates existing user permission in the appropriate system table.
+     * @param permissionData Usr permission data.
+     * @param currentUserId Current user ID.
+     */
+    void updateUserPermission(
+            const UserPermissionDataEx& permissionData, std::uint32_t currentUserId);
+
 private:
     /** User access key registry map by user ID. */
     using UserAccessKeyRegistries = std::unordered_map<std::uint32_t, UserAccessKeyRegistry>;
 
     /** User token registry map by user ID. */
     using UserTokenRegistries = std::unordered_map<std::uint32_t, UserTokenRegistry>;
+
+    /** User permission registry map by user ID. */
+    using UserPermissionRegistries = std::unordered_map<std::uint32_t, UserPermissionRegistry>;
 
 private:
     /**
@@ -188,6 +213,12 @@ private:
      * @return Collection of the user token registries.
      */
     UserTokenRegistries readAllUserTokens();
+
+    /**
+     * Reads list of known user permissions from the system table.
+     * @return Collection of the user permission registries.
+     */
+    UserPermissionRegistries readAllUserPermissions();
 
 private:
     /** Table SYS_USERS */

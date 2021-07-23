@@ -53,7 +53,7 @@ TEST(Query, SelectFromSysDatabases)
 
     std::uint64_t rowLength = 0;
     std::vector<std::uint8_t> rowData;
-    for (std::size_t i = 0, n = instance->getDatbaseCount(); i < n; ++i) {
+    for (std::size_t i = 0, n = instance->getDatabaseCount(); i < n; ++i) {
         rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
         ASSERT_LT(rowLength, 200);

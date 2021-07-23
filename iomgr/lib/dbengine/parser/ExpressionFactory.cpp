@@ -120,7 +120,7 @@ Variant ExpressionFactory::createConstantValue(antlr4::tree::ParseTree* node)
     throw DBEngineRequestFactoryError(m_parser.injectError(line, column, "Not a valid constant"));
 }
 
-// ----- internals -----
+// --- internals ---
 
 requests::ExpressionPtr ExpressionFactory::createConstant(const antlr4::Token* token, bool negate)
 {

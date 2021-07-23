@@ -1470,6 +1470,73 @@ struct CheckUserTokenRequest : public DBEngineRequest {
     const BinaryValue m_tokenValue;
 };
 
+/** GRANT permissions for the table request */
+struct GrantPermissionsForTableRequest : public DBEngineRequest {
+    /** Initializes object of class DescribeTableRequest
+     * @param user User name.
+     * @param database Database name.
+     * @param table Table name.
+     * @param permissions Permission mask.
+     * @param withGrantOption Indicates that permissions are granted with grant option.
+     */
+    GrantPermissionsForTableRequest(std::string&& user, std::string&& database, std::string&& table,
+            std::uint64_t permissions, bool withGrantOption) noexcept
+        : DBEngineRequest(DBEngineRequestType::kGrantPermissionsForTable)
+        , m_user(std::move(user))
+        , m_database(std::move(database))
+        , m_table(std::move(table))
+        , m_permissions(permissions)
+        , m_withGrantOption(withGrantOption)
+    {
+    }
+
+    /** User name */
+    const std::string m_user;
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
+
+    /** Permissions mask */
+    const std::uint64_t m_permissions;
+
+    /** Grant option flag */
+    const bool m_withGrantOption;
+};
+
+/** REVOKE permissions for the table request */
+struct RevokePermissionsForTableRequest : public DBEngineRequest {
+    /** Initializes object of class DescribeTableRequest
+     * @param user User name.
+     * @param database Database name.
+     * @param table Table name.
+     * @param permissions Permission mask.
+     */
+    RevokePermissionsForTableRequest(std::string&& user, std::string&& database,
+            std::string&& table, std::uint64_t permissions) noexcept
+        : DBEngineRequest(DBEngineRequestType::kRevokePermissionsForTable)
+        , m_user(std::move(user))
+        , m_database(std::move(database))
+        , m_table(std::move(table))
+        , m_permissions(permissions)
+    {
+    }
+
+    /** User name */
+    const std::string m_user;
+
+    /** Database name */
+    const std::string m_database;
+
+    /** Table name */
+    const std::string m_table;
+
+    /** Permissions mask */
+    const std::uint64_t m_permissions;
+};
+
 /** SHOW DATABASES request */
 struct ShowDatabasesRequest : public DBEngineRequest {
     /** Initializes object of class ShowDatabasesRequest */

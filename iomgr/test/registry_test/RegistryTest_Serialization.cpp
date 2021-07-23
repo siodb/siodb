@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -257,20 +257,20 @@ TEST(Serialization, UserPermissionRecord_Filled)
 
 TEST(Serialization, UserRecord_Empty)
 {
-    constexpr std::size_t kSerializedSize = 24;
+    constexpr std::size_t kSerializedSize = 25;
     checkEmptyRecord<dbengine::UserRecord>(kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled1)
 {
-    constexpr std::size_t kSerializedSize = 50;
-    const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true, {}, {});
+    constexpr std::size_t kSerializedSize = 51;
+    const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true, {}, {}, {});
     checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled2)
 {
-    constexpr std::size_t kSerializedSize = 484;
+    constexpr std::size_t kSerializedSize = 485;
 
     dbengine::UserAccessKeyRegistry userAccessKeys;
     userAccessKeys.emplace(0x100, 0x10000, "user1-key1",
@@ -289,14 +289,14 @@ TEST(Serialization, UserRecord_Filled2)
     dbengine::UserTokenRegistry userTokens;
 
     const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true,
-            std::move(userAccessKeys), std::move(userTokens));
+            std::move(userAccessKeys), std::move(userTokens), {});
 
     checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled3)
 {
-    constexpr std::size_t kSerializedSize = 547;
+    constexpr std::size_t kSerializedSize = 548;
 
     dbengine::UserAccessKeyRegistry userAccessKeys;
     userAccessKeys.emplace(0x100, 0x10000, "user1-key1",
@@ -318,14 +318,14 @@ TEST(Serialization, UserRecord_Filled3)
             std::nullopt, "my token");
 
     const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true,
-            std::move(userAccessKeys), std::move(userTokens));
+            std::move(userAccessKeys), std::move(userTokens), {});
 
     checkRecord(record, kSerializedSize);
 }
 
 TEST(Serialization, UserRecord_Filled4)
 {
-    constexpr std::size_t kSerializedSize = 629;
+    constexpr std::size_t kSerializedSize = 630;
 
     dbengine::UserAccessKeyRegistry userAccessKeys;
     userAccessKeys.emplace(0x100, 0x10000, "user1-key1",
@@ -351,7 +351,43 @@ TEST(Serialization, UserRecord_Filled4)
             1, "my token 2");
 
     const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true,
-            std::move(userAccessKeys), std::move(userTokens));
+            std::move(userAccessKeys), std::move(userTokens), {});
+
+    checkRecord(record, kSerializedSize);
+}
+
+TEST(Serialization, UserRecord_Filled5)
+{
+    constexpr std::size_t kSerializedSize = 654;
+
+    dbengine::UserAccessKeyRegistry userAccessKeys;
+    userAccessKeys.emplace(0x100, 0x10000, "user1-key1",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9UkQ "
+            "user1@host",
+            "my ssh key 1 xx", true);
+    userAccessKeys.emplace(0x101, 0x10000, "user1-key2",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9UkX "
+            "user1@host2",
+            "my ssh key 2 yyy", true);
+    userAccessKeys.emplace(0x102, 0x10000, "user1-key3",
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICl9Vdr42N1wUoNbKO4EfnWi9os98aVe59RZjozI9Uke "
+            "user1@host3",
+            "my ssh key 3 zzzz", true);
+
+    dbengine::UserTokenRegistry userTokens;
+    userTokens.emplace(0x100, 0x10000, "user1-token1",
+            siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+            std::nullopt, "my token");
+    userTokens.emplace(0x101, 0x10000, "user2-token2",
+            siodb::BinaryValue {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 1, 2, 3, 4,
+                    5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+            1, "my token 2");
+
+    dbengine::UserPermissionRegistry userPermissions;
+    userPermissions.emplace();
+
+    const dbengine::UserRecord record(0x100, "user1", "John Doe", "first user", true,
+            std::move(userAccessKeys), std::move(userTokens), std::move(userPermissions));
 
     checkRecord(record, kSerializedSize);
 }

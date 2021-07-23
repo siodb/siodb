@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -9,56 +9,41 @@
 
 namespace siodb::iomgr::dbengine {
 
-/**
- * Permission types.
- * See ISO/IEC 9075-1:2016(E) 4.6.11 Privileges.
- * There may be few our own additional permission constants.
- */
-enum class PermissionType : std::uint64_t {
-    kSelect = 0x1,
-    kInsert = 0x2,
-    kUpdate = 0x4,
-    kDelete = 0x8,
-    kReferences = 0x10,
-    kUsage = 0x20,
-    kUnder = 0x40,
-    kTrigger = 0x80,
-    kExecute = 0x100,
-    kCreate = 0x200,
-    kAlter = 0x400,
-    kDrop = 0x800,
-    kShow = 0x1000,
+/** Permission types and respective bitmask bit numbers. */
+enum class PermissionType {
+    kSelect = 0,
+    kInsert = 1,
+    kUpdate = 2,
+    kDelete = 3,
+    kShow = 4,
+    kCreate = 6,
+    kDrop = 7,
+    kAlter = 8,
+    kAttach = 9,
+    kDetach = 10,
+    kEnable = 11,
+    kDisable = 12
 };
 
 /**
- * Tests if permission is included into a set of permissions.
- * @param permissions Set of permissions.
- * @param permission Permission to check.
- * @return true if permission set includes permission, false otherwise.
+ * Returns permission mask from a single permission type.
+ * @param permissions A permission type.
+ * @return Corresponding permission bitmask.
  */
-inline bool hasPermission(const std::uint64_t permissions, const PermissionType permission) noexcept
+constexpr inline std::uint64_t getSinglePermissionMask(PermissionType permissionType)
 {
-    return (permissions & static_cast<std::uint64_t>(permission)) != 0;
+    return static_cast<std::uint64_t>(1U) << static_cast<int>(permissionType);
 }
 
 /**
- * Includes permission into a set of permissions.
- * @param permissions Set of permissions.
- * @param permission Permission to check.
+ * Builds permission mask for the multiple permission types.
+ * @tparam permissionTypes List of permission types.
+ * @return Corresponding permission bitmask.
  */
-inline void enablePermission(std::uint64_t& permissions, const PermissionType permission) noexcept
+template<PermissionType... permissionTypes>
+constexpr inline std::uint64_t buildMultiPermissionMask()
 {
-    permissions |= static_cast<std::uint64_t>(permission);
-}
-
-/**
- * Excludes permission into a set of permissions.
- * @param permissions Set of permissions.
- * @param permission Permission to check.
- */
-inline void disablePermission(std::uint64_t& permissions, const PermissionType permission) noexcept
-{
-    permissions &= ~static_cast<std::uint64_t>(permission);
+    return (... | getSinglePermissionMask(permissionTypes));
 }
 
 }  // namespace siodb::iomgr::dbengine

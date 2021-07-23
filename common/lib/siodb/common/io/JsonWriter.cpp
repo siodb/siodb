@@ -275,7 +275,7 @@ void JsonWriter::writeBytes(const void* buffer, std::size_t size)
         reportJsonWriteError();
 }
 
-// ----- internals -----
+// --- internals ---
 
 [[noreturn]] void JsonWriter::reportJsonWriteError()
 {

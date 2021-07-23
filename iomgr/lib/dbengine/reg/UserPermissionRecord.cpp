@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -19,14 +19,15 @@ namespace siodb::iomgr::dbengine {
 const Uuid UserPermissionRecord::s_classUuid =
         boost::lexical_cast<Uuid>("560ff756-a68d-4e8b-a3b9-213e4e80f808");
 
-UserPermissionRecord::UserPermissionRecord(const UserPermission& userPermission)
-    : m_id(userPermission.getId())
-    , m_userId(userPermission.getUserId())
-    , m_databaseId(userPermission.getDatabaseId())
-    , m_objectType(userPermission.getObjectType())
-    , m_objectId(userPermission.getObjectId())
-    , m_permissions(userPermission.getPermissions())
-    , m_grantOptions(userPermission.getGrantOptions())
+UserPermissionRecord::UserPermissionRecord(std::uint32_t userId,
+        const UserPermissionKey& permissionKey, const UserPermissionDataEx& permissionData)
+    : m_id(permissionData.getId())
+    , m_userId(userId)
+    , m_databaseId(permissionKey.getDatabaseId())
+    , m_objectType(permissionKey.getObjectType())
+    , m_objectId(permissionKey.getObjectId())
+    , m_permissions(permissionData.getPermissions())
+    , m_grantOptions(permissionData.getGrantOptions())
 {
 }
 
@@ -38,8 +39,8 @@ std::size_t UserPermissionRecord::getSerializedSize(unsigned version) const noex
            + ::getVarIntSize(m_permissions) + ::getVarIntSize(m_grantOptions);
 }
 
-std::uint8_t* UserPermissionRecord::serializeUnchecked(std::uint8_t* buffer, unsigned version) const
-        noexcept
+std::uint8_t* UserPermissionRecord::serializeUnchecked(
+        std::uint8_t* buffer, unsigned version) const noexcept
 {
     std::memcpy(buffer, s_classUuid.data, Uuid::static_size());
     buffer += Uuid::static_size();

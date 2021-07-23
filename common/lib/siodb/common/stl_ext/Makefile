@@ -27,6 +27,7 @@ CXX_HDR:= \
 	cstdint_ext.h \
 	deleter.h \
 	event.h \
+	fixed_bitmask.h \
 	functional_ext.h \
 	lru_cache.h \
 	ostream_ext.h \

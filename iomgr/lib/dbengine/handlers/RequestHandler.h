@@ -477,6 +477,24 @@ private:
     void executeGetSqlQueryRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::GetSqlQueryRowsRestRequest& request);
 
+    // Access control request handlers
+
+    /**
+     * Executes GRANT permissions for the table request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeGrantPermissionsForTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GrantPermissionsForTableRequest& request);
+
+    /**
+     * Executes REVOKE permissions for the table request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRevokePermissionsForTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::RevokePermissionsForTableRequest& request);
+
     // Helpers
 
     /**

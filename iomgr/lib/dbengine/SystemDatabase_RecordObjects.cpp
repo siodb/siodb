@@ -9,7 +9,6 @@
 #include "Column.h"
 #include "ThrowDatabaseError.h"
 #include "UserAccessKey.h"
-#include "UserPermission.h"
 #include "UserToken.h"
 
 // Common project headers
@@ -77,20 +76,25 @@ void SystemDatabase::recordDatabase(const Database& database, const TransactionP
     m_sysDatabasesTable->insertRow(std::move(values), tp, database.getId());
 }
 
-void SystemDatabase::recordUserPermission(
-        const UserPermission& permission, const TransactionParameters& tp)
+std::uint64_t SystemDatabase::recordUserPermission(std::uint32_t userId,
+        const UserPermissionKey& permissionKey, const UserPermissionData& permissionData,
+        const TransactionParameters& tp)
 {
-    LOG_DEBUG << "Database " << m_name << ": Recording user permission record #"
-              << permission.getId() << " for the user #" << permission.getUserId();
+    LOG_DEBUG << "Database " << m_name << ": Recording user permission record for the user #"
+              << userId;
     std::vector<Variant> values(m_sysUserPermissionsTable->getColumnCount() - 1);
     std::size_t i = 0;
-    values.at(i++) = permission.getUserId();
-    values.at(i++) = permission.getDatabaseId();
-    values.at(i++) = static_cast<std::uint8_t>(permission.getObjectType());
-    values.at(i++) = permission.getObjectId();
-    values.at(i++) = permission.getPermissions();
-    values.at(i++) = permission.getGrantOptions();
-    m_sysUserPermissionsTable->insertRow(std::move(values), tp, permission.getId());
+    values.at(i++) = userId;
+    values.at(i++) = permissionKey.getDatabaseId();
+    values.at(i++) = static_cast<std::uint8_t>(permissionKey.getObjectType());
+    values.at(i++) = permissionKey.getObjectId();
+    values.at(i++) = permissionData.getPermissions();
+    values.at(i++) = permissionData.getGrantOptions();
+    const auto result = m_sysUserPermissionsTable->insertRow(std::move(values), tp);
+    const auto trid = result.m_mcr->getTableRowId();
+    LOG_DEBUG << "Database " << m_name << ": Recorded user permission record #" << trid
+              << " for the user #" << userId;
+    return trid;
 }
 
 void SystemDatabase::deleteDatabase(std::uint32_t databaseId, std::uint32_t currentUserId)
@@ -115,6 +119,12 @@ void SystemDatabase::deleteUserToken(std::uint64_t tokenId, std::uint32_t curren
 {
     const TransactionParameters tp(currentUserId, generateNextTransactionId());
     m_sysUserTokensTable->deleteRow(tokenId, tp);
+}
+
+void SystemDatabase::deleteUserPermission(std::uint64_t permissionId, std::uint32_t currentUserId)
+{
+    const TransactionParameters tp(currentUserId, generateNextTransactionId());
+    m_sysUserPermissionsTable->deleteRow(permissionId, tp);
 }
 
 void SystemDatabase::updateUser(
@@ -224,6 +234,32 @@ void SystemDatabase::updateUserToken(
             m_sysUserTokensTable->updateRow(tokenId, columnPositions, std::move(columnValues), tp);
     if (!result.m_updated)
         throwDatabaseError(IOManagerMessageId::kErrorUserTokenIdDoesNotExist, tokenId);
+}
+
+void SystemDatabase::updateUserPermission(
+        const UserPermissionDataEx& permissionData, std::uint32_t currentUserId)
+{
+    const TransactionParameters tp(currentUserId, generateNextTransactionId());
+    std::vector<Variant> columnValues;
+    std::vector<std::size_t> columnPositions;
+    constexpr std::size_t kNumberOfColumnsToUpdate = 2;
+    columnValues.reserve(kNumberOfColumnsToUpdate);
+    columnValues.push_back(permissionData.getPermissions());
+    columnValues.push_back(permissionData.getGrantOptions());
+    columnPositions.reserve(kNumberOfColumnsToUpdate);
+    columnPositions.push_back(
+            m_sysUserPermissionsTable->findColumnChecked(kSysUserPermissions_Permissions_ColumnName)
+                    ->getCurrentPosition());
+    columnPositions.push_back(
+            m_sysUserPermissionsTable
+                    ->findColumnChecked(kSysUserPermissions_GrantOptions_ColumnName)
+                    ->getCurrentPosition());
+    const auto result = m_sysUserTokensTable->updateRow(
+            permissionData.getId(), columnPositions, std::move(columnValues), tp);
+    if (!result.m_updated) {
+        throwDatabaseError(
+                IOManagerMessageId::kErrorUserPermissionDoesNotExist, permissionData.getId());
+    }
 }
 
 }  // namespace siodb::iomgr::dbengine

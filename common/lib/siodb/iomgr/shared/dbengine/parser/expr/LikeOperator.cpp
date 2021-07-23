@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -89,7 +89,7 @@ Expression* LikeOperator::clone() const
     return new LikeOperator(std::move(left), std::move(right), m_notLike);
 }
 
-// ----- internals -----
+// --- internals ---
 
 bool LikeOperator::isEqualTo(const Expression& other) const noexcept
 {

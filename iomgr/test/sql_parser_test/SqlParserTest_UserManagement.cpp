@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -15,7 +15,7 @@
 namespace dbengine = siodb::iomgr::dbengine;
 namespace parser_ns = dbengine::parser;
 
-TEST(UM, CreateUser)
+TEST(UserManagement, CreateUser)
 {
     const std::string statement = "CREATE USER user_name";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -36,7 +36,7 @@ TEST(UM, CreateUser)
     EXPECT_EQ(request.m_active, true);
 }
 
-TEST(UM, CreateActiveUser)
+TEST(UserManagement, CreateActiveUser)
 {
     const std::string statement = "CREATE USER user_name WITH STATE=ACTIVE";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -57,7 +57,7 @@ TEST(UM, CreateActiveUser)
     EXPECT_EQ(request.m_active, true);
 }
 
-TEST(UM, CreateInactiveUser)
+TEST(UserManagement, CreateInactiveUser)
 {
     const std::string statement = "CREATE USER user_name WITH STATE=INACTIVE";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -78,7 +78,7 @@ TEST(UM, CreateInactiveUser)
     EXPECT_EQ(request.m_active, false);
 }
 
-TEST(UM, CreateUserWithRealNameAndDescription)
+TEST(UserManagement, CreateUserWithRealNameAndDescription)
 {
     const std::string statement =
             "CREATE USER user_name WITH REAL_NAME='real name', DESCRIPTION='description'";
@@ -102,7 +102,7 @@ TEST(UM, CreateUserWithRealNameAndDescription)
     EXPECT_EQ(request.m_active, true);
 }
 
-TEST(UM, CreateUserWithNullRealNameAndDescription)
+TEST(UserManagement, CreateUserWithNullRealNameAndDescription)
 {
     const std::string statement = "CREATE USER user_name WITH REAL_NAME=NULL, DESCRIPTION=NULL";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -123,7 +123,7 @@ TEST(UM, CreateUserWithNullRealNameAndDescription)
     EXPECT_EQ(request.m_active, true);
 }
 
-TEST(UM, DropUser)
+TEST(UserManagement, DropUser)
 {
     const std::string statement = "DROP USER user_name";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -141,7 +141,7 @@ TEST(UM, DropUser)
     ASSERT_EQ(request.m_name, "USER_NAME");
 }
 
-TEST(UM, AlterUserSetRealName)
+TEST(UserManagement, AlterUserSetRealName)
 {
     const std::string statement = "ALTER USER user_name SET REAL_NAME = 'new real name'";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -164,7 +164,7 @@ TEST(UM, AlterUserSetRealName)
     EXPECT_FALSE(request.m_params.m_active.has_value());
 }
 
-TEST(UM, AlterUserSetState)
+TEST(UserManagement, AlterUserSetState)
 {
     const std::string statement = "ALTER USER user_name SET STATE = ACTIVE";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -186,7 +186,7 @@ TEST(UM, AlterUserSetState)
     EXPECT_FALSE(request.m_params.m_realName.has_value());
 }
 
-TEST(UM, AlterUserSetStateAndRealName)
+TEST(UserManagement, AlterUserSetStateAndRealName)
 {
     const std::string statement =
             "ALTER USER user_name SET STATE = INACTIVE, REAL_NAME = 'newRealName'";
@@ -211,7 +211,7 @@ TEST(UM, AlterUserSetStateAndRealName)
     EXPECT_FALSE(request.m_params.m_active.value());
 }
 
-TEST(UM, AlterUserAddAccessKey)
+TEST(UserManagement, AlterUserAddAccessKey)
 {
     const std::string statement =
             "ALTER USER user_name ADD ACCESS KEY keyName 'KeyText' WITH STATE = INACTIVE";
@@ -234,7 +234,7 @@ TEST(UM, AlterUserAddAccessKey)
     EXPECT_FALSE(request.m_active);
 }
 
-TEST(UM, AlterUserDropAccessKey)
+TEST(UserManagement, AlterUserDropAccessKey)
 {
     const std::string statement = "ALTER USER user_name DROP ACCESS KEY keyName";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -255,7 +255,7 @@ TEST(UM, AlterUserDropAccessKey)
     EXPECT_FALSE(request.m_ifExists);
 }
 
-TEST(UM, AlterUserDropAccessKeyIfExists)
+TEST(UserManagement, AlterUserDropAccessKeyIfExists)
 {
     const std::string statement = "ALTER USER user_name DROP ACCESS KEY IF EXISTS keyName";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -276,7 +276,7 @@ TEST(UM, AlterUserDropAccessKeyIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
-TEST(UM, AlterUserSetUserAccessKeyAttributes)
+TEST(UserManagement, AlterUserSetUserAccessKeyAttributes)
 {
     const std::string statement =
             "ALTER USER user_name ALTER ACCESS KEY keyName SET STATE = INACTIVE";
@@ -299,7 +299,7 @@ TEST(UM, AlterUserSetUserAccessKeyAttributes)
     EXPECT_FALSE(request.m_params.m_active.value());
 }
 
-TEST(UM, AlterUserRenameAccessKey)
+TEST(UserManagement, AlterUserRenameAccessKey)
 {
     const std::string statement =
             "ALTER USER user_name ALTER ACCESS KEY keyName RENAME TO key_name";
@@ -322,7 +322,7 @@ TEST(UM, AlterUserRenameAccessKey)
     EXPECT_FALSE(request.m_ifExists);
 }
 
-TEST(UM, AlterUserRenameAccessKeyIfExists)
+TEST(UserManagement, AlterUserRenameAccessKeyIfExists)
 {
     const std::string statement =
             "ALTER USER user_name ALTER ACCESS KEY keyName RENAME IF EXISTS TO key_name";
@@ -345,7 +345,7 @@ TEST(UM, AlterUserRenameAccessKeyIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
-TEST(UM, AlterUserAddToken1)
+TEST(UserManagement, AlterUserAddToken1)
 {
     const std::string statement = "ALTER USER user_name ADD TOKEN tokenName";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -367,7 +367,7 @@ TEST(UM, AlterUserAddToken1)
     EXPECT_FALSE(request.m_description.has_value());
 }
 
-TEST(UM, AlterUserAddToken2)
+TEST(UserManagement, AlterUserAddToken2)
 {
     const std::string statement =
             "ALTER USER user_name ADD TOKEN tokenName WITH DESCRIPTION='my token'";
@@ -391,7 +391,7 @@ TEST(UM, AlterUserAddToken2)
     EXPECT_EQ(*request.m_description, "my token");
 }
 
-TEST(UM, AlterUserAddToken3)
+TEST(UserManagement, AlterUserAddToken3)
 {
     const std::string statement =
             "ALTER USER user_name ADD TOKEN tokenName x'0123456789' WITH EXPIRATION_TIMESTAMP = "
@@ -420,7 +420,7 @@ TEST(UM, AlterUserAddToken3)
     EXPECT_EQ(*request.m_description, "my token");
 }
 
-TEST(UM, AlterUserDropToken)
+TEST(UserManagement, AlterUserDropToken)
 {
     const std::string statement = "ALTER USER user_name DROP TOKEN tokenName";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -441,7 +441,7 @@ TEST(UM, AlterUserDropToken)
     EXPECT_FALSE(request.m_ifExists);
 }
 
-TEST(UM, AlterUserDropTokenIfExists)
+TEST(UserManagement, AlterUserDropTokenIfExists)
 {
     const std::string statement = "ALTER USER user_name DROP TOKEN IF EXISTS tokenName";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -462,7 +462,7 @@ TEST(UM, AlterUserDropTokenIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
-TEST(UM, AlterUserSetUserTokenAttributes)
+TEST(UserManagement, AlterUserSetUserTokenAttributes)
 {
     const std::string statement =
             "ALTER USER user_name ALTER TOKEN tokenName SET DESCRIPTION = 'the token',"
@@ -489,7 +489,7 @@ TEST(UM, AlterUserSetUserTokenAttributes)
     EXPECT_EQ(*request.m_params.m_description, "the token");
 }
 
-TEST(UM, AlterUserRenameToken)
+TEST(UserManagement, AlterUserRenameToken)
 {
     const std::string statement = "ALTER USER user_name ALTER TOKEN tokenName RENAME TO token_name";
     siodb::iomgr::dbengine::parser::SqlParser parser(statement);
@@ -511,7 +511,7 @@ TEST(UM, AlterUserRenameToken)
     EXPECT_FALSE(request.m_ifExists);
 }
 
-TEST(UM, AlterUserRenameTokenIfExists)
+TEST(UserManagement, AlterUserRenameTokenIfExists)
 {
     const std::string statement =
             "ALTER USER user_name ALTER TOKEN tokenName RENAME IF EXISTS TO token_name";
@@ -534,7 +534,7 @@ TEST(UM, AlterUserRenameTokenIfExists)
     EXPECT_TRUE(request.m_ifExists);
 }
 
-TEST(UM, CheckUserToken)
+TEST(UserManagement, CheckUserToken)
 {
     const std::string statement =
             "CHECK TOKEN user_name.tokenName x'0123456789abcdef0123456789abcdef'";

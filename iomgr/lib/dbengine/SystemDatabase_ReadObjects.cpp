@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -10,7 +10,6 @@
 #include "Index.h"
 #include "ThrowDatabaseError.h"
 #include "UserAccessKey.h"
-#include "UserPermission.h"
 #include "UserToken.h"
 
 // Common project headers
@@ -26,10 +25,11 @@
 
 namespace siodb::iomgr::dbengine {
 
-void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
+UserRegistry SystemDatabase::readAllUsers()
 {
     auto userAccessKeyRegistries = readAllUserAccessKeys();
     auto userTokenRegistries = readAllUserTokens();
+    auto userPermissionRegistries = readAllUserPermissions();
 
     LOG_DEBUG << "Reading all users.";
 
@@ -57,9 +57,8 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
                 m_sysUsersTable->getName(), m_uuid, m_sysUsersTable->getId(), 1);
     }
     if (maxTrid == 0) {
-        userRegistry.clear();
         LOG_DEBUG << "There are no users.";
-        return;
+        return UserRegistry();
     }
 
     // Scan table and fill temporary registry
@@ -109,21 +108,25 @@ void SystemDatabase::readAllUsers(UserRegistry& userRegistry)
         const auto it2 = userTokenRegistries.find(userId);
         if (it2 != userTokenRegistries.end()) tokens.swap(it2->second);
 
+        UserPermissionRegistry permissions;
+        const auto it3 = userPermissionRegistries.find(userId);
+        if (it3 != userPermissionRegistries.end()) permissions.swap(it3->second);
+
         UserRecord userRecord(userId, std::move(*nameValue.asString()),
                 realNameValue.asOptionalString(), descriptionValue.asOptionalString(),
-                stateValue.asUInt8() != 0, std::move(accessKeys), std::move(tokens));
+                stateValue.asUInt8() != 0, std::move(accessKeys), std::move(tokens),
+                std::move(permissions));
 
         LOG_DEBUG << "Database " << m_name << ": readAllUsers: User #" << trid << " '"
                   << userRecord.m_name << '\'';
         reg.insert(std::move(userRecord));
     } while (index->findNextKey(currentKey, nextKey));
 
-    // Finally swap registries
-    userRegistry.swap(reg);
-    LOG_DEBUG << "Read " << userRegistry.size() << " users.";
+    LOG_DEBUG << "Read " << reg.size() << " users.";
+    return reg;
 }
 
-void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
+DatabaseRegistry SystemDatabase::readAllDatabases()
 {
     LOG_DEBUG << "Reading all databases.";
 
@@ -154,9 +157,8 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
                 m_sysDatabasesTable->getName(), m_uuid, m_sysDatabasesTable->getId(), 1);
     }
     if (maxTrid == 0) {
-        databaseRegistry.clear();
         LOG_DEBUG << "There are no databases.";
-        return;
+        return DatabaseRegistry();
     }
 
     // Scan table and fill temporary registry
@@ -206,12 +208,11 @@ void SystemDatabase::readAllDatabases(DatabaseRegistry& databaseRegistry)
         reg.insert(std::move(databaseRecord));
     } while (index->findNextKey(currentKey, nextKey));
 
-    // Finally swap registries
-    databaseRegistry.swap(reg);
-    LOG_DEBUG << "Read " << databaseRegistry.size() << " databases.";
+    LOG_DEBUG << "Read " << reg.size() << " databases.";
+    return reg;
 }
 
-// ----- internals -----
+// --- internals ---
 
 SystemDatabase::UserAccessKeyRegistries SystemDatabase::readAllUserAccessKeys()
 {
@@ -398,6 +399,112 @@ SystemDatabase::UserTokenRegistries SystemDatabase::readAllUserTokens()
                 return a + b.second.size();
             });
     LOG_DEBUG << "Read " << tokenCount << " user tokens.";
+    return registries;
+}
+
+SystemDatabase::UserPermissionRegistries SystemDatabase::readAllUserPermissions()
+{
+    LOG_DEBUG << "Reading all user permissions.";
+
+    // Obtain columns
+    const auto masterColumn = m_sysUserPermissionsTable->getMasterColumn();
+    const auto userIdColumn =
+            m_sysUserPermissionsTable->findColumnChecked(kSysUserPermissions_UserId_ColumnName);
+    const auto databaseIdColumn =
+            m_sysUserPermissionsTable->findColumnChecked(kSysUserPermissions_DatabaseId_ColumnName);
+    const auto objectTypeColumn =
+            m_sysUserPermissionsTable->findColumnChecked(kSysUserPermissions_ObjectType_ColumnName);
+    const auto objectIdColumn =
+            m_sysUserPermissionsTable->findColumnChecked(kSysUserPermissions_ObjectId_ColumnName);
+    const auto permissionsColumn = m_sysUserPermissionsTable->findColumnChecked(
+            kSysUserPermissions_Permissions_ColumnName);
+    const auto grantOptionsColumn = m_sysUserPermissionsTable->findColumnChecked(
+            kSysUserPermissions_GrantOptions_ColumnName);
+
+    // Obtain min and max TRID
+    const auto index = masterColumn->getMasterColumnMainIndex();
+    std::uint8_t key[16];
+    std::uint64_t minTrid = 0, maxTrid = 0;
+    if (index->getMinKey(key) && index->getMaxKey(key + 8)) {
+        ::pbeDecodeUInt64(key, &minTrid);
+        ::pbeDecodeUInt64(key + 8, &maxTrid);
+        LOG_DEBUG << "readAllUserPermissions: Decoded MinTRID=" << minTrid
+                  << " MaxTRID=" << maxTrid;
+    }
+
+    // Check min and max TRID
+    if (minTrid > maxTrid) {
+        throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
+                m_sysUserPermissionsTable->getName(), m_uuid, m_sysUserPermissionsTable->getId(),
+                1);
+    }
+    if (maxTrid == 0) {
+        LOG_DEBUG << "There are no user permissions.";
+        return UserPermissionRegistries();
+    }
+
+    // Scan table and fill temporary registry
+    const auto expectedColumnCount = m_sysUserPermissionsTable->getColumnCount() - 1;
+    UserPermissionRegistries registries;
+    IndexValue indexValue;
+    std::uint8_t* currentKey = key + 8;
+    std::uint8_t* nextKey = key;
+
+    do {
+        // Obtain master column record address
+        std::swap(currentKey, nextKey);
+        std::uint64_t trid = 0;
+        ::pbeDecodeUInt64(currentKey, &trid);
+        // LOG_DEBUG << "readAllUserPermissions: Next key: " << trid;
+        if (index->find(currentKey, indexValue.m_data, 1) != 1) {
+            throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted, m_name,
+                    m_sysUserPermissionsTable->getName(), m_uuid,
+                    m_sysUserPermissionsTable->getId(), 2);
+        }
+        ColumnDataAddress mcrAddr;
+        mcrAddr.pbeDeserialize(indexValue.m_data, sizeof(indexValue.m_data));
+
+        // Read and validate master column record
+        MasterColumnRecord mcr;
+        masterColumn->readMasterColumnRecord(mcrAddr, mcr);
+        if (mcr.getColumnCount() != expectedColumnCount) {
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidMasterColumnRecordColumnCount,
+                    m_name, m_sysUserPermissionsTable->getName(), m_uuid,
+                    m_sysUserPermissionsTable->getId(), mcrAddr.getBlockId(), mcrAddr.getOffset(),
+                    expectedColumnCount, mcr.getColumnCount());
+        }
+
+        // Read data from columns
+        const auto& columnRecords = mcr.getColumnRecords();
+        Variant userIdValue, databaseIdValue, objectTypeValue, objectIdValue, permissionsValue,
+                grantOptionsValue;
+        std::size_t colIndex = 0;
+        userIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), userIdValue);
+        databaseIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), databaseIdValue);
+        objectTypeColumn->readRecord(columnRecords.at(colIndex++).getAddress(), objectTypeValue);
+        objectIdColumn->readRecord(columnRecords.at(colIndex++).getAddress(), objectIdValue);
+        permissionsColumn->readRecord(columnRecords.at(colIndex++).getAddress(), permissionsValue);
+        grantOptionsColumn->readRecord(
+                columnRecords.at(colIndex++).getAddress(), grantOptionsValue);
+
+        const auto objectType = objectTypeValue.asInt32();
+        if (objectType < 0 || objectType >= static_cast<int>(DatabaseObjectType::kMax)) {
+            throwDatabaseError(
+                    IOManagerMessageId::kErrorInvalidDatabaseObjectTypeInUserPermissionRecord,
+                    mcr.getTableRowId(), objectType);
+        }
+
+        UserPermissionRecord userPermissionRecord(mcr.getTableRowId(), userIdValue.asUInt32(),
+                databaseIdValue.asUInt32(), static_cast<DatabaseObjectType>(objectType),
+                objectIdValue.asUInt64(), permissionsValue.asUInt64(),
+                grantOptionsValue.asUInt64());
+        registries[userPermissionRecord.m_userId].insert(std::move(userPermissionRecord));
+
+    } while (index->findNextKey(currentKey, nextKey));
+
+    const auto recordCount = std::accumulate(registries.begin(), registries.end(), std::size_t(0),
+            [](std::size_t a, const auto& b) noexcept { return a + b.second.size(); });
+    LOG_DEBUG << "Read " << recordCount << " user permission records.";
     return registries;
 }
 

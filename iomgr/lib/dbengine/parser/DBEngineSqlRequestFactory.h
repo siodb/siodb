@@ -160,6 +160,13 @@ private:
     requests::DBEngineRequestPtr createDropDatabaseRequest(antlr4::tree::ParseTree* node);
 
     /**
+     * Creates ALTER DATABASE request.
+     * @param node Parse tree node with SQL statement.
+     * @return Kind of ALTER DATABASE request.
+     */
+    requests::DBEngineRequestPtr createAlterDatabaseRequest(antlr4::tree::ParseTree* node);
+
+    /**
      * Creates ALTER DATABASE RENAME TO request.
      * @param node Parse tree node with SQL statement.
      * @return ALTER DATABASE RENAME TO request.
@@ -193,6 +200,13 @@ private:
      * @return DROP TABLE request.
      */
     requests::DBEngineRequestPtr createDropTableRequest(antlr4::tree::ParseTree* node);
+
+    /**
+     * Create one of ALTER TABLE requests.
+     * @param node Parse tree node with SQL statement.
+     * @return Request object.
+     */
+    requests::DBEngineRequestPtr createAlterTableRequest(antlr4::tree::ParseTree* node);
 
     /**
      * Creates ALTER TABLE RENAME TO request.
@@ -265,6 +279,13 @@ private:
     requests::DBEngineRequestPtr createDropUserRequest(antlr4::tree::ParseTree* node);
 
     /**
+     * Create one of ALTER USER requests.
+     * @param node Parse tree node with SQL statement.
+     * @return Request object.
+     */
+    requests::DBEngineRequestPtr createAlterUserRequest(antlr4::tree::ParseTree* node);
+
+    /**
      * Creates ALTER USER SET attributes request.
      * @param node Parse tree node with SQL statement.
      * @return ALTER USER SET attributes request.
@@ -334,6 +355,31 @@ private:
      * @return CHECK TOKEN request.
      */
     requests::DBEngineRequestPtr createCheckUserTokenRequest(antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates GRANT PERMISSION ON TABLE request.
+     * @param node Parse tree node with SQL statement.
+     * @return GRANT PERMISSION ON TABLE request.
+     */
+    requests::DBEngineRequestPtr createGrantPermissionsForTableRequest(
+            antlr4::tree::ParseTree* node);
+
+    /**
+     * Creates REVOKE PERMISSION ON TABLE request.
+     * @param node Parse tree node with SQL statement.
+     * @return REVOKE PERMISSION ON TABLE request.
+     */
+    requests::DBEngineRequestPtr createRevokePermissionsForTableRequest(
+            antlr4::tree::ParseTree* node);
+
+    /**
+     * Parses permissions for table object.
+     * @param node Permission list node.
+     * @param failureErrorMessage Error message for the parse permission failure.
+     * @return Permission bitmask.
+     */
+    static std::uint64_t parseTablePermissions(
+            antlr4::tree::ParseTree* node, const char* failureErrorMessage);
 
     /**
      * Parses SelectCore.

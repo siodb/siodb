@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -106,7 +106,7 @@ std::string SqlParser::injectError(std::size_t line, std::size_t column, const s
     return s;
 }
 
-// ----- internals ------
+// --- internals ----
 
 void SqlParser::syntaxError([[maybe_unused]] antlr4::Recognizer* recognizer,
         [[maybe_unused]] antlr4::Token* offendingSymbol, [[maybe_unused]] std::size_t line,

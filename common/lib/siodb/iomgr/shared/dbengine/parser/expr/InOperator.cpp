@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -158,7 +158,7 @@ Expression* InOperator::clone() const
     return new InOperator(std::move(value), std::move(variants), m_notIn);
 }
 
-// ----- internals -----
+// --- internals ---
 
 bool InOperator::isEqualTo(const Expression& other) const noexcept
 {

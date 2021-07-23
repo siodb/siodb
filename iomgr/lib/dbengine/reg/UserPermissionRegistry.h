@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -17,11 +17,54 @@
 
 namespace siodb::iomgr::dbengine {
 
-/** In-memory user registry */
+/** In-memory user permission registry */
 class UserPermissionRegistry {
 public:
     /** Registry record type */
     using value_type = UserPermissionRecord;
+
+    /** Key for the index by object. */
+    struct ByObjectKey {
+        /** Initializes object of the class ByObjectKey. */
+        ByObjectKey() noexcept
+            : m_databaseId(0)
+            , m_objectType(DatabaseObjectType::kMax)
+            , m_objectId(0)
+        {
+        }
+
+        /**
+         * Initializes object of the class ByObjectKey.
+         * @param databaseId Database identifier.
+         * @param objectType Object type.
+         * @param objectId Object identifier.
+         */
+        ByObjectKey(std::uint32_t databaseId, DatabaseObjectType objectType,
+                std::uint64_t objectId) noexcept
+            : m_databaseId(databaseId)
+            , m_objectType(objectType)
+            , m_objectId(objectId)
+        {
+        }
+
+        /**
+         * Equality operator.
+         * @param other Other object.
+         * @return true if objects are equal, false otherwise.
+         */
+        bool operator==(const ByObjectKey& other) const noexcept
+        {
+            return m_databaseId == other.m_databaseId && m_objectType == other.m_objectType
+                   && m_objectId == other.m_objectId;
+        }
+
+        /** Database identifier */
+        std::uint32_t m_databaseId;
+        /** Object type */
+        DatabaseObjectType m_objectType;
+        /** Object identifier */
+        std::uint64_t m_objectId;
+    };
 
 private:
     /** Index tag */
@@ -29,7 +72,20 @@ private:
     };
 
     /** Index tag */
-    struct ByUserIdTag {
+    struct ByObjectTag {
+    };
+
+    /** Key extractor */
+    struct ByObjectKeyExtractor {
+        typedef ByObjectKey result_type;
+        result_type operator()(const value_type& value) const noexcept
+        {
+            return result_type {
+                    value.m_databaseId,
+                    value.m_objectType,
+                    value.m_objectId,
+            };
+        }
     };
 
     /** In-memory table registry container type */
@@ -38,9 +94,10 @@ private:
                     boost::multi_index::hashed_unique<boost::multi_index::tag<ByIdTag>,
                             boost::multi_index::member<value_type, decltype(value_type::m_id),
                                     &value_type::m_id>>,
-                    boost::multi_index::hashed_non_unique<boost::multi_index::tag<ByUserIdTag>,
-                            boost::multi_index::member<value_type, decltype(value_type::m_userId),
-                                    &value_type::m_userId>>>>
+                    boost::multi_index::hashed_non_unique<boost::multi_index::tag<ByObjectTag>,
+                            ByObjectKeyExtractor>
+                    // add  more here
+                    >>
             Container;
 
 public:
@@ -64,12 +121,30 @@ public:
     }
 
     /**
-     * Returns read-only index by user ID.
+     * Returns mutable index by record ID.
      * @return Registry index object.
      */
-    const auto& byUserId() const noexcept
+    auto& byId() noexcept
     {
-        return m_container.get<ByUserIdTag>();
+        return m_container.get<ByIdTag>();
+    }
+
+    /**
+     * Returns read-only index by object.
+     * @return Registry index object.
+     */
+    const auto& byObject() const noexcept
+    {
+        return m_container.get<ByObjectTag>();
+    }
+
+    /**
+     * Returns mutable index by object.
+     * @return Registry index object.
+     */
+    auto& byObject() noexcept
+    {
+        return m_container.get<ByObjectTag>();
     }
 
     /**
@@ -137,5 +212,20 @@ private:
     /** Data container */
     Container m_container;
 };
+
+/**
+ * Hash function for the class UserPermissionRegistry::ByObjectKey
+ * for the Boost hashed containers.
+ * @param value A value to hash.
+ * @return Hash value.
+ */
+inline std::size_t hash_value(const UserPermissionRegistry::ByObjectKey& value) noexcept
+{
+    std::size_t result = 0;
+    boost::hash_combine(result, value.m_databaseId);
+    boost::hash_combine(result, value.m_objectType);
+    boost::hash_combine(result, value.m_objectId);
+    return result;
+}
 
 }  // namespace siodb::iomgr::dbengine

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -75,7 +75,7 @@ std::string Index::makeIndexFilePath(std::uint64_t fileId) const
     return utils::constructPath(m_dataDir, kIndexFilePrefix, fileId, kDataFileExtension);
 }
 
-// --------- internal -----------
+// --- internals ---
 
 std::string&& Index::validateIndexName(std::string&& indexName)
 {

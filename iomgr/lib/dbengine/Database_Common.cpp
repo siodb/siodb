@@ -16,6 +16,7 @@
 #include "SystemDatabase.h"
 #include "Table.h"
 #include "ThrowDatabaseError.h"
+#include "User.h"
 #include "reg/CipherKeyRecord.h"
 
 // Common project headers
@@ -1039,7 +1040,7 @@ Uuid Database::computeDatabaseUuid(const char* databaseName, std::time_t createT
     return result;
 }
 
-// ---- internal ----
+// --- internals ---
 
 void Database::checkTableBelongsToThisDatabase(const Table& table, const char* operationName) const
 {

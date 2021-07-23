@@ -13,7 +13,7 @@ void ColumnExpressionBase::setSingleDatasetTableIndex(std::size_t datasetTableIn
     m_datasetTableIndices = std::move(datasetTableIndices);
 }
 
-// ----- internals -----
+// --- internals ---
 
 bool ColumnExpressionBase::isEqualTo(const Expression& other) const noexcept
 {

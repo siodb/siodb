@@ -24,6 +24,13 @@ std::string& fixSingleQuotes(std::string& s)
     return s;
 }
 
+std::string extractObjectName(antlr4::tree::ParseTree* node)
+{
+    auto name = node->getText();
+    boost::to_upper(name);
+    return name;
+}
+
 std::string extractObjectName(const antlr4::tree::ParseTree* node, std::size_t childNodeIndex)
 {
     auto name = node->children.at(childNodeIndex)->getText();

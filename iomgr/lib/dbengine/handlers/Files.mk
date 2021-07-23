@@ -4,6 +4,7 @@
 
 CXX_SRC+= \
 	handlers/JsonOutput.cpp \
+	handlers/RequestHandler_AC.cpp \
 	handlers/RequestHandler_Common.cpp \
 	handlers/RequestHandler_DDL.cpp \
 	handlers/RequestHandler_DML.cpp \

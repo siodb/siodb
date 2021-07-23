@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -37,9 +37,9 @@ private:
     /** Key extractor for column name */
     struct ExtractColumnName {
         typedef decltype(value_type::m_name) result_type;
-        const result_type& operator()(const value_type& r) const noexcept
+        const result_type& operator()(const value_type& value) const noexcept
         {
-            return r.m_name;
+            return value.m_name;
         }
     };
 
