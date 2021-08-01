@@ -9,11 +9,7 @@ CXX_SRC+= \
 	handlers/RequestHandler_DDL.cpp \
 	handlers/RequestHandler_DML.cpp \
 	handlers/RequestHandler_DQL.cpp \
-	handlers/RequestHandler_RestDelete.cpp \
-	handlers/RequestHandler_RestGet.cpp \
-	handlers/RequestHandler_RestPatch.cpp \
-	handlers/RequestHandler_RestPost.cpp \
-	handlers/RequestHandler_RestSqlQuery.cpp \
+	handlers/RequestHandler_Rest.cpp \
 	handlers/RequestHandler_TC.cpp \
 	handlers/RequestHandler_UM.cpp \
 	handlers/RestProtocolRowsetWriter.cpp \

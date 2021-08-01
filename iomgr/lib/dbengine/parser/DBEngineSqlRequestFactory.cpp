@@ -283,15 +283,15 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createInsertRequest(
 {
     // Capture database ID
     std::string database;
-    const auto databaseIdNode =
+    const auto databaseNameNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture table ID
-    const auto tableIdNode =
+    const auto tableNameNode =
             helpers::findTerminal(node, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode) throw DBEngineRequestFactoryError("INSERT: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    if (!tableNameNode) throw DBEngineRequestFactoryError("INSERT: missing table ID");
+    auto table = helpers::extractObjectName(tableNameNode);
 
     // Capture column IDs
     std::vector<std::string> columns;
@@ -626,10 +626,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAttachDatabaseRequ
         throw DBEngineRequestFactoryError("ATTACH DATABASE: missing database UUID");
 
     // Capture database ID
-    const auto databaseIdNode =
+    const auto databaseNameNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (!databaseIdNode) throw DBEngineRequestFactoryError("ATTACH DATABASE: missing database ID");
-    auto database = helpers::extractObjectName(databaseIdNode);
+    if (!databaseNameNode)
+        throw DBEngineRequestFactoryError("ATTACH DATABASE: missing database ID");
+    auto database = helpers::extractObjectName(databaseNameNode);
 
     return std::make_unique<requests::AttachDatabaseRequest>(
             std::move(databaseUuid), std::move(database));
@@ -639,10 +640,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDetachDatabaseRequ
         antlr4::tree::ParseTree* node)
 {
     // Capture database ID
-    const auto databaseIdNode =
+    const auto databaseNameNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (!databaseIdNode) throw DBEngineRequestFactoryError("DETACH DATABASE: missing database ID");
-    auto database = helpers::extractObjectName(databaseIdNode);
+    if (!databaseNameNode)
+        throw DBEngineRequestFactoryError("DETACH DATABASE: missing database ID");
+    auto database = helpers::extractObjectName(databaseNameNode);
 
     // Check for "IF EXISTS" clause
     const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
@@ -746,6 +748,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetDatabaseAttribu
     auto database = helpers::extractObjectName(node, 2);
     std::optional<std::optional<std::string>> description;
     const auto attrListNode = node->children.at(4);
+    if (helpers::getNonTerminalType(attrListNode) != SiodbParser::RuleDatabase_attr_list) {
+        throw DBEngineRequestFactoryError(
+                "ALTER DATABASE SET ATTRIBUTES: malformed parse tree: database attribute list");
+    }
     for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
         const auto attrNode = attrListNode->children[i];
         switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
@@ -771,10 +777,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUseDatabaseRequest
         antlr4::tree::ParseTree* node)
 {
     // Capture database ID
-    const auto databaseIdNode =
+    const auto databaseNameNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (!databaseIdNode) throw DBEngineRequestFactoryError("USE DATABASE: missing database ID");
-    auto database = helpers::extractObjectName(databaseIdNode);
+    if (!databaseNameNode) throw DBEngineRequestFactoryError("USE DATABASE: missing database ID");
+    auto database = helpers::extractObjectName(databaseNameNode);
     return std::make_unique<requests::UseDatabaseRequest>(std::move(database));
 }
 
@@ -785,15 +791,15 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateTableRequest
 
     // Capture database ID
     std::string database;
-    const auto databaseIdNode = helpers::findTerminal(
+    const auto databaseNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture table ID
-    const auto tableIdNode = helpers::findTerminal(
+    const auto tableNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode) throw DBEngineRequestFactoryError("CREATE TABLE: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    if (!tableNameNode) throw DBEngineRequestFactoryError("CREATE TABLE: missing table ID");
+    auto table = helpers::extractObjectName(tableNameNode);
 
     // Capture column definitions
     std::vector<requests::ColumnDefinition> columns;
@@ -946,15 +952,15 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropTableRequest(
 
     // Capture database ID
     std::string database;
-    const auto databaseIdNode = helpers::findTerminal(
+    const auto databaseNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture table ID
-    const auto tableIdNode = helpers::findTerminal(
+    const auto tableNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode) throw DBEngineRequestFactoryError("DROP TABLE: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    if (!tableNameNode) throw DBEngineRequestFactoryError("DROP TABLE: missing table ID");
+    auto table = helpers::extractObjectName(tableNameNode);
 
     // Check for "IF EXISTS" clause
     const auto ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
@@ -984,26 +990,30 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameTableRequest
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
+    if (helpers::getNonTerminalType(tableSpecNode) != SiodbParser::RuleTable_spec) {
+        throw DBEngineRequestFactoryError(
+                "ALTER TABLE RENAME TO: malformed parse tree: table specification");
+    }
 
     // Capture database ID
     std::string database;
-    const auto databaseIdNode = helpers::findTerminal(
+    const auto databaseNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture old table ID
-    const auto oldTableIdNode = helpers::findTerminal(
+    const auto oldtableNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!oldTableIdNode)
+    if (!oldtableNameNode)
         throw DBEngineRequestFactoryError("ALTER TABLE RENAME TO: missing table ID");
-    auto oldTable = helpers::extractObjectName(oldTableIdNode);
+    auto oldTable = helpers::extractObjectName(oldtableNameNode);
 
     // Capture new table ID
-    const auto newTableIdNode =
+    const auto newtableNameNode =
             helpers::findTerminal(node, SiodbParser::RuleNew_table_name, SiodbParser::IDENTIFIER);
-    if (!newTableIdNode)
+    if (!newtableNameNode)
         throw DBEngineRequestFactoryError("ALTER TABLE RENAME TO: missing new table ID");
-    auto newTable = helpers::extractObjectName(newTableIdNode);
+    auto newTable = helpers::extractObjectName(newtableNameNode);
 
     // Check for "IF EXISTS" clause
     const bool ifExists = helpers::hasTerminalChild(node, SiodbParser::K_IF);
@@ -1016,19 +1026,23 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetTableAttributes
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
+    if (helpers::getNonTerminalType(tableSpecNode) != SiodbParser::RuleTable_spec) {
+        throw DBEngineRequestFactoryError(
+                "ALTER TABLE SET ATTRIBUTES: malformed parse tree: table specification");
+    }
 
     // Capture database ID
     std::string database;
-    const auto databaseIdNode = helpers::findTerminal(
+    const auto databaseNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture table ID
-    const auto tableIdNode = helpers::findTerminal(
+    const auto tableNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode)
+    if (!tableNameNode)
         throw DBEngineRequestFactoryError("ALTER TABLE SET ATTRIBUTES: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    auto table = helpers::extractObjectName(tableNameNode);
 
     std::optional<std::uint64_t> nextTrid;
 
@@ -1064,18 +1078,23 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createAddColumnRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
+    if (helpers::getNonTerminalType(tableSpecNode) != SiodbParser::RuleTable_spec) {
+        throw DBEngineRequestFactoryError(
+                "ALTER TABLE ADD COLUMN: malformed parse tree: table specification");
+    }
 
     // Capture database ID
     std::string database;
-    const auto databaseIdNode = helpers::findTerminal(
+    const auto databaseNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture table ID
-    const auto tableIdNode = helpers::findTerminal(
+    const auto tableNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode) throw DBEngineRequestFactoryError("ALTER TABLE ADD COLUMN: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    if (!tableNameNode)
+        throw DBEngineRequestFactoryError("ALTER TABLE ADD COLUMN: missing table ID");
+    auto table = helpers::extractObjectName(tableNameNode);
 
     // Find column ID
     const auto columnIdNode =
@@ -1103,19 +1122,23 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropColumnRequest(
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
+    if (helpers::getNonTerminalType(tableSpecNode) != SiodbParser::RuleTable_spec) {
+        throw DBEngineRequestFactoryError(
+                "ALTER TABLE DROP COLUMN: malformed parse tree: table specification");
+    }
 
     // Capture database ID
     std::string database;
-    const auto databaseIdNode = helpers::findTerminal(
+    const auto databaseNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture table ID
-    const auto tableIdNode = helpers::findTerminal(
+    const auto tableNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode)
+    if (!tableNameNode)
         throw DBEngineRequestFactoryError("ALTER TABLE DROP COLUMN: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    auto table = helpers::extractObjectName(tableNameNode);
 
     // Capture column ID
     const auto columnIdNode =
@@ -1135,17 +1158,21 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRenameColumnReques
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
+    if (helpers::getNonTerminalType(tableSpecNode) != SiodbParser::RuleTable_spec) {
+        throw DBEngineRequestFactoryError(
+                "ALTER TABLE RENAME COLUMN: malformed parse tree: table specification");
+    }
 
     std::string database;
-    const auto databaseIdNode = helpers::findTerminal(
+    const auto databaseNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
-    const auto tableIdNode = helpers::findTerminal(
+    const auto tableNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode)
+    if (!tableNameNode)
         throw DBEngineRequestFactoryError("ALTER TABLE ALTER COLUMN RENAME TO: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    auto table = helpers::extractObjectName(tableNameNode);
 
     auto column = helpers::extractObjectName(node, 5);
 
@@ -1160,19 +1187,23 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRedefineColumnRequ
         antlr4::tree::ParseTree* node)
 {
     const auto tableSpecNode = node->children.at(2);
+    if (helpers::getNonTerminalType(tableSpecNode) != SiodbParser::RuleTable_spec) {
+        throw DBEngineRequestFactoryError(
+                "ALTER TABLE ALTER COLUMN: malformed parse tree: table specification");
+    }
 
     // Capture database ID
     std::string database;
-    const auto databaseIdNode = helpers::findTerminal(
+    const auto databaseNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture table ID
-    const auto tableIdNode = helpers::findTerminal(
+    const auto tableNameNode = helpers::findTerminal(
             tableSpecNode, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode)
+    if (!tableNameNode)
         throw DBEngineRequestFactoryError("ALTER TABLE ALTER COLUMN: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    auto table = helpers::extractObjectName(tableNameNode);
 
     // Find column ID
     const auto columnIdNode =
@@ -1201,9 +1232,9 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateIndexRequest
 {
     // Capture database ID
     std::string database;
-    const auto databaseIdNode =
+    const auto databaseNameNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture index name
     const auto indexNameNode =
@@ -1212,10 +1243,10 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createCreateIndexRequest
     auto index = helpers::extractObjectName(indexNameNode);
 
     // Capture table ID
-    const auto tableIdNode =
+    const auto tableNameNode =
             helpers::findTerminal(node, SiodbParser::RuleTable_name, SiodbParser::IDENTIFIER);
-    if (!tableIdNode) throw DBEngineRequestFactoryError("CREATE INDEX: missing table ID");
-    auto table = helpers::extractObjectName(tableIdNode);
+    if (!tableNameNode) throw DBEngineRequestFactoryError("CREATE INDEX: missing table ID");
+    auto table = helpers::extractObjectName(tableNameNode);
 
     // Capture column definitions
     std::vector<requests::IndexColumnDefinition> columns;
@@ -1251,9 +1282,9 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createDropIndexRequest(
 {
     // Capture database ID
     std::string database;
-    const auto databaseIdNode =
+    const auto databaseNameNode =
             helpers::findTerminal(node, SiodbParser::RuleDatabase_name, SiodbParser::IDENTIFIER);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
     // Capture index name
     const auto indexNameNode =
@@ -1500,6 +1531,11 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSetUserAccessKeyAt
     std::optional<bool> active;
 
     const auto attrListNode = node->children.at(8);
+    if (helpers::getNonTerminalType(attrListNode) != SiodbParser::RuleUser_access_key_attr_list) {
+        throw DBEngineRequestFactoryError(
+                "ALTER USER ALTER ACCESS KEY: malformed parse tree: table specification");
+    }
+
     for (std::size_t i = 0, n = attrListNode->children.size(); i < n; i += 2) {
         const auto attrNode = attrListNode->children[i];
         switch (helpers::getMaybeTerminalType(attrNode->children.at(0))) {
@@ -1678,15 +1714,21 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createGrantPermissionsFo
     const auto tableSpecNode = node->children.at(3 + offset);
 
     std::string database;
-    const auto databaseIdNode =
+    const auto databaseNameNode =
             helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleDatabase_name);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
-    const auto tableIdNode =
+    const auto tableNameNode =
             helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleTable_name);
-    if (!tableIdNode)
-        throw DBEngineRequestFactoryError("GRANT PERMISSIONS ON TABLE: missing table name");
-    auto table = helpers::extractObjectName(tableIdNode);
+    bool allTables = false;
+    if (tableNameNode == nullptr) {
+        if (helpers::findTerminalChild(tableSpecNode, SiodbParser::STAR)
+                != std::numeric_limits<std::size_t>::max())
+            allTables = true;
+        else
+            throw DBEngineRequestFactoryError("GRANT PERMISSIONS ON TABLE: missing table name");
+    }
+    auto table = allTables ? "*" : helpers::extractObjectName(tableNameNode);
 
     auto user = helpers::extractObjectName(node->children.at(5 + offset));
 
@@ -1710,15 +1752,21 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRevokePermissionsF
     const auto tableSpecNode = node->children.at(3 + offset);
 
     std::string database;
-    const auto databaseIdNode =
+    const auto databaseNameNode =
             helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleDatabase_name);
-    if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
-    const auto tableIdNode =
+    const auto tableNameNode =
             helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleTable_name);
-    if (!tableIdNode)
-        throw DBEngineRequestFactoryError("REVOKE PERMISSIONS ON TABLE: missing table name");
-    auto table = helpers::extractObjectName(tableIdNode);
+    bool allTables = false;
+    if (tableNameNode == nullptr) {
+        if (helpers::findTerminalChild(tableSpecNode, SiodbParser::STAR)
+                != std::numeric_limits<std::size_t>::max())
+            allTables = true;
+        else
+            throw DBEngineRequestFactoryError("REVOKE PERMISSIONS ON TABLE: missing table name");
+    }
+    auto table = allTables ? "*" : helpers::extractObjectName(tableNameNode);
 
     auto user = helpers::extractObjectName(node->children.at(5 + offset));
 
@@ -1838,13 +1886,13 @@ void DBEngineSqlRequestFactory::parseSelectCore(antlr4::tree::ParseTree* node,
                 break;
             }
             case SiodbParser::RuleTable_or_subquery: {
-                const auto databaseIdNode =
+                const auto databaseNameNode =
                         helpers::findNonTerminal(e, SiodbParser::RuleDatabase_name);
-                if (databaseIdNode) database = helpers::extractObjectName(databaseIdNode);
+                if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
 
-                const auto tableIdNode = helpers::findNonTerminal(e, SiodbParser::RuleTable_name);
-                if (tableIdNode) {
-                    auto tableName = helpers::extractObjectName(tableIdNode);
+                const auto tableNameNode = helpers::findNonTerminal(e, SiodbParser::RuleTable_name);
+                if (tableNameNode) {
+                    auto tableName = helpers::extractObjectName(tableNameNode);
                     std::string tableAlias;
                     const auto tableAliasIdNode =
                             helpers::findNonTerminal(e, SiodbParser::RuleTable_alias);

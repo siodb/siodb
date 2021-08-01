@@ -236,18 +236,11 @@ public:
     }
 
     /**
-     * Returns list of tables.
-     * @param includeSystemTables System tables inclusion flag.
-     * @return List of tables.
-     */
-    std::vector<std::string> getTableNames(bool includeSystemTables = true) const;
-
-    /**
      * Returns list of table records ordered by name.
      * @param includeSystemTables System tables inclusion flag.
      * @return List of tables.
      */
-    std::vector<TableRecord> getTableRecordsOrderedByName(bool includeSystemTables = true) const;
+    std::vector<TableRecord> getTableRecordsOrderedByName() const;
 
     /**
      * Returns indication that user table can be created in this database.

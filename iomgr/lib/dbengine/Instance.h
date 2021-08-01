@@ -140,13 +140,6 @@ public:
     std::vector<DatabaseRecord> getDatabaseRecordsOrderedByName() const;
 
     /**
-     * Returns list of databasesordered by name.
-     * @param includeSystemDatabase Indication that system database should be included.
-     * @return List of databases.
-     */
-    std::vector<std::string> getDatabaseNames(bool includeSystemDatabase = true) const;
-
-    /**
      * Returns existing database object.
      * @param databaseName database name.
      * @return Corresponding database object.
@@ -240,6 +233,15 @@ public:
             std::uint32_t currentUserId);
 
     /**
+     * Get all permissions for particular object type.
+     * @param objectType Object type.
+     * @return Bitmask of all permission types are applicable for the given object type,
+     *         or empty optional if object type is not supported.
+     */
+    static std::optional<std::uint64_t> getAllObjectTypePermissions(
+            DatabaseObjectType objectType) noexcept;
+
+    /**
      * Grants permissions for the specified table to the specified user.
      * @param userName User name to grant permissions to.
      * @param databaseName Database name to locate the table in.
@@ -249,9 +251,26 @@ public:
      *                        to grant same persmissions to other users.
      * @param currentUserId Current user ID.
      */
-    void grantTablePermissions(const std::string& userName, const std::string& databaseName,
+    void grantTablePermissionsToUser(const std::string& userName, const std::string& databaseName,
             const std::string& tableName, std::uint64_t permissions, bool withGrantOption,
             std::uint32_t currentUserId);
+
+    /**
+     * Performs actual changes in the permission registry in order to grant permissions.
+     * @param user User to grant permissions to.
+     * @param databaseId Database ID to grant permissions for.
+     *                   Zero value may have special meaning "whole instance".
+     * @param objectType Object type to grant permissions for.
+     * @param objectId Object ID to grant permissions for.
+     *                 Zero value may have special meaning "all objects".
+     * @param permissions Bitmask of permissions.
+     * @param withGrantOption Inidication that user will be able
+     *                        to grant same persmissions to others.
+     * @param currentUserId Current user ID.
+     */
+    void grantObjectPermissionsToUser(User& user, std::uint32_t databaseId,
+            DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+            bool withGrantOption, std::uint32_t currentUserId);
 
     /**
      * Revokes permissions from the specified user.
@@ -261,8 +280,36 @@ public:
      * @param permissions Bitmask of permissions.
      * @param currentUserId Current user ID.
      */
-    void revokeTablePermissions(const std::string& userName, const std::string& databaseName,
-            const std::string& tableName, std::uint64_t permissions, std::uint32_t currentUserId);
+    void revokeTablePermissionsFromUser(const std::string& userName,
+            const std::string& databaseName, const std::string& tableName,
+            std::uint64_t permissions, std::uint32_t currentUserId);
+
+    /**
+     * Performs actual changes in the permission registry in order to revoke permissions.
+     * @param databaseId Database ID to revoke permissions for.
+     *                   Zero value may have special meaning "whole instance".
+     * @param objectType Object type to revoke permissions for.
+     * @param objectId Object ID to revoke permissions for.
+     *                 Zero value may have special meaning "all objects".
+     * @param currentUserId Current user ID.
+     */
+    void revokeAllObjectPermissionsFromAllUsers(std::uint32_t databaseId,
+            DatabaseObjectType objectType, std::uint64_t objectId, std::uint32_t currentUserId);
+
+    /**
+     * Performs actual changes in the permission registry in order to revoke permissions.
+     * @param user User to revoke permissions from.
+     * @param databaseId Database ID to revoke permissions for.
+     *                   Zero value may have special meaning "whole instance".
+     * @param objectType Object type to revoke permissions for.
+     * @param objectId Object ID to revoke permissions for.
+     *                 Zero value may have special meaning "all objects".
+     * @param permissions Bitmask of permissions.
+     * @param currentUserId Current user ID.
+     */
+    void revokeObjectPermissionsFromUser(User& user, std::uint32_t databaseId,
+            DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+            std::uint32_t currentUserId);
 
     /**
      * Creates new user access key.
@@ -513,6 +560,22 @@ private:
     /**
      * Returns existing user object.
      * @param userName User name.
+     * @return Corresponding user object.
+     * @throw DatabaseError if user not found.
+     */
+    UserPtr findUserCheckedUnlocked(const std::string& userName);
+
+    /**
+     * Returns existing user object.
+     * @param userId User ID.
+     * @return Corresponding database object.
+     * @throw DatabaseError if user not found.
+     */
+    UserPtr findUserCheckedUnlocked(std::uint32_t userId);
+
+    /**
+     * Returns existing user object.
+     * @param userName User name.
      * @return Corresponding user object or nullptr if it doesn't exist.
      */
     UserPtr findUserUnlocked(const std::string& userName);
@@ -544,9 +607,9 @@ private:
      *                        to grant same persmissions to others.
      * @param currentUserId Current user ID.
      */
-    void grantPermissions(User& user, std::uint32_t databaseId, DatabaseObjectType objectType,
-            std::uint64_t objectId, std::uint64_t permissions, bool withGrantOption,
-            std::uint32_t currentUserId);
+    void grantObjectPermissionsToUserUnlocked(User& user, std::uint32_t databaseId,
+            DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+            bool withGrantOption, std::uint32_t currentUserId);
 
     /**
      * Performs actual changes in the permission registry in order to revoke permissions.
@@ -559,8 +622,9 @@ private:
      * @param permissions Bitmask of permissions.
      * @param currentUserId Current user ID.
      */
-    void revokePermissions(User& user, std::uint32_t databaseId, DatabaseObjectType objectType,
-            std::uint64_t objectId, std::uint64_t permissions, std::uint32_t currentUserId);
+    void revokeObjectPermissionsFromUserUnlocked(User& user, std::uint32_t databaseId,
+            DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+            std::uint32_t currentUserId);
 
     /**
      * Checks applicability of permission to the particular object type.
@@ -680,6 +744,10 @@ private:
 
     /** Generated token length */
     static constexpr std::size_t kGeneratedTokenLength = 64;
+
+    /** All premissions constant for REVOKE */
+    static constexpr std::uint64_t kAllPermissionsForRevoke =
+            std::numeric_limits<std::uint64_t>::max();
 };
 
 }  // namespace siodb::iomgr::dbengine

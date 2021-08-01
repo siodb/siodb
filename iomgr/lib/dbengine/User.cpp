@@ -160,6 +160,31 @@ std::size_t User::getActiveTokenCount() const noexcept
             [](const auto& token) noexcept { return !token->isExpired(); });
 }
 
+void User::checkHasPermissions(std::uint32_t databaseId, DatabaseObjectType objectType,
+        std::uint64_t objectId, std::uint64_t permissions, bool withGrantOption) const
+{
+    const UserPermissionKey permissionKey(databaseId, objectType, objectId);
+    if (!hasPermissions(permissionKey, permissions, withGrantOption))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+}
+
+bool User::hasPermissions(std::uint32_t databaseId, DatabaseObjectType objectType,
+        std::uint64_t objectId, std::uint64_t permissions, bool withGrantOption) const noexcept
+{
+    const UserPermissionKey permissionKey(databaseId, objectType, objectId);
+    return hasPermissions(permissionKey, permissions, withGrantOption);
+}
+
+bool User::hasPermissions(const UserPermissionKey& permissionKey, std::uint64_t permissions,
+        bool withGrantOption) const noexcept
+{
+    if (isSuperUser()) return true;
+    const auto it = m_grantedPermissions.find(permissionKey);
+    return it != m_grantedPermissions.end()
+           && (it->second.getPermissions() & permissions) == permissions
+           && (!withGrantOption || (it->second.getGrantOptions() & permissions) == permissions);
+}
+
 UserPermissionDataEx User::grantPermissions(
         const UserPermissionKey& permissionKey, std::uint64_t permissions, bool withGrantOption)
 {

@@ -20,15 +20,13 @@ namespace siodb::iomgr::dbengine {
 UserPtr Instance::findUserChecked(const std::string& userName)
 {
     std::lock_guard lock(m_mutex);
-    if (auto user = findUserUnlocked(userName)) return user;
-    throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
+    return findUserCheckedUnlocked(userName);
 }
 
 UserPtr Instance::findUserChecked(std::uint32_t userId)
 {
     std::lock_guard lock(m_mutex);
-    if (auto user = findUserUnlocked(userId)) return user;
-    throwDatabaseError(IOManagerMessageId::kErrorUserIdDoesNotExist, userId);
+    return findUserCheckedUnlocked(userId);
 }
 
 std::uint32_t Instance::createUser(const std::string& name,
@@ -130,6 +128,20 @@ void Instance::updateUser(
 }
 
 // --- internals ---
+
+UserPtr Instance::findUserCheckedUnlocked(const std::string& userName)
+{
+    auto user = findUserUnlocked(userName);
+    if (user) return user;
+    throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, userName);
+}
+
+UserPtr Instance::findUserCheckedUnlocked(std::uint32_t userId)
+{
+    auto user = findUserUnlocked(userId);
+    if (user) return user;
+    throwDatabaseError(IOManagerMessageId::kErrorUserIdDoesNotExist, userId);
+}
 
 UserPtr Instance::findUserUnlocked(const std::string& userName)
 {

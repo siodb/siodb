@@ -18,50 +18,103 @@
 namespace siodb::iomgr::dbengine {
 
 const std::unordered_map<DatabaseObjectType, std::uint64_t> Instance::s_allowedPermissions {
+        {DatabaseObjectType::kInstance, buildMultiPermissionMask<PermissionType::kShutdown>()},
+        {DatabaseObjectType::kDatabase,
+                buildMultiPermissionMask<PermissionType::kShow, PermissionType::kCreate,
+                        PermissionType::kDrop, PermissionType::kAlter, PermissionType::kAttach,
+                        PermissionType::kDetach>()},
         {DatabaseObjectType::kTable,
                 buildMultiPermissionMask<PermissionType::kSelect, PermissionType::kInsert,
-                        PermissionType::kUpdate, PermissionType::kDelete, PermissionType::kDrop,
-                        PermissionType::kAlter, PermissionType::kShow>()},
+                        PermissionType::kUpdate, PermissionType::kDelete, PermissionType::kShow,
+                        PermissionType::kCreate, PermissionType::kDrop, PermissionType::kAlter>()},
 };
 
-void Instance::grantTablePermissions(const std::string& userName, const std::string& databaseName,
-        const std::string& tableName, std::uint64_t permissions, bool withGrantOption,
+std::optional<std::uint64_t> Instance::getAllObjectTypePermissions(
+        DatabaseObjectType objectType) noexcept
+{
+    const auto it = s_allowedPermissions.find(objectType);
+    return it != s_allowedPermissions.end() ? it->second : std::optional<std::uint64_t>();
+}
+
+void Instance::grantTablePermissionsToUser(const std::string& userName,
+        const std::string& databaseName, const std::string& tableName, std::uint64_t permissions,
+        bool withGrantOption, std::uint32_t currentUserId)
+{
+    const auto user = findUserChecked(userName);
+    const auto database = findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+    std::uint64_t tableId = 0;
+    if (tableName != "*") {
+        const auto table = database->findTableChecked(tableName);
+        tableId = table->getId();
+    }
+    grantObjectPermissionsToUser(*user, database->getId(), DatabaseObjectType::kTable, tableId,
+            permissions, withGrantOption, currentUserId);
+}
+
+void Instance::grantObjectPermissionsToUser(User& user, std::uint32_t databaseId,
+        DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+        bool withGrantOption, std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_mutex);
+    grantObjectPermissionsToUserUnlocked(
+            user, databaseId, objectType, objectId, permissions, withGrantOption, currentUserId);
+}
+
+void Instance::revokeTablePermissionsFromUser(const std::string& userName,
+        const std::string& databaseName, const std::string& tableName, std::uint64_t permissions,
         std::uint32_t currentUserId)
 {
     const auto user = findUserChecked(userName);
     const auto database = findDatabaseChecked(databaseName);
     UseDatabaseGuard databaseGuard(*database);
-    const auto table = database->findTableChecked(tableName);
-    grantPermissions(*user, database->getId(), DatabaseObjectType::kTable, table->getId(),
-            permissions, withGrantOption, currentUserId);
+    std::uint64_t tableId = 0;
+    if (tableName != "*") {
+        const auto table = database->findTableChecked(tableName);
+        tableId = table->getId();
+    }
+    revokeObjectPermissionsFromUser(*user, database->getId(), DatabaseObjectType::kTable, tableId,
+            permissions, currentUserId);
 }
 
-void Instance::revokeTablePermissions(const std::string& userName, const std::string& databaseName,
-        const std::string& tableName, std::uint64_t permissions, std::uint32_t currentUserId)
+void Instance::revokeAllObjectPermissionsFromAllUsers(std::uint32_t databaseId,
+        DatabaseObjectType objectType, std::uint64_t objectId, std::uint32_t currentUserId)
 {
-    const auto user = findUserChecked(userName);
-    const auto database = findDatabaseChecked(databaseName);
-    UseDatabaseGuard databaseGuard(*database);
-    const auto table = database->findTableChecked(tableName);
-    revokePermissions(*user, database->getId(), DatabaseObjectType::kTable, table->getId(),
-            permissions, currentUserId);
+    std::lock_guard lock(m_mutex);
+    for (const auto& u : m_users) {
+        revokeObjectPermissionsFromUserUnlocked(*u.second, databaseId, objectType, objectId,
+                kAllPermissionsForRevoke, currentUserId);
+    }
+}
+
+void Instance::revokeObjectPermissionsFromUser(User& user, std::uint32_t databaseId,
+        DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+        std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_mutex);
+    revokeObjectPermissionsFromUserUnlocked(
+            user, databaseId, objectType, objectId, permissions, currentUserId);
 }
 
 // --- internals ---
 
-void Instance::grantPermissions(User& user, std::uint32_t databaseId, DatabaseObjectType objectType,
-        std::uint64_t objectId, std::uint64_t permissions, bool withGrantOption,
-        std::uint32_t currentUserId)
+void Instance::grantObjectPermissionsToUserUnlocked(User& user, std::uint32_t databaseId,
+        DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+        bool withGrantOption, std::uint32_t currentUserId)
 {
     validatePermissions(objectType, permissions);
-    std::lock_guard lock(m_mutex);
+
+    const auto currentUser = findUserCheckedUnlocked(currentUserId);
+    const UserPermissionKey permissionKey(databaseId, objectType, objectId);
+    if (!currentUser->hasPermissions(permissionKey, permissions, true))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+
     const auto& usersById = m_userRegistry.byId();
     const auto it = usersById.find(user.getId());
     if (it == usersById.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, user.getId());
     auto& userRecord = stdext::as_mutable(*it);
     auto& permissionsById = userRecord.m_permissions.byId();
-    const UserPermissionKey permissionKey(databaseId, objectType, objectId);
     auto permissionData = user.grantPermissions(permissionKey, permissions, withGrantOption);
     if (permissionData.getId() != 0) {
         m_systemDatabase->updateUserPermission(permissionData, currentUserId);
@@ -88,19 +141,23 @@ void Instance::grantPermissions(User& user, std::uint32_t databaseId, DatabaseOb
     }
 }
 
-void Instance::revokePermissions(User& user, std::uint32_t databaseId,
+void Instance::revokeObjectPermissionsFromUserUnlocked(User& user, std::uint32_t databaseId,
         DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
         std::uint32_t currentUserId)
 {
-    validatePermissions(objectType, permissions);
-    std::lock_guard lock(m_mutex);
+    if (permissions != kAllPermissionsForRevoke) validatePermissions(objectType, permissions);
+
+    const auto currentUser = findUserCheckedUnlocked(currentUserId);
+    const UserPermissionKey permissionKey(databaseId, objectType, objectId);
+    if (!currentUser->hasPermissions(permissionKey, permissions, true))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+
     const auto& usersById = m_userRegistry.byId();
     const auto it = usersById.find(user.getId());
     if (it == usersById.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, user.getId());
     auto& userRecord = stdext::as_mutable(*it);
     auto& permissionsById = userRecord.m_permissions.byId();
-    const UserPermissionKey permissionKey(databaseId, objectType, objectId);
     const auto result = user.revokePermissions(permissionKey, permissions);
     if (result) {
         const auto permissionId = result->first.getId();

@@ -225,11 +225,53 @@ public:
     }
 
     /**
+     * Checks that user has specific permissions.
+     * @param databaseId Database ID to check permissions on.
+     *                   Zero value may have special meaning "whole instance".
+     * @param objectType Object type to check permissions for.
+     * @param objectId Object ID to check permissions for.
+     *                 Zero value may have special meaning "all objects".
+     * @param permissions Permissions bitmask.
+     * @param withGrantOption Grant option flag, whether user should be able to grant
+     *                        the same permissions to others.
+     * @throw DatabaseError if user doesn't have requires permissions.
+     */
+    void checkHasPermissions(std::uint32_t databaseId, DatabaseObjectType objectType,
+            std::uint64_t objectId, std::uint64_t permissions, bool withGrantOption = false) const;
+
+    /**
+     * Returns indication that user has specific permissions.
+     * @param databaseId Database ID to check permissions on.
+     *                   Zero value may have special meaning "whole instance".
+     * @param objectType Object type to check permissions for.
+     * @param objectId Object ID to check permissions for.
+     *                 Zero value may have special meaning "all objects".
+     * @param permissions Permissions bitmask.
+     * @param withGrantOption Grant option flag, whether user should be able to grant
+     *                        the same permissions to others.
+     * @return true if user has given permissions, false otherwise.
+     */
+    bool hasPermissions(std::uint32_t databaseId, DatabaseObjectType objectType,
+            std::uint64_t objectId, std::uint64_t permissions,
+            bool withGrantOption = false) const noexcept;
+
+    /**
+     * Checks if user has specific permissions.
+     * @param permissionKey User permission key.
+     * @param permissions Permissions bitmask.
+     * @param withGrantOption Grant option flag, whether user should be able to grant
+     *                        the same permissions to others.
+     * @return true if user has given permissions, false otherwise.
+     */
+    bool hasPermissions(const UserPermissionKey& permissionKey, std::uint64_t permissions,
+            bool withGrantOption = false) const noexcept;
+
+    /**
      * Grants specific permissions to this user.
      * @param permissionKey User permission key.
      * @param permissions Permissions bitmask.
      * @param withGrantOption Grant option flag, user will be able to grant
-     *                        same permissions to others.
+     *                        the same permissions to others.
      * @return User permission data object. Permission ID will be zero for a new data object
      *         and nonzero for an existing data object.
      */

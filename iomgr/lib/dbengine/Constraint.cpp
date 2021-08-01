@@ -32,8 +32,8 @@ Constraint::Constraint(Table& table, const ConstraintRecord& constraintRecord)
     , m_name(validateConstraintName(std::string(constraintRecord.m_name)))
     , m_id(constraintRecord.m_id)
     , m_state(constraintRecord.m_state)
-    , m_constraintDefinition(
-              table.findConstraintDefinitionChecked(constraintRecord.m_constraintDefinitionId))
+    , m_constraintDefinition(table.getDatabase().findConstraintDefinitionChecked(
+              constraintRecord.m_constraintDefinitionId))
     , m_description(constraintRecord.m_description)
 {
 }

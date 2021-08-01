@@ -355,24 +355,20 @@ public:
     ConstraintPtr findConstraintChecked(Column* column, std::uint64_t constraintId);
 
     /**
-     * Returns "NOT NULL" system constraint definition.
-     * @return Constraint definition object.
+     * Checks that given user can perform given operation on this table.
+     * @param userId User ID.
+     * @param permissionType Permission type to check for.
+     * @throw DatabaseError if given user doesn't have required permission on this table.
      */
-    ConstraintDefinitionPtr getSystemNotNullConstraintDefinition() const noexcept
-    {
-        return m_database.getSystemNotNullConstraintDefinition();
-    }
+    void checkOperationPermitted(std::uint32_t userId, PermissionType permissionType) const;
 
     /**
-     * Returns constaint definition object if it exists.
-     * @param constraintDefinitionId Constraint definition ID.
-     * @return Constraint definition object.
-     * @throws DatabaseError if constraint definition doesn't exist.
+     * Returns indication that given user can perform given operation on this table.
+     * @param userId User ID.
+     * @param permissionType Permission type to check for.
+     * @return true if given user has required permission on this table, false otherwise.
      */
-    ConstraintDefinitionPtr findConstraintDefinitionChecked(std::uint64_t constraintDefinitionId)
-    {
-        return m_database.findConstraintDefinitionChecked(constraintDefinitionId);
-    }
+    bool isOperationPermitted(std::uint32_t userId, PermissionType permissionType) const;
 
     /**
      * Inserts new row into the table. Allows specifying columns in the custom order.

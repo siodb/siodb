@@ -13,8 +13,8 @@ namespace siodb::iomgr::dbengine {
 enum class PermissionType {
     kSelect = 0,
     kInsert = 1,
-    kUpdate = 2,
-    kDelete = 3,
+    kDelete = 2,
+    kUpdate = 3,
     kShow = 4,
     kCreate = 6,
     kDrop = 7,
@@ -22,7 +22,8 @@ enum class PermissionType {
     kAttach = 9,
     kDetach = 10,
     kEnable = 11,
-    kDisable = 12
+    kDisable = 12,
+    kShutdown = 13
 };
 
 /**
@@ -45,5 +46,59 @@ constexpr inline std::uint64_t buildMultiPermissionMask()
 {
     return (... | getSinglePermissionMask(permissionTypes));
 }
+
+/**
+ * Removes one permissions from the permission mask.
+ * @param permissions Permission bitmask to modify.
+ * @param permissions A permission type to remove.
+ * @return Corresponding permission bitmask.
+ */
+constexpr inline std::uint64_t removeSinglePermissionFromMask(
+        std::uint64_t permissions, PermissionType permissionType)
+{
+    return permissions & ~getSinglePermissionMask(permissionType);
+}
+
+/**
+ * Removes one or more permissions from the permission mask.
+ * @tparam permissionTypes List of permission types.
+ * @param permissions Permission bitmask to modify.
+ * @return Corresponding permission bitmask.
+ */
+template<PermissionType... permissionTypes>
+constexpr inline std::uint64_t removeMultiplePermissionsFromMask(std::uint64_t permissions)
+{
+    return permissions & ~buildMultiPermissionMask<permissionTypes...>();
+}
+
+/** SELECT permission bitmask */
+constexpr auto kSelectPermissionMask = getSinglePermissionMask(PermissionType::kSelect);
+
+/** INSERT permission bitmask */
+constexpr auto kInsertPermissionMask = getSinglePermissionMask(PermissionType::kInsert);
+
+/** DELETE permission bitmask */
+constexpr auto kDeletePermissionMask = getSinglePermissionMask(PermissionType::kDelete);
+
+/** UPDATE permission bitmask */
+constexpr auto kUpdatePermissionMask = getSinglePermissionMask(PermissionType::kUpdate);
+
+/** SHOW permission bitmask */
+constexpr auto kShowPermissionMask = getSinglePermissionMask(PermissionType::kShow);
+
+/** CREATE permission bitmask */
+constexpr auto kCreatePermissionMask = getSinglePermissionMask(PermissionType::kCreate);
+
+/** DROP permission bitmask */
+constexpr auto kDropPermissionMask = getSinglePermissionMask(PermissionType::kDrop);
+
+/** ALTER permission bitmask */
+constexpr auto kAlterPermissionMask = getSinglePermissionMask(PermissionType::kAlter);
+
+/** ATTACH permission bitmask */
+constexpr auto kAttachPermissionMask = getSinglePermissionMask(PermissionType::kAttach);
+
+/** DETACH permission bitmask */
+constexpr auto kDetachPermissionMask = getSinglePermissionMask(PermissionType::kDetach);
 
 }  // namespace siodb::iomgr::dbengine

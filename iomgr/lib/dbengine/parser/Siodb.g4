@@ -284,10 +284,10 @@ drop_view_stmt:
 ///////////////////////////////////////////////////////////
 
 grant_table_permissions_stmt:
-	K_GRANT table_permission_list K_ON (K_TABLE)? table_spec K_TO user_name grant_option_spec?;
+	K_GRANT table_permission_list K_ON (K_TABLE)? table_spec_ex K_TO user_name grant_option_spec?;
 
 revoke_table_permissions_stmt:
-	K_REVOKE table_permission_list K_ON (K_TABLE)? table_spec K_FROM user_name;
+	K_REVOKE table_permission_list K_ON (K_TABLE)? table_spec_ex K_FROM user_name;
 
 table_permission_list: table_permission (',' table_permission)*;
 
@@ -308,10 +308,10 @@ grant_option_spec: K_WITH K_GRANT K_OPTION;
 ///////////////////////////////////////////////////////////
 
 grant_view_permissions_stmt:
-	K_GRANT view_permission_list K_ON K_VIEW view_spec K_TO user_name grant_option_spec?;
+	K_GRANT view_permission_list K_ON K_VIEW view_spec_ex K_TO user_name grant_option_spec?;
 
 revoke_view_permissions_stmt:
-	K_REVOKE view_permission_list K_ON K_VIEW view_spec K_FROM user_name;
+	K_REVOKE view_permission_list K_ON K_VIEW view_spec_ex K_FROM user_name;
 
 view_permission_list: view_permission (',' view_permission)*;
 
@@ -326,10 +326,10 @@ view_permission:
 ///////////////////////////////////////////////////////////
 
 grant_index_permissions_stmt:
-	K_GRANT index_permission_list K_ON K_INDEX index_spec K_TO user_name grant_option_spec?;
+	K_GRANT index_permission_list K_ON K_INDEX index_spec_ex K_TO user_name grant_option_spec?;
 
 revoke_index_permissions_stmt:
-	K_REVOKE index_permission_list K_ON K_INDEX index_spec K_FROM user_name;
+	K_REVOKE index_permission_list K_ON K_INDEX index_spec_ex K_FROM user_name;
 
 index_permission_list: index_permission (',' index_permission)*;
 
@@ -338,10 +338,11 @@ index_permission: K_ALL | K_DROP | K_ALTER | K_SHOW;
 ///////////////////////////////////////////////////////////
 
 grant_trigger_permissions_stmt:
-	K_GRANT trigger_permission_list K_ON K_TRIGGER trigger_spec K_TO user_name grant_option_spec?;
+	K_GRANT trigger_permission_list K_ON K_TRIGGER trigger_spec_ex K_TO user_name grant_option_spec?
+		;
 
 revoke_trigger_permissions_stmt:
-	K_REVOKE trigger_permission_list K_ON K_TRIGGER trigger_spec K_FROM user_name;
+	K_REVOKE trigger_permission_list K_ON K_TRIGGER trigger_spec_ex K_FROM user_name;
 
 trigger_permission_list:
 	trigger_permission (',' trigger_permission)*;
@@ -357,11 +358,11 @@ trigger_permission:
 ///////////////////////////////////////////////////////////
 
 grant_database_permissions_stmt:
-	K_GRANT database_permission_list K_ON K_DATABASE database_name K_TO user_name grant_option_spec?
-		;
+	K_GRANT database_permission_list K_ON K_DATABASE database_name_ex K_TO user_name
+		grant_option_spec?;
 
 revoke_database_permissions_stmt:
-	K_GRANT database_permission_list K_ON K_DATABASE database_name K_FROM user_name;
+	K_GRANT database_permission_list K_ON K_DATABASE database_name_ex K_FROM user_name;
 
 database_permission_list:
 	database_permission (',' database_permission)*;
@@ -774,12 +775,16 @@ new_function_name: any_name;
 
 database_name: any_name;
 
+database_name_ex: database_name | STAR;
+
 // TODO(siodb): ALTER DATABASE RENAME IF EXISTS TO
 new_database_name: any_name;
 
 table_name: any_name;
 
 table_spec: (database_name '.')? table_name;
+
+table_spec_ex: (database_name '.')? (table_name | STAR);
 
 table_or_index_name: any_name;
 
@@ -810,12 +815,16 @@ index_name: any_name;
 
 index_spec: (database_name '.')? index_name;
 
+index_spec_ex: (database_name '.')? (index_name | STAR);
+
 // TODO(siodb): ALTER INDEX RENAME IF EXISTS TO
 new_index_name: any_name;
 
 trigger_name: any_name;
 
 trigger_spec: (database_name '.')? trigger_name;
+
+trigger_spec_ex: (database_name '.')? (trigger_name | STAR);
 
 // TODO(siodb): ALTER TRIGGER RENAME IF EXISTS TO
 new_trigger_name: any_name;
@@ -837,6 +846,8 @@ user_token_value: BLOB_LITERAL;
 view_name: any_name;
 
 view_spec: (database_name '.')? view_name;
+
+view_spec_ex: (database_name '.')? (view_name | STAR);
 
 // TODO(siodb): ALTER VIEW RENAME IF EXISTS TO
 new_view_name: any_name;

@@ -592,7 +592,7 @@ void Column::createMasterColumnConstraints()
 {
     ConstraintDefinitionPtr constraintDefinition;
     if (m_table.isSystemTable()) {
-        constraintDefinition = m_table.getSystemNotNullConstraintDefinition();
+        constraintDefinition = m_table.getDatabase().getSystemNotNullConstraintDefinition();
     } else {
         const requests::ConstantExpression expression(Variant::true_());
         BinaryValue serializedConstraintExpression(expression.getSerializedSize());

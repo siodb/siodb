@@ -148,6 +148,24 @@ void RequestHandler::executeAddColumnRequest(
                 request.m_table, request.m_column.m_dataType);
     }
 
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto table = database->findTableChecked(request.m_table);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to alter this table or any table in this database
+    // or any table in the any database
+    if (!user->hasPermissions(
+                database->getId(), DatabaseObjectType::kTable, table->getId(), kAlterPermissionMask)
+            && !user->hasPermissions(
+                    database->getId(), DatabaseObjectType::kTable, 0, kAlterPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kTable, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     sendNotImplementedYet(response);
 }
 
@@ -171,6 +189,34 @@ void RequestHandler::executeCreateIndexRequest(iomgr_protocol::DatabaseEngineRes
         throwDatabaseError(IOManagerMessageId::kErrorInvalidIndexColumns, request.m_database,
                 request.m_table, request.m_index);
     }
+
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto table = database->findTableChecked(request.m_table);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // Table should be visible to the user
+    if (!user->hasPermissions(
+                database->getId(), DatabaseObjectType::kTable, table->getId(), kShowPermissionMask)
+            && !user->hasPermissions(
+                    database->getId(), DatabaseObjectType::kTable, 0, kShowPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kTable, 0, kShowPermissionMask)) {
+        throwDatabaseError(
+                IOManagerMessageId::kErrorTableDoesNotExist, databaseName, request.m_table);
+    }
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to create index in this database or in the any database
+    if (!user->hasPermissions(
+                database->getId(), DatabaseObjectType::kIndex, 0, kCreatePermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kIndex, 0, kCreatePermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
+    // TODO: check if index already exists
 
     sendNotImplementedYet(response);
 }
@@ -203,6 +249,19 @@ void RequestHandler::executeRenameDatabaseRequest(iomgr_protocol::DatabaseEngine
                 IOManagerMessageId::kErrorCannotRenameCurrentDatabase, request.m_database);
     }
 
+    const auto database = m_instance.findDatabaseChecked(request.m_database);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to alter this database or any database
+    if (!user->hasPermissions(
+                0, DatabaseObjectType::kDatabase, database->getId(), kAlterPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     sendNotImplementedYet(response);
 }
 
@@ -214,6 +273,19 @@ void RequestHandler::executeSetDatabaseAttributesRequest(
     if (!isValidDatabaseObjectName(request.m_database))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
+    const auto database = m_instance.findDatabaseChecked(request.m_database);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to alter this database or any database
+    if (!user->hasPermissions(
+                0, DatabaseObjectType::kDatabase, database->getId(), kAlterPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     sendNotImplementedYet(response);
 }
 
@@ -223,12 +295,22 @@ void RequestHandler::executeUseDatabaseRequest(iomgr_protocol::DatabaseEngineRes
     if (!isValidDatabaseObjectName(request.m_database))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    auto newDatabase = m_instance.findDatabaseChecked(request.m_database);
-    m_instance.findDatabaseChecked(m_currentDatabaseName)->release();
+    const auto currentDatabase = m_instance.findDatabaseChecked(m_currentDatabaseName);
+    const auto newDatabase = m_instance.findDatabaseChecked(request.m_database);
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // User should have permission to list this database or any database
+    if (!user->hasPermissions(
+                0, DatabaseObjectType::kDatabase, newDatabase->getId(), kShowPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kShowPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorDatabaseDoesNotExist, request.m_database);
+    }
+
+    currentDatabase->release();
     newDatabase->use();
     m_currentDatabaseName = request.m_database;
 
-    auto tag = response.add_tag();
+    const auto tag = response.add_tag();
     tag->set_name(kCurrentDatabaseTag);
     tag->set_string_value(request.m_database);
     protobuf::writeMessage(
@@ -277,6 +359,24 @@ void RequestHandler::executeDropColumnRequest(iomgr_protocol::DatabaseEngineResp
     if (!isValidDatabaseObjectName(request.m_column))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidColumnName, request.m_column);
 
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto table = database->findTableChecked(request.m_table);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to alter this table or any table in this database
+    // or any table in the any database
+    if (!user->hasPermissions(
+                database->getId(), DatabaseObjectType::kTable, table->getId(), kAlterPermissionMask)
+            && !user->hasPermissions(
+                    database->getId(), DatabaseObjectType::kTable, 0, kAlterPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kTable, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     sendNotImplementedYet(response);
 }
 
@@ -299,6 +399,24 @@ void RequestHandler::executeRenameColumnRequest(iomgr_protocol::DatabaseEngineRe
     if (!isValidDatabaseObjectName(request.m_newColumn))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidColumnName, request.m_column);
 
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto table = database->findTableChecked(request.m_table);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to alter this table or any table in this database
+    // or any table in the any database
+    if (!user->hasPermissions(
+                database->getId(), DatabaseObjectType::kTable, table->getId(), kAlterPermissionMask)
+            && !user->hasPermissions(
+                    database->getId(), DatabaseObjectType::kTable, 0, kAlterPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kTable, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     sendNotImplementedYet(response);
 }
 
@@ -314,6 +432,29 @@ void RequestHandler::executeDropIndexRequest(
 
     if (!isValidDatabaseObjectName(request.m_index))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidIndexName, request.m_index);
+
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+#if 0
+    const auto index = database->findIndexChecked(request.m_index);
+#endif
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to drop this index or drop any index in this database
+    // or drop any index in the any database
+    if (
+#if 0
+        !user->hasPermissions(database->getId(), DatabaseObjectType::kIndex, index->getId(), kDropPermissionMask)
+            &&
+#endif
+            !user->hasPermissions(
+                    database->getId(), DatabaseObjectType::kTable, 0, kDropPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kTable, 0, kDropPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
 
     sendNotImplementedYet(response);
 }
@@ -334,6 +475,24 @@ void RequestHandler::executeRedefineColumnRequest(iomgr_protocol::DatabaseEngine
     if (!isValidDatabaseObjectName(request.m_newColumn.m_name))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidColumnName, request.m_newColumn.m_name);
 
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto table = database->findTableChecked(request.m_table);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to alter this table or any table in this database
+    // or any table in the any database
+    if (!user->hasPermissions(
+                database->getId(), DatabaseObjectType::kTable, table->getId(), kAlterPermissionMask)
+            && !user->hasPermissions(
+                    database->getId(), DatabaseObjectType::kTable, 0, kAlterPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kTable, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     sendNotImplementedYet(response);
 }
 
@@ -344,6 +503,14 @@ void RequestHandler::executeAttachDatabaseRequest(iomgr_protocol::DatabaseEngine
 
     if (!isValidDatabaseObjectName(request.m_database))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to attach database
+    if (!user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kAttachPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
 
     sendNotImplementedYet(response);
 }
@@ -357,6 +524,19 @@ void RequestHandler::executeDetachDatabaseRequest(iomgr_protocol::DatabaseEngine
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
     if (!isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, databaseName);
+
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to detach this database or any database
+    if (!user->hasPermissions(
+                0, DatabaseObjectType::kDatabase, database->getId(), kDetachPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kDetachPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
 
     sendNotImplementedYet(response);
 }
@@ -376,6 +556,24 @@ void RequestHandler::executeRenameTableRequest(iomgr_protocol::DatabaseEngineRes
 
     if (isValidDatabaseObjectName(request.m_oldTable))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_oldTable);
+
+    const auto database = m_instance.findDatabaseChecked(databaseName);
+    UseDatabaseGuard databaseGuard(*database);
+
+    const auto table = database->findTableChecked(request.m_oldTable);
+
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // TODO: Move this check into the proper function when implemented.
+    // User should have permission to alter this table or any table in this database
+    // or any table in the any database
+    if (!user->hasPermissions(
+                database->getId(), DatabaseObjectType::kTable, table->getId(), kAlterPermissionMask)
+            && !user->hasPermissions(
+                    database->getId(), DatabaseObjectType::kTable, 0, kAlterPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kTable, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
 
     sendNotImplementedYet(response);
 }
@@ -399,12 +597,31 @@ void RequestHandler::executeSetTableAttributesRequest(
 
     const auto table = database->findTableChecked(request.m_table);
 
+    const auto user = m_instance.findUserChecked(m_userId);
+
+    // Validate
     if (request.m_nextTrid) {
         const auto nextTrid = *request.m_nextTrid;
         if (nextTrid == 0) {
             throwDatabaseError(IOManagerMessageId::kErrorInvalidNextUserTrid, database->getName(),
                     table->getName(), nextTrid);
         }
+    }
+
+    // Check permissions
+    // User should have permission to alter this table or any table in this database
+    // or any table in the any database
+    if (!user->hasPermissions(
+                database->getId(), DatabaseObjectType::kTable, table->getId(), kAlterPermissionMask)
+            && !user->hasPermissions(
+                    database->getId(), DatabaseObjectType::kTable, 0, kAlterPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kTable, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
+    // Execute
+    if (request.m_nextTrid) {
+        const auto nextTrid = *request.m_nextTrid;
         try {
             table->setLastUserTrid(nextTrid - 1);
         } catch (std::exception& ex) {

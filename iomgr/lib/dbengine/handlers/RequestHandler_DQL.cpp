@@ -82,9 +82,10 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
     {
         std::vector<DataSetPtr> dataSets;
         dataSets.reserve(request.m_tables.size());
-        for (const auto& table : request.m_tables) {
-            dataSets.push_back(std::make_shared<TableDataSet>(
-                    database->findTableChecked(table.m_name), table.m_alias));
+        for (const auto& tableSpec : request.m_tables) {
+            const auto table = database->findTableChecked(tableSpec.m_name);
+            table->checkOperationPermitted(m_userId, PermissionType::kSelect);
+            dataSets.push_back(std::make_shared<TableDataSet>(table, tableSpec.m_alias));
         }
         dbContext = std::make_unique<requests::DBExpressionEvaluationContext>(std::move(dataSets));
     }
@@ -378,6 +379,8 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
+    const auto user = m_instance.findUserChecked(m_userId);
+
     const auto sysDatabasesTable =
             m_instance.getSystemDatabase().findTableChecked(kSysDatabasesTableName);
     const auto nameColumn = sysDatabasesTable->findColumnChecked(kSysDatabases_Name_ColumnName);
@@ -401,6 +404,12 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
 
     protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
     for (const auto& dbRecord : databaseRecords) {
+        // User must have permission to show database or show all databases
+        if (!user->hasPermissions(
+                    0, DatabaseObjectType::kDatabase, dbRecord.m_id, kShowPermissionMask)
+                && !user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kShowPermissionMask))
+            continue;
+
         values[0] = dbRecord.m_name;
         values[1] = boost::uuids::to_string(dbRecord.m_uuid);
 
@@ -438,6 +447,8 @@ void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResp
     const auto database = m_instance.findDatabaseChecked(m_currentDatabaseName);
     UseDatabaseGuard databaseGuard(*database);
 
+    const auto user = m_instance.findUserChecked(m_userId);
+
     const auto sysTablesTable = database->findTableChecked(kSysTablesTableName);
     const auto nameColumn = sysTablesTable->findColumnChecked(kSysTables_Name_ColumnName);
     const auto descriptionColumn =
@@ -461,6 +472,15 @@ void RequestHandler::executeShowTablesRequest(iomgr_protocol::DatabaseEngineResp
 
     protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
     for (const auto& tableRecord : tableRecords) {
+        // User must have permission to show that table, any table in that database,
+        // or any table in any database
+        if (!user->hasPermissions(database->getId(), DatabaseObjectType::kDatabase,
+                    tableRecord.m_id, kShowPermissionMask)
+                && !user->hasPermissions(
+                        database->getId(), DatabaseObjectType::kDatabase, 0, kShowPermissionMask)
+                && user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kShowPermissionMask))
+            continue;
+
         values[0] = tableRecord.m_name;
         values[1] = tableRecord.m_description;
 
@@ -500,7 +520,9 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
     const auto database = m_instance.findDatabaseChecked(databaseName);
     UseDatabaseGuard databaseGuard(*database);
+
     const auto table = database->findTableChecked(request.m_table);
+    table->checkOperationPermitted(m_userId, PermissionType::kShow);
 
     const auto sysColumnsTableName = database->findTableChecked(kSysColumnsTableName);
     const auto nameColumn = sysColumnsTableName->findColumnChecked(kSysColumns_Name_ColumnName);

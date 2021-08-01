@@ -8,6 +8,7 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include "SystemDatabase.h"
 #include "ThrowDatabaseError.h"
+#include "User.h"
 #include "UserDatabase.h"
 
 // Common project headers
@@ -32,22 +33,6 @@ std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName() const
                 return left.m_name < right.m_name;
             });
     return databaseRecords;
-}
-
-std::vector<std::string> Instance::getDatabaseNames(bool includeSystemDatabase) const
-{
-    std::lock_guard lock(m_mutex);
-    std::vector<std::string> result;
-    result.reserve(m_databaseRegistry.size());
-    const auto& index = m_databaseRegistry.byName();
-    stdext::transform_if(
-            index.cbegin(), index.cend(), std::back_inserter(result),
-            [](const auto& databaseRecord) { return databaseRecord.m_name; },
-            [includeSystemDatabase](const auto& databaseRecord) {
-                return databaseRecord.m_name != kSystemDatabaseName || includeSystemDatabase;
-            });
-    std::sort(result.begin(), result.end());
-    return result;
 }
 
 DatabasePtr Instance::findDatabaseChecked(const std::string& databaseName)
@@ -76,36 +61,57 @@ DatabasePtr Instance::createDatabase(std::string&& name, const std::string& ciph
         std::uint32_t maxTableCount, const std::optional<Uuid>& uuid, bool dataDirectoryMustExist,
         std::uint32_t currentUserId)
 {
-    std::lock_guard lock(m_cacheMutex);
+    const auto user = findUserChecked(currentUserId);
 
-    if (m_databaseRegistry.size() >= m_maxDatabases)
-        throwDatabaseError(IOManagerMessageId::kErrorTooManyDatabases);
+    // User must have permission to create database
+    user->checkHasPermissions(
+            0, DatabaseObjectType::kDatabase, 0, getSinglePermissionMask(PermissionType::kCreate));
 
-    if (m_databaseRegistry.byName().count(name) > 0)
-        throwDatabaseError(IOManagerMessageId::kErrorDatabaseAlreadyExists, name);
+    DatabasePtr database;
+    {
+        std::lock_guard lock(m_cacheMutex);
 
-    const auto& databasesByUuid = m_databaseRegistry.byUuid();
-    Uuid realUuid;
-    if (uuid.has_value()) {
-        if (databasesByUuid.count(*uuid) > 0)
-            throwDatabaseError(IOManagerMessageId::kErrorDatabaseUuidAlreadyExists, *uuid);
-        realUuid = *uuid;
-    } else {
-        auto t = std::time(nullptr);
-        do {
-            realUuid = Database::computeDatabaseUuid(name.c_str(), t++);
-        } while (databasesByUuid.count(realUuid) > 0);
+        if (m_databaseRegistry.size() >= m_maxDatabases)
+            throwDatabaseError(IOManagerMessageId::kErrorTooManyDatabases);
+
+        if (m_databaseRegistry.byName().count(name) > 0)
+            throwDatabaseError(IOManagerMessageId::kErrorDatabaseAlreadyExists, name);
+
+        const auto& databasesByUuid = m_databaseRegistry.byUuid();
+        Uuid realUuid;
+        if (uuid.has_value()) {
+            if (databasesByUuid.count(*uuid) > 0)
+                throwDatabaseError(IOManagerMessageId::kErrorDatabaseUuidAlreadyExists, *uuid);
+            realUuid = *uuid;
+        } else {
+            auto t = std::time(nullptr);
+            do {
+                realUuid = Database::computeDatabaseUuid(name.c_str(), t++);
+            } while (databasesByUuid.count(realUuid) > 0);
+        }
+
+        if (maxTableCount == 0) maxTableCount = m_maxTableCountPerDatabase;
+
+        database = std::make_shared<UserDatabase>(*this, realUuid, std::move(name), cipherId,
+                std::move(cipherKey), std::move(description), maxTableCount,
+                dataDirectoryMustExist);
+        m_databaseRegistry.emplace(*database);
+
+        const TransactionParameters tp(
+                currentUserId, m_systemDatabase->generateNextTransactionId());
+        m_systemDatabase->recordDatabase(*database, tp);
+        m_databases.emplace(database->getId(), database);
     }
 
-    if (maxTableCount == 0) maxTableCount = m_maxTableCountPerDatabase;
-
-    auto database = std::make_shared<UserDatabase>(*this, realUuid, std::move(name), cipherId,
-            std::move(cipherKey), std::move(description), maxTableCount, dataDirectoryMustExist);
-    m_databaseRegistry.emplace(*database);
-
-    const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
-    m_systemDatabase->recordDatabase(*database, tp);
-    m_databases.emplace(database->getId(), database);
+    // Auto-grant permissions to database creator
+    const auto databasePermissions =
+            removeMultiplePermissionsFromMask<PermissionType::kCreate, PermissionType::kAttach>(
+                    *Instance::getAllObjectTypePermissions(DatabaseObjectType::kDatabase));
+    grantObjectPermissionsToUser(*user, 0, DatabaseObjectType::kDatabase, database->getId(),
+            databasePermissions, true, User::kSuperUserId);
+    grantObjectPermissionsToUser(*user, database->getId(), DatabaseObjectType::kTable, 0,
+            *Instance::getAllObjectTypePermissions(DatabaseObjectType::kTable), true,
+            User::kSuperUserId);
 
     return database;
 }
@@ -117,6 +123,18 @@ bool Instance::dropDatabase(
 
     const auto database = findDatabase(name);
     if (!database) {
+        if (databaseMustExist)
+            throwDatabaseError(IOManagerMessageId::kErrorDatabaseDoesNotExist, name);
+        else
+            return false;
+    }
+
+    const auto user = findUserChecked(currentUserId);
+
+    // User must have permission to drop this ot any database
+    if (!user->hasPermissions(
+                0, DatabaseObjectType::kDatabase, database->getId(), kDropPermissionMask)
+            && !user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kDropPermissionMask)) {
         if (databaseMustExist)
             throwDatabaseError(IOManagerMessageId::kErrorDatabaseDoesNotExist, name);
         else
@@ -136,6 +154,8 @@ bool Instance::dropDatabase(
     m_databases.erase(id);
     m_databaseRegistry.byId().erase(id);
     m_systemDatabase->deleteDatabase(id, currentUserId);
+    revokeAllObjectPermissionsFromAllUsers(
+            0, DatabaseObjectType::kDatabase, database->getId(), User::kSuperUserId);
     system_error_code ec;
     if (fs::remove_all(dataDir, ec) == static_cast<std::uintmax_t>(-1)) {
         throwDatabaseError(IOManagerMessageId::kWarningCannotRemoveDatabaseDataDirectory,

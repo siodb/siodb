@@ -60,6 +60,8 @@ void RequestHandler::executeUpdateRequest(
     }
 
     const auto table = database->findTableChecked(request.m_table.m_name);
+    table->checkOperationPermitted(m_userId, PermissionType::kUpdate);
+
     const auto tableColumns = table->getColumnsOrderedByPosition();
 
     // Positions of used columns
@@ -178,8 +180,10 @@ void RequestHandler::executeDeleteRequest(
                 request.m_table.m_name);
     }
 
-    const auto tableDataSet = std::make_shared<TableDataSet>(
-            database->findTableChecked(request.m_table.m_name), request.m_table.m_alias);
+    const auto table = database->findTableChecked(request.m_table.m_name);
+    table->checkOperationPermitted(m_userId, PermissionType::kDelete);
+
+    const auto tableDataSet = std::make_shared<TableDataSet>(table, request.m_table.m_alias);
     requests::DBExpressionEvaluationContext dbContext(std::vector<DataSetPtr> {tableDataSet});
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
@@ -234,6 +238,7 @@ void RequestHandler::executeInsertRequest(
     }
 
     const auto table = database->findTableChecked(request.m_table);
+    table->checkOperationPermitted(m_userId, PermissionType::kInsert);
 
     if (request.m_values.empty()) throwDatabaseError(IOManagerMessageId::kErrorValuesListIsEmpty);
 

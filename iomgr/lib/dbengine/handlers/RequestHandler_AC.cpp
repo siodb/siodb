@@ -22,20 +22,18 @@ void RequestHandler::executeGrantPermissionsForTableRequest(
 {
     response.set_has_affected_row_count(false);
 
-    if (!isValidDatabaseObjectName(request.m_user))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, request.m_user);
-
     const std::string& databaseName =
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
     if (!isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    if (!isValidDatabaseObjectName(request.m_table))
+    if (request.m_table != "*" && !isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
-    if (!isSuperUser()) throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    if (!isValidDatabaseObjectName(request.m_user))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, request.m_user);
 
-    m_instance.grantTablePermissions(request.m_user, databaseName, request.m_table,
+    m_instance.grantTablePermissionsToUser(request.m_user, databaseName, request.m_table,
             request.m_permissions, request.m_withGrantOption, m_userId);
 
     protobuf::writeMessage(
@@ -48,20 +46,18 @@ void RequestHandler::executeRevokePermissionsForTableRequest(
 {
     response.set_has_affected_row_count(false);
 
-    if (!isValidDatabaseObjectName(request.m_user))
-        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, request.m_user);
-
     const std::string& databaseName =
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
     if (!isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    if (!isValidDatabaseObjectName(request.m_table))
+    if (request.m_table != "*" && !isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
-    if (!isSuperUser()) throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    if (!isValidDatabaseObjectName(request.m_user))
+        throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, request.m_user);
 
-    m_instance.revokeTablePermissions(
+    m_instance.revokeTablePermissionsFromUser(
             request.m_user, databaseName, request.m_table, request.m_permissions, m_userId);
 
     protobuf::writeMessage(
