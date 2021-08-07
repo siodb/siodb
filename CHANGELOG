@@ -5,7 +5,7 @@
 - New feature: #155 Create database with explicit UUID
 - New feature: Automatic copyright years update in the git pre-commit hook
 - Update: Upgraded third party libraries to actual stable versions
-- Update: Upgraded to Go 1.16.6
+- Update: Upgraded to Go 1.16.7
 - Update: Improved standalone test scripts
 - Fix: #115 "siocli -c" exits with zero code when command fails
 - Fix: #124 Drop system table must be prohibited
