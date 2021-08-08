@@ -20,6 +20,12 @@ std::uint64_t Instance::createUserAccessKey(const std::string& userName, const s
 {
     std::lock_guard lock(m_cacheMutex);
 
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(
+                0, DatabaseObjectType::kUserAccessKey, 0, kCreatePermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     const auto& index = m_userRegistry.byName();
     const auto it = index.find(userName);
     if (it == index.cend())
@@ -48,6 +54,12 @@ void Instance::dropUserAccessKey(const std::string& userName, const std::string&
 {
     std::lock_guard lock(m_cacheMutex);
 
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(
+                0, DatabaseObjectType::kUserAccessKey, 0, kDropPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     const auto& userIndex = m_userRegistry.byName();
     const auto itUser = userIndex.find(userName);
     if (itUser == userIndex.end())
@@ -75,6 +87,12 @@ void Instance::updateUserAccessKey(const std::string& userName, const std::strin
         const UpdateUserAccessKeyParameters& params, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
+
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(
+                0, DatabaseObjectType::kUserAccessKey, 0, kAlterPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
 
     const auto& userIndex = m_userRegistry.byName();
     const auto itUser = userIndex.find(userName);

@@ -23,15 +23,46 @@ std::size_t Instance::getDatabaseCount() const
     return m_databaseRegistry.size();
 }
 
-std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName() const
+std::vector<DatabaseRecord> Instance::getDatabaseRecordsOrderedByName(std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_mutex);
+
+    const auto currentUser = findUserCheckedUnlocked(currentUserId);
+
+    const bool canListAllDatabases =
+            currentUser->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kShowPermissionMask);
+
     const auto& index = m_databaseRegistry.byName();
-    std::vector<DatabaseRecord> databaseRecords(index.cbegin(), index.cend());
-    std::sort(databaseRecords.begin(), databaseRecords.end(),
-            [](const auto& left, const auto& right) noexcept {
-                return left.m_name < right.m_name;
+    const auto permittedDatabaseCount = std::count_if(index.cbegin(), index.cend(),
+            [currentUser, canListAllDatabases](const auto& databaseRecord) noexcept {
+                const bool isSystemDatabase = databaseRecord.m_name == kSystemDatabaseName;
+                return (isSystemDatabase
+                               && currentUser->hasPermissions(0, DatabaseObjectType::kDatabase,
+                                       databaseRecord.m_id, kShowSystemPermissionMask))
+                       || (!isSystemDatabase
+                               && (currentUser->hasPermissions(0, DatabaseObjectType::kDatabase,
+                                           databaseRecord.m_id, kShowPermissionMask)
+                                       || canListAllDatabases));
             });
+    std::vector<DatabaseRecord> databaseRecords;
+    if (permittedDatabaseCount > 0) {
+        databaseRecords.reserve(permittedDatabaseCount);
+        std::copy_if(index.cbegin(), index.cend(), std::back_inserter(databaseRecords),
+                [currentUser, canListAllDatabases](const auto& databaseRecord) noexcept {
+                    const bool isSystemDatabase = databaseRecord.m_name == kSystemDatabaseName;
+                    return (isSystemDatabase
+                                   && currentUser->hasPermissions(0, DatabaseObjectType::kDatabase,
+                                           databaseRecord.m_id, kShowSystemPermissionMask))
+                           || (!isSystemDatabase
+                                   && (currentUser->hasPermissions(0, DatabaseObjectType::kDatabase,
+                                               databaseRecord.m_id, kShowPermissionMask)
+                                           || canListAllDatabases));
+                });
+        std::sort(databaseRecords.begin(), databaseRecords.end(),
+                [](const auto& left, const auto& right) noexcept {
+                    return left.m_name < right.m_name;
+                });
+    }
     return databaseRecords;
 }
 
@@ -61,10 +92,10 @@ DatabasePtr Instance::createDatabase(std::string&& name, const std::string& ciph
         std::uint32_t maxTableCount, const std::optional<Uuid>& uuid, bool dataDirectoryMustExist,
         std::uint32_t currentUserId)
 {
-    const auto user = findUserChecked(currentUserId);
+    const auto currentUser = findUserChecked(currentUserId);
 
     // User must have permission to create database
-    user->checkHasPermissions(
+    currentUser->checkHasPermissions(
             0, DatabaseObjectType::kDatabase, 0, getSinglePermissionMask(PermissionType::kCreate));
 
     DatabasePtr database;
@@ -107,9 +138,9 @@ DatabasePtr Instance::createDatabase(std::string&& name, const std::string& ciph
     const auto databasePermissions =
             removeMultiplePermissionsFromMask<PermissionType::kCreate, PermissionType::kAttach>(
                     *Instance::getAllObjectTypePermissions(DatabaseObjectType::kDatabase));
-    grantObjectPermissionsToUser(*user, 0, DatabaseObjectType::kDatabase, database->getId(),
+    grantObjectPermissionsToUser(*currentUser, 0, DatabaseObjectType::kDatabase, database->getId(),
             databasePermissions, true, User::kSuperUserId);
-    grantObjectPermissionsToUser(*user, database->getId(), DatabaseObjectType::kTable, 0,
+    grantObjectPermissionsToUser(*currentUser, database->getId(), DatabaseObjectType::kTable, 0,
             *Instance::getAllObjectTypePermissions(DatabaseObjectType::kTable), true,
             User::kSuperUserId);
 
@@ -129,12 +160,13 @@ bool Instance::dropDatabase(
             return false;
     }
 
-    const auto user = findUserChecked(currentUserId);
+    const auto currentUser = findUserChecked(currentUserId);
 
     // User must have permission to drop this ot any database
-    if (!user->hasPermissions(
+    if (!currentUser->hasPermissions(
                 0, DatabaseObjectType::kDatabase, database->getId(), kDropPermissionMask)
-            && !user->hasPermissions(0, DatabaseObjectType::kDatabase, 0, kDropPermissionMask)) {
+            && !currentUser->hasPermissions(
+                    0, DatabaseObjectType::kDatabase, 0, kDropPermissionMask)) {
         if (databaseMustExist)
             throwDatabaseError(IOManagerMessageId::kErrorDatabaseDoesNotExist, name);
         else

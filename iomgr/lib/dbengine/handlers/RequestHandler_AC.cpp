@@ -34,7 +34,7 @@ void RequestHandler::executeGrantPermissionsForTableRequest(
         throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, request.m_user);
 
     m_instance.grantTablePermissionsToUser(request.m_user, databaseName, request.m_table,
-            request.m_permissions, request.m_withGrantOption, m_userId);
+            request.m_permissions, request.m_withGrantOption, m_currentUserId);
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);
@@ -58,7 +58,7 @@ void RequestHandler::executeRevokePermissionsForTableRequest(
         throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, request.m_user);
 
     m_instance.revokeTablePermissionsFromUser(
-            request.m_user, databaseName, request.m_table, request.m_permissions, m_userId);
+            request.m_user, databaseName, request.m_table, request.m_permissions, m_currentUserId);
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, m_connection);

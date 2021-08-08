@@ -12,18 +12,20 @@ namespace siodb::iomgr::dbengine {
 /** Permission types and respective bitmask bit numbers. */
 enum class PermissionType {
     kSelect = 0,
-    kInsert = 1,
-    kDelete = 2,
-    kUpdate = 3,
-    kShow = 4,
-    kCreate = 6,
-    kDrop = 7,
-    kAlter = 8,
-    kAttach = 9,
-    kDetach = 10,
-    kEnable = 11,
-    kDisable = 12,
-    kShutdown = 13
+    kSelectSystem = 1,
+    kInsert = 2,
+    kDelete = 3,
+    kUpdate = 4,
+    kShow = 5,
+    kShowSystem = 6,
+    kCreate = 7,
+    kDrop = 8,
+    kAlter = 9,
+    kAttach = 10,
+    kDetach = 11,
+    kEnable = 12,
+    kDisable = 13,
+    kShutdown = 14
 };
 
 /**
@@ -74,6 +76,9 @@ constexpr inline std::uint64_t removeMultiplePermissionsFromMask(std::uint64_t p
 /** SELECT permission bitmask */
 constexpr auto kSelectPermissionMask = getSinglePermissionMask(PermissionType::kSelect);
 
+/** SELECT FROM SYATEM TABLE permission bitmask */
+constexpr auto kSelectSystemPermissionMask = getSinglePermissionMask(PermissionType::kSelectSystem);
+
 /** INSERT permission bitmask */
 constexpr auto kInsertPermissionMask = getSinglePermissionMask(PermissionType::kInsert);
 
@@ -85,6 +90,9 @@ constexpr auto kUpdatePermissionMask = getSinglePermissionMask(PermissionType::k
 
 /** SHOW permission bitmask */
 constexpr auto kShowPermissionMask = getSinglePermissionMask(PermissionType::kShow);
+
+/** SHOW SYSTEM permission bitmask */
+constexpr auto kShowSystemPermissionMask = getSinglePermissionMask(PermissionType::kShowSystem);
 
 /** CREATE permission bitmask */
 constexpr auto kCreatePermissionMask = getSinglePermissionMask(PermissionType::kCreate);

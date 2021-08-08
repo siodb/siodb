@@ -34,18 +34,8 @@ void RequestHandler::executeGetDatabasesRestRequest(
     response.set_has_affected_row_count(false);
     response.set_affected_row_count(0);
 
-    const auto user = m_instance.findUserChecked(m_userId);
-
     // Get databases
-    auto databaseRecords = m_instance.getDatabaseRecordsOrderedByName();
-    const auto it = std::remove_if(
-            databaseRecords.begin(), databaseRecords.end(), [user](const auto& dbRecord) noexcept {
-                return user->hasPermissions(
-                               0, DatabaseObjectType::kDatabase, dbRecord.m_id, kShowPermissionMask)
-                       || user->hasPermissions(
-                               0, DatabaseObjectType::kDatabase, 0, kShowPermissionMask);
-            });
-    databaseRecords.erase(it, databaseRecords.end());
+    auto databaseRecords = m_instance.getDatabaseRecordsOrderedByName(m_currentUserId);
 
     response.set_rest_status_code(
             databaseRecords.empty() ? net::HttpStatus::kNotFound : net::HttpStatus::kOk);
@@ -86,21 +76,7 @@ void RequestHandler::executeGetTablesRestRequest(iomgr_protocol::DatabaseEngineR
     const auto database = m_instance.findDatabaseChecked(request.m_database);
     UseDatabaseGuard databaseGuard(*database);
 
-    const auto user = m_instance.findUserChecked(m_userId);
-
-    // TODO: split permissions to show "user" and show "system"
-    auto tableRecords = database->getTableRecordsOrderedByName();
-    const auto databaseId = database->getId();
-    const auto it = std::remove_if(tableRecords.begin(), tableRecords.end(),
-            [user, databaseId](const auto& tableRecord) noexcept {
-                return user->hasPermissions(databaseId, DatabaseObjectType::kTable,
-                               tableRecord.m_id, kShowPermissionMask)
-                       || user->hasPermissions(
-                               0, DatabaseObjectType::kTable, tableRecord.m_id, kShowPermissionMask)
-                       || user->hasPermissions(
-                               0, DatabaseObjectType::kTable, 0, kShowPermissionMask);
-            });
-    tableRecords.erase(it, tableRecords.end());
+    const auto tableRecords = database->getTableRecordsOrderedByName(m_currentUserId);
 
     response.set_rest_status_code(
             tableRecords.empty() ? net::HttpStatus::kNotFound : net::HttpStatus::kOk);
@@ -142,10 +118,8 @@ void RequestHandler::executeGetAllRowsRestRequest(iomgr_protocol::DatabaseEngine
     UseDatabaseGuard databaseGuard(*database);
 
     const auto table = database->findTableChecked(request.m_table);
-    if (table->isSystemTable() && !isSuperUser()) {
-        throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, table->getDatabaseName(),
-                table->getName());
-    }
+    table->checkOperationPermitted(m_currentUserId,
+            table->isSystemTable() ? PermissionType::kSelectSystem : PermissionType::kSelect);
 
     // Create data set
     TableDataSet dataSet(table);
@@ -202,10 +176,8 @@ void RequestHandler::executeGetSingleRowRestRequest(
     UseDatabaseGuard databaseGuard(*database);
 
     const auto table = database->findTableChecked(request.m_table);
-    if (table->isSystemTable() && !isSuperUser()) {
-        throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, table->getDatabaseName(),
-                table->getName());
-    }
+    table->checkOperationPermitted(m_currentUserId,
+            table->isSystemTable() ? PermissionType::kSelectSystem : PermissionType::kSelect);
 
     // Find row
     const auto masterColumn = table->getMasterColumn();
@@ -318,7 +290,8 @@ void RequestHandler::executePostRowsRestRequest(iomgr_protocol::DatabaseEngineRe
     std::vector<Variant> rowValues;
     rowValues.reserve(maxColumnCount);
 
-    const TransactionParameters transactionParams(m_userId, database->generateNextTransactionId());
+    const TransactionParameters transactionParams(
+            m_currentUserId, database->generateNextTransactionId());
 
     for (std::size_t i = 0, n = mutableRequest.m_values.size(); i < n; ++i) {
         auto& row = mutableRequest.m_values[i];
@@ -402,7 +375,8 @@ void RequestHandler::executeDeleteRowRestRequest(iomgr_protocol::DatabaseEngineR
     // Delete row
     DeleteRowResult deleteResult;
     try {
-        const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
+        const TransactionParameters tp(
+                m_currentUserId, table->getDatabase().generateNextTransactionId());
         deleteResult = table->deleteRow(request.m_trid, tp);
         if (deleteResult.m_deleted) {
             response.set_affected_row_count(1);
@@ -461,7 +435,8 @@ void RequestHandler::executePatchRowRestRequest(iomgr_protocol::DatabaseEngineRe
     // Update row
     UpdateRowResult updateResult;
     try {
-        const TransactionParameters tp(m_userId, table->getDatabase().generateNextTransactionId());
+        const TransactionParameters tp(
+                m_currentUserId, table->getDatabase().generateNextTransactionId());
         updateResult = table->updateRow(request.m_trid, request.m_columnNames,
                 std::move(const_cast<std::vector<Variant>&>(request.m_values)), false, tp);
         if (updateResult.m_updated) {

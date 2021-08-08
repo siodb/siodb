@@ -72,7 +72,7 @@ private:
      */
     bool isSuperUser() const noexcept
     {
-        return m_userId == User::kSuperUserId && !m_suppressSuperUserRights;
+        return m_currentUserId == User::kSuperUserId && !m_suppressSuperUserRights;
     }
 
     /**
@@ -574,7 +574,7 @@ private:
     siodb::io::OutputStream& m_connection;
 
     /** Current user ID */
-    const std::uint32_t m_userId;
+    const std::uint32_t m_currentUserId;
 
     /** Current database */
     std::string m_currentDatabaseName;

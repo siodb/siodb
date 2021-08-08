@@ -21,6 +21,11 @@ std::pair<std::uint64_t, BinaryValue> Instance::createUserToken(const std::strin
         const std::optional<std::time_t>& expirationTimestamp, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
+
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(0, DatabaseObjectType::kUserToken, 0, kCreatePermissionMask))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+
     std::pair<std::uint64_t, BinaryValue> result;
 
     const auto& index = m_userRegistry.byName();
@@ -66,6 +71,10 @@ void Instance::dropUserToken(const std::string& userName, const std::string& tok
 {
     std::lock_guard lock(m_cacheMutex);
 
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(0, DatabaseObjectType::kUserToken, 0, kDropPermissionMask))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+
     const auto& userIndex = m_userRegistry.byName();
     const auto itUser = userIndex.find(userName);
     if (itUser == userIndex.end())
@@ -94,6 +103,10 @@ void Instance::updateUserToken(const std::string& userName, const std::string& t
         const UpdateUserTokenParameters& params, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
+
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(0, DatabaseObjectType::kUserToken, 0, kAlterPermissionMask))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
 
     const auto& userIndex = m_userRegistry.byName();
     const auto itUser = userIndex.find(userName);
@@ -132,6 +145,8 @@ void Instance::checkUserToken(const std::string& userName, const std::string& to
         const BinaryValue& tokenValue, [[maybe_unused]] std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
+
+    // No permission check here at this time, but need to think again if we ever need it here.
 
     const auto& userIndex = m_userRegistry.byName();
     const auto itUser = userIndex.find(userName);

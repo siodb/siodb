@@ -134,10 +134,11 @@ public:
     std::size_t getDatabaseCount() const;
 
     /**
-     * Returns list of database records ordered by name.
+     * Returns list of database records which can be listed by current user, ordered by name.
+     * @param currentUserId Current user ID.
      * @return List of database records.
      */
-    std::vector<DatabaseRecord> getDatabaseRecordsOrderedByName() const;
+    std::vector<DatabaseRecord> getDatabaseRecordsOrderedByName(std::uint32_t currentUserId);
 
     /**
      * Returns existing database object.

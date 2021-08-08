@@ -163,7 +163,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=Query.SelectFrom3TablesWithSameColumns"
+                "--gtest_filter=RestGet.GetSingleRowFromSysTables"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

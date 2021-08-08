@@ -35,6 +35,10 @@ std::uint32_t Instance::createUser(const std::string& name,
 {
     std::lock_guard lock(m_cacheMutex);
 
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(0, DatabaseObjectType::kUser, 0, kCreatePermissionMask))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+
     if (m_userRegistry.size() >= m_maxUsers)
         throwDatabaseError(IOManagerMessageId::kErrorTooManyUsers);
 
@@ -55,6 +59,10 @@ std::uint32_t Instance::createUser(const std::string& name,
 void Instance::dropUser(const std::string& name, bool userMustExist, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
+
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(0, DatabaseObjectType::kUser, 0, kCreatePermissionMask))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
 
     auto& index = m_userRegistry.byName();
     const auto it = index.find(name);
@@ -86,6 +94,11 @@ void Instance::updateUser(
         const std::string& name, const UpdateUserParameters& params, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
+
+    const auto currentUser = findUserChecked(currentUserId);
+    if (!currentUser->hasPermissions(0, DatabaseObjectType::kUser, 0, kAlterPermissionMask))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+
     const auto& index = m_userRegistry.byName();
     const auto it = index.find(name);
     if (it == index.cend()) throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, name);

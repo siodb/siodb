@@ -24,9 +24,10 @@ const std::unordered_map<DatabaseObjectType, std::uint64_t> Instance::s_allowedP
                         PermissionType::kDrop, PermissionType::kAlter, PermissionType::kAttach,
                         PermissionType::kDetach>()},
         {DatabaseObjectType::kTable,
-                buildMultiPermissionMask<PermissionType::kSelect, PermissionType::kInsert,
-                        PermissionType::kUpdate, PermissionType::kDelete, PermissionType::kShow,
-                        PermissionType::kCreate, PermissionType::kDrop, PermissionType::kAlter>()},
+                buildMultiPermissionMask<PermissionType::kSelect, PermissionType::kSelectSystem,
+                        PermissionType::kInsert, PermissionType::kUpdate, PermissionType::kDelete,
+                        PermissionType::kShow, PermissionType::kShowSystem, PermissionType::kCreate,
+                        PermissionType::kDrop, PermissionType::kAlter>()},
 };
 
 std::optional<std::uint64_t> Instance::getAllObjectTypePermissions(
@@ -113,6 +114,7 @@ void Instance::grantObjectPermissionsToUserUnlocked(User& user, std::uint32_t da
     const auto it = usersById.find(user.getId());
     if (it == usersById.end())
         throwDatabaseError(IOManagerMessageId::kErrorUserDoesNotExist, user.getId());
+
     auto& userRecord = stdext::as_mutable(*it);
     auto& permissionsById = userRecord.m_permissions.byId();
     auto permissionData = user.grantPermissions(permissionKey, permissions, withGrantOption);

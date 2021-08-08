@@ -36,7 +36,7 @@ RequestHandler::RequestHandler(
         Instance& instance, siodb::io::OutputStream& connection, std::uint32_t userId)
     : m_instance(instance)
     , m_connection(connection)
-    , m_userId(userId)
+    , m_currentUserId(userId)
     , m_currentDatabaseName(kSystemDatabaseName)
     , m_suppressSuperUserRights(false)
 {

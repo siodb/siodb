@@ -68,8 +68,8 @@ TEST(RestGet, GetDatabases)
 
     const auto& jRows = j["rows"];
     ASSERT_TRUE(jRows.is_array());
-    // Exclude system database
-    ASSERT_EQ(jRows.size(), instance->getDatabaseCount() - 1);
+    // System database included
+    ASSERT_EQ(jRows.size(), instance->getDatabaseCount());
 }
 
 TEST(RestGet, GetTables)
