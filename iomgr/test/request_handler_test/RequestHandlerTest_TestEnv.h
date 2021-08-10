@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -19,34 +19,50 @@ public:
     static constexpr std::uint64_t kTestRequestId = 256;
 
 public:
-    TestEnvironment(const char* argv0)
-        : m_argv0(argv0)
-    {
-        m_env = this;
-    }
+    TestEnvironment(const char* argv0);
 
-    static dbengine::InstancePtr getInstance() noexcept
+    static auto getInstance() noexcept
     {
         return m_env->m_instance;
     }
 
-    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandler();
+    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandler(bool asSuperUser = true);
 
     typedef int Pipes[2];
 
-    static const Pipes& getPipes() noexcept
+    static const auto& getPipes() noexcept
     {
         return m_env->m_pipes;
     }
 
-    static siodb::io::InputStream& getInputStream() noexcept
+    static auto& getInputStream() noexcept
     {
         return *m_env->m_input;
     }
 
-    static siodb::io::OutputStream& getOutputStream() noexcept
+    static auto& getOutputStream() noexcept
     {
         return *m_env->m_output;
+    }
+
+    static const auto& getTestUserName() noexcept
+    {
+        return m_testUserName;
+    }
+
+    static auto getTestUserId() noexcept
+    {
+        return m_testUserId;
+    }
+
+    static const auto& getTestDatabaseName() noexcept
+    {
+        return m_testDatabaseName;
+    }
+
+    static const auto& getTestDatabaseNameLowerCase() noexcept
+    {
+        return m_testDatabaseNameLowerCase;
     }
 
     void SetUp() override;
@@ -54,11 +70,15 @@ public:
     void TearDown() override;
 
 private:
+    const char* m_argv0;
     dbengine::InstancePtr m_instance;
     Pipes m_pipes;
-    const char* m_argv0;
     std::unique_ptr<siodb::io::InputStream> m_input;
     std::unique_ptr<siodb::io::OutputStream> m_output;
     std::string m_instanceFolder;
     static TestEnvironment* m_env;
+    static std::string m_testUserName;
+    static std::uint32_t m_testUserId;
+    static std::string m_testDatabaseName;
+    static std::string m_testDatabaseNameLowerCase;
 };

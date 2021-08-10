@@ -163,7 +163,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=RestGet.GetSingleRowFromSysTables"
+                "--gtest_filter=RestComplex.PostAndUpdateMultipleTimes"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

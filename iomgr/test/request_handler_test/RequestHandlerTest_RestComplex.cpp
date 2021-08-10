@@ -37,12 +37,10 @@ TEST(RestComplex, PostAndUpdateMultipleTimes)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -57,9 +55,9 @@ TEST(RestComplex, PostAndUpdateMultipleTimes)
     };
     const std::string kTableName("REST_COMPLEX_POST_UPDATE_MULTIPLE_T1");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            dbengine::User::kSuperUserId, {});
+            TestEnvironment::getTestUserId(), {});
 
-    const auto kTableObjectName = kDatabaseName + "." + kTableName;
+    const auto kTableObjectName = TestEnvironment::getTestDatabaseName() + "." + kTableName;
 
     // was failing with minimum number of rounds 63
     constexpr std::uint64_t kNumberOfRounds = 100;

@@ -27,12 +27,10 @@ TEST(RestPost, PostSingleRow)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -44,14 +42,14 @@ TEST(RestPost, PostSingleRow)
     };
     const std::string kTableName("REST_POST_ROW_T1");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            dbengine::User::kSuperUserId, {});
+            TestEnvironment::getTestUserId(), {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::POST);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
 
     // Create JSON payload
     stdext::buffer<std::uint8_t> payloadBuffer(4096);
@@ -114,12 +112,10 @@ TEST(RestPost, PostMultipleRows)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -131,14 +127,14 @@ TEST(RestPost, PostMultipleRows)
     };
     const std::string kTableName("REST_POST_ROW_T2");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            dbengine::User::kSuperUserId, {});
+            TestEnvironment::getTestUserId(), {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::POST);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
 
     // Create JSON payload
     stdext::buffer<std::uint8_t> payloadBuffer(4096);
@@ -207,12 +203,10 @@ TEST(RestPost, PostWithIncorrectData)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -224,14 +218,14 @@ TEST(RestPost, PostWithIncorrectData)
     };
     const std::string kTableName("REST_POST_ROW_T3");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            dbengine::User::kSuperUserId, {});
+            TestEnvironment::getTestUserId(), {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::POST);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
 
     // Create JSON payload
     stdext::buffer<std::uint8_t> payloadBuffer(4096);

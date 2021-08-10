@@ -22,12 +22,10 @@ TEST(RestDelete, DeleteExistingRow)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -36,8 +34,8 @@ TEST(RestDelete, DeleteExistingRow)
     };
     const std::string kTableName("REST_DELETE_ROW_1");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
             database->generateNextTransactionId(), std::time(nullptr));
 
     // Insert data into table
@@ -54,7 +52,7 @@ TEST(RestDelete, DeleteExistingRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::DELETE);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create request object
@@ -106,12 +104,10 @@ TEST(RestDelete, DeleteNonExistingRow)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -120,8 +116,8 @@ TEST(RestDelete, DeleteNonExistingRow)
     };
     const std::string kTableName("REST_DELETE_ROW_2");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
             database->generateNextTransactionId(), std::time(nullptr));
 
     // Insert data into table
@@ -138,7 +134,7 @@ TEST(RestDelete, DeleteNonExistingRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::DELETE);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
     requestMsg.set_object_id(1001);  // non-existing TRID
 
     // Create request object

@@ -19,7 +19,7 @@ namespace {
 
 std::unordered_map<std::string_view, CipherPtr> g_ciphers;
 
-inline void addCipher(const CipherPtr& cipher)
+void addCipher(const CipherPtr& cipher)
 {
     g_ciphers.emplace(std::string_view(cipher->getCipherId()), cipher);
 }

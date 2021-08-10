@@ -637,9 +637,9 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
     }
 
     // Auto-grant permissions to table creator
-    const auto permissions = removeSinglePermissionFromMask(
-            *Instance::getAllObjectTypePermissions(DatabaseObjectType::kTable),
-            PermissionType::kCreate);
+    const auto permissions = removeMultiplePermissionsFromMask<PermissionType::kCreate,
+            PermissionType::kShowSystem, PermissionType::kSelectSystem>(
+            *Instance::getAllObjectTypePermissions(DatabaseObjectType::kTable));
     m_instance.grantObjectPermissionsToUser(*currentUser, m_id, DatabaseObjectType::kTable,
             table->getId(), permissions, true, User::kSuperUserId);
 

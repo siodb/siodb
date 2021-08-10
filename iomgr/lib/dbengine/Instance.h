@@ -258,6 +258,23 @@ public:
 
     /**
      * Performs actual changes in the permission registry in order to grant permissions.
+     * @param userId User ID of the user to grant permissions to.
+     * @param databaseId Database ID to grant permissions for.
+     *                   Zero value may have special meaning "whole instance".
+     * @param objectType Object type to grant permissions for.
+     * @param objectId Object ID to grant permissions for.
+     *                 Zero value may have special meaning "all objects".
+     * @param permissions Bitmask of permissions.
+     * @param withGrantOption Inidication that user will be able
+     *                        to grant same persmissions to others.
+     * @param currentUserId Current user ID.
+     */
+    void grantObjectPermissionsToUser(std::uint32_t userId, std::uint32_t databaseId,
+            DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+            bool withGrantOption, std::uint32_t currentUserId);
+
+    /**
+     * Performs actual changes in the permission registry in order to grant permissions.
      * @param user User to grant permissions to.
      * @param databaseId Database ID to grant permissions for.
      *                   Zero value may have special meaning "whole instance".

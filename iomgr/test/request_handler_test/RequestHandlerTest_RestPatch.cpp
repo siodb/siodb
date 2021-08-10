@@ -27,12 +27,10 @@ TEST(RestPatch, PatchExistingRow)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -44,10 +42,10 @@ TEST(RestPatch, PatchExistingRow)
     };
     const std::string kTableName("REST_PATCH_ROW_T1");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -68,7 +66,7 @@ TEST(RestPatch, PatchExistingRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create JSON payload
@@ -132,12 +130,10 @@ TEST(RestPatch, PatchNonExistingRow)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -149,10 +145,10 @@ TEST(RestPatch, PatchNonExistingRow)
     };
     const std::string kTableName("REST_PATCH_ROW_T2");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -173,7 +169,7 @@ TEST(RestPatch, PatchNonExistingRow)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
     requestMsg.set_object_id(1001);  // non-existing TRID
 
     // Create JSON payload
@@ -234,12 +230,10 @@ TEST(RestPatch, PatchExstingRowWithInvalidData)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -251,10 +245,10 @@ TEST(RestPatch, PatchExstingRowWithInvalidData)
     };
     const std::string kTableName("REST_PATCH_ROW_T3");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -275,7 +269,7 @@ TEST(RestPatch, PatchExstingRowWithInvalidData)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create JSON payload
@@ -321,12 +315,10 @@ TEST(RestPatch, PatchExistingRowNonExistingColumn)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -338,10 +330,10 @@ TEST(RestPatch, PatchExistingRowNonExistingColumn)
     };
     const std::string kTableName("REST_PATCH_ROW_T4");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -362,7 +354,7 @@ TEST(RestPatch, PatchExistingRowNonExistingColumn)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create JSON payload
@@ -408,12 +400,10 @@ TEST(RestPatch, PatchTrid)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -425,10 +415,10 @@ TEST(RestPatch, PatchTrid)
     };
     const std::string kTableName("REST_PATCH_ROW_T5");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(dbengine::User::kSuperUserId,
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -449,7 +439,7 @@ TEST(RestPatch, PatchTrid)
     requestMsg.set_request_id(1);
     requestMsg.set_verb(siodb::iomgr_protocol::PATCH);
     requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
-    requestMsg.set_object_name_or_query(kDatabaseName + "." + kTableName);
+    requestMsg.set_object_name_or_query(TestEnvironment::getTestDatabaseName() + "." + kTableName);
     requestMsg.set_object_id(1);
 
     // Create JSON payload

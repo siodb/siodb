@@ -38,7 +38,6 @@ RequestHandler::RequestHandler(
     , m_connection(connection)
     , m_currentUserId(userId)
     , m_currentDatabaseName(kSystemDatabaseName)
-    , m_suppressSuperUserRights(false)
 {
     m_instance.findDatabaseChecked(m_currentDatabaseName)->use();
 }
@@ -59,6 +58,7 @@ RequestHandler::~RequestHandler()
 void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
         std::uint64_t requestId, std::uint32_t responseId, std::uint32_t responseCount)
 {
+    LOG_DEBUG << "Executing request of type #" << static_cast<int>(request.m_requestType);
     iomgr_protocol::DatabaseEngineResponse response;
     try {
         response.set_request_id(requestId);

@@ -57,14 +57,6 @@ public:
     void executeRequest(const requests::DBEngineRequest& request, std::uint64_t requestId,
             std::uint32_t responseId, std::uint32_t responseCount);
 
-    /**
-     * Suppresses super-user effect on some operations.
-     */
-    void suppressSuperUserRights() noexcept
-    {
-        m_suppressSuperUserRights = true;
-    }
-
 private:
     /**
      * Returns indication that this RequestHandler acts under the super user rights.
@@ -72,7 +64,7 @@ private:
      */
     bool isSuperUser() const noexcept
     {
-        return m_currentUserId == User::kSuperUserId && !m_suppressSuperUserRights;
+        return m_currentUserId == User::kSuperUserId;
     }
 
     /**
@@ -578,9 +570,6 @@ private:
 
     /** Current database */
     std::string m_currentDatabaseName;
-
-    /** Inidication that super-user access rights should be suppressed */
-    bool m_suppressSuperUserRights;
 
     /** Log context name */
     static constexpr const char* kLogContext = "RequestHandler: ";

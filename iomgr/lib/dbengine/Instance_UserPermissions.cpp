@@ -53,6 +53,16 @@ void Instance::grantTablePermissionsToUser(const std::string& userName,
             permissions, withGrantOption, currentUserId);
 }
 
+void Instance::grantObjectPermissionsToUser(std::uint32_t userId, std::uint32_t databaseId,
+        DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
+        bool withGrantOption, std::uint32_t currentUserId)
+{
+    std::lock_guard lock(m_mutex);
+    const auto user = findUserCheckedUnlocked(userId);
+    grantObjectPermissionsToUserUnlocked(
+            *user, databaseId, objectType, objectId, permissions, withGrantOption, currentUserId);
+}
+
 void Instance::grantObjectPermissionsToUser(User& user, std::uint32_t databaseId,
         DatabaseObjectType objectType, std::uint64_t objectId, std::uint64_t permissions,
         bool withGrantOption, std::uint32_t currentUserId)
