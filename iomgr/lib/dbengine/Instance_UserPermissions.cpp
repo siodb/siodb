@@ -14,6 +14,7 @@
 #include <siodb-generated/iomgr/lib/messages/IOManagerMessageId.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/iomgr/shared/dbengine/PermissionType.h>
+#include <siodb/iomgr/shared/dbengine/parser/CommonConstants.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -42,15 +43,21 @@ void Instance::grantTablePermissionsToUser(const std::string& userName,
         bool withGrantOption, std::uint32_t currentUserId)
 {
     const auto user = findUserChecked(userName);
-    const auto database = findDatabaseChecked(databaseName);
-    UseDatabaseGuard databaseGuard(*database);
-    std::uint64_t tableId = 0;
-    if (tableName != "*") {
-        const auto table = database->findTableChecked(tableName);
-        tableId = table->getId();
+    DatabasePtr database;
+    std::unique_ptr<UseDatabaseGuard> databaseGuard;
+    if (databaseName != requests::kAllObjectsName) {
+        database = findDatabaseChecked(databaseName);
+        databaseGuard = std::make_unique<UseDatabaseGuard>(*database);
     }
-    grantObjectPermissionsToUser(*user, database->getId(), DatabaseObjectType::kTable, tableId,
-            permissions, withGrantOption, currentUserId);
+    TablePtr table;
+    if (tableName != requests::kAllObjectsName) {
+        if (!databaseGuard)
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, tableName);
+        table = database->findTableChecked(tableName);
+    }
+    grantObjectPermissionsToUser(*user, database ? database->getId() : 0,
+            DatabaseObjectType::kTable, table ? table->getId() : 0, permissions, withGrantOption,
+            currentUserId);
 }
 
 void Instance::grantObjectPermissionsToUser(std::uint32_t userId, std::uint32_t databaseId,
@@ -77,15 +84,20 @@ void Instance::revokeTablePermissionsFromUser(const std::string& userName,
         std::uint32_t currentUserId)
 {
     const auto user = findUserChecked(userName);
-    const auto database = findDatabaseChecked(databaseName);
-    UseDatabaseGuard databaseGuard(*database);
-    std::uint64_t tableId = 0;
-    if (tableName != "*") {
-        const auto table = database->findTableChecked(tableName);
-        tableId = table->getId();
+    DatabasePtr database;
+    std::unique_ptr<UseDatabaseGuard> databaseGuard;
+    if (databaseName != requests::kAllObjectsName) {
+        database = findDatabaseChecked(databaseName);
+        databaseGuard = std::make_unique<UseDatabaseGuard>(*database);
     }
-    revokeObjectPermissionsFromUser(*user, database->getId(), DatabaseObjectType::kTable, tableId,
-            permissions, currentUserId);
+    TablePtr table;
+    if (tableName != requests::kAllObjectsName) {
+        if (!databaseGuard)
+            throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, tableName);
+        table = database->findTableChecked(tableName);
+    }
+    revokeObjectPermissionsFromUser(*user, database ? database->getId() : 0,
+            DatabaseObjectType::kTable, table ? table->getId() : 0, permissions, currentUserId);
 }
 
 void Instance::revokeAllObjectPermissionsFromAllUsers(std::uint32_t databaseId,
@@ -196,12 +208,11 @@ void Instance::revokeObjectPermissionsFromUserUnlocked(User& user, std::uint32_t
 
 void Instance::validatePermissions(DatabaseObjectType objectType, std::uint64_t permissions)
 {
-    if (!validatePermissionsNx(objectType, permissions))
+    if (!isValidPermissions(objectType, permissions))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidPermissionSpecification);
 }
 
-bool Instance::validatePermissionsNx(
-        DatabaseObjectType objectType, std::uint64_t permissions) noexcept
+bool Instance::isValidPermissions(DatabaseObjectType objectType, std::uint64_t permissions) noexcept
 {
     const auto it = s_allowedPermissions.find(objectType);
     return it != s_allowedPermissions.end() && (permissions & it->second) == permissions;

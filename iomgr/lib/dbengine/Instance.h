@@ -660,7 +660,7 @@ private:
      * @return true if all permission types are applicable for the given object type,
      *         false if at least one permission type is not applicable.
      */
-    static bool validatePermissionsNx(
+    static bool isValidPermissions(
             DatabaseObjectType objectType, std::uint64_t permissions) noexcept;
 
 private:

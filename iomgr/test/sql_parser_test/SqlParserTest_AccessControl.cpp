@@ -154,6 +154,31 @@ TEST(AccessControl, GrantPermissionForTable_AllTables)
     EXPECT_FALSE(request.m_withGrantOption);
 }
 
+TEST(AccessControl, GrantPermissionForTable_AddDatabases_AllTables)
+{
+    // Parse statement and prepare request
+    const std::string statement("GRANT SELECT ON *.* TO user1");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
+
+    // Check request type
+    EXPECT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kGrantPermissionsForTable);
+
+    // Check request
+    const auto& request =
+            dynamic_cast<const requests::GrantPermissionsForTableRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "*");
+    EXPECT_EQ(request.m_table, "*");
+    EXPECT_EQ(request.m_user, "USER1");
+    const auto expectedPermissions =
+            dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();
+    EXPECT_EQ(request.m_permissions, expectedPermissions);
+    EXPECT_FALSE(request.m_withGrantOption);
+}
+
 TEST(AccessControl, GrantPermissionForTable_AllTablesInCurrentDatabase)
 {
     // Parse statement and prepare request
@@ -303,6 +328,30 @@ TEST(AccessControl, RevokePermissionForTable_AllTables)
     const auto& request =
             dynamic_cast<const requests::RevokePermissionsForTableRequest&>(*dbeRequest);
     EXPECT_EQ(request.m_database, "DATABASE1");
+    EXPECT_EQ(request.m_table, "*");
+    EXPECT_EQ(request.m_user, "USER1");
+    const auto expectedPermissions =
+            dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();
+    EXPECT_EQ(request.m_permissions, expectedPermissions);
+}
+
+TEST(AccessControl, RevokePermissionForTable_AllDatabases_AllTables)
+{
+    // Parse statement and prepare request
+    const std::string statement("REVOKE SELECT ON *.* FROM user1");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
+
+    // Check request type
+    EXPECT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kRevokePermissionsForTable);
+
+    // Check request
+    const auto& request =
+            dynamic_cast<const requests::RevokePermissionsForTableRequest&>(*dbeRequest);
+    EXPECT_EQ(request.m_database, "*");
     EXPECT_EQ(request.m_table, "*");
     EXPECT_EQ(request.m_user, "USER1");
     const auto expectedPermissions =

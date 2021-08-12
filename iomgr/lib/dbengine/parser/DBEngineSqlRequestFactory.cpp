@@ -14,6 +14,7 @@
 #include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/iomgr/shared/dbengine/PermissionType.h>
+#include <siodb/iomgr/shared/dbengine/parser/CommonConstants.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/AllColumnsExpression.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/SingleColumnExpression.h>
@@ -1713,22 +1714,42 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createGrantPermissionsFo
 
     const auto tableSpecNode = node->children.at(3 + offset);
 
+    bool allDatabases = false;
     std::string database;
-    const auto databaseNameNode =
-            helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleDatabase_name);
-    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
+    const auto databaseNameExNode =
+            helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleDatabase_name_ex);
+    if (databaseNameExNode != nullptr) {
+        const auto databaseNameNode =
+                helpers::findNonTerminalChild(databaseNameExNode, SiodbParser::RuleDatabase_name);
+        if (databaseNameNode != nullptr)
+            database = helpers::extractObjectName(databaseNameNode);
+        else if (helpers::findTerminalChild(databaseNameExNode, SiodbParser::STAR)
+                 != std::numeric_limits<std::size_t>::max())
+            allDatabases = true;
+        else
+            throw DBEngineRequestFactoryError("GRANT PERMISSIONS ON TABLE: missing database name");
+    }
+    if (allDatabases) database = requests::kAllObjectsName;
 
-    const auto tableNameNode =
-            helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleTable_name);
+    const auto tableNameExNode =
+            helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleTable_name_ex);
+    if (tableNameExNode == nullptr)
+        throw DBEngineRequestFactoryError("GRANT PERMISSIONS ON TABLE: missing table name");
     bool allTables = false;
+    const auto tableNameNode =
+            helpers::findNonTerminalChild(tableNameExNode, SiodbParser::RuleTable_name);
     if (tableNameNode == nullptr) {
-        if (helpers::findTerminalChild(tableSpecNode, SiodbParser::STAR)
+        if (helpers::findTerminalChild(tableNameExNode, SiodbParser::STAR)
                 != std::numeric_limits<std::size_t>::max())
             allTables = true;
         else
             throw DBEngineRequestFactoryError("GRANT PERMISSIONS ON TABLE: missing table name");
+    } else if (allDatabases) {
+        throw DBEngineRequestFactoryError(
+                "GRANT PERMISSIONS ON TABLE: concrete table can't be specified within all "
+                "databases");
     }
-    auto table = allTables ? "*" : helpers::extractObjectName(tableNameNode);
+    auto table = allTables ? requests::kAllObjectsName : helpers::extractObjectName(tableNameNode);
 
     auto user = helpers::extractObjectName(node->children.at(5 + offset));
 
@@ -1751,22 +1772,42 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRevokePermissionsF
 
     const auto tableSpecNode = node->children.at(3 + offset);
 
+    bool allDatabases = false;
     std::string database;
-    const auto databaseNameNode =
-            helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleDatabase_name);
-    if (databaseNameNode) database = helpers::extractObjectName(databaseNameNode);
+    const auto databaseNameExNode =
+            helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleDatabase_name_ex);
+    if (databaseNameExNode != nullptr) {
+        const auto databaseNameNode =
+                helpers::findNonTerminalChild(databaseNameExNode, SiodbParser::RuleDatabase_name);
+        if (databaseNameNode != nullptr)
+            database = helpers::extractObjectName(databaseNameNode);
+        else if (helpers::findTerminalChild(databaseNameExNode, SiodbParser::STAR)
+                 != std::numeric_limits<std::size_t>::max())
+            allDatabases = true;
+        else
+            throw DBEngineRequestFactoryError("REVOKE PERMISSIONS ON TABLE: missing database name");
+    }
+    if (allDatabases) database = requests::kAllObjectsName;
 
-    const auto tableNameNode =
-            helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleTable_name);
+    const auto tableNameExNode =
+            helpers::findNonTerminalChild(tableSpecNode, SiodbParser::RuleTable_name_ex);
+    if (tableNameExNode == nullptr)
+        throw DBEngineRequestFactoryError("REVOKE PERMISSIONS ON TABLE: missing table name");
     bool allTables = false;
+    const auto tableNameNode =
+            helpers::findNonTerminalChild(tableNameExNode, SiodbParser::RuleTable_name);
     if (tableNameNode == nullptr) {
-        if (helpers::findTerminalChild(tableSpecNode, SiodbParser::STAR)
+        if (helpers::findTerminalChild(tableNameExNode, SiodbParser::STAR)
                 != std::numeric_limits<std::size_t>::max())
             allTables = true;
         else
             throw DBEngineRequestFactoryError("REVOKE PERMISSIONS ON TABLE: missing table name");
+    } else if (allDatabases) {
+        throw DBEngineRequestFactoryError(
+                "REVOKE PERMISSIONS ON TABLE: concrete table can't be specified within all "
+                "databases");
     }
-    auto table = allTables ? "*" : helpers::extractObjectName(tableNameNode);
+    auto table = allTables ? requests::kAllObjectsName : helpers::extractObjectName(tableNameNode);
 
     auto user = helpers::extractObjectName(node->children.at(5 + offset));
 

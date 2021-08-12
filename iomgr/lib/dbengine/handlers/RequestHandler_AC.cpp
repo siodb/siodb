@@ -13,6 +13,7 @@
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/iomgr/shared/dbengine/DatabaseObjectName.h>
+#include <siodb/iomgr/shared/dbengine/parser/CommonConstants.h>
 
 namespace siodb::iomgr::dbengine {
 
@@ -24,10 +25,10 @@ void RequestHandler::executeGrantPermissionsForTableRequest(
 
     const std::string& databaseName =
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(databaseName))
+    if (databaseName != requests::kAllObjectsName && !isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    if (request.m_table != "*" && !isValidDatabaseObjectName(request.m_table))
+    if (request.m_table != requests::kAllObjectsName || !isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
     if (!isValidDatabaseObjectName(request.m_user))
@@ -48,10 +49,10 @@ void RequestHandler::executeRevokePermissionsForTableRequest(
 
     const std::string& databaseName =
             request.m_database.empty() ? m_currentDatabaseName : request.m_database;
-    if (!isValidDatabaseObjectName(databaseName))
+    if (databaseName != requests::kAllObjectsName && !isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    if (request.m_table != "*" && !isValidDatabaseObjectName(request.m_table))
+    if (request.m_table != requests::kAllObjectsName || !isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
     if (!isValidDatabaseObjectName(request.m_user))

@@ -782,9 +782,11 @@ new_database_name: any_name;
 
 table_name: any_name;
 
+table_name_ex: table_name | STAR;
+
 table_spec: (database_name '.')? table_name;
 
-table_spec_ex: (database_name '.')? (table_name | STAR);
+table_spec_ex: (database_name_ex '.')? table_name_ex;
 
 table_or_index_name: any_name;
 
@@ -813,18 +815,22 @@ foreign_table: any_name;
 
 index_name: any_name;
 
+index_name_ex: index_name | STAR;
+
 index_spec: (database_name '.')? index_name;
 
-index_spec_ex: (database_name '.')? (index_name | STAR);
+index_spec_ex: (database_name_ex '.')? index_name_ex;
 
 // TODO(siodb): ALTER INDEX RENAME IF EXISTS TO
 new_index_name: any_name;
 
 trigger_name: any_name;
 
+trigger_name_ex: trigger_name | STAR;
+
 trigger_spec: (database_name '.')? trigger_name;
 
-trigger_spec_ex: (database_name '.')? (trigger_name | STAR);
+trigger_spec_ex: (database_name_ex '.')? trigger_name_ex;
 
 // TODO(siodb): ALTER TRIGGER RENAME IF EXISTS TO
 new_trigger_name: any_name;
@@ -845,9 +851,11 @@ user_token_value: BLOB_LITERAL;
 
 view_name: any_name;
 
+view_name_ex: view_name | STAR;
+
 view_spec: (database_name '.')? view_name;
 
-view_spec_ex: (database_name '.')? (view_name | STAR);
+view_spec_ex: (database_name_ex '.')? view_name_ex;
 
 // TODO(siodb): ALTER VIEW RENAME IF EXISTS TO
 new_view_name: any_name;
