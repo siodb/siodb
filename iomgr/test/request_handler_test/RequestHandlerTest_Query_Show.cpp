@@ -21,7 +21,7 @@ TEST(Query, ShowDatabases)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::string statement("SHOW DATABASES");
     parser_ns::SqlParser parser(statement);
@@ -69,7 +69,7 @@ TEST(Query, ShowTables)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::string statement("SHOW TABLES");
     parser_ns::SqlParser parser(statement);
@@ -118,7 +118,7 @@ TEST(Query, DescribeTable)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::string statement("DESCRIBE TABLE SYS.SYS_TABLES");
     parser_ns::SqlParser parser(statement);

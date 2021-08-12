@@ -24,7 +24,7 @@ TEST(RestGet, GetDatabases1)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -76,7 +76,7 @@ TEST(RestGet, GetDatabases2)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -128,7 +128,7 @@ TEST(RestGet, GetTables)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -194,7 +194,7 @@ TEST(RestGet, GetAllRows)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -274,7 +274,7 @@ TEST(RestGet, GetAllRows)
 TEST(RestGet, GetAllRowsFromSysColumns)
 {
     // Create request handler
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -312,7 +312,7 @@ TEST(RestGet, GetSingleRowNoMatch)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
@@ -391,7 +391,7 @@ TEST(RestGet, GetSingleRowWithMatch)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
@@ -473,7 +473,7 @@ TEST(RestGet, GetSingleRowWithMatch)
 TEST(RestGet, GetSingleRowFromSysColumns)
 {
     // Create request handler
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -509,7 +509,7 @@ TEST(RestGet, GetSingleRowFromSysColumns)
 TEST(RestGet, GetSqlQueryRowsFromSysTablesNoMatch)
 {
     // Create request handler
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -561,7 +561,7 @@ TEST(RestGet, GetSqlQueryRowsFromSysTablesNoMatch)
 TEST(RestGet, GetSqlQueryRowsFromSysTablesWithMatch1)
 {
     // Create request handler
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -623,7 +623,7 @@ TEST(RestGet, GetSqlQueryRowsFromSysTablesWithMatch2)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;

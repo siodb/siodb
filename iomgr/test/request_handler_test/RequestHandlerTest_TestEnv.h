@@ -26,7 +26,9 @@ public:
         return m_env->m_instance;
     }
 
-    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandler(bool asSuperUser = true);
+    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandlerForNormalUser();
+
+    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandlerForSuperUser();
 
     typedef int Pipes[2];
 
@@ -70,6 +72,8 @@ public:
     void TearDown() override;
 
 private:
+    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandler(std::uint32_t userId);
+
     const char* m_argv0;
     dbengine::InstancePtr m_instance;
     Pipes m_pipes;

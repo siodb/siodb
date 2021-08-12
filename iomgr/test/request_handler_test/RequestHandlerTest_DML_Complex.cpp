@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -28,7 +28,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -197,7 +197,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -408,7 +408,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());

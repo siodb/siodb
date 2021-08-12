@@ -46,10 +46,19 @@ TestEnvironment::TestEnvironment(const char* argv0)
     m_env = this;
 }
 
-std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandler(bool asSuperUser)
+std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForNormalUser()
 {
-    return std::make_unique<dbengine::RequestHandler>(*m_env->m_instance, *m_env->m_output,
-            asSuperUser ? dbengine::User::kSuperUserId : m_testUserId);
+    return makeRequestHandler(m_testUserId);
+}
+
+std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForSuperUser()
+{
+    return makeRequestHandler(dbengine::User::kSuperUserId);
+}
+
+std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandler(std::uint32_t userId)
+{
+    return std::make_unique<dbengine::RequestHandler>(*m_env->m_instance, *m_env->m_output, userId);
 }
 
 void TestEnvironment::SetUp()

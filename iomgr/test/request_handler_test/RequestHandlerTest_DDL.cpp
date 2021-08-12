@@ -31,7 +31,7 @@ namespace parser_ns = dbengine::parser;
 // Creates database and checks it was created by selecting from system database
 TEST(DDL, CreateDatabase)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::vector<std::pair<std::string, std::string>> parameters {
             {"none", ""},
@@ -126,7 +126,7 @@ TEST(DDL, CreateDatabase)
         }
 
         {
-            const auto requestHandler = TestEnvironment::makeRequestHandler();
+            const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
             const std::string statement = stdext::string_builder()
                                           << "DROP DATABASE "
@@ -158,7 +158,7 @@ TEST(DDL, CreateDatabase)
 
 TEST(DDL, CreateDatabaseWithUuid)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -249,7 +249,7 @@ TEST(DDL, CreateDatabaseWithUuid)
 
 TEST(DDL, CreateDatabaseWithExistingUuid)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -370,7 +370,7 @@ TEST(DDL, CreateDatabaseWithExistingUuid)
 
 TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -462,7 +462,7 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
 
 TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_ButDoesNotExist)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -513,7 +513,7 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -611,7 +611,7 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
 
 TEST(DDL, DropDatabase_NonExistentDB)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     parser_ns::SqlParser parser("DROP DATABASE NO_SUCH_DATABASE_FOR_SURE;");
     parser.parse();
@@ -637,7 +637,7 @@ TEST(DDL, DropDatabase_NonExistentDB)
 
 TEST(DDL, DropDatabaseIfExists_NonExistentDB)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     parser_ns::SqlParser parser("DROP DATABASE IF EXISTS NO_SUCH_DATABASE_FOR_SURE;");
     parser.parse();
@@ -663,7 +663,7 @@ TEST(DDL, DropDatabaseIfExists_NonExistentDB)
 
 TEST(DDL, UseDatabase_ExistentDB)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -768,7 +768,7 @@ TEST(DDL, UseDatabase_ExistentDB)
 
 TEST(DDL, UseDatabase_NonExistentDB)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     parser_ns::SqlParser parser("USE DATABASE NO_SUCH_DATABASE_FOR_SURE;");
     parser.parse();
@@ -794,7 +794,7 @@ TEST(DDL, UseDatabase_NonExistentDB)
 
 TEST(DDL, DropUsedDatabase)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -873,7 +873,7 @@ TEST(DDL, DropUsedDatabase)
 
 TEST(DDL, CreateDuplicateColumnTable)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- CREATE TABLE -----------
     const std::string statement("CREATE TABLE test.DDL_TEST_TABLE_1 (TEST text, TEST text)");
@@ -923,7 +923,7 @@ TEST(DDL, CreateDuplicateColumnTable)
 
 TEST(DDL, CreateTable)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- CREATE TABLE -----------
     const std::string statement(
@@ -1046,7 +1046,7 @@ TEST(DDL, CreateTable)
 // Intent of this test is to check correctness of the some use cases in the block registry.
 void createManyTablesTest(unsigned long long seed)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     std::mt19937 gen(seed);
     std::uniform_real_distribution realDist(0.0, 1.0);
@@ -1223,7 +1223,7 @@ TEST(DDL, CreateManyTables_Seeded2)
 
 TEST(DDL, CreateTableWithDefaultValue)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- CREATE TABLE -----------
     const std::string statement(
@@ -1252,7 +1252,7 @@ TEST(DDL, CreateTableWithDefaultValue)
 
 TEST(DDL, CreateTableWithNotNullAndDefaultValue)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- CREATE TABLE -----------
     const std::string statement(
@@ -1282,7 +1282,7 @@ TEST(DDL, CreateTableWithNotNullAndDefaultValue)
 
 TEST(DDL, DropTable_SingleColumn_NoExplicitConstaints)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- CREATE TABLE -----------
     {
@@ -1339,7 +1339,7 @@ TEST(DDL, DropTable_SingleColumn_NoExplicitConstaints)
 
 TEST(DDL, DropTable_SingleColumn_WithDefaultValue)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- CREATE TABLE -----------
     {
@@ -1397,7 +1397,7 @@ TEST(DDL, DropTable_SingleColumn_WithDefaultValue)
 
 TEST(DDL, DropTable_MultipleColumns_NoExplicitConstaints)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- CREATE TABLE -----------
     {
@@ -1454,7 +1454,7 @@ TEST(DDL, DropTable_MultipleColumns_NoExplicitConstaints)
 
 TEST(DDL, DropTable_MultipleColumns_WithDefaultValue)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- CREATE TABLE -----------
     {
@@ -1513,7 +1513,7 @@ TEST(DDL, DropTable_MultipleColumns_WithDefaultValue)
 
 TEST(DDL, SetTableAttributes_NextTrid)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     {
         /// ----------- CREATE TABLE -----------

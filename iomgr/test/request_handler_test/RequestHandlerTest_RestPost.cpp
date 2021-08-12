@@ -27,7 +27,7 @@ TEST(RestPost, PostSingleRow)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
@@ -86,6 +86,7 @@ TEST(RestPost, PostSingleRow)
     EXPECT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_EQ(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 201);
 
     // Read JSON
     const auto jsonPayload = siodb::io::readChunkedString(inputStream);
@@ -112,7 +113,7 @@ TEST(RestPost, PostMultipleRows)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
@@ -175,6 +176,7 @@ TEST(RestPost, PostMultipleRows)
     EXPECT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_EQ(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 201);
 
     // Read JSON
     const auto jsonPayload = siodb::io::readChunkedString(inputStream);
@@ -203,7 +205,7 @@ TEST(RestPost, PostWithIncorrectData)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
@@ -263,4 +265,113 @@ TEST(RestPost, PostWithIncorrectData)
     EXPECT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_GT(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 400);
+}
+
+TEST(RestPost, PostIntoSystemTable_AsSuperUser)
+{
+    // Create request handler
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
+
+    // Create source protobuf message
+    siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
+    requestMsg.set_request_id(1);
+    requestMsg.set_verb(siodb::iomgr_protocol::POST);
+    requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
+    requestMsg.set_object_name_or_query(
+            TestEnvironment::getTestDatabaseName() + "." + dbengine::kSysTablesTableName);
+
+    // Create JSON payload
+    stdext::buffer<std::uint8_t> payloadBuffer(4096);
+    siodb::io::MemoryOutputStream out(payloadBuffer.data(), payloadBuffer.size());
+    {
+        siodb::io::BufferedChunkedOutputStream chunkedOutput(17, out);
+        // Just somethingm no matter what, but should be valid json
+        constexpr const char* kJson = R"json(
+            [ { "a": "aaa", "b": "bbb" } ]
+        )json";
+        chunkedOutput.write(kJson, ::ct_strlen(kJson));
+    }
+
+    // Create request object
+    siodb::io::MemoryInputStream in(
+            payloadBuffer.data(), payloadBuffer.size() - out.getRemaining());
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg, &in);
+
+    // Execute request
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+    // Receive response message
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::StreamInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    // Validate response message
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    EXPECT_TRUE(response.has_affected_row_count());
+    EXPECT_EQ(response.affected_row_count(), 0U);
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+    ASSERT_EQ(response.column_description_size(), 0);
+    ASSERT_GT(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 403);
+}
+
+TEST(RestPost, PostIntoSystemTable_AsNormalUser)
+{
+    // Create request handler
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
+
+    // Create source protobuf message
+    siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
+    requestMsg.set_request_id(1);
+    requestMsg.set_verb(siodb::iomgr_protocol::POST);
+    requestMsg.set_object_type(siodb::iomgr_protocol::ROW);
+    requestMsg.set_object_name_or_query(
+            TestEnvironment::getTestDatabaseName() + "." + dbengine::kSysTablesTableName);
+
+    // Create JSON payload
+    stdext::buffer<std::uint8_t> payloadBuffer(4096);
+    siodb::io::MemoryOutputStream out(payloadBuffer.data(), payloadBuffer.size());
+    {
+        siodb::io::BufferedChunkedOutputStream chunkedOutput(17, out);
+        // Just somethingm no matter what, but should be valid json
+        constexpr const char* kJson = R"json(
+            [ { "a": "aaa", "b": "bbb" } ]
+        )json";
+        chunkedOutput.write(kJson, ::ct_strlen(kJson));
+    }
+
+    // Create request object
+    siodb::io::MemoryInputStream in(
+            payloadBuffer.data(), payloadBuffer.size() - out.getRemaining());
+    parser_ns::DBEngineRestRequestFactory requestFactory(1024 * 1024);
+    const auto request = requestFactory.createRestRequest(requestMsg, &in);
+
+    // Execute request
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+    // Receive response message
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::StreamInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    // Validate response message
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    EXPECT_TRUE(response.has_affected_row_count());
+    EXPECT_EQ(response.affected_row_count(), 0U);
+    EXPECT_EQ(response.response_id(), 0U);
+    EXPECT_EQ(response.response_count(), 1U);
+    ASSERT_EQ(response.column_description_size(), 0);
+    ASSERT_GT(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 404);
 }

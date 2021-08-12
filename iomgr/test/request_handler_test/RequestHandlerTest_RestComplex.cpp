@@ -37,7 +37,7 @@ TEST(RestComplex, PostAndUpdateMultipleTimes)
     // Create request handler
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler(false);
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
@@ -114,6 +114,7 @@ void PostRow(dbengine::RequestHandler& requestHandler, const std::string& tableO
     ASSERT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_EQ(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 201);
 
     // Read JSON
     const auto jsonPayload = siodb::io::readChunkedString(inputStream);
@@ -181,6 +182,7 @@ void PatchRow(dbengine::RequestHandler& requestHandler, const std::string& table
     ASSERT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_EQ(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 200);
 
     // Read JSON
     const auto jsonPayload = siodb::io::readChunkedString(inputStream);

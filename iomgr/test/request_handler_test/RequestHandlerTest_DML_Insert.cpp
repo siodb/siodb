@@ -37,7 +37,7 @@ TEST(DML_Insert, InsertSingleRecord)
     instance->findDatabase("SYS")->createUserTable("TEST_ITEMS", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- INSERT -----------
     const std::string statement("INSERT INTO SYS.TEST_ITEMS values ('TEST', 123.0)");
@@ -120,7 +120,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
     instance->findDatabase("SYS")->createUserTable("TEST_ITEMS_DV_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- INSERT -----------
     const std::string statement("INSERT INTO SYS.TEST_ITEMS_DV_1(name) values ('TEST')");
@@ -203,7 +203,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
     instance->findDatabase("SYS")->createUserTable("TEST_ITEMS_DV_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- INSERT -----------
     const std::string statement("INSERT INTO SYS.TEST_ITEMS_DV_2 values ('TEST')");
@@ -288,7 +288,7 @@ TEST(DML_Insert, InsertMultipleRecords)
     instance->findDatabase("SYS")->createUserTable("TEST_CUSTOMERS", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- INSERT -----------
     {
@@ -390,7 +390,7 @@ TEST(DML_Insert, InsertDataTypesWithLength)
     instance->findDatabase("SYS")->createUserTable("TEST_DIGITAL_BOOKS", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- INSERT -----------
 
@@ -517,7 +517,7 @@ TEST(DML_Insert, InsertMinMaxValues)
     instance->findDatabase("SYS")->createUserTable("TEST_TABLE_MIN_MAX", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     std::vector<std::vector<requests::ConstExpressionPtr>> values;
 
@@ -717,7 +717,7 @@ TEST(DML_Insert, InsertDateTime)
     instance->findDatabase("SYS")->createUserTable("TEST_CONTRACTS", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     /// ----------- INSERT -----------
     std::vector<std::vector<requests::ConstExpressionPtr>> values;
@@ -858,7 +858,7 @@ TEST(DML_Insert, InsertNullValue)
     instance->findDatabase("SYS")->createUserTable("NULL_TEST_TABLE", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -951,7 +951,7 @@ TEST(DML_Insert, InsertDefaultNullValue)
     instance->findDatabase("SYS")->createUserTable("TEST_DEFAULT_NULL", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -1041,7 +1041,7 @@ TEST(DML_Insert, InsertWithColumn)
     instance->findDatabase("SYS")->createUserTable("TEST_INSERT_PARSE_ERROR",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
