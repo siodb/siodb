@@ -1,11 +1,11 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
 #include "MessageCatalog.h"
 
 // Project headers
-#include "../stl_ext/string_builder.h"
+#include "../stl_ext/sstream_ext.h"
 
 // STL headers
 #include <fstream>
@@ -27,8 +27,8 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
     // Open message catalog file
     std::ifstream ifs(messageCatalogFilePath);
     if (!ifs.is_open()) {
-        throw std::runtime_error(stdext::string_builder()
-                                 << "Can't open message catalog file " << messageCatalogFilePath);
+        throw std::runtime_error(
+                stdext::concat("Can't open message catalog file ", messageCatalogFilePath));
     }
 
     // Read message catalog file line by line
@@ -61,8 +61,7 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
                 id = std::stoi(s, &pos);
                 if (pos != s.length()) throw std::invalid_argument("invalid number");
             } catch (std::exception& ex) {
-                throw MessageCatalogParseError(
-                        stdext::string_builder() << "Invalid message ID: " << ex.what());
+                throw MessageCatalogParseError(stdext::concat("Invalid message ID: ", ex.what()));
             }
 
             // Parse message severity class
@@ -82,9 +81,8 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
                 const auto it = severities->find(s);
 
                 if (it == severities->end()) {
-                    throw MessageCatalogParseError(stdext::string_builder()
-                                                   << "Unknown message severity class '" << s
-                                                   << "'");
+                    throw MessageCatalogParseError(
+                            stdext::concat("Unknown message severity class '", s, '\''));
                 }
                 severity = it->second;
             }
@@ -100,18 +98,17 @@ MessageCatalog::MessageCatalog(const std::string& messageCatalogFilePath)
             // Check message ID uniqueness
             const auto it = m_messages.find(id);
             if (it != m_messages.end()) {
-                throw MessageCatalogParseError(stdext::string_builder()
-                                               << "Duplicate message ID " << id
-                                               << " (previous one was defined at the line "
-                                               << it->second->getSourceLineNo() << ')');
+                throw MessageCatalogParseError(stdext::concat("Duplicate message ID ", id,
+                        " (previous one was defined at the line ", it->second->getSourceLineNo(),
+                        ')'));
             }
 
             // Add message to map
             auto message = std::make_shared<Message>(id, severity, std::move(text), lineNo);
             m_messages.emplace(id, message);
         } catch (MessageCatalogParseError& ex) {
-            throw std::runtime_error(stdext::string_builder() << messageCatalogFilePath << '('
-                                                              << lineNo << "): " << ex.what());
+            throw std::runtime_error(
+                    stdext::concat(messageCatalogFilePath, '(', lineNo, "): ", ex.what()));
         }
     }
 }

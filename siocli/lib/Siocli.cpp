@@ -23,7 +23,7 @@
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/stl_ext/deleter.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/sys/Syscalls.h>
 #include <siodb/common/utils/CheckOSUser.h>
@@ -528,10 +528,9 @@ std::string loadUserIdentityKey(const char* path)
         stdext::throw_system_error("Can't stat user identity key file " + std::string(path));
 
     if (static_cast<std::size_t>(st.st_size) > siodb::kMaxUserAccessKeySize) {
-        throw std::runtime_error(stdext::string_builder()
-                                 << "User identity key file " << path << " of size " << st.st_size
-                                 << " bytes is longer than allowed maximum size "
-                                 << siodb::kMaxUserAccessKeySize << " bytes");
+        throw std::runtime_error(stdext::concat("User identity key file ", path, " of size ",
+                st.st_size, " bytes is longer than allowed maximum size ",
+                siodb::kMaxUserAccessKeySize, " bytes"));
     }
 
     std::string key;

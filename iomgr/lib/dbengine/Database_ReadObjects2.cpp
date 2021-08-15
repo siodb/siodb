@@ -470,9 +470,8 @@ void Database::readAllIndices()
     }
 
     if (hasInvalidIndices) {
-        throw std::runtime_error(stdext::string_builder()
-                                 << "Database " << m_uuid
-                                 << " readAllIndices: There are invalid indices");
+        throw std::runtime_error(
+                stdext::concat("Database ", m_uuid, " readAllIndices: There are invalid indices"));
     }
 
     m_indexRegistry.swap(reg);

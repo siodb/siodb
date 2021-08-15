@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -12,7 +12,7 @@
 #include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/common/io/FileIO.h>
 #include <siodb/common/log/Log.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FDGuard.h>
 #include <siodb/common/utils/FSUtils.h>

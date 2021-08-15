@@ -11,7 +11,7 @@
 // Common project headers
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/utils/DebugMacros.h>
 
 // CRT headers
@@ -80,9 +80,8 @@ void TestUser::create(bool newUser) const
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::string stateActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    const std::string statement = stdext::string_builder()
-                                  << "CREATE USER " << m_name << " WITH STATE = " << stateActiveStr
-                                  << ", REAL_NAME = '" << m_realName << '\'';
+    const auto statement = stdext::concat("CREATE USER ", m_name, " WITH STATE = ", stateActiveStr,
+            ", REAL_NAME = '", m_realName, '\'');
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -145,9 +144,8 @@ void TestUser::alter(bool userExists) const
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::string stateActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    const std::string statement = stdext::string_builder()
-                                  << "ALTER USER " << m_name << " SET STATE = " << stateActiveStr
-                                  << ", REAL_NAME = '" << m_realName << '\'';
+    const auto statement = stdext::concat("ALTER USER ", m_name, " SET STATE = ", stateActiveStr,
+            ", REAL_NAME = '", m_realName, '\'');
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -226,9 +224,8 @@ void TestUserAccessKey::create(bool newKey) const
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto keyActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    const std::string statement = stdext::string_builder()
-                                  << "ALTER USER " << m_userName << " ADD ACCESS KEY " << m_keyName
-                                  << " '" << m_keyText << "' WITH STATE = " << keyActiveStr;
+    const auto statement = stdext::concat("ALTER USER ", m_userName, " ADD ACCESS KEY ", m_keyName,
+            " '", m_keyText, "' WITH STATE = ", keyActiveStr);
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -257,8 +254,8 @@ void TestUserAccessKey::drop(bool keyExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    const std::string statement = stdext::string_builder() << "ALTER USER " << m_userName
-                                                           << " DROP ACCESS KEY " << m_keyName;
+    const auto statement =
+            stdext::concat("ALTER USER ", m_userName, " DROP ACCESS KEY ", m_keyName);
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -288,9 +285,8 @@ void TestUserAccessKey::alter(bool keyExists) const
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto keyActiveStr = m_active ? "ACTIVE" : "INACTIVE";
-    const std::string statement = stdext::string_builder()
-                                  << "ALTER USER " << m_userName << " ALTER ACCESS KEY "
-                                  << m_keyName << " SET STATE = " << keyActiveStr;
+    const auto statement = stdext::concat("ALTER USER ", m_userName, " ALTER ACCESS KEY ",
+            m_keyName, " SET STATE = ", keyActiveStr);
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -319,10 +315,9 @@ void TestUserAccessKey::checkExists(bool mustExist) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    const std::string statement = stdext::string_builder()
-                                  << "SELECT * FROM SYS.SYS_USER_ACCESS_KEYS WHERE NAME = '"
-                                  << boost::to_upper_copy(m_keyName) << "' AND TEXT = '"
-                                  << m_keyText << "' AND STATE = " << (m_active ? '1' : '0');
+    const auto statement = stdext::concat("SELECT * FROM SYS.SYS_USER_ACCESS_KEYS WHERE NAME = '",
+            boost::to_upper_copy(m_keyName), "' AND TEXT = '", m_keyText,
+            "' AND STATE = ", (m_active ? '1' : '0'));
 
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -430,8 +425,7 @@ void TestUserToken::drop(bool tokenExists) const
 {
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    const std::string statement = stdext::string_builder()
-                                  << "ALTER USER " << m_userName << " DROP TOKEN " << m_tokenName;
+    const auto statement = stdext::concat("ALTER USER ", m_userName, " DROP TOKEN ", m_tokenName);
 
     parser_ns::SqlParser parser(statement);
     parser.parse();

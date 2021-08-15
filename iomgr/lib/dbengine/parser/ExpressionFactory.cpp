@@ -10,7 +10,7 @@
 #include "antlr_wrappers/SiodbParserWrapper.h"
 
 // Common project headers
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/AllExpressions.h>
 
 // Boost headers
@@ -274,9 +274,8 @@ requests::ExpressionPtr ExpressionFactory::createColumnValueExpression(
     if (!m_allowColumnExpressions) {
         std::size_t line = 1, column = 1;
         helpers::findFirstTerminalAndCapturePosition(tableNode, 0, line, column);
-        throw DBEngineRequestFactoryError(m_parser.injectError(line, column,
-                stdext::string_builder()
-                        << "Column " << columnNode->getText() << " is not allowed"));
+        throw DBEngineRequestFactoryError(m_parser.injectError(
+                line, column, stdext::concat("Column ", columnNode->getText(), " is not allowed")));
     }
 
     std::string tableName;

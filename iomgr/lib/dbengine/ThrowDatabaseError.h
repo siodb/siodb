@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -8,7 +8,7 @@
 #include "DatabaseError.h"
 
 // Common project headers
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/utils/MessageCatalog.h>
 
 // Boost headers
@@ -77,8 +77,8 @@ template<class MessageId, class... Args>
 {
     const auto message = catalog.find(messageId);
     if (!message) {
-        throw UserVisibleDatabaseError(1, stdext::string_builder() << "Message not found: id="
-                                                                   << static_cast<int>(messageId));
+        throw UserVisibleDatabaseError(
+                1, stdext::concat("Message not found: id=", static_cast<int>(messageId)));
     }
 
     std::string s;

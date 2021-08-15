@@ -16,7 +16,7 @@
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
@@ -51,10 +51,8 @@ TEST(DDL, CreateDatabase)
         boost::to_upper(databaseName);
         {
             /// ----------- CREATE DATABASE -----------
-            const std::string statement = stdext::string_builder()
-                                          << "CREATE DATABASE " << databaseName
-                                          << " WITH CIPHER_ID = '" << cipherId
-                                          << "', CIPHER_KEY_SEED = '" << keySeed << '\'';
+            const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                    " WITH CIPHER_ID = '", cipherId, "', CIPHER_KEY_SEED = '", keySeed, '\'');
 
             parser_ns::SqlParser parser(statement);
             parser.parse();
@@ -81,10 +79,9 @@ TEST(DDL, CreateDatabase)
 
         /// ----------- SELECT -----------
         {
-            const std::string statement = stdext::string_builder()
-                                          << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                          << databaseName << "' AND CIPHER_ID = '" << cipherId
-                                          << '\'';
+            const auto statement =
+                    stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '",
+                            databaseName, "' AND CIPHER_ID = '", cipherId, '\'');
 
             parser_ns::SqlParser parser(statement);
             parser.parse();
@@ -128,9 +125,8 @@ TEST(DDL, CreateDatabase)
         {
             const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-            const std::string statement = stdext::string_builder()
-                                          << "DROP DATABASE "
-                                          << (index % 2 == 0 ? "IF EXISTS " : "") << databaseName;
+            const auto statement = stdext::concat(
+                    "DROP DATABASE ", (index % 2 == 0 ? "IF EXISTS " : ""), databaseName);
             parser_ns::SqlParser parser(statement);
             parser.parse();
 
@@ -175,10 +171,8 @@ TEST(DDL, CreateDatabaseWithUuid)
 
     {
         /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid, '\'');
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -204,9 +198,8 @@ TEST(DDL, CreateDatabaseWithUuid)
 
     /// ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder()
-                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+        const auto statement = stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '",
+                databaseName, "' AND CIPHER_ID = 'aes128'");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -266,10 +259,8 @@ TEST(DDL, CreateDatabaseWithExistingUuid)
 
     {
         /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid, '\'');
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -295,9 +286,8 @@ TEST(DDL, CreateDatabaseWithExistingUuid)
 
     /// ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder()
-                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+        const auto statement = stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '",
+                databaseName, "' AND CIPHER_ID = 'aes128'");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -340,10 +330,8 @@ TEST(DDL, CreateDatabaseWithExistingUuid)
     {
         /// ----------- CREATE DATABASE (once again with the same UUID) -----------
         const auto databaseName2 = databaseName + "_2";
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName2
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName2,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid, '\'');
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -387,11 +375,9 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
 
     {
         /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
-                << "', DATA_DIRECTORY_MUST_EXIST=false";
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid,
+                "', DATA_DIRECTORY_MUST_EXIST=false");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -417,9 +403,9 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
 
     /// ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder()
-                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+        const std::string statement =
+                stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '", databaseName,
+                        "' AND CIPHER_ID = 'aes128'");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -479,11 +465,9 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_ButDoesNotExist)
 
     {
         /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
-                << "', DATA_DIRECTORY_MUST_EXIST=true";
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid,
+                "', DATA_DIRECTORY_MUST_EXIST=true");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -536,11 +520,9 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
 
     {
         /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
-                << "', DATA_DIRECTORY_MUST_EXIST=true";
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid,
+                "', DATA_DIRECTORY_MUST_EXIST=true");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -566,9 +548,8 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
 
     /// ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder()
-                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+        const auto statement = stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '",
+                databaseName, "' AND CIPHER_ID = 'aes128'");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -670,9 +651,7 @@ TEST(DDL, UseDatabase_ExistentDB)
 
     {
         /// ----------- CREATE DATABASE -----------
-        const std::string statement = stdext::string_builder()
-                                      << "CREATE DATABASE UseDatabase_ExistentDB_database";
-
+        const auto statement = "CREATE DATABASE UseDatabase_ExistentDB_database";
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
@@ -691,15 +670,13 @@ TEST(DDL, UseDatabase_ExistentDB)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    const std::string tableName = stdext::string_builder()
-                                  << "TABLE_" << std::time(nullptr) << '_' << ::getpid();
+    const auto tableName = stdext::concat("TABLE_", std::time(nullptr), '_', ::getpid());
     {
         /// ----------- CREATE TABLE -----------
         // Create a table in current database
 
-        const std::string statement = stdext::string_builder()
-                                      << "CREATE TABLE UseDatabase_ExistentDB_database."
-                                      << tableName << " (TEST text)";
+        const auto statement = stdext::concat(
+                "CREATE TABLE UseDatabase_ExistentDB_database.", tableName, " (TEST text)");
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
@@ -740,7 +717,7 @@ TEST(DDL, UseDatabase_ExistentDB)
 
     /// ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder() << "SELECT * FROM " << tableName;
+        const auto statement = stdext::concat("SELECT * FROM ", tableName);
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -801,9 +778,7 @@ TEST(DDL, DropUsedDatabase)
 
     {
         /// ----------- CREATE DATABASE -----------
-        const std::string statement = stdext::string_builder()
-                                      << "CREATE DATABASE DropUsedDatabase_database";
-
+        const auto statement = "CREATE DATABASE DropUsedDatabase_database";
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
@@ -1056,8 +1031,7 @@ void createManyTablesTest(unsigned long long seed)
     constexpr int kTableCount = 60;
     for (int tableNo = 0; tableNo < kTableCount; ++tableNo) {
         /// ----------- CREATE TABLE -----------
-        const std::string tableName = stdext::string_builder() << "DDL_TEST_TABLE_MANY_" << tableNo
-                                                               << '_' << seed << '_' << ts;
+        const auto tableName = stdext::concat("DDL_TEST_TABLE_MANY_", tableNo, '_', seed, '_', ts);
         std::size_t randomStringLength = (intDist(gen) % 100) + 1;
         std::string randomString;
         randomString.resize(randomStringLength);
@@ -1069,27 +1043,25 @@ void createManyTablesTest(unsigned long long seed)
             randomString[i] = static_cast<char>(ch);
         }
         LOG_DEBUG << "====== CREATE TABLE " << tableName << "======";
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE TABLE " << tableName << "\n(TEST_INTEGER INTEGER DEFAULT "
-                << intDist(gen) << "\n,  TEST_INT INT NOT NULL DEFAULT " << intDist(gen)
-                << "\n, TEST_UINT UINT DEFAULT " << intDist(gen)
-                << "\n, TEST_TINYINT TINYINT NOT NULL DEFAULT "
-                << (intDist(gen) % std::numeric_limits<std::int8_t>::max())
-                << "\n, TEST_TINYUINT TINYUINT DEFAULT "
-                << (intDist(gen) % std::numeric_limits<std::uint8_t>::max())
-                << "\n, TEST_SMALLINT SMALLINT NOT NULL DEFAULT " << intDist(gen)
-                << "\n, TEST_SMALLUINT SMALLUINT DEFAULT " << intDist(gen)
-                << "\n, TEST_BIGINT BIGINT NOT NULL DEFAULT " << intDist(gen)
-                << "\n, TEST_BIGUINT BIGUINT DEFAULT " << intDist(gen)
-                << "\n, TEST_SMALLREAL SMALLREAL NOT NULL DEFAULT " << realDist(gen)
-                << "\n, TEST_REAL REAL DEFAULT " << realDist(gen)
-                << "\n, TEST_FLOAT FLOAT NOT NULL DEFAULT " << intDist(gen)
-                << "\n, TEST_DOUBLE DOUBLE DEFAULT " << intDist(gen)
-                << "\n, TEST_TEXT TEXT NOT NULL DEFAULT '" << randomString << "-zzz'"
-                << "\n, TEST_CHAR CHAR DEFAULT '" << randomString[0] << "'"
-                << "\n, TEST_VARCHAR VARCHAR NOT NULL DEFAULT '" << randomString << "'"
-                << "\n, TEST_BLOB BLOB,  TEST_TIMESTAMP TIMESTAMP NOT NULL)\n";
+        const auto statement = stdext::concat("CREATE TABLE ", tableName,
+                "\n(TEST_INTEGER INTEGER DEFAULT ", intDist(gen),
+                "\n,  TEST_INT INT NOT NULL DEFAULT ", intDist(gen), "\n, TEST_UINT UINT DEFAULT ",
+                intDist(gen), "\n, TEST_TINYINT TINYINT NOT NULL DEFAULT ",
+                (intDist(gen) % std::numeric_limits<std::int8_t>::max()),
+                "\n, TEST_TINYUINT TINYUINT DEFAULT ",
+                (intDist(gen) % std::numeric_limits<std::uint8_t>::max()),
+                "\n, TEST_SMALLINT SMALLINT NOT NULL DEFAULT ", intDist(gen),
+                "\n, TEST_SMALLUINT SMALLUINT DEFAULT ", intDist(gen),
+                "\n, TEST_BIGINT BIGINT NOT NULL DEFAULT ", intDist(gen),
+                "\n, TEST_BIGUINT BIGUINT DEFAULT ", intDist(gen),
+                "\n, TEST_SMALLREAL SMALLREAL NOT NULL DEFAULT ", realDist(gen),
+                "\n, TEST_REAL REAL DEFAULT ", realDist(gen),
+                "\n, TEST_FLOAT FLOAT NOT NULL DEFAULT ", intDist(gen),
+                "\n, TEST_DOUBLE DOUBLE DEFAULT ", intDist(gen),
+                "\n, TEST_TEXT TEXT NOT NULL DEFAULT '", randomString, "-zzz'",
+                "\n, TEST_CHAR CHAR DEFAULT '", randomString[0], "'",
+                "\n, TEST_VARCHAR VARCHAR NOT NULL DEFAULT '", randomString, "'",
+                "\n, TEST_BLOB BLOB,  TEST_TIMESTAMP TIMESTAMP NOT NULL)\n");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1114,7 +1086,7 @@ void createManyTablesTest(unsigned long long seed)
 
         /// ----------- SELECT -----------
         {
-            const std::string statement = stdext::string_builder() << "SELECT * FROM " << tableName;
+            const auto statement = stdext::concat("SELECT * FROM ", tableName);
             parser_ns::SqlParser parser(statement);
             parser.parse();
 

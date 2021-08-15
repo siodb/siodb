@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -12,7 +12,7 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/net/UnixServer.h>
 #include <siodb/common/options/SiodbInstance.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/CheckOSUser.h>
@@ -155,9 +155,8 @@ extern "C" int siodbMain(int argc, char** argv)
             if (fs::exists(iomgrInitFlagFilePath)) {
                 // IO manager should create flag file after initialization,
                 if (!fs::remove(iomgrInitFlagFilePath)) {
-                    stdext::throw_system_error(stdext::string_builder()
-                                               << "Can't remove iomgr initialization file "
-                                               << iomgrInitFlagFilePath);
+                    stdext::throw_system_error(stdext::concat(
+                            "Can't remove iomgr initialization file ", iomgrInitFlagFilePath));
                 }
             }
 

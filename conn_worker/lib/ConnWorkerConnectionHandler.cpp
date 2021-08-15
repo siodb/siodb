@@ -13,7 +13,7 @@
 #include <siodb/common/net/TcpConnection.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/ProtocolTag.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/utils/ErrorCodeChecker.h>
 #include <siodb/common/utils/RandomUtils.h>
@@ -320,7 +320,7 @@ void ConnWorkerConnectionHandler::selectLastUsedDatabase(
 
     iomgr_protocol::DatabaseEngineRequest dbeRequest;
     dbeRequest.set_request_id(kUseDatabaseRequestId);
-    dbeRequest.set_text(stdext::string_builder() << "USE DATABASE " << m_lastUsedDatabase);
+    dbeRequest.set_text(stdext::concat("USE DATABASE ", m_lastUsedDatabase));
 
     protobuf::writeMessage(
             protobuf::ProtocolMessageType::kDatabaseEngineRequest, dbeRequest, *m_iomgrConnection);

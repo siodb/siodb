@@ -16,7 +16,7 @@
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 #include <siodb/common/stl_ext/bitmask.h>
 #include <siodb/common/stl_ext/buffer.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_ext/system_error_ext.h>
 #include <siodb/common/stl_ext/utility_ext.h>
 
@@ -271,10 +271,9 @@ void authenticate(const std::string& identityKey, const std::string& userName,
 
     if (!beginSessionResponse.session_started()) {
         if (beginSessionResponse.has_message()) {
-            throw std::runtime_error(
-                    stdext::string_builder()
-                    << "Begin session error: " << beginSessionResponse.message().status_code()
-                    << " " << beginSessionResponse.message().text());
+            throw std::runtime_error(stdext::concat(
+                    "Begin session error: ", beginSessionResponse.message().status_code(), " ",
+                    beginSessionResponse.message().text()));
         }
         throw std::runtime_error("Begin session unknown error");
     }
