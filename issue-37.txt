@@ -13,8 +13,24 @@ not marked = pending
 (>) = in progress
 (+) = done
 
-RequestHandler::executePostRowsRestRequest() and others -
-Fix can't insert to system table, can't read system table, etc.
+- Permission tests:
+  - INSERT
+  - UPDATE
+  - DELETE
+  - UPDATE
+  - CREATE TABLE
+  - DROP TABLE
+  - ALTER TABLE
+  - CREATE DATABASE
+  - DROP DATABASE
+  - ALTER DATABASE
+  - GRANT
+  - REVOKE
+  - GRANT WITH GRANT OPTION
+  - Test that granted with grant option works
+  - SHOW USER PERMISSIONS
 
-- GRANT ON *.*
-- REVOKE ON *.*
+Tests above (permitted variant) should be implemented for:
+  - Single database + single table
+  - Single database + all tables
+  - All databases + all tables

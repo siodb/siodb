@@ -16,6 +16,7 @@ namespace dbengine = siodb::iomgr::dbengine;
 
 class TestEnvironment : public ::testing::Environment {
 public:
+    static constexpr std::size_t kTestUserCount = 2;
     static constexpr std::uint64_t kTestRequestId = 256;
 
 public:
@@ -26,7 +27,8 @@ public:
         return m_env->m_instance;
     }
 
-    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandlerForNormalUser();
+    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandlerForNormalUser(
+            std::size_t testUserIndex = 0);
 
     static std::unique_ptr<dbengine::RequestHandler> makeRequestHandlerForSuperUser();
 
@@ -47,14 +49,14 @@ public:
         return *m_env->m_output;
     }
 
-    static const auto& getTestUserName() noexcept
+    static const auto& getTestUserName(std::size_t index)
     {
-        return m_testUserName;
+        return m_testUserNames[index];
     }
 
-    static auto getTestUserId() noexcept
+    static auto getTestUserId(std::size_t index)
     {
-        return m_testUserId;
+        return m_testUserIds[index];
     }
 
     static const auto& getTestDatabaseName() noexcept
@@ -81,8 +83,8 @@ private:
     std::unique_ptr<siodb::io::OutputStream> m_output;
     std::string m_instanceFolder;
     static TestEnvironment* m_env;
-    static std::string m_testUserName;
-    static std::uint32_t m_testUserId;
+    static std::array<std::string, kTestUserCount> m_testUserNames;
+    static std::array<std::uint32_t, kTestUserCount> m_testUserIds;
     static std::string m_testDatabaseName;
     static std::string m_testDatabaseNameLowerCase;
 };

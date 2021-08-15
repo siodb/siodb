@@ -18,8 +18,6 @@ namespace parser_ns = dbengine::parser;
 
 TEST(Query, SelectFrom2Tables)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -35,13 +33,15 @@ TEST(Query, SelectFrom2Tables)
             {"B", siodb::COLUMN_DATA_TYPE_BOOL, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_7_1",
             dbengine::TableType::kDisk, table1Columns, dbengine::User::kSuperUserId, {});
 
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_7_2",
             dbengine::TableType::kDisk, table2Columns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT_1 -----------
+    // ----------- INSERT_1 -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_1 VALUES (0),(1),(2),(3),(4)";
@@ -66,7 +66,7 @@ TEST(Query, SelectFrom2Tables)
         ASSERT_EQ(response.affected_row_count(), 5U);
     }
 
-    /// ----------- INSERT_2 -----------
+    // ----------- INSERT_2 -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_7_2 VALUES (6.0, false), (5.0, false), (4.0, "
@@ -92,7 +92,7 @@ TEST(Query, SelectFrom2Tables)
         ASSERT_EQ(response.affected_row_count(), 7U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT SELECT_WITH_WHERE_7_1.I8, SELECT_WITH_WHERE_7_2.B, SELECT_WITH_WHERE_7_2.F "
@@ -152,8 +152,6 @@ TEST(Query, SelectFrom2Tables)
 
 TEST(Query, SelectFrom3TablesWithSameColumns)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -163,6 +161,8 @@ TEST(Query, SelectFrom3TablesWithSameColumns)
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"CTEXT", siodb::COLUMN_DATA_TYPE_TEXT, true},
     };
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto db = instance->findDatabase("SYS");
     for (int i = 0; i < 3; ++i) {
         auto tableName = "S3T_" + std::to_string(i + 1);
@@ -170,7 +170,7 @@ TEST(Query, SelectFrom3TablesWithSameColumns)
                 dbengine::User::kSuperUserId, {});
     }
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement = "INSERT INTO SYS.S3T_1 VALUES ('a1'), ('b1'), ('c1'), ('d1')";
         parser_ns::SqlParser parser(statement);
@@ -229,7 +229,7 @@ TEST(Query, SelectFrom3TablesWithSameColumns)
         ASSERT_EQ(response.affected_row_count(), 4U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT * FROM SYS.S3T_1 tab1, SYS.S3T_2 tab2, SYS.S3T_3 tab3 "

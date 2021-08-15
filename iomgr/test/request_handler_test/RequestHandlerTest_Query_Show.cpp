@@ -18,9 +18,6 @@ namespace parser_ns = dbengine::parser;
 
 TEST(Query, ShowDatabases)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::string statement("SHOW DATABASES");
@@ -51,6 +48,8 @@ TEST(Query, ShowDatabases)
 
     std::uint64_t rowLength = 0;
     std::vector<std::uint8_t> rowData;
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     for (std::size_t i = 0, n = instance->getDatabaseCount(); i < n; ++i) {
         rowLength = 0;
         ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
@@ -66,9 +65,6 @@ TEST(Query, ShowDatabases)
 
 TEST(Query, ShowTables)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::string statement("SHOW TABLES");
@@ -99,6 +95,8 @@ TEST(Query, ShowTables)
 
     std::uint64_t rowLength = 0;
     std::vector<std::uint8_t> rowData;
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto& systemDatabase = instance->getSystemDatabase();
     for (std::size_t i = 0, n = systemDatabase.getTableCount(); i < n; ++i) {
         rowLength = 0;
@@ -115,9 +113,6 @@ TEST(Query, ShowTables)
 
 TEST(Query, DescribeTable)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::string statement("DESCRIBE TABLE SYS.SYS_TABLES");
@@ -148,6 +143,8 @@ TEST(Query, DescribeTable)
 
     std::uint64_t rowLength = 0;
     std::vector<std::uint8_t> rowData;
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     auto& systemDatabase = instance->getSystemDatabase();
     auto sysTablesTable = systemDatabase.findTableChecked("SYS_TABLES");
     for (std::size_t i = 0, n = sysTablesTable->getColumnCount(); i < n; ++i) {

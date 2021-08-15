@@ -39,7 +39,7 @@ TEST(DML_Insert, InsertSingleRecord)
 
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     const std::string statement("INSERT INTO SYS.TEST_ITEMS values ('TEST', 123.0)");
 
     parser_ns::SqlParser parser(statement);
@@ -61,7 +61,7 @@ TEST(DML_Insert, InsertSingleRecord)
     EXPECT_TRUE(response.has_affected_row_count());
     ASSERT_EQ(response.affected_row_count(), 1U);
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
 
     {
         const std::string statement("SELECT name, price as price_alias FROM sys.test_items");
@@ -122,7 +122,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
 
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     const std::string statement("INSERT INTO SYS.TEST_ITEMS_DV_1(name) values ('TEST')");
 
     parser_ns::SqlParser parser(statement);
@@ -144,7 +144,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue1)
     EXPECT_TRUE(response.has_affected_row_count());
     ASSERT_EQ(response.affected_row_count(), 1U);
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
 
     {
         const std::string statement("SELECT name, price as price_alias FROM sys.TEST_ITEMS_DV_1");
@@ -205,7 +205,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
 
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     const std::string statement("INSERT INTO SYS.TEST_ITEMS_DV_2 values ('TEST')");
 
     parser_ns::SqlParser parser(statement);
@@ -227,7 +227,7 @@ TEST(DML_Insert, InsertSingleRecordWithDefaultValue2)
     EXPECT_TRUE(response.has_affected_row_count());
     ASSERT_EQ(response.affected_row_count(), 1U);
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
 
     {
         const std::string statement("SELECT name, price as price_alias FROM sys.TEST_ITEMS_DV_2");
@@ -290,7 +290,7 @@ TEST(DML_Insert, InsertMultipleRecords)
 
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.TEST_CUSTOMERS (LAST_NAME, FIRST_NAME) values ";
@@ -322,7 +322,7 @@ TEST(DML_Insert, InsertMultipleRecords)
         ASSERT_EQ(response.affected_row_count(), kInsertRows);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM TEST_CUSTOMERS");
         parser_ns::SqlParser parser(statement);
@@ -392,7 +392,7 @@ TEST(DML_Insert, InsertDataTypesWithLength)
 
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
 
     std::vector<std::string> columns;
     columns.reserve(2);
@@ -435,7 +435,7 @@ TEST(DML_Insert, InsertDataTypesWithLength)
     EXPECT_TRUE(response.has_affected_row_count());
     ASSERT_EQ(response.affected_row_count(), kBufferSize.size());
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     const std::string statement("SELECT * FROM TEST_DIGITAL_BOOKS");
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -579,7 +579,7 @@ TEST(DML_Insert, InsertMinMaxValues)
     EXPECT_TRUE(response.has_affected_row_count());
     ASSERT_EQ(response.affected_row_count(), 2U);
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     const std::string statement("SELECT * FROM TEST_TABLE_MIN_MAX");
     parser_ns::SqlParser parser(statement);
     parser.parse();
@@ -719,7 +719,7 @@ TEST(DML_Insert, InsertDateTime)
 
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     std::vector<std::vector<requests::ConstExpressionPtr>> values;
 
     std::array<siodb::RawDateTime, 4> dateTime;
@@ -790,7 +790,7 @@ TEST(DML_Insert, InsertDateTime)
     EXPECT_TRUE(response.has_affected_row_count());
     ASSERT_EQ(response.affected_row_count(), 2U);
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     const std::string statement("SELECT * FROM TEST_CONTRACTS");
     parser_ns::SqlParser parser(statement);
     parser.parse();

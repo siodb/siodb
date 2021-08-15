@@ -410,7 +410,7 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                         if (i + 2 >= node->children.size())
                             throw DBEngineRequestFactoryError("UPDATE: missing expression in SET");
 
-                        /// --------- Parse column/where ---------
+                        // --------- Parse column/where ---------
                         const auto columnNode = node->children[i];
                         auto nonTerminalType = helpers::getNonTerminalType(columnNode);
                         if (nonTerminalType == SiodbParser::RuleColumn_name) {
@@ -428,13 +428,13 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createUpdateRequest(
                                     "UPDATE: SET Expression column not found");
                         }
 
-                        /// --------- Parse '=' ---------
+                        // --------- Parse '=' ---------
                         const auto assignNode = node->children[i + 1];
                         terminalType = helpers::getMaybeTerminalType(assignNode);
                         if (terminalType != SiodbParser::ASSIGN)
                             throw DBEngineRequestFactoryError("UPDATE: missing = in SET");
 
-                        /// --------- Parse value ---------
+                        // --------- Parse value ---------
                         const auto valueExpr = node->children[i + 2];
                         nonTerminalType = helpers::getNonTerminalType(valueExpr);
                         if (nonTerminalType == SiodbParser::RuleExpr) {

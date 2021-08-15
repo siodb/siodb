@@ -20,11 +20,11 @@ namespace parser_ns = dbengine::parser;
 TEST(RestDelete, DeleteExistingRow)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -34,8 +34,8 @@ TEST(RestDelete, DeleteExistingRow)
     };
     const std::string kTableName("REST_DELETE_ROW_1");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
 
     // Insert data into table
@@ -103,11 +103,11 @@ TEST(RestDelete, DeleteExistingRow)
 TEST(RestDelete, DeleteNonExistingRow)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -117,8 +117,8 @@ TEST(RestDelete, DeleteNonExistingRow)
     };
     const std::string kTableName("REST_DELETE_ROW_2");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
 
     // Insert data into table
@@ -185,8 +185,6 @@ TEST(RestDelete, DeleteNonExistingRow)
 TEST(RestDelete, DeleteFromSystemTable_AsSuperUser)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     // Create source protobuf message
@@ -226,8 +224,6 @@ TEST(RestDelete, DeleteFromSystemTable_AsSuperUser)
 TEST(RestDelete, DeleteFromSystemTable_AsNormalUser)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message

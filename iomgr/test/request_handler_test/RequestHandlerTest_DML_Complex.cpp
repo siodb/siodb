@@ -42,7 +42,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
     instance->findDatabase("SYS")->createUserTable("COMPLEX_TEST_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement("INSERT INTO COMPLEX_TEST_1 VALUES(1, 1000000)");
 
@@ -58,7 +58,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
                 response, inputStream);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement("DELETE FROM COMPLEX_TEST_1 WHERE I8 = 1");
 
@@ -74,7 +74,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
                 response, inputStream);
     }
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement("INSERT INTO COMPLEX_TEST_1 VALUES(2, 2000000), (3, 3000000)");
 
@@ -90,7 +90,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
                 response, inputStream);
     }
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement("INSERT INTO COMPLEX_TEST_1 VALUES(4, 4000000), (5, 5000000)");
 
@@ -106,7 +106,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
                 response, inputStream);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement("DELETE FROM COMPLEX_TEST_1 WHERE U64 = 3000000");
 
@@ -123,7 +123,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
                 response, inputStream);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement("DELETE FROM COMPLEX_TEST_1 WHERE I8 = 5 AND U64 = 5000000");
 
@@ -140,7 +140,7 @@ TEST(DML_Complex, ComplexInsertDeleteTest)
                 response, inputStream);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM COMPLEX_TEST_1");
         parser_ns::SqlParser parser(statement);
@@ -211,7 +211,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
     instance->findDatabase("SYS")->createUserTable("COMPLEX_TEST_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- Update -----------
+    // ----------- Update -----------
     {
         // Table is empty now
         const std::string statement("UPDATE COMPLEX_TEST_2 SET U64=23185854094843");
@@ -234,7 +234,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         ASSERT_EQ(response.affected_row_count(), 0U);
     }
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement("INSERT INTO COMPLEX_TEST_2 VALUES(1, 1000000)");
 
@@ -250,7 +250,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
                 response, inputStream);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         const std::string statement("UPDATE COMPLEX_TEST_2 SET U64=999999");
 
@@ -271,7 +271,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         ASSERT_EQ(response.affected_row_count(), 1U);
     }
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement("INSERT INTO COMPLEX_TEST_2 VALUES(2, 2000000), (3, 3000000)");
 
@@ -287,7 +287,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
                 response, inputStream);
     }
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement("INSERT INTO COMPLEX_TEST_2 VALUES(4, 4000000), (5, 5000000)");
 
@@ -303,7 +303,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
                 response, inputStream);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         const std::string statement("UPDATE COMPLEX_TEST_2 SET U64=1000000 WHERE U64=999999");
 
@@ -325,7 +325,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         ASSERT_EQ(response.affected_row_count(), 1U);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         // Reverse order 1,2,3,4,5 -> 5,4,3,2,1 and the same for U64
         const std::string statement("UPDATE COMPLEX_TEST_2 SET U64=6000000-U64, I8=6-I8");
@@ -348,7 +348,7 @@ TEST(DML_Complex, ComplexInsertUpdateTest)
         ASSERT_EQ(response.affected_row_count(), 5U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM COMPLEX_TEST_2");
         parser_ns::SqlParser parser(statement);
@@ -422,7 +422,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
     instance->findDatabase("SYS")->createUserTable("COMPLEX_TEST_3", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO COMPLEX_TEST_3 VALUES(1, 1000000), (20, 20000000), (30, 30000000)");
@@ -439,7 +439,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
                 response, inputStream);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         const std::string statement(
                 "UPDATE COMPLEX_TEST_3 SET U64=U64/10, I8=I8/10 WHERE U64 > 3000000 AND I8 > 3");
@@ -461,7 +461,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
         ASSERT_EQ(response.affected_row_count(), 2U);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement("DELETE FROM COMPLEX_TEST_3 WHERE U64 = 3000000");
 
@@ -483,7 +483,7 @@ TEST(DML_Complex, ComplexInsertUpdateDeleteTest)
         ASSERT_EQ(response.affected_row_count(), 1U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM COMPLEX_TEST_3");
         parser_ns::SqlParser parser(statement);

@@ -25,11 +25,11 @@ namespace parser_ns = dbengine::parser;
 TEST(RestPatch, PatchExistingRow)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -42,10 +42,10 @@ TEST(RestPatch, PatchExistingRow)
     };
     const std::string kTableName("REST_PATCH_ROW_T1");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -129,11 +129,11 @@ TEST(RestPatch, PatchExistingRow)
 TEST(RestPatch, PatchNonExistingRow)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -146,10 +146,10 @@ TEST(RestPatch, PatchNonExistingRow)
     };
     const std::string kTableName("REST_PATCH_ROW_T2");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -230,11 +230,11 @@ TEST(RestPatch, PatchNonExistingRow)
 TEST(RestPatch, PatchExstingRowWithInvalidData)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -247,10 +247,10 @@ TEST(RestPatch, PatchExstingRowWithInvalidData)
     };
     const std::string kTableName("REST_PATCH_ROW_T3");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -316,11 +316,11 @@ TEST(RestPatch, PatchExstingRowWithInvalidData)
 TEST(RestPatch, PatchExistingRowNonExistingColumn)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -333,10 +333,10 @@ TEST(RestPatch, PatchExistingRowNonExistingColumn)
     };
     const std::string kTableName("REST_PATCH_ROW_T4");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -402,11 +402,11 @@ TEST(RestPatch, PatchExistingRowNonExistingColumn)
 TEST(RestPatch, PatchTrid)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -419,10 +419,10 @@ TEST(RestPatch, PatchTrid)
     };
     const std::string kTableName("REST_PATCH_ROW_T5");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -488,8 +488,6 @@ TEST(RestPatch, PatchTrid)
 TEST(RestPatch, PatchSystemTable_AsSuperUser)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     // Create source protobuf message
@@ -543,8 +541,6 @@ TEST(RestPatch, PatchSystemTable_AsSuperUser)
 TEST(RestPatch, PatchSystemTable_AsNormalUser)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message

@@ -34,7 +34,7 @@ TEST(DML_Update, UpdateAllValues)
     instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO UPDATE_TEST_1 VALUES (0), (1), (2), (3), (4), (5)");
@@ -57,7 +57,7 @@ TEST(DML_Update, UpdateAllValues)
         ASSERT_EQ(response.affected_row_count(), 6U);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         const std::string statement("UPDATE SYS.UPDATE_TEST_1 SET I16=I16+100");
 
@@ -79,7 +79,7 @@ TEST(DML_Update, UpdateAllValues)
         ASSERT_EQ(response.affected_row_count(), 6U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM UPDATE_TEST_1");
         parser_ns::SqlParser parser(statement);
@@ -142,7 +142,7 @@ TEST(DML_Update, UpdateWhereByTRID)
     instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement("INSERT INTO UPDATE_TEST_2 VALUES (10), (20), (30)");
 
@@ -164,7 +164,7 @@ TEST(DML_Update, UpdateWhereByTRID)
         ASSERT_EQ(response.affected_row_count(), 3U);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         const std::string statement("UPDATE SYS.UPDATE_TEST_2 SET U8=TRID WHERE TRID=2");
 
@@ -186,7 +186,7 @@ TEST(DML_Update, UpdateWhereByTRID)
         ASSERT_EQ(response.affected_row_count(), 1U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM UPDATE_TEST_2");
         parser_ns::SqlParser parser(statement);
@@ -268,7 +268,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
     instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_3", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO UPDATE_TEST_3 VALUES"
@@ -294,7 +294,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
         ASSERT_EQ(response.affected_row_count(), 3U);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         const std::string statement(
                 "UPDATE SYS.UPDATE_TEST_3 SET DT='2017-11-10' WHERE DT BETWEEN '2019-11-11' AND "
@@ -318,7 +318,7 @@ TEST(DML_Update, UpdateOneColumnFromThree)
         ASSERT_EQ(response.affected_row_count(), 2U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM UPDATE_TEST_3");
         parser_ns::SqlParser parser(statement);
@@ -404,7 +404,7 @@ TEST(DML_Update, UpdateSeveralColumns)
     instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_4", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         // U8 {1, 2, 3, 4, 5}
         // U32 {5, 4, 3, 2, 1}
@@ -430,7 +430,7 @@ TEST(DML_Update, UpdateSeveralColumns)
         ASSERT_EQ(response.affected_row_count(), 5U);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         // U8 => {2, 4, 7, 4, 5}
         // U32 => {15, 14, 13, 2, 1}
@@ -456,7 +456,7 @@ TEST(DML_Update, UpdateSeveralColumns)
         ASSERT_EQ(response.affected_row_count(), 3U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM UPDATE_TEST_4");
         parser_ns::SqlParser parser(statement);
@@ -530,7 +530,7 @@ TEST(DML_Update, UpdateConcatString)
     instance->findDatabase("SYS")->createUserTable("UPDATE_TEST_5", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO UPDATE_TEST_5 VALUES ('', 0), ('A', 1), ('AA', 2)");
@@ -553,7 +553,7 @@ TEST(DML_Update, UpdateConcatString)
         ASSERT_EQ(response.affected_row_count(), 3U);
     }
 
-    /// ----------- UPDATE -----------
+    // ----------- UPDATE -----------
     {
         const std::string statement("UPDATE SYS.UPDATE_TEST_5 SET T=T+'B'");
 
@@ -575,7 +575,7 @@ TEST(DML_Update, UpdateConcatString)
         ASSERT_EQ(response.affected_row_count(), 3U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT T FROM UPDATE_TEST_5");
         parser_ns::SqlParser parser(statement);

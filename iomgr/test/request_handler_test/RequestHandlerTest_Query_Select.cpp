@@ -21,7 +21,6 @@ TEST(Query, SelectFromSysDatabases)
 {
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
-
     instance->createDatabase(
             "TEST", "none", siodb::BinaryValue(), {}, 0, {}, false, dbengine::User::kSuperUserId);
 
@@ -68,8 +67,6 @@ TEST(Query, SelectFromSysDatabases)
 
 TEST(Query, SelectWithWhere)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -80,10 +77,12 @@ TEST(Query, SelectWithWhere)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
             {"B", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_1",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_1 VALUES ";
@@ -114,7 +113,7 @@ TEST(Query, SelectWithWhere)
         ASSERT_EQ(response.affected_row_count(), 10U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM SYS.SELECT_WITH_WHERE_1 WHERE (A*2) > B");
         parser_ns::SqlParser parser(statement);
@@ -167,8 +166,6 @@ TEST(Query, SelectWithWhere)
 
 TEST(Query, SelectWithWhereBetweenDatetime)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -179,10 +176,12 @@ TEST(Query, SelectWithWhereBetweenDatetime)
             {"DT", siodb::COLUMN_DATA_TYPE_TIMESTAMP, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_2",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_2 VALUES";
@@ -212,7 +211,7 @@ TEST(Query, SelectWithWhereBetweenDatetime)
         ASSERT_EQ(response.affected_row_count(), 5U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT DT FROM SYS.SELECT_WITH_WHERE_2 WHERE DT BETWEEN '2015-03-01' AND "
@@ -277,7 +276,7 @@ TEST(Query, SelectWithWhereCompoundExpression)
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_3",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_3 VALUES";
@@ -308,7 +307,7 @@ TEST(Query, SelectWithWhereCompoundExpression)
         ASSERT_EQ(response.affected_row_count(), 6U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT D, I8, U32 FROM SYS.SELECT_WITH_WHERE_3 WHERE ((U32 + I8) / 2) > (D + "
@@ -364,8 +363,6 @@ TEST(Query, SelectWithWhereCompoundExpression)
 
 TEST(Query, SelectWithWhereNonSelectedColumn)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -377,10 +374,12 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
             {"I64", siodb::COLUMN_DATA_TYPE_INT64, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_4",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_4 VALUES ";
@@ -408,7 +407,7 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
         ASSERT_EQ(response.affected_row_count(), 3U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         // 3 kinds of column expressions in where:
         // 1) <NoTable> column
@@ -498,8 +497,6 @@ TEST(Query, SelectWithWhereNonSelectedColumn)
 /** Select with using aliased table in WHERE */
 TEST(Query, SelectWithWhereUsingTableAlias)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -510,10 +507,12 @@ TEST(Query, SelectWithWhereUsingTableAlias)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_WITH_TABLE_ALIAS",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO SELECT_WITH_WHERE_WITH_TABLE_ALIAS VALUES (0), (1), (2)");
@@ -536,7 +535,7 @@ TEST(Query, SelectWithWhereUsingTableAlias)
         ASSERT_EQ(response.affected_row_count(), 3U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT ALIASED_TABLE.A AS ALIASED_COLUMN FROM "
@@ -577,8 +576,6 @@ TEST(Query, SelectWithWhereUsingTableAlias)
 
 TEST(Query, SelectWithWhereColumnAlias)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -589,10 +586,12 @@ TEST(Query, SelectWithWhereColumnAlias)
             {"C", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_5",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO SYS.SELECT_WITH_WHERE_5 VALUES (1),(2),(3),(4),(5)");
@@ -615,7 +614,7 @@ TEST(Query, SelectWithWhereColumnAlias)
         ASSERT_EQ(response.affected_row_count(), 5U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT C AS AC FROM SYS.SELECT_WITH_WHERE_5 WHERE C = 2");
         parser_ns::SqlParser parser(statement);
@@ -655,8 +654,6 @@ TEST(Query, SelectWithWhereColumnAlias)
 
 TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -668,10 +665,12 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
             {"T", siodb::COLUMN_DATA_TYPE_TEXT, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_6",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_6 VALUES";
@@ -701,7 +700,7 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
         ASSERT_EQ(response.affected_row_count(), 5U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT DT, T FROM SYS.SELECT_WITH_WHERE_6 WHERE DT BETWEEN '2015-03-01' AND "
@@ -753,8 +752,6 @@ TEST(Query, SelectWithWhereBetweenAndLogicalAnd)
 
 TEST(Query, SelectWithExpression)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -766,10 +763,12 @@ TEST(Query, SelectWithExpression)
             {"U16", siodb::COLUMN_DATA_TYPE_UINT16, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_8",
             dbengine::TableType::kDisk, table1Columns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_8 VALUES (0, 0),(10, 1),(20, 2),(30, 3),(40, 4)";
@@ -794,7 +793,7 @@ TEST(Query, SelectWithExpression)
         ASSERT_EQ(response.affected_row_count(), 5U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT U32 + U16 AS TEST FROM SYS.SELECT_WITH_WHERE_8 WHERE U32 + U16 > 22");
@@ -846,14 +845,12 @@ TEST(Query, SelectWithExpression)
  */
 TEST(Query, SelectWithExpressionFrom2Tables)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT sys_tables.name, sys_columns.name from sys_tables, sys_columns WHERE "
@@ -896,8 +893,6 @@ TEST(Query, SelectWithExpressionFrom2Tables)
  */
 TEST(Query, SelectWithExpressionWithNull)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -908,10 +903,12 @@ TEST(Query, SelectWithExpressionWithNull)
             {"I64", siodb::COLUMN_DATA_TYPE_INT64, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("TEST_EXPRESSION", dbengine::TableType::kDisk,
             table1Columns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.TEST_EXPRESSION VALUES (10)";
@@ -936,7 +933,7 @@ TEST(Query, SelectWithExpressionWithNull)
         ASSERT_EQ(response.affected_row_count(), 1U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT NULL, 13, I64 + 0, I64 + NULL FROM SYS.TEST_EXPRESSION");
@@ -992,8 +989,6 @@ TEST(Query, SelectWithExpressionWithNull)
  */
 TEST(Query, SelectWithExpressionWithEmptyTable)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
@@ -1004,10 +999,12 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
             {"I64", siodb::COLUMN_DATA_TYPE_INT64, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("TEST_EXPRESSION_EMPTY",
             dbengine::TableType::kDisk, table1Columns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT 12 + 100 as TEST FROM SYS.TEST_EXPRESSION_EMPTY");
         parser_ns::SqlParser parser(statement);
@@ -1041,14 +1038,13 @@ TEST(Query, SelectWithExpressionWithEmptyTable)
  */
 TEST(Query, SelectWithWhereIsNull)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"I", siodb::COLUMN_DATA_TYPE_INT8, true},
             {"T", siodb::COLUMN_DATA_TYPE_TEXT, false},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("NULL_TEST_TABLE_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
@@ -1137,14 +1133,13 @@ TEST(Query, SelectWithWhereIsNull)
  */
 TEST(Query, SelectWithWhereEqualNull)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"I", siodb::COLUMN_DATA_TYPE_INT8, true},
             {"T", siodb::COLUMN_DATA_TYPE_TEXT, false},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("NULL_TEST_TABLE_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 

@@ -537,7 +537,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
             ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
-/// --- internals ---
+// --- internals ---
 
 std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
         const void* src, std::uint32_t length, ColumnDataBlockPtr block)

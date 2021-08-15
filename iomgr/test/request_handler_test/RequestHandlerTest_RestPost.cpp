@@ -25,11 +25,11 @@ namespace parser_ns = dbengine::parser;
 TEST(RestPost, PostSingleRow)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -42,7 +42,7 @@ TEST(RestPost, PostSingleRow)
     };
     const std::string kTableName("REST_POST_ROW_T1");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            TestEnvironment::getTestUserId(), {});
+            TestEnvironment::getTestUserId(0), {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -111,11 +111,11 @@ TEST(RestPost, PostSingleRow)
 TEST(RestPost, PostMultipleRows)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -128,7 +128,7 @@ TEST(RestPost, PostMultipleRows)
     };
     const std::string kTableName("REST_POST_ROW_T2");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            TestEnvironment::getTestUserId(), {});
+            TestEnvironment::getTestUserId(0), {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -203,11 +203,11 @@ TEST(RestPost, PostMultipleRows)
 TEST(RestPost, PostWithIncorrectData)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -220,7 +220,7 @@ TEST(RestPost, PostWithIncorrectData)
     };
     const std::string kTableName("REST_POST_ROW_T3");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            TestEnvironment::getTestUserId(), {});
+            TestEnvironment::getTestUserId(0), {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -271,8 +271,6 @@ TEST(RestPost, PostWithIncorrectData)
 TEST(RestPost, PostIntoSystemTable_AsSuperUser)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     // Create source protobuf message
@@ -325,8 +323,6 @@ TEST(RestPost, PostIntoSystemTable_AsSuperUser)
 TEST(RestPost, PostIntoSystemTable_AsNormalUser)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message

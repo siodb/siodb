@@ -44,7 +44,7 @@ void Column::updateBlockState(std::uint64_t blockId, ColumnDataBlockState state)
     m_blockRegistry.updateBlockState(blockId, state);
 }
 
-/// --- internals ---
+// --- internals ---
 
 ColumnDataBlockPtr Column::loadBlock(std::uint64_t blockId)
 {

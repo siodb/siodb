@@ -35,10 +35,10 @@
 #include <gtest/gtest.h>
 
 TestEnvironment* TestEnvironment::m_env;
-std::uint32_t TestEnvironment::m_testUserId;
 std::string TestEnvironment::m_testDatabaseName;
 std::string TestEnvironment::m_testDatabaseNameLowerCase;
-std::string TestEnvironment::m_testUserName;
+std::array<std::string, TestEnvironment::kTestUserCount> TestEnvironment::m_testUserNames;
+std::array<std::uint32_t, TestEnvironment::kTestUserCount> TestEnvironment::m_testUserIds;
 
 TestEnvironment::TestEnvironment(const char* argv0)
     : m_argv0(argv0)
@@ -46,9 +46,10 @@ TestEnvironment::TestEnvironment(const char* argv0)
     m_env = this;
 }
 
-std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForNormalUser()
+std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForNormalUser(
+        std::size_t testUserIndex)
 {
-    return makeRequestHandler(m_testUserId);
+    return makeRequestHandler(m_testUserIds[testUserIndex]);
 }
 
 std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForSuperUser()
@@ -155,10 +156,12 @@ void TestEnvironment::SetUp()
     m_output = std::make_unique<siodb::io::FDStream>(m_pipes[1], true);
 
     // User name must be in UPPERCASE
-    m_testUserName =
-            "TEST_USER_" + std::to_string(std::time(nullptr)) + "_" + std::to_string(::getpid());
-    m_testUserId =
-            m_instance->createUser(m_testUserName, {}, {}, true, dbengine::User::kSuperUserId);
+    for (std::size_t i = 0; i < kTestUserCount; ++i) {
+        m_testUserNames[i] = stdext::concat("TEST_USER_", std::to_string(std::time(nullptr)), '_',
+                std::to_string(::getpid()), '_', i);
+        m_testUserIds[i] = m_instance->createUser(
+                m_testUserNames[i], {}, {}, true, dbengine::User::kSuperUserId);
+    }
 
     // Database name must be in UPPERCASE
     m_testDatabaseName =
@@ -168,14 +171,14 @@ void TestEnvironment::SetUp()
     const auto database = m_instance->createDatabase(stdext::copy(m_testDatabaseName),
             std::string("aes128"), std::move(key), {},
             std::numeric_limits<std::uint32_t>::max() / 2, {}, false, dbengine::User::kSuperUserId);
-    m_instance->grantObjectPermissionsToUser(m_testUserId, 0,
+    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], 0,
             dbengine::DatabaseObjectType::kDatabase, database->getId(),
             dbengine::kShowPermissionMask, false, dbengine::User::kSuperUserId);
-    m_instance->grantObjectPermissionsToUser(m_testUserId, database->getId(),
+    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], database->getId(),
             dbengine::DatabaseObjectType::kTable, 0, dbengine::kCreatePermissionMask, false,
             dbengine::User::kSuperUserId);
     const auto sysTables = database->findTableChecked(dbengine::kSysTablesTableName);
-    m_instance->grantObjectPermissionsToUser(m_testUserId, database->getId(),
+    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], database->getId(),
             dbengine::DatabaseObjectType::kTable, sysTables->getId(),
             dbengine::kSelectSystemPermissionMask, false, dbengine::User::kSuperUserId);
 }

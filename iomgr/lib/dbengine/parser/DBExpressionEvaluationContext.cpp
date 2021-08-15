@@ -18,7 +18,7 @@ ColumnDataType DBExpressionEvaluationContext::getColumnDataType(
     return m_dataSets.at(tableIndex)->getColumnDataType(columnIndex);
 }
 
-/// ---- internals ----
+// ---- internals ----
 
 DBExpressionEvaluationContext::NameToIndexMapping
 DBExpressionEvaluationContext::makeNameToIndexMapping() const

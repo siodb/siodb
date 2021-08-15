@@ -35,11 +35,11 @@ void PatchRow(dbengine::RequestHandler& requestHandler, const std::string& table
 TEST(RestComplex, PostAndUpdateMultipleTimes)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -55,7 +55,7 @@ TEST(RestComplex, PostAndUpdateMultipleTimes)
     };
     const std::string kTableName("REST_COMPLEX_POST_UPDATE_MULTIPLE_T1");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            TestEnvironment::getTestUserId(), {});
+            TestEnvironment::getTestUserId(0), {});
 
     const auto kTableObjectName = TestEnvironment::getTestDatabaseName() + "." + kTableName;
 

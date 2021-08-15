@@ -22,8 +22,6 @@ namespace parser_ns = dbengine::parser;
 TEST(RestGet, GetDatabases1)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message
@@ -74,8 +72,6 @@ TEST(RestGet, GetDatabases1)
 TEST(RestGet, GetDatabases2)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     // Create source protobuf message
@@ -120,24 +116,26 @@ TEST(RestGet, GetDatabases2)
     const auto& jRows = j["rows"];
     ASSERT_TRUE(jRows.is_array());
     // System database is included
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     ASSERT_EQ(jRows.size(), instance->getDatabaseCount());
 }
 
 TEST(RestGet, GetTables)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create table
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
             {"B", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
     instance->findDatabase(TestEnvironment::getTestDatabaseName())
             ->createUserTable("REST_GET_TABLES_1", dbengine::TableType::kDisk, tableColumns,
-                    TestEnvironment::getTestUserId(), {});
+                    TestEnvironment::getTestUserId(0), {});
 
     // Create source protobuf message
     siodb::iomgr_protocol::DatabaseEngineRestRequest requestMsg;
@@ -192,21 +190,21 @@ TEST(RestGet, GetTables)
 TEST(RestGet, GetAllRows)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create table
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
             {"B", siodb::COLUMN_DATA_TYPE_TEXT, true},
     };
     const auto database = instance->findDatabase(TestEnvironment::getTestDatabaseName());
     const auto table = database->createUserTable("REST_GET_ALL_ROWS_1", dbengine::TableType::kDisk,
-            tableColumns, TestEnvironment::getTestUserId(), {});
+            tableColumns, TestEnvironment::getTestUserId(0), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -310,11 +308,11 @@ TEST(RestGet, GetAllRowsFromSysColumns)
 TEST(RestGet, GetSingleRowNoMatch)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -324,10 +322,10 @@ TEST(RestGet, GetSingleRowNoMatch)
     };
     const std::string kTableName("REST_GET_SINGLE_ROW_2");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -389,11 +387,11 @@ TEST(RestGet, GetSingleRowNoMatch)
 TEST(RestGet, GetSingleRowWithMatch)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
@@ -403,10 +401,10 @@ TEST(RestGet, GetSingleRowWithMatch)
     };
     const std::string kTableName("REST_GET_SINGLE_ROW_1");
     const auto table = database->createUserTable(std::string(kTableName),
-            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(), {});
+            dbengine::TableType::kDisk, tableColumns, TestEnvironment::getTestUserId(0), {});
 
     // Insert data into table
-    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(),
+    const dbengine::TransactionParameters tp(TestEnvironment::getTestUserId(0),
             database->generateNextTransactionId(), std::time(nullptr));
     std::vector<dbengine::Variant> values {
             dbengine::Variant(1),
@@ -621,8 +619,6 @@ TEST(RestGet, GetSqlQueryRowsFromSysTablesWithMatch1)
 TEST(RestGet, GetSqlQueryRowsFromSysTablesWithMatch2)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
     const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Create source protobuf message
@@ -652,6 +648,8 @@ TEST(RestGet, GetSqlQueryRowsFromSysTablesWithMatch2)
     EXPECT_FALSE(response.has_affected_row_count());
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     const auto sysTablesColumnCount =
             instance->getSystemDatabase().findTableChecked("SYS_TABLES")->getColumnCount();
     ASSERT_EQ(response.column_description_size(), sysTablesColumnCount);
