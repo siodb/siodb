@@ -5,7 +5,7 @@
 - New feature: #155 Create database with explicit UUID
 - New feature: Automatic copyright years update in the git pre-commit hook
 - Update: Upgraded third party libraries to actual stable versions
-- Update: Upgraded to Go 1.16.7
+- Update: Upgraded to Go 1.17
 - Update: Improved standalone test scripts
 - Fix: #115 "siocli -c" exits with zero code when command fails
 - Fix: #124 Drop system table must be prohibited
@@ -14,7 +14,7 @@
 - Fix: #127 Malformed JSON is produced due to double quote char in its value
 - Fix: #131 REST API: Incorrect error code returned when TRID does not exist
 - Fix: #132 REST API: GET JSON response doesn't return code 404 when row does not exist
-- fix: #147 Escaped quote in the input text value is handled incorrectly
+- Fix: #147 Escaped quote in the input text value is handled incorrectly
 - Fix: #158 GET all rows returns 404 for the empty table, even when the table exists
 - Fix: #161 Query on an empty table returns 404
 - Fix: #162 SELECT * FROM multiple tables results columns only from the first table
