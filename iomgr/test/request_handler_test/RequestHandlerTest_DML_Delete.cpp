@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -22,7 +22,7 @@ TEST(DML_Delete, DeleteAllRows)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -35,7 +35,7 @@ TEST(DML_Delete, DeleteAllRows)
     instance->findDatabase("SYS")->createUserTable("DELETE_TEST_1", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO DELETE_TEST_1 VALUES (0), (1), (2), (3), (4), (5)");
@@ -58,7 +58,7 @@ TEST(DML_Delete, DeleteAllRows)
         ASSERT_EQ(response.affected_row_count(), 6U);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement("DELETE FROM DELETE_TEST_1");
 
@@ -80,7 +80,7 @@ TEST(DML_Delete, DeleteAllRows)
         ASSERT_EQ(response.affected_row_count(), 6U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT U16 FROM DELETE_TEST_1");
         parser_ns::SqlParser parser(statement);
@@ -115,7 +115,7 @@ TEST(DML_Delete, DeleteByTrid)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -128,7 +128,7 @@ TEST(DML_Delete, DeleteByTrid)
     instance->findDatabase("SYS")->createUserTable("DELETE_TEST_2", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO DELETE_TEST_2 VALUES (0), (1), (2), (3), (4), (5)");
@@ -151,7 +151,7 @@ TEST(DML_Delete, DeleteByTrid)
         ASSERT_EQ(response.affected_row_count(), 6U);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement("DELETE FROM DELETE_TEST_2 WHERE TRID >= 3");
 
@@ -173,7 +173,7 @@ TEST(DML_Delete, DeleteByTrid)
         ASSERT_EQ(response.affected_row_count(), 4U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM DELETE_TEST_2");
         parser_ns::SqlParser parser(statement);
@@ -224,7 +224,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -237,7 +237,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
     instance->findDatabase("SYS")->createUserTable("DELETE_TEST_3", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO DELETE_TEST_3 VALUES (0), (1), (2), (3), (4), (5)");
@@ -260,7 +260,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         ASSERT_EQ(response.affected_row_count(), 6U);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement("DELETE FROM SYS.DELETE_TEST_3 WHERE DELETE_TEST_3.TRID >= 3");
 
@@ -282,7 +282,7 @@ TEST(DML_Delete, DeleteByTridWithTableName)
         ASSERT_EQ(response.affected_row_count(), 4U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM DELETE_TEST_3");
         parser_ns::SqlParser parser(statement);
@@ -333,7 +333,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -346,7 +346,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
     instance->findDatabase("SYS")->createUserTable("DELETE_TEST_4", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO DELETE_TEST_4 VALUES (0), (1), (2), (3), (4), (5)");
@@ -369,7 +369,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         ASSERT_EQ(response.affected_row_count(), 6U);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement(
                 "DELETE FROM SYS.DELETE_TEST_4 AS TBL_ALIAS WHERE TBL_ALIAS.TRID >= 3");
@@ -392,7 +392,7 @@ TEST(DML_Delete, DeleteByTridWithTableAlias)
         ASSERT_EQ(response.affected_row_count(), 4U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM DELETE_TEST_4");
         parser_ns::SqlParser parser(statement);
@@ -443,7 +443,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -458,7 +458,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
     instance->findDatabase("SYS")->createUserTable("DELETE_TEST_5", dbengine::TableType::kDisk,
             tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         const std::string statement(
                 "INSERT INTO DELETE_TEST_5 VALUES"
@@ -486,7 +486,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         ASSERT_EQ(response.affected_row_count(), 5U);
     }
 
-    /// ----------- DELETE -----------
+    // ----------- DELETE -----------
     {
         const std::string statement(
                 "DELETE FROM DELETE_TEST_5 WHERE NOT (U64 > (U16 + DELETE_TEST_5.I16))");
@@ -509,7 +509,7 @@ TEST(DML_Delete, DeleteByMutlipleColumnsExpression)
         ASSERT_EQ(response.affected_row_count(), 4U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT I16, U16, U64 FROM DELETE_TEST_5");
         parser_ns::SqlParser parser(statement);

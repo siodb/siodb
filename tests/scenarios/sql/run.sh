@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -45,6 +45,40 @@ else
   _RunSqlScript "${SCRIPT_DIR}/dml_datetime.sql" 120
   _CheckLogFiles
 
+  # Test query result set
+  _RunSqlScript "${SCRIPT_DIR}/query_test_data_model.sql" 120
+  _RunSqlAndValidateOutput "select *
+                            from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3
+                            where tab1.trid = tab2.trid and tab2.trid = tab3.trid" \
+                            '^.*1.*1.*a1.*1.*1.*a2.*1.*1.*a2.*$'
+  _RunSqlAndValidateOutput "select *
+                            from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3
+                            where tab1.trid = tab2.trid and tab2.trid = tab3.trid" \
+                            '^.*2.*2.*b1.*2.*2.*b2.*2.*2.*b2.*$'
+  _RunSqlAndValidateOutput "select *
+                            from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3
+                            where tab1.trid = tab2.trid and tab2.trid = tab3.trid" \
+                            '^.*3.*3.*c1.*3.*3.*c2.*3.*3.*c2.*$'
+  _RunSqlAndValidateOutput "select *
+                            from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3
+                            where tab1.trid = tab2.trid and tab2.trid = tab3.trid" \
+                            '^.*4.*4.*d1.*4.*4.*d2.*4.*4.*d2.*$'
+  _RunSqlAndValidateOutput "select tab1.*
+                            from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3
+                            where tab1.trid = tab2.trid and tab2.trid = tab3.trid" \
+                            '^.*4.*4.*d1.*$'
+  _RunSqlAndValidateOutput "select tab1.*, tab2.*
+                            from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3
+                            where tab1.trid = tab2.trid and tab2.trid = tab3.trid" \
+                            '^.*4.*4.*d1.*4.*4.*d2.*$'
+  _RunSqlAndValidateOutput "select tab1.*, tab2.*, tab3.*
+                            from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3
+                            where tab1.trid = tab2.trid and tab2.trid = tab3.trid" \
+                            '^.*4.*4.*d1.*4.*4.*d2.*4.*4.*d2.*$'
+  _RunSqlAndValidateOutput "select tab1.*, tab2.*, tab3.*
+                            from db1.t1 tab1, db1.t2 tab2, db1.t3 tab3
+                            where tab1.trid = tab2.trid and tab2.trid = tab3.trid and tab3.trid = 4" \
+                            '^.*4.*4.*d1.*4.*4.*d2.*4.*4.*d2.*$'
 fi
 
 _FinalStopOfSiodb

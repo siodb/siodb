@@ -183,7 +183,7 @@ int executeRestRequest(const RestClientParameters& params, std::ostream& os)
     else if (params.m_method == "PATCH")
         verb = iomgr_protocol::PATCH;
     else if (params.m_method == "PUT")
-        verb = iomgr_protocol::PATCH;  // TODO: change to PUT when REST Server merged
+        verb = iomgr_protocol::PATCH;
     else if (params.m_method == "DELETE")
         verb = iomgr_protocol::DELETE;
     else if (params.m_method != "GET")

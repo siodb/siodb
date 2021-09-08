@@ -236,18 +236,11 @@ public:
     }
 
     /**
-     * Returns list of tables.
-     * @param includeSystemTables System tables inclusion flag.
+     * Returns list of table records permitted to be listed by a given user, ordered by name.
+     * @param currentUserId Current user ID.
      * @return List of tables.
      */
-    std::vector<std::string> getTableNames(bool includeSystemTables = true) const;
-
-    /**
-     * Returns list of table records ordered by name.
-     * @param includeSystemTables System tables inclusion flag.
-     * @return List of tables.
-     */
-    std::vector<TableRecord> getTableRecordsOrderedByName(bool includeSystemTables = true) const;
+    std::vector<TableRecord> getTableRecordsOrderedByName(std::uint32_t currentUserId) const;
 
     /**
      * Returns indication that user table can be created in this database.
@@ -524,7 +517,7 @@ public:
     }
 
     /**
-     * Retruns indication that given table name is reserved system table name.
+     * Returns indication that given table name is reserved system table name.
      * @param tableName Table name.
      * @return true if given table name is reserved system table name, false otherwise.
      */

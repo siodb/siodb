@@ -11,6 +11,7 @@
 #include "Index.h"
 #include "TableColumns.h"
 #include "ThrowDatabaseError.h"
+#include "User.h"
 #include "parser/EmptyExpressionEvaluationContext.h"
 
 // Common project headers
@@ -168,6 +169,21 @@ ConstraintPtr Table::findConstraintChecked(Column* column, std::uint64_t constra
     const auto it = m_constraints.find(constraintId);
     if (it != m_constraints.end()) return it->second;
     return createConstraintUnlocked(column, m_database.findConstraintRecord(constraintId));
+}
+
+void Table::checkOperationPermitted(std::uint32_t userId, PermissionType permissionType) const
+{
+    if (!isOperationPermitted(userId, permissionType))
+        throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, getDatabaseName(), m_name);
+}
+
+bool Table::isOperationPermitted(std::uint32_t userId, PermissionType permissionType) const
+{
+    const auto user = m_database.getInstance().findUserChecked(userId);
+    const auto permissions = getSinglePermissionMask(permissionType);
+    return user->hasPermissions(m_database.getId(), DatabaseObjectType::kTable, m_id, permissions)
+           || user->hasPermissions(m_database.getId(), DatabaseObjectType::kTable, 0, permissions)
+           || user->hasPermissions(0, DatabaseObjectType::kTable, 0, permissions);
 }
 
 InsertRowResult Table::insertRow(const std::vector<std::string>& columnNames,

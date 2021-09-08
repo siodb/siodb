@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -236,6 +236,8 @@ all: \
 	$(MAIN_TARGET) \
 	$(SUPPLEMENTARY_TARGETS)
 
+ifeq ($(PRINT_CONFIG),1)
+
 print-config:
 	@echo $(ECHO_E_OPTION) "\n================================================================================\n"\
 	"Build Settings:\n\nSrcDir Offset: $(SRC_DIR_OFFSET)\n\n"\
@@ -249,6 +251,13 @@ print-config:
 	"CXXFLAGS=$(CXXFLAGS)\n\n"\
 	"LDFLAGS=$(LDFLAGS)\n"\
 	"================================================================================\n"
+
+else
+
+print-config:
+	@echo ""
+
+endif
 
 check-headers: print-config $(CXX_CHK) $(C_CHK)
 

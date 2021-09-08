@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -9,20 +9,20 @@
 
 namespace siodb::iomgr::dbengine {
 
-///// struct TableColumns::ExtractColumnId /////////////////////////////////////////////////////////
+///// struct TableColumns::ExtractColumnId ///////////////////////////////////////////////////////
 
 TableColumns::ExtractColumnId::result_type TableColumns::ExtractColumnId::operator()(
-        const TableColumn& tc) const noexcept
+        const TableColumn& value) const noexcept
 {
-    return tc.m_column->getId();
+    return value.m_column->getId();
 }
 
-///// struct TableColumns::ExtractColumnName ///////////////////////////////////////////////////////
+///// struct TableColumns::ExtractColumnName /////////////////////////////////////////////////////
 
 const TableColumns::ExtractColumnName::result_type& TableColumns::ExtractColumnName::operator()(
-        const TableColumn& tc) const noexcept
+        const TableColumn& value) const noexcept
 {
-    return tc.m_column->getName();
+    return value.m_column->getName();
 }
 
 }  // namespace siodb::iomgr::dbengine

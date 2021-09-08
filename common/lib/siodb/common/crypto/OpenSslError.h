@@ -1,11 +1,11 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
 #pragma once
 
 // Project headers
-#include "../stl_ext/string_builder.h"
+#include "../stl_ext/sstream_ext.h"
 
 // STL headers
 #include <stdexcept>
@@ -60,7 +60,7 @@ private:
     {
         constexpr std::size_t kMinOpenSSLErrorBufferLength = 120;
         char errorText[kMinOpenSSLErrorBufferLength];
-        return stdext::string_builder() << str << ": " << ::ERR_error_string(errorCode, errorText);
+        return stdext::concat(str, ": ", ::ERR_error_string(errorCode, errorText));
     }
 
 private:

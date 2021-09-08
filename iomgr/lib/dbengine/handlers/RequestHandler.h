@@ -57,14 +57,6 @@ public:
     void executeRequest(const requests::DBEngineRequest& request, std::uint64_t requestId,
             std::uint32_t responseId, std::uint32_t responseCount);
 
-    /**
-     * Suppresses super-user effect on some operations.
-     */
-    void suppressSuperUserRights() noexcept
-    {
-        m_suppressSuperUserRights = true;
-    }
-
 private:
     /**
      * Returns indication that this RequestHandler acts under the super user rights.
@@ -72,7 +64,7 @@ private:
      */
     bool isSuperUser() const noexcept
     {
-        return m_userId == User::kSuperUserId && !m_suppressSuperUserRights;
+        return m_currentUserId == User::kSuperUserId;
     }
 
     /**
@@ -477,6 +469,24 @@ private:
     void executeGetSqlQueryRowsRestRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::GetSqlQueryRowsRestRequest& request);
 
+    // Access control request handlers
+
+    /**
+     * Executes GRANT permissions for the table request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeGrantPermissionsForTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::GrantPermissionsForTableRequest& request);
+
+    /**
+     * Executes REVOKE permissions for the table request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeRevokePermissionsForTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::RevokePermissionsForTableRequest& request);
+
     // Helpers
 
     /**
@@ -556,13 +566,10 @@ private:
     siodb::io::OutputStream& m_connection;
 
     /** Current user ID */
-    const std::uint32_t m_userId;
+    const std::uint32_t m_currentUserId;
 
     /** Current database */
     std::string m_currentDatabaseName;
-
-    /** Inidication that super-user access rights should be suppressed */
-    bool m_suppressSuperUserRights;
 
     /** Log context name */
     static constexpr const char* kLogContext = "RequestHandler: ";

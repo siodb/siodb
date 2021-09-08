@@ -61,6 +61,7 @@ PMSG Error UserAccessKeyDoesNotExist  User access key '%1%'.'%2%' doesn't exist
 PMSG Error UserAccessKeyIdDoesNotExist  User access key #%1% doesn't exist
 PMSG Error UserTokenDoesNotExist  User token '%1%'.'%2%' doesn't exist
 PMSG Error UserTokenIdDoesNotExist  User token #%1% doesn't exist
+PMSG Error UserPermissionDoesNotExist  User permission #%1% doesn't exist
 
 # OBJECT ALREADY EXISTS
 PMSG Error InstanceAlreadyExists  Instance already exists
@@ -215,6 +216,12 @@ PMSG Error InvalidNextUserTrid Invalid next user TRID %3% for the table '%1%'.'%
 PMSG Error TooManyUsers      Too many user accounts
 PMSG Error TooManyDatabases  Too many databases
 PMSG Error TooManyTables     Too many tables for the database %1%
+
+# ACCESS CONTROL
+PMSG Error PermissionDenied                      Permission denied
+PMSG Error InvalidPermissionSpecification        Invalid permission specification
+PMSG Error CannotGrantPermissionsToSuperUser     Can't grant permissions to the super user
+PMSG Error CannotRevokePermissionsFromSuperUser  Can't revoke permissions from the super user
 
 ##########################################
 # REST ERRORS
@@ -658,7 +665,12 @@ MSG Error DuplicateUserTokenId         Duplicate user token id %2% for the user 
 MSG Error InvalidUserTokenHashedValue  Invalid user token hashed value for the token '%1%'
 
 # Invalid attributes
-# ID -110000
+ID -110000
 MSG Error InvalidLastUserTrid Invalid last user TRID %5% for the table '%1%'.'%2%' (%3%.%4%)
+
+# User permissions
+ID -120000
+MSG Error InvalidDatabaseObjectTypeInUserPermissionRecord \
+          Invalid database object type %2% in the user permission record #%1%
 
 # END

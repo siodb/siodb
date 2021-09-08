@@ -313,7 +313,8 @@ Now, proceed to the section [All Systems](#all-systems).
 Run following commands:
 
 ```bash
-export SIODB_GO_VERSION=1.16.5
+# Install go
+export SIODB_GO_VERSION=1.17
 cd /tmp
 wget "https://golang.org/dl/go${SIODB_GO_VERSION}.linux-amd64.tar.gz"
 tar xaf go${SIODB_GO_VERSION}.linux-amd64.tar.gz
@@ -321,7 +322,12 @@ mv go go-${SIODB_GO_VERSION}
 sudo mv go-${SIODB_GO_VERSION} /usr/local
 rm -f go${SIODB_GO_VERSION}.linux-amd64.tar.gz
 
-# Protobuf
+# Optionally (if you have /usr/local/go linked to /usr/local/go-x.y.z)
+cd /usr/local
+sudo rm -f go
+sudo ln -s go-${SIODB_GO_VERSION} go
+
+# Get Protobuf for go
 /usr/local/go-${SIODB_GO_VERSION}/bin/go get -u github.com/golang/protobuf/protoc-gen-go
 ```
 

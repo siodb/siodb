@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -43,13 +43,13 @@ private:
     /** Key extractor for column ID */
     struct ExtractColumnId {
         typedef std::uint64_t result_type;
-        result_type operator()(const value_type& tc) const noexcept;
+        result_type operator()(const value_type& value) const noexcept;
     };
 
     /** Key extractor for column name */
     struct ExtractColumnName {
         typedef std::string result_type;
-        const result_type& operator()(const value_type& tc) const noexcept;
+        const result_type& operator()(const value_type& value) const noexcept;
     };
 
     /** Registry data container type */

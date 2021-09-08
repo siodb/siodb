@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -54,7 +54,7 @@ void UserToken::hashValue(const BinaryValue& value, const uint8_t* salt, uint8_t
     ::SHA512_Final(hash, &ctx);
 }
 
-// ----- internals -----
+// --- internals ---
 
 User& UserToken::validateUser(User& user, const UserTokenRecord& tokenRecord)
 {

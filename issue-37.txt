@@ -1,0 +1,36 @@
+Plan for developing initial implementation of the "User Permissions" feature
+
+(+) 1. Read permissions on startup.
+(+) 2. Populate permissions into User object.
+(+) 3. Parse permission control SQL.
+(+) 4. Handle grant and revoke permission requests.
+(+) 5. Auto-grant permissions during certain operations (CREATE DATABASE, CREATE TABLE).
+(+) 6. Auto-revoke permissions during certain operations (DROP DATABASE, DROP TABLE).
+(>) 7. Check permissions on each operation.
+
+LEGEND:
+not marked = pending
+(>) = in progress
+(+) = done
+
+- Permission tests:
+  - INSERT
+  - UPDATE
+  - DELETE
+  - UPDATE
+  - CREATE TABLE
+  - DROP TABLE
+  - ALTER TABLE
+  - CREATE DATABASE
+  - DROP DATABASE
+  - ALTER DATABASE
+  - GRANT
+  - REVOKE
+  - GRANT WITH GRANT OPTION
+  - Test that granted with grant option works
+  - SHOW USER PERMISSIONS
+
+Tests above (permitted variant) should be implemented for:
+  - Single database + single table
+  - Single database + all tables
+  - All databases + all tables

@@ -71,9 +71,21 @@ sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
 		| drop_user_stmt
 		| drop_view_stmt
 		| factored_select_stmt
+		| grant_database_permissions_stmt
+		| grant_instance_permissions_stmt
+		| grant_table_permissions_stmt
+		| grant_view_permissions_stmt
+		| grant_index_permissions_stmt
+		| grant_trigger_permissions_stmt
 		| insert_stmt
 		| reindex_stmt
 		| release_stmt
+		| revoke_database_permissions_stmt
+		| revoke_instance_permissions_stmt
+		| revoke_table_permissions_stmt
+		| revoke_view_permissions_stmt
+		| revoke_index_permissions_stmt
+		| revoke_trigger_permissions_stmt
 		| rollback_stmt
 		| savepoint_stmt
 		| simple_select_stmt
@@ -269,6 +281,147 @@ drop_user_stmt: K_DROP K_USER user_name;
 drop_view_stmt:
 	K_DROP K_VIEW (K_IF K_EXISTS)? (database_name '.')? view_name;
 
+///////////////////////////////////////////////////////////
+
+grant_table_permissions_stmt:
+	K_GRANT table_permission_list K_ON (K_TABLE)? table_spec_ex K_TO user_name grant_option_spec?;
+
+revoke_table_permissions_stmt:
+	K_REVOKE table_permission_list K_ON (K_TABLE)? table_spec_ex K_FROM user_name;
+
+table_permission_list: table_permission (',' table_permission)*;
+
+table_permission:
+	K_ALL
+	| K_READ_ONLY // alias to {K_SELECT, K_SHOW}
+	| K_READ_WRITE // alias to {K_SELECT, K_SHOW, K_INSERT, K_UPDATE, K_DELETE}
+	| K_SELECT
+	| K_INSERT
+	| K_UPDATE
+	| K_DELETE
+	| K_DROP
+	| K_ALTER
+	| K_SHOW;
+
+grant_option_spec: K_WITH K_GRANT K_OPTION;
+
+///////////////////////////////////////////////////////////
+
+grant_view_permissions_stmt:
+	K_GRANT view_permission_list K_ON K_VIEW view_spec_ex K_TO user_name grant_option_spec?;
+
+revoke_view_permissions_stmt:
+	K_REVOKE view_permission_list K_ON K_VIEW view_spec_ex K_FROM user_name;
+
+view_permission_list: view_permission (',' view_permission)*;
+
+view_permission:
+	K_ALL
+	| K_SELECT
+	| K_READ_ONLY // alias to {K_SELECT, K_SHOW}
+	| K_DROP
+	| K_ALTER
+	| K_SHOW;
+
+///////////////////////////////////////////////////////////
+
+grant_index_permissions_stmt:
+	K_GRANT index_permission_list K_ON K_INDEX index_spec_ex K_TO user_name grant_option_spec?;
+
+revoke_index_permissions_stmt:
+	K_REVOKE index_permission_list K_ON K_INDEX index_spec_ex K_FROM user_name;
+
+index_permission_list: index_permission (',' index_permission)*;
+
+index_permission: K_ALL | K_DROP | K_ALTER | K_SHOW;
+
+///////////////////////////////////////////////////////////
+
+grant_trigger_permissions_stmt:
+	K_GRANT trigger_permission_list K_ON K_TRIGGER trigger_spec_ex K_TO user_name grant_option_spec?
+		;
+
+revoke_trigger_permissions_stmt:
+	K_REVOKE trigger_permission_list K_ON K_TRIGGER trigger_spec_ex K_FROM user_name;
+
+trigger_permission_list:
+	trigger_permission (',' trigger_permission)*;
+
+trigger_permission:
+	K_ALL
+	| K_ENABLE
+	| K_DISABLE
+	| K_DROP
+	| K_ALTER
+	| K_SHOW;
+
+///////////////////////////////////////////////////////////
+
+grant_database_permissions_stmt:
+	K_GRANT database_permission_list K_ON K_DATABASE database_name_ex K_TO user_name
+		grant_option_spec?;
+
+revoke_database_permissions_stmt:
+	K_GRANT database_permission_list K_ON K_DATABASE database_name_ex K_FROM user_name;
+
+database_permission_list:
+	database_permission (',' database_permission)*;
+
+database_permission:
+	K_ALL
+	// table permissions
+	| (K_CREATE K_TABLE)
+	| (K_DROP K_ANY K_TABLE)
+	| (K_ALTER K_ANY K_TABLE)
+	| (K_SHOW K_ANY K_TABLE)
+	// view permission
+	| (K_CREATE K_VIEW)
+	| (K_DROP K_ANY K_VIEW)
+	| (K_ALTER K_ANY K_VIEW)
+	| (K_SHOW K_ANY K_VIEW)
+	// index permission
+	| (K_CREATE K_INDEX)
+	| (K_DROP K_ANY K_INDEX)
+	| (K_ALTER K_ANY K_INDEX)
+	| (K_SHOW K_ANY K_INDEX)
+	// trigger permissions
+	| (K_CREATE K_TRIGGER)
+	| (K_DROP K_ANY K_TRIGGER)
+	| (K_ALTER K_ANY K_TRIGGER)
+	| (K_SHOW K_ANY K_TRIGGER)
+	| K_DROP
+	| K_ALTER
+	| K_DETACH;
+
+///////////////////////////////////////////////////////////
+
+grant_instance_permissions_stmt:
+	K_GRANT instance_permission_list K_TO user_name grant_option_spec?;
+
+revoke_instance_permissions_stmt:
+	K_REVOKE instance_permission_list K_FROM user_name;
+
+instance_permission_list:
+	instance_permission (',' instance_permission)*;
+
+instance_permission:
+	(K_CREATE K_DATABASE)
+	| (K_DROP K_ANY K_DATABASE)
+	| (K_ALTER K_ANY K_DATABASE)
+	| (K_ATTACH K_DATABASE)
+	| (K_DETACH K_ANY K_DATABASE)
+	| (K_CREATE K_USER)
+	| (K_ALTER K_USER)
+	| (K_DROP K_USER)
+	| (K_CREATE K_USER K_ACCESS K_KEY)
+	| (K_ALTER K_USER K_ACCESS K_KEY)
+	| (K_DROP K_USER K_ACCESS K_KEY)
+	| (K_CREATE K_USER K_ACCESS K_TOKEN)
+	| (K_ALTER K_USER K_ACCESS K_TOKEN)
+	| (K_DROP K_USER K_ACCESS K_TOKEN);
+
+///////////////////////////////////////////////////////////
+
 factored_select_stmt: (
 		K_WITH K_RECURSIVE? common_table_expression (
 			',' common_table_expression
@@ -287,7 +440,7 @@ insert_stmt:
 		| K_INSERT K_OR K_FAIL
 		| K_INSERT K_OR K_IGNORE
 	) K_INTO (database_name '.')? table_name (
-		'(' column_name ( ',' column_name)* ')'
+		'(' column_name (',' column_name)* ')'
 	)? (
 		K_VALUES '(' expr (',' expr)* ')' (
 			',' '(' expr ( ',' expr)* ')'
@@ -489,7 +642,7 @@ expr:
 
 foreign_key_clause:
 	K_REFERENCES foreign_table (
-		'(' column_name ( ',' column_name)* ')'
+		'(' column_name (',' column_name)* ')'
 	)? (
 		(
 			K_ON (K_DELETE | K_UPDATE) (
@@ -613,153 +766,6 @@ module_argument: expr | column_def;
 
 column_alias: IDENTIFIER | STRING_LITERAL;
 
-keyword:
-	K_ABORT
-	| K_ACCESS
-	| K_ACTION
-	| K_ACTIVE
-	| K_ADD
-	| K_AFTER
-	| K_ALL
-	| K_ALTER
-	| K_ANALYZE
-	| K_AND
-	| K_AS
-	| K_ASC
-	| K_ATTACH
-	| K_AUTOINCREMENT
-	| K_BEFORE
-	| K_BEGIN
-	| K_BETWEEN
-	| K_BY
-	| K_CASCADE
-	| K_CASE
-	| K_CAST
-	| K_CHECK
-	| K_COLLATE
-	| K_COLUMN
-	| K_COMMIT
-	| K_CONFLICT
-	| K_CONSTRAINT
-	| K_CREATE
-	| K_CROSS
-	| K_CURRENT_DATE
-	| K_CURRENT_TIME
-	| K_CURRENT_TIMESTAMP
-	| K_DATABASE
-	| K_DATABASES
-	| K_DBS
-	| K_DEFAULT
-	| K_DEFERRABLE
-	| K_DEFERRED
-	| K_DELETE
-	| K_DESC
-	| K_DESCRIBE
-	| K_DETACH
-	| K_DISTINCT
-	| K_DROP
-	| K_EACH
-	| K_ELSE
-	| K_END
-	| K_ESCAPE
-	| K_EXCEPT
-	| K_EXCLUSIVE
-	| K_EXISTS
-	| K_EXPLAIN
-	| K_FAIL
-	| K_FALSE
-	| K_FOR
-	| K_FOREIGN
-	| K_FROM
-	| K_FULL
-	| K_GLOB
-	| K_GROUP
-	| K_HAVING
-	| K_IF
-	| K_IGNORE
-	| K_IMMEDIATE
-	| K_IN
-	| K_INACTIVE
-	| K_INDEX
-	| K_INDEXED
-	| K_INITIALLY
-	| K_INNER
-	| K_INSERT
-	| K_INSTEAD
-	| K_INTERSECT
-	| K_INTO
-	| K_IS
-	| K_ISNULL
-	| K_JOIN
-	| K_KEY
-	| K_LEFT
-	| K_LIKE
-	| K_LIMIT
-	| K_MATCH
-	| K_NATURAL
-	| K_NO
-	| K_NOT
-	| K_NOTNULL
-	| K_NULL
-	| K_OF
-	| K_OFFSET
-	| K_ON
-	| K_OR
-	| K_ORDER
-	| K_OUTER
-	| K_PLAN
-	| K_PRIMARY
-	| K_QUERY
-	| K_RAISE
-	| K_RECURSIVE
-	| K_REFERENCES
-	| K_REGEXP
-	| K_REINDEX
-	| K_RELEASE
-	| K_RENAME
-	| K_REPLACE
-	| K_RESTRICT
-	| K_RIGHT
-	| K_ROLLBACK
-	| K_ROW
-	| K_SAVEPOINT
-	| K_SELECT
-	| K_SET
-	| K_TABLE
-	| K_TEMP
-	| K_TEMPORARY
-	| K_THEN
-	| K_TO
-	| K_TOKEN
-	| K_TRANSACTION
-	| K_TRIGGER
-	| K_TRUE
-	| K_UNION
-	| K_UNIQUE
-	| K_UPDATE
-	| K_USE
-	| K_USER
-	| K_USING
-	| K_VACUUM
-	| K_VALUES
-	| K_VIEW
-	| K_VIRTUAL
-	| K_WHEN
-	| K_WHERE
-	| K_WITH
-	| K_WITHOUT;
-
-attribute:
-	K_CIPHER_ID
-	| K_CIPHER_KEY_SEED
-	| K_DATA_DIRECTORY_MUST_EXIST
-	| K_EXPIRATION_TIMESTAMP
-	| K_DESCRIPTION
-	| K_NEXT_TRID
-	| K_REAL_NAME
-	| K_STATE
-	| K_UUID;
-
 name: any_name;
 
 function_name: any_name;
@@ -769,12 +775,18 @@ new_function_name: any_name;
 
 database_name: any_name;
 
+database_name_ex: database_name | STAR;
+
 // TODO(siodb): ALTER DATABASE RENAME IF EXISTS TO
 new_database_name: any_name;
 
 table_name: any_name;
 
+table_name_ex: table_name | STAR;
+
 table_spec: (database_name '.')? table_name;
+
+table_spec_ex: (database_name_ex '.')? table_name_ex;
 
 table_or_index_name: any_name;
 
@@ -803,12 +815,22 @@ foreign_table: any_name;
 
 index_name: any_name;
 
+index_name_ex: index_name | STAR;
+
 index_spec: (database_name '.')? index_name;
+
+index_spec_ex: (database_name_ex '.')? index_name_ex;
 
 // TODO(siodb): ALTER INDEX RENAME IF EXISTS TO
 new_index_name: any_name;
 
 trigger_name: any_name;
+
+trigger_name_ex: trigger_name | STAR;
+
+trigger_spec: (database_name '.')? trigger_name;
+
+trigger_spec_ex: (database_name_ex '.')? trigger_name_ex;
 
 // TODO(siodb): ALTER TRIGGER RENAME IF EXISTS TO
 new_trigger_name: any_name;
@@ -828,6 +850,12 @@ new_user_token_name: any_name;
 user_token_value: BLOB_LITERAL;
 
 view_name: any_name;
+
+view_name_ex: view_name | STAR;
+
+view_spec: (database_name '.')? view_name;
+
+view_spec_ex: (database_name_ex '.')? view_name_ex;
 
 // TODO(siodb): ALTER VIEW RENAME IF EXISTS TO
 new_view_name: any_name;
@@ -895,6 +923,7 @@ K_ALL: A L L;
 K_ALTER: A L T E R;
 K_ANALYZE: A N A L Y Z E;
 K_AND: A N D;
+K_ANY: A N Y;
 K_AS: A S;
 K_ASC: A S C;
 K_ATTACH: A T T A C H;
@@ -929,10 +958,12 @@ K_DELETE: D E L E T E;
 K_DESC: D E S C;
 K_DESCRIBE: D E S C R I B E;
 K_DETACH: D E T A C H;
+K_DISABLE: D I S A B L E;
 K_DISTINCT: D I S T I N C T;
 K_DROP: D R O P;
 K_EACH: E A C H;
 K_ELSE: E L S E;
+K_ENABLE: E N A B L E;
 K_END: E N D;
 K_ESCAPE: E S C A P E;
 K_EXCEPT: E X C E P T;
@@ -946,6 +977,7 @@ K_FOREIGN: F O R E I G N;
 K_FROM: F R O M;
 K_FULL: F U L L;
 K_GLOB: G L O B;
+K_GRANT: G R A N T;
 K_GROUP: G R O U P;
 K_HAVING: H A V I N G;
 K_IF: I F;
@@ -977,6 +1009,7 @@ K_NULL: N U L L;
 K_OF: O F;
 K_OFFSET: O F F S E T;
 K_ON: O N;
+K_OPTION: O P T I O N;
 K_OR: O R;
 K_ORDER: O R D E R;
 K_OUTER: O U T E R;
@@ -984,6 +1017,8 @@ K_PLAN: P L A N;
 K_PRIMARY: P R I M A R Y;
 K_QUERY: Q U E R Y;
 K_RAISE: R A I S E;
+K_READ_ONLY: R E A D '_' O N L Y;
+K_READ_WRITE: R E A D '_' W R I T E;
 K_RECURSIVE: R E C U R S I V E;
 K_REFERENCES: R E F E R E N C E S;
 K_REGEXP: R E G E X P;
@@ -992,6 +1027,7 @@ K_RELEASE: R E L E A S E;
 K_RENAME: R E N A M E;
 K_REPLACE: R E P L A C E;
 K_RESTRICT: R E S T R I C T;
+K_REVOKE: R E V O K E;
 K_RIGHT: R I G H T;
 K_ROLLBACK: R O L L B A C K;
 K_ROW: R O W;
@@ -1024,6 +1060,161 @@ K_WHEN: W H E N;
 K_WHERE: W H E R E;
 K_WITH: W I T H;
 K_WITHOUT: W I T H O U T;
+
+keyword:
+	K_ABORT
+	| K_ACCESS
+	| K_ACTION
+	| K_ACTIVE
+	| K_ADD
+	| K_AFTER
+	| K_ALL
+	| K_ALTER
+	| K_ANALYZE
+	| K_AND
+	| K_ANY
+	| K_AS
+	| K_ASC
+	| K_ATTACH
+	| K_AUTOINCREMENT
+	| K_BEFORE
+	| K_BEGIN
+	| K_BETWEEN
+	| K_BY
+	| K_CASCADE
+	| K_CASE
+	| K_CAST
+	| K_CHECK
+	| K_COLLATE
+	| K_COLUMN
+	| K_COMMIT
+	| K_CONFLICT
+	| K_CONSTRAINT
+	| K_CREATE
+	| K_CROSS
+	| K_CURRENT_DATE
+	| K_CURRENT_TIME
+	| K_CURRENT_TIMESTAMP
+	| K_DATABASE
+	| K_DATABASES
+	| K_DBS
+	| K_DEFAULT
+	| K_DEFERRABLE
+	| K_DEFERRED
+	| K_DELETE
+	| K_DESC
+	| K_DESCRIBE
+	| K_DETACH
+	| K_DISABLE
+	| K_DISTINCT
+	| K_DROP
+	| K_EACH
+	| K_ELSE
+	| K_ENABLE
+	| K_END
+	| K_ESCAPE
+	| K_EXCEPT
+	| K_EXCLUSIVE
+	| K_EXISTS
+	| K_EXPLAIN
+	| K_FAIL
+	| K_FALSE
+	| K_FOR
+	| K_FOREIGN
+	| K_FROM
+	| K_FULL
+	| K_GLOB
+	| K_GRANT
+	| K_GROUP
+	| K_HAVING
+	| K_IF
+	| K_IGNORE
+	| K_IMMEDIATE
+	| K_IN
+	| K_INACTIVE
+	| K_INDEX
+	| K_INDEXED
+	| K_INITIALLY
+	| K_INNER
+	| K_INSERT
+	| K_INSTEAD
+	| K_INTERSECT
+	| K_INTO
+	| K_IS
+	| K_ISNULL
+	| K_JOIN
+	| K_KEY
+	| K_LEFT
+	| K_LIKE
+	| K_LIMIT
+	| K_MATCH
+	| K_NATURAL
+	| K_NO
+	| K_NOT
+	| K_NOTNULL
+	| K_NULL
+	| K_OF
+	| K_OFFSET
+	| K_ON
+	| K_OPTION
+	| K_OR
+	| K_ORDER
+	| K_OUTER
+	| K_PLAN
+	| K_PRIMARY
+	| K_QUERY
+	| K_RAISE
+	| K_READ_ONLY
+	| K_READ_WRITE
+	| K_RECURSIVE
+	| K_REFERENCES
+	| K_REGEXP
+	| K_REINDEX
+	| K_RELEASE
+	| K_RENAME
+	| K_REPLACE
+	| K_RESTRICT
+	| K_REVOKE
+	| K_RIGHT
+	| K_ROLLBACK
+	| K_ROW
+	| K_SAVEPOINT
+	| K_SELECT
+	| K_SET
+	| K_TABLE
+	| K_TEMP
+	| K_TEMPORARY
+	| K_THEN
+	| K_TO
+	| K_TOKEN
+	| K_TRANSACTION
+	| K_TRIGGER
+	| K_TRUE
+	| K_UNION
+	| K_UNIQUE
+	| K_UPDATE
+	| K_USE
+	| K_USER
+	| K_USING
+	| K_VACUUM
+	| K_VALUES
+	| K_VIEW
+	| K_VIRTUAL
+	| K_WHEN
+	| K_WHERE
+	| K_WITH
+	| K_WITHOUT;
+
+attribute:
+	K_CIPHER_ID
+	| K_CIPHER_KEY_SEED
+	| K_DATA_DIRECTORY_MUST_EXIST
+	| K_EXPIRATION_TIMESTAMP
+	| K_DESCRIPTION
+	| K_NEXT_TRID
+	| K_REAL_NAME
+	| K_STATE
+	| K_UUID;
 
 IDENTIFIER:
 	'"' (~'"' | '""')* '"'

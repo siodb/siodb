@@ -84,6 +84,7 @@ _RunSql "create user user1"
 _RunSql "alter user user1 add token test_token x'${TOKEN}'"
 _RunSql "alter user root add token test_token x'${TOKEN}'"
 _RunSqlScript "${SCRIPT_DIR}/create_objects.sql" 90
+_RunSql "grant all on db1.* to user1"
 
 ## AUTH
 executeRestRequest_GET "https://root:faketoken@localhost:50443/databases" 401

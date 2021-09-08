@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -10,6 +10,7 @@ include ../../../mk/Prolog.mk
 TARGET_EXE:=sql_parser_test
 
 CXX_SRC:= \
+	SqlParserTest_AccessControl.cpp \
 	SqlParserTest_DDL.cpp \
 	SqlParserTest_DML.cpp \
 	SqlParserTest_General.cpp \
@@ -17,8 +18,8 @@ CXX_SRC:= \
 	SqlParserTest_Other.cpp \
 	SqlParserTest_Query.cpp \
 	SqlParserTest_QueryConstExpr.cpp \
-	SqlParserTest_TC.cpp \
-	SqlParserTest_UM.cpp \
+	SqlParserTest_TransactionControl.cpp \
+	SqlParserTest_UserManagement.cpp \
 	TestContext.cpp
 
 CXX_HDR:= \

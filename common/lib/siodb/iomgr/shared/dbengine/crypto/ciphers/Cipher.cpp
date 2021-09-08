@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -19,7 +19,7 @@ namespace {
 
 std::unordered_map<std::string_view, CipherPtr> g_ciphers;
 
-inline void addCipher(const CipherPtr& cipher)
+void addCipher(const CipherPtr& cipher)
 {
     g_ciphers.emplace(std::string_view(cipher->getCipherId()), cipher);
 }
@@ -40,7 +40,7 @@ CipherContextPtr Cipher::createDecryptionContext(const BinaryValue& key) const
     return doCreateDecryptionContext(key);
 }
 
-// ----- internal -----
+// --- internals ---
 
 void Cipher::validateKeyLength(const BinaryValue& key) const
 {

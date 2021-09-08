@@ -12,7 +12,7 @@
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbInstance.h>
 #include <siodb/common/options/SiodbOptions.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
@@ -62,8 +62,7 @@ void CreateAndLoadInstance(const char* cipherId)
 
     // Fill general options
     const auto home = ::getenv("HOME");
-    const std::string baseDir = stdext::string_builder()
-                                << home << "/tmp/siodb_" << std::time(nullptr) << '_' << ::getpid();
+    const auto baseDir = stdext::concat(home, "/tmp/siodb_", std::time(nullptr), '_', ::getpid());
     std::cout << "Base directory: " << baseDir << std::endl;
 
     instanceOptions.m_generalOptions.m_dataDirectory = baseDir + "/data";

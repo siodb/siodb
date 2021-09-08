@@ -16,7 +16,7 @@
 #include <siodb/common/options/SiodbOptions.h>
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/ConstantExpression.h>
 
@@ -31,7 +31,7 @@ namespace parser_ns = dbengine::parser;
 // Creates database and checks it was created by selecting from system database
 TEST(DDL, CreateDatabase)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const std::vector<std::pair<std::string, std::string>> parameters {
             {"none", ""},
@@ -50,11 +50,9 @@ TEST(DDL, CreateDatabase)
         auto databaseName = "TEST_DB_" + cipherId + "_" + keySeed;
         boost::to_upper(databaseName);
         {
-            /// ----------- CREATE DATABASE -----------
-            const std::string statement = stdext::string_builder()
-                                          << "CREATE DATABASE " << databaseName
-                                          << " WITH CIPHER_ID = '" << cipherId
-                                          << "', CIPHER_KEY_SEED = '" << keySeed << '\'';
+            // ----------- CREATE DATABASE -----------
+            const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                    " WITH CIPHER_ID = '", cipherId, "', CIPHER_KEY_SEED = '", keySeed, '\'');
 
             parser_ns::SqlParser parser(statement);
             parser.parse();
@@ -79,12 +77,11 @@ TEST(DDL, CreateDatabase)
             EXPECT_EQ(response.response_count(), 1U);
         }
 
-        /// ----------- SELECT -----------
+        // ----------- SELECT -----------
         {
-            const std::string statement = stdext::string_builder()
-                                          << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                          << databaseName << "' AND CIPHER_ID = '" << cipherId
-                                          << '\'';
+            const auto statement =
+                    stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '",
+                            databaseName, "' AND CIPHER_ID = '", cipherId, '\'');
 
             parser_ns::SqlParser parser(statement);
             parser.parse();
@@ -126,11 +123,10 @@ TEST(DDL, CreateDatabase)
         }
 
         {
-            const auto requestHandler = TestEnvironment::makeRequestHandler();
+            const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-            const std::string statement = stdext::string_builder()
-                                          << "DROP DATABASE "
-                                          << (index % 2 == 0 ? "IF EXISTS " : "") << databaseName;
+            const auto statement = stdext::concat(
+                    "DROP DATABASE ", (index % 2 == 0 ? "IF EXISTS " : ""), databaseName);
             parser_ns::SqlParser parser(statement);
             parser.parse();
 
@@ -158,7 +154,7 @@ TEST(DDL, CreateDatabase)
 
 TEST(DDL, CreateDatabaseWithUuid)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -174,11 +170,9 @@ TEST(DDL, CreateDatabaseWithUuid)
     const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
 
     {
-        /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+        // ----------- CREATE DATABASE -----------
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid, '\'');
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -202,11 +196,10 @@ TEST(DDL, CreateDatabaseWithUuid)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder()
-                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+        const auto statement = stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '",
+                databaseName, "' AND CIPHER_ID = 'aes128'");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -249,7 +242,7 @@ TEST(DDL, CreateDatabaseWithUuid)
 
 TEST(DDL, CreateDatabaseWithExistingUuid)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -265,11 +258,8 @@ TEST(DDL, CreateDatabaseWithExistingUuid)
     const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
 
     {
-        /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid, '\'');
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -293,11 +283,10 @@ TEST(DDL, CreateDatabaseWithExistingUuid)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder()
-                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+        const auto statement = stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '",
+                databaseName, "' AND CIPHER_ID = 'aes128'");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -338,12 +327,10 @@ TEST(DDL, CreateDatabaseWithExistingUuid)
     }
 
     {
-        /// ----------- CREATE DATABASE (once again with the same UUID) -----------
+        // ----------- CREATE DATABASE (once again with the same UUID) -----------
         const auto databaseName2 = databaseName + "_2";
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName2
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid << '\'';
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName2,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid, '\'');
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -370,7 +357,7 @@ TEST(DDL, CreateDatabaseWithExistingUuid)
 
 TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -386,12 +373,10 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
     const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
 
     {
-        /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
-                << "', DATA_DIRECTORY_MUST_EXIST=false";
+        // ----------- CREATE DATABASE -----------
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid,
+                "', DATA_DIRECTORY_MUST_EXIST=false");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -415,11 +400,11 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder()
-                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+        const std::string statement =
+                stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '", databaseName,
+                        "' AND CIPHER_ID = 'aes128'");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -462,7 +447,7 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryCanNotExist)
 
 TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_ButDoesNotExist)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -478,12 +463,10 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_ButDoesNotExist)
     const auto uuid = dbengine::Database::computeDatabaseUuid(databaseName.c_str(), creationTime);
 
     {
-        /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
-                << "', DATA_DIRECTORY_MUST_EXIST=true";
+        // ----------- CREATE DATABASE -----------
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid,
+                "', DATA_DIRECTORY_MUST_EXIST=true");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -513,7 +496,7 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
 
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     const auto creationTime = std::time(nullptr);
 
@@ -535,12 +518,10 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
     fs::create_directories(dataDir);
 
     {
-        /// ----------- CREATE DATABASE -----------
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE DATABASE " << databaseName
-                << " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='" << uuid
-                << "', DATA_DIRECTORY_MUST_EXIST=true";
+        // ----------- CREATE DATABASE -----------
+        const auto statement = stdext::concat("CREATE DATABASE ", databaseName,
+                " WITH CIPHER_ID = 'aes128', CIPHER_KEY_SEED = 'abcd', UUID='", uuid,
+                "', DATA_DIRECTORY_MUST_EXIST=true");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -564,11 +545,10 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder()
-                                      << "SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '"
-                                      << databaseName << "' AND CIPHER_ID = 'aes128'";
+        const auto statement = stdext::concat("SELECT NAME FROM SYS.SYS_DATABASES WHERE NAME = '",
+                databaseName, "' AND CIPHER_ID = 'aes128'");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -611,7 +591,7 @@ TEST(DDL, CreateDatabaseWithUuid_DataDirectoryMustExist_AndExists)
 
 TEST(DDL, DropDatabase_NonExistentDB)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     parser_ns::SqlParser parser("DROP DATABASE NO_SUCH_DATABASE_FOR_SURE;");
     parser.parse();
@@ -637,7 +617,7 @@ TEST(DDL, DropDatabase_NonExistentDB)
 
 TEST(DDL, DropDatabaseIfExists_NonExistentDB)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     parser_ns::SqlParser parser("DROP DATABASE IF EXISTS NO_SUCH_DATABASE_FOR_SURE;");
     parser.parse();
@@ -663,16 +643,14 @@ TEST(DDL, DropDatabaseIfExists_NonExistentDB)
 
 TEST(DDL, UseDatabase_ExistentDB)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
-        /// ----------- CREATE DATABASE -----------
-        const std::string statement = stdext::string_builder()
-                                      << "CREATE DATABASE UseDatabase_ExistentDB_database";
-
+        // ----------- CREATE DATABASE -----------
+        const auto statement = "CREATE DATABASE UseDatabase_ExistentDB_database";
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
@@ -691,15 +669,13 @@ TEST(DDL, UseDatabase_ExistentDB)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    const std::string tableName = stdext::string_builder()
-                                  << "TABLE_" << std::time(nullptr) << '_' << ::getpid();
+    const auto tableName = stdext::concat("TABLE_", std::time(nullptr), '_', ::getpid());
     {
-        /// ----------- CREATE TABLE -----------
+        // ----------- CREATE TABLE -----------
         // Create a table in current database
 
-        const std::string statement = stdext::string_builder()
-                                      << "CREATE TABLE UseDatabase_ExistentDB_database."
-                                      << tableName << " (TEST text)";
+        const auto statement = stdext::concat(
+                "CREATE TABLE UseDatabase_ExistentDB_database.", tableName, " (TEST text)");
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
@@ -719,7 +695,7 @@ TEST(DDL, UseDatabase_ExistentDB)
     }
 
     {
-        /// ----------- USE DATABASE -----------
+        // ----------- USE DATABASE -----------
         parser_ns::SqlParser parser("USE DATABASE UseDatabase_ExistentDB_database");
         parser.parse();
 
@@ -738,9 +714,9 @@ TEST(DDL, UseDatabase_ExistentDB)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
-        const std::string statement = stdext::string_builder() << "SELECT * FROM " << tableName;
+        const auto statement = stdext::concat("SELECT * FROM ", tableName);
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -768,7 +744,7 @@ TEST(DDL, UseDatabase_ExistentDB)
 
 TEST(DDL, UseDatabase_NonExistentDB)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     parser_ns::SqlParser parser("USE DATABASE NO_SUCH_DATABASE_FOR_SURE;");
     parser.parse();
@@ -794,16 +770,14 @@ TEST(DDL, UseDatabase_NonExistentDB)
 
 TEST(DDL, DropUsedDatabase)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
 
     {
-        /// ----------- CREATE DATABASE -----------
-        const std::string statement = stdext::string_builder()
-                                      << "CREATE DATABASE DropUsedDatabase_database";
-
+        // ----------- CREATE DATABASE -----------
+        const auto statement = "CREATE DATABASE DropUsedDatabase_database";
         parser_ns::SqlParser parser(statement);
         parser.parse();
 
@@ -827,7 +801,7 @@ TEST(DDL, DropUsedDatabase)
     }
 
     {
-        /// ----------- USE DATABASE -----------
+        // ----------- USE DATABASE -----------
         parser_ns::SqlParser parser("USE DATABASE DropUsedDatabase_database;");
         parser.parse();
 
@@ -849,7 +823,7 @@ TEST(DDL, DropUsedDatabase)
     }
 
     {
-        /// ----------- DROP DATABASE -----------
+        // ----------- DROP DATABASE -----------
         parser_ns::SqlParser parser("DROP DATABASE DropUsedDatabase_database;");
         parser.parse();
 
@@ -873,9 +847,9 @@ TEST(DDL, DropUsedDatabase)
 
 TEST(DDL, CreateDuplicateColumnTable)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- CREATE TABLE -----------
+    // ----------- CREATE TABLE -----------
     const std::string statement("CREATE TABLE test.DDL_TEST_TABLE_1 (TEST text, TEST text)");
 
     parser_ns::SqlParser parser(statement);
@@ -899,7 +873,7 @@ TEST(DDL, CreateDuplicateColumnTable)
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM test.DDL_TEST_TABLE_1");
         parser_ns::SqlParser parser(statement);
@@ -923,9 +897,9 @@ TEST(DDL, CreateDuplicateColumnTable)
 
 TEST(DDL, CreateTable)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- CREATE TABLE -----------
+    // ----------- CREATE TABLE -----------
     const std::string statement(
             "CREATE TABLE DDL_TEST_TABLE_2 (TEST_INTEGER INTEGER, TEST_INT INT, TEST_UINT "
             "UINT,  "
@@ -956,7 +930,7 @@ TEST(DDL, CreateTable)
     EXPECT_EQ(response.response_id(), 0U);
     EXPECT_EQ(response.response_count(), 1U);
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT * FROM DDL_TEST_TABLE_2");
         parser_ns::SqlParser parser(statement);
@@ -1046,7 +1020,7 @@ TEST(DDL, CreateTable)
 // Intent of this test is to check correctness of the some use cases in the block registry.
 void createManyTablesTest(unsigned long long seed)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     std::mt19937 gen(seed);
     std::uniform_real_distribution realDist(0.0, 1.0);
@@ -1055,9 +1029,8 @@ void createManyTablesTest(unsigned long long seed)
 
     constexpr int kTableCount = 60;
     for (int tableNo = 0; tableNo < kTableCount; ++tableNo) {
-        /// ----------- CREATE TABLE -----------
-        const std::string tableName = stdext::string_builder() << "DDL_TEST_TABLE_MANY_" << tableNo
-                                                               << '_' << seed << '_' << ts;
+        // ----------- CREATE TABLE -----------
+        const auto tableName = stdext::concat("DDL_TEST_TABLE_MANY_", tableNo, '_', seed, '_', ts);
         std::size_t randomStringLength = (intDist(gen) % 100) + 1;
         std::string randomString;
         randomString.resize(randomStringLength);
@@ -1069,27 +1042,25 @@ void createManyTablesTest(unsigned long long seed)
             randomString[i] = static_cast<char>(ch);
         }
         LOG_DEBUG << "====== CREATE TABLE " << tableName << "======";
-        const std::string statement =
-                stdext::string_builder()
-                << "CREATE TABLE " << tableName << "\n(TEST_INTEGER INTEGER DEFAULT "
-                << intDist(gen) << "\n,  TEST_INT INT NOT NULL DEFAULT " << intDist(gen)
-                << "\n, TEST_UINT UINT DEFAULT " << intDist(gen)
-                << "\n, TEST_TINYINT TINYINT NOT NULL DEFAULT "
-                << (intDist(gen) % std::numeric_limits<std::int8_t>::max())
-                << "\n, TEST_TINYUINT TINYUINT DEFAULT "
-                << (intDist(gen) % std::numeric_limits<std::uint8_t>::max())
-                << "\n, TEST_SMALLINT SMALLINT NOT NULL DEFAULT " << intDist(gen)
-                << "\n, TEST_SMALLUINT SMALLUINT DEFAULT " << intDist(gen)
-                << "\n, TEST_BIGINT BIGINT NOT NULL DEFAULT " << intDist(gen)
-                << "\n, TEST_BIGUINT BIGUINT DEFAULT " << intDist(gen)
-                << "\n, TEST_SMALLREAL SMALLREAL NOT NULL DEFAULT " << realDist(gen)
-                << "\n, TEST_REAL REAL DEFAULT " << realDist(gen)
-                << "\n, TEST_FLOAT FLOAT NOT NULL DEFAULT " << intDist(gen)
-                << "\n, TEST_DOUBLE DOUBLE DEFAULT " << intDist(gen)
-                << "\n, TEST_TEXT TEXT NOT NULL DEFAULT '" << randomString << "-zzz'"
-                << "\n, TEST_CHAR CHAR DEFAULT '" << randomString[0] << "'"
-                << "\n, TEST_VARCHAR VARCHAR NOT NULL DEFAULT '" << randomString << "'"
-                << "\n, TEST_BLOB BLOB,  TEST_TIMESTAMP TIMESTAMP NOT NULL)\n";
+        const auto statement = stdext::concat("CREATE TABLE ", tableName,
+                "\n(TEST_INTEGER INTEGER DEFAULT ", intDist(gen),
+                "\n,  TEST_INT INT NOT NULL DEFAULT ", intDist(gen), "\n, TEST_UINT UINT DEFAULT ",
+                intDist(gen), "\n, TEST_TINYINT TINYINT NOT NULL DEFAULT ",
+                (intDist(gen) % std::numeric_limits<std::int8_t>::max()),
+                "\n, TEST_TINYUINT TINYUINT DEFAULT ",
+                (intDist(gen) % std::numeric_limits<std::uint8_t>::max()),
+                "\n, TEST_SMALLINT SMALLINT NOT NULL DEFAULT ", intDist(gen),
+                "\n, TEST_SMALLUINT SMALLUINT DEFAULT ", intDist(gen),
+                "\n, TEST_BIGINT BIGINT NOT NULL DEFAULT ", intDist(gen),
+                "\n, TEST_BIGUINT BIGUINT DEFAULT ", intDist(gen),
+                "\n, TEST_SMALLREAL SMALLREAL NOT NULL DEFAULT ", realDist(gen),
+                "\n, TEST_REAL REAL DEFAULT ", realDist(gen),
+                "\n, TEST_FLOAT FLOAT NOT NULL DEFAULT ", intDist(gen),
+                "\n, TEST_DOUBLE DOUBLE DEFAULT ", intDist(gen),
+                "\n, TEST_TEXT TEXT NOT NULL DEFAULT '", randomString, "-zzz'",
+                "\n, TEST_CHAR CHAR DEFAULT '", randomString[0], "'",
+                "\n, TEST_VARCHAR VARCHAR NOT NULL DEFAULT '", randomString, "'",
+                "\n, TEST_BLOB BLOB,  TEST_TIMESTAMP TIMESTAMP NOT NULL)\n");
 
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1112,9 +1083,9 @@ void createManyTablesTest(unsigned long long seed)
         EXPECT_EQ(response.response_id(), 0U);
         EXPECT_EQ(response.response_count(), 1U);
 
-        /// ----------- SELECT -----------
+        // ----------- SELECT -----------
         {
-            const std::string statement = stdext::string_builder() << "SELECT * FROM " << tableName;
+            const auto statement = stdext::concat("SELECT * FROM ", tableName);
             parser_ns::SqlParser parser(statement);
             parser.parse();
 
@@ -1223,9 +1194,9 @@ TEST(DDL, CreateManyTables_Seeded2)
 
 TEST(DDL, CreateTableWithDefaultValue)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- CREATE TABLE -----------
+    // ----------- CREATE TABLE -----------
     const std::string statement(
             "CREATE TABLE DDL_TEST_TABLE_WITH_DEFAULT_VALUE (id INTEGER DEFAULT 5)");
     parser_ns::SqlParser parser(statement);
@@ -1252,9 +1223,9 @@ TEST(DDL, CreateTableWithDefaultValue)
 
 TEST(DDL, CreateTableWithNotNullAndDefaultValue)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- CREATE TABLE -----------
+    // ----------- CREATE TABLE -----------
     const std::string statement(
             "CREATE TABLE DEFAULT_VALUE_TEST(A integer not null default 100, B integer not "
             "null)");
@@ -1282,9 +1253,9 @@ TEST(DDL, CreateTableWithNotNullAndDefaultValue)
 
 TEST(DDL, DropTable_SingleColumn_NoExplicitConstaints)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- CREATE TABLE -----------
+    // ----------- CREATE TABLE -----------
     {
         const std::string statement("CREATE TABLE DDL_TEST_DROP_TABLE_1 (A text)");
 
@@ -1310,7 +1281,7 @@ TEST(DDL, DropTable_SingleColumn_NoExplicitConstaints)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- DROP TABLE -----------
+    // ----------- DROP TABLE -----------
     {
         const std::string statement("DROP TABLE DDL_TEST_DROP_TABLE_1");
 
@@ -1339,9 +1310,9 @@ TEST(DDL, DropTable_SingleColumn_NoExplicitConstaints)
 
 TEST(DDL, DropTable_SingleColumn_WithDefaultValue)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- CREATE TABLE -----------
+    // ----------- CREATE TABLE -----------
     {
         const std::string statement(
                 "CREATE TABLE DDL_TEST_DROP_TABLE_2 (A text DEFAULT 'hello world!')");
@@ -1368,7 +1339,7 @@ TEST(DDL, DropTable_SingleColumn_WithDefaultValue)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- DROP TABLE -----------
+    // ----------- DROP TABLE -----------
     {
         const std::string statement("DROP TABLE DDL_TEST_DROP_TABLE_2");
 
@@ -1397,9 +1368,9 @@ TEST(DDL, DropTable_SingleColumn_WithDefaultValue)
 
 TEST(DDL, DropTable_MultipleColumns_NoExplicitConstaints)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- CREATE TABLE -----------
+    // ----------- CREATE TABLE -----------
     {
         const std::string statement("CREATE TABLE DDL_TEST_DROP_TABLE_3 (A text, B int, C real)");
 
@@ -1425,7 +1396,7 @@ TEST(DDL, DropTable_MultipleColumns_NoExplicitConstaints)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- DROP TABLE -----------
+    // ----------- DROP TABLE -----------
     {
         const std::string statement("DROP TABLE DDL_TEST_DROP_TABLE_3");
 
@@ -1454,9 +1425,9 @@ TEST(DDL, DropTable_MultipleColumns_NoExplicitConstaints)
 
 TEST(DDL, DropTable_MultipleColumns_WithDefaultValue)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
-    /// ----------- CREATE TABLE -----------
+    // ----------- CREATE TABLE -----------
     {
         const std::string statement(
                 "CREATE TABLE DDL_TEST_DROP_TABLE_4 "
@@ -1484,7 +1455,7 @@ TEST(DDL, DropTable_MultipleColumns_WithDefaultValue)
         EXPECT_EQ(response.response_count(), 1U);
     }
 
-    /// ----------- DROP TABLE -----------
+    // ----------- DROP TABLE -----------
     {
         const std::string statement("DROP TABLE DDL_TEST_DROP_TABLE_4");
 
@@ -1513,10 +1484,10 @@ TEST(DDL, DropTable_MultipleColumns_WithDefaultValue)
 
 TEST(DDL, SetTableAttributes_NextTrid)
 {
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     {
-        /// ----------- CREATE TABLE -----------
+        // ----------- CREATE TABLE -----------
         const std::string statement("CREATE TABLE DDL_TEST_TABLE_444 (TEST_INTEGER INTEGER)");
         parser_ns::SqlParser parser(statement);
         parser.parse();
@@ -1540,7 +1511,7 @@ TEST(DDL, SetTableAttributes_NextTrid)
     }
 
     {
-        /// ----------- ALTER TABLE -----------
+        // ----------- ALTER TABLE -----------
         const std::string statement("ALTER TABLE DDL_TEST_TABLE_444 SET NEXT_TRID=222");
         parser_ns::SqlParser parser(statement);
         parser.parse();

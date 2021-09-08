@@ -55,6 +55,7 @@ _RunSqlScript "${SCRIPT_DIR}/create_objects.sql" 90
 TOKEN=$(openssl rand -hex 64)
 _RunSql "create user user1"
 _RunSql "alter user user1 add token token1 x'${TOKEN}'"
+_RunSql "grant all on db1.* to user1"
 
 # # Post initial chars
 _RunSql "insert into db1.table1 (ctext) values (' ')"

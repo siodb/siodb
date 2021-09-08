@@ -25,7 +25,7 @@
 
 namespace siodb::iomgr {
 
-// ----- internals -----
+// --- internals ---
 
 void IOManagerSqlConnectionHandler::threadLogicImpl()
 {

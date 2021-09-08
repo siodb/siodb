@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -32,8 +32,8 @@ Constraint::Constraint(Table& table, const ConstraintRecord& constraintRecord)
     , m_name(validateConstraintName(std::string(constraintRecord.m_name)))
     , m_id(constraintRecord.m_id)
     , m_state(constraintRecord.m_state)
-    , m_constraintDefinition(
-              table.findConstraintDefinitionChecked(constraintRecord.m_constraintDefinitionId))
+    , m_constraintDefinition(table.getDatabase().findConstraintDefinitionChecked(
+              constraintRecord.m_constraintDefinitionId))
     , m_description(constraintRecord.m_description)
 {
 }
@@ -43,7 +43,7 @@ Column* Constraint::getColumn() const noexcept
     return nullptr;
 }
 
-// ----- internals -----
+// --- internals ---
 
 const ConstraintDefinitionPtr& Constraint::checkConstraintType(const Table& table,
         const std::string& constaintName, const ConstraintDefinitionPtr& constraintDefinition,

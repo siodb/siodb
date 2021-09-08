@@ -36,9 +36,8 @@ RequestHandler::RequestHandler(
         Instance& instance, siodb::io::OutputStream& connection, std::uint32_t userId)
     : m_instance(instance)
     , m_connection(connection)
-    , m_userId(userId)
+    , m_currentUserId(userId)
     , m_currentDatabaseName(kSystemDatabaseName)
-    , m_suppressSuperUserRights(false)
 {
     m_instance.findDatabaseChecked(m_currentDatabaseName)->use();
 }
@@ -59,6 +58,7 @@ RequestHandler::~RequestHandler()
 void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
         std::uint64_t requestId, std::uint32_t responseId, std::uint32_t responseCount)
 {
+    LOG_DEBUG << "Executing request of type #" << static_cast<int>(request.m_requestType);
     iomgr_protocol::DatabaseEngineResponse response;
     try {
         response.set_request_id(requestId);
@@ -71,245 +71,306 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                         dynamic_cast<const requests::SelectRequest&>(request), rowsetWriterFactory);
                 break;
             }
+
             case requests::DBEngineRequestType::kShowDatabases: {
                 executeShowDatabasesRequest(
                         response, dynamic_cast<const requests::ShowDatabasesRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kShowTables: {
                 executeShowTablesRequest(response);
                 break;
             }
+
             case requests::DBEngineRequestType::kDescribeTable: {
                 executeDescribeTableRequest(
                         response, dynamic_cast<const requests::DescribeTableRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kInsert: {
                 executeInsertRequest(
                         response, dynamic_cast<const requests::InsertRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kUpdate: {
                 executeUpdateRequest(
                         response, dynamic_cast<const requests::UpdateRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDelete: {
                 executeDeleteRequest(
                         response, dynamic_cast<const requests::DeleteRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kBeginTransaction: {
                 executeBeginTransactionRequest(
                         response, dynamic_cast<const requests::BeginTransactionRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kCommitTransaction: {
                 executeCommitTransactionRequest(
                         response, dynamic_cast<const requests::CommitTransactionRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRollbackTransaction: {
                 executeRollbackTransactionRequest(response,
                         dynamic_cast<const requests::RollbackTransactionRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kSavepoint: {
                 executeSavepointRequest(
                         response, dynamic_cast<const requests::SavepointRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRelease: {
                 executeReleaseRequest(
                         response, dynamic_cast<const requests::ReleaseRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kAttachDatabase: {
                 executeAttachDatabaseRequest(
                         response, dynamic_cast<const requests::AttachDatabaseRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDetachDatabase: {
                 executeDetachDatabaseRequest(
                         response, dynamic_cast<const requests::DetachDatabaseRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kCreateDatabase: {
                 executeCreateDatabaseRequest(
                         response, dynamic_cast<const requests::CreateDatabaseRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDropDatabase: {
                 executeDropDatabaseRequest(
                         response, dynamic_cast<const requests::DropDatabaseRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRenameDatabase: {
                 executeRenameDatabaseRequest(
                         response, dynamic_cast<const requests::RenameDatabaseRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kSetDatabaseAttributes: {
                 executeSetDatabaseAttributesRequest(response,
                         dynamic_cast<const requests::SetDatabaseAttributesRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kUseDatabase: {
                 executeUseDatabaseRequest(
                         response, dynamic_cast<const requests::UseDatabaseRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kCreateTable: {
                 executeCreateTableRequest(
                         response, dynamic_cast<const requests::CreateTableRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDropTable: {
                 executeDropTableRequest(
                         response, dynamic_cast<const requests::DropTableRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRenameTable: {
                 executeRenameTableRequest(
                         response, dynamic_cast<const requests::RenameTableRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kSetTableAttributes: {
                 executeSetTableAttributesRequest(response,
                         dynamic_cast<const requests::SetTableAttributesRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kAddColumn: {
                 executeAddColumnRequest(
                         response, dynamic_cast<const requests::AddColumnRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDropColumn: {
                 executeDropColumnRequest(
                         response, dynamic_cast<const requests::DropColumnRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRenameColumn: {
                 executeRenameColumnRequest(
                         response, dynamic_cast<const requests::RenameColumnRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRedefineColumn: {
                 executeRedefineColumnRequest(
                         response, dynamic_cast<const requests::RedefineColumnRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kCreateIndex: {
                 executeCreateIndexRequest(
                         response, dynamic_cast<const requests::CreateIndexRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDropIndex: {
                 executeDropIndexRequest(
                         response, dynamic_cast<const requests::DropIndexRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kCreateUser: {
                 executeCreateUserRequest(
                         response, dynamic_cast<const requests::CreateUserRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDropUser: {
                 executeDropUserRequest(
                         response, dynamic_cast<const requests::DropUserRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kSetUserAttributes: {
                 executeSetUserAttributesRequest(
                         response, dynamic_cast<const requests::SetUserAttributesRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kAddUserAccessKey: {
                 executeAddUserAccessKeyRequest(
                         response, dynamic_cast<const requests::AddUserAccessKeyRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDropUserAccessKey: {
                 executeDropUserAccessKeyRequest(
                         response, dynamic_cast<const requests::DropUserAccessKeyRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kSetUserAccessKeyAttributes: {
                 executeSetUserAccessKeyAttributesRequest(response,
                         dynamic_cast<const requests::SetUserAccessKeyAttributesRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRenameUserAccessKey: {
                 executeRenameUserAccessKeyRequest(response,
                         dynamic_cast<const requests::RenameUserAccessKeyRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kAddUserToken: {
                 executeAddUserTokenRequest(
                         response, dynamic_cast<const requests::AddUserTokenRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kDropUserToken: {
                 executeDropUserTokenRequest(
                         response, dynamic_cast<const requests::DropUserTokenRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kSetUserTokenAttributes: {
                 executeSetUserTokenAttributesRequest(response,
                         dynamic_cast<const requests::SetUserTokenAttributesRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRenameUserToken: {
                 executeRenameUserTokenRequest(
                         response, dynamic_cast<const requests::RenameUserTokenRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kCheckUserToken: {
                 executeCheckUserTokenRequest(
                         response, dynamic_cast<const requests::CheckUserTokenRequest&>(request));
                 break;
             }
+
+            case requests::DBEngineRequestType::kGrantPermissionsForTable: {
+                executeGrantPermissionsForTableRequest(response,
+                        dynamic_cast<const requests::GrantPermissionsForTableRequest&>(request));
+                break;
+            }
+
+            case requests::DBEngineRequestType::kRevokePermissionsForTable: {
+                executeRevokePermissionsForTableRequest(response,
+                        dynamic_cast<const requests::RevokePermissionsForTableRequest&>(request));
+                break;
+            }
+
             case requests::DBEngineRequestType::kRestGetDatabases: {
                 executeGetDatabasesRestRequest(
                         response, dynamic_cast<const requests::GetDatabasesRestRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRestGetTables: {
                 executeGetTablesRestRequest(
                         response, dynamic_cast<const requests::GetTablesRestRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRestGetAllRows: {
                 executeGetAllRowsRestRequest(
                         response, dynamic_cast<const requests::GetAllRowsRestRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRestGetSingleRow: {
                 executeGetSingleRowRestRequest(
                         response, dynamic_cast<const requests::GetSingleRowRestRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRestGetSqlQueryRows: {
                 executeGetSqlQueryRowsRestRequest(response,
                         dynamic_cast<const requests::GetSqlQueryRowsRestRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRestPostRows: {
                 executePostRowsRestRequest(
                         response, dynamic_cast<const requests::PostRowsRestRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRestDeleteRow: {
                 executeDeleteRowRestRequest(
                         response, dynamic_cast<const requests::DeleteRowRestRequest&>(request));
                 break;
             }
+
             case requests::DBEngineRequestType::kRestPatchRow: {
                 executePatchRowRestRequest(
                         response, dynamic_cast<const requests::PatchRowRestRequest&>(request));
                 break;
             }
+
             default: throw std::invalid_argument("Unknown request type");
         }
     } catch (const UserVisibleDatabaseError& ex) {

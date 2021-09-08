@@ -60,6 +60,8 @@ void RequestHandler::executeUpdateRequest(
     }
 
     const auto table = database->findTableChecked(request.m_table.m_name);
+    table->checkOperationPermitted(m_currentUserId, PermissionType::kUpdate);
+
     const auto tableColumns = table->getColumnsOrderedByPosition();
 
     // Positions of used columns
@@ -148,7 +150,7 @@ void RequestHandler::executeUpdateRequest(
         for (const auto& value : request.m_values)
             values.push_back(value->evaluate(dbContext));
 
-        tableDataSet->updateCurrentRow(std::move(values), columnPositions, m_userId);
+        tableDataSet->updateCurrentRow(std::move(values), columnPositions, m_currentUserId);
         response.set_affected_row_count(++updatedRowCount);
     }
 
@@ -178,8 +180,10 @@ void RequestHandler::executeDeleteRequest(
                 request.m_table.m_name);
     }
 
-    const auto tableDataSet = std::make_shared<TableDataSet>(
-            database->findTableChecked(request.m_table.m_name), request.m_table.m_alias);
+    const auto table = database->findTableChecked(request.m_table.m_name);
+    table->checkOperationPermitted(m_currentUserId, PermissionType::kDelete);
+
+    const auto tableDataSet = std::make_shared<TableDataSet>(table, request.m_table.m_alias);
     requests::DBExpressionEvaluationContext dbContext(std::vector<DataSetPtr> {tableDataSet});
 
     std::vector<CompoundDatabaseError::ErrorRecord> errors;
@@ -203,7 +207,7 @@ void RequestHandler::executeDeleteRequest(
                 throwDatabaseError(IOManagerMessageId::kErrorInvalidWhereCondition, error.what());
             }
         }
-        tableDataSet->deleteCurrentRow(m_userId);
+        tableDataSet->deleteCurrentRow(m_currentUserId);
         response.set_affected_row_count(++deletedRowCount);
     }
 
@@ -234,6 +238,7 @@ void RequestHandler::executeInsertRequest(
     }
 
     const auto table = database->findTableChecked(request.m_table);
+    table->checkOperationPermitted(m_currentUserId, PermissionType::kInsert);
 
     if (request.m_values.empty()) throwDatabaseError(IOManagerMessageId::kErrorValuesListIsEmpty);
 
@@ -299,7 +304,8 @@ void RequestHandler::executeInsertRequest(
 
     if (!errors.empty()) throw CompoundDatabaseError(std::move(errors));
 
-    const TransactionParameters transactionParams(m_userId, database->generateNextTransactionId());
+    const TransactionParameters transactionParams(
+            m_currentUserId, database->generateNextTransactionId());
 
     // Do not include TRID
     const auto requestColumnCount =

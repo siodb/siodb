@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/gin-gonic/gin v1.7.1
 	golang.org/x/sys v0.0.0-20210415045647-66c3f260301c
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/protobuf v1.27.1
 	siodb.io/siodb/siodbproto v0.0.0
 )
 

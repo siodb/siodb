@@ -35,14 +35,12 @@ void PatchRow(dbengine::RequestHandler& requestHandler, const std::string& table
 TEST(RestComplex, PostAndUpdateMultipleTimes)
 {
     // Create request handler
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
-    requestHandler->suppressSuperUserRights();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForNormalUser();
 
     // Find database
-    const std::string kDatabaseName("SYS");
-    const auto database = instance->findDatabaseChecked(kDatabaseName);
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+    const auto database = instance->findDatabaseChecked(TestEnvironment::getTestDatabaseName());
 
     // Create table
     const std::vector<dbengine::SimpleColumnSpecification> tableColumns {
@@ -57,9 +55,9 @@ TEST(RestComplex, PostAndUpdateMultipleTimes)
     };
     const std::string kTableName("REST_COMPLEX_POST_UPDATE_MULTIPLE_T1");
     database->createUserTable(std::string(kTableName), dbengine::TableType::kDisk, tableColumns,
-            dbengine::User::kSuperUserId, {});
+            TestEnvironment::getTestUserId(0), {});
 
-    const auto kTableObjectName = kDatabaseName + "." + kTableName;
+    const auto kTableObjectName = TestEnvironment::getTestDatabaseName() + "." + kTableName;
 
     // was failing with minimum number of rounds 63
     constexpr std::uint64_t kNumberOfRounds = 100;
@@ -116,6 +114,7 @@ void PostRow(dbengine::RequestHandler& requestHandler, const std::string& tableO
     ASSERT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_EQ(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 201);
 
     // Read JSON
     const auto jsonPayload = siodb::io::readChunkedString(inputStream);
@@ -183,6 +182,7 @@ void PatchRow(dbengine::RequestHandler& requestHandler, const std::string& table
     ASSERT_EQ(response.response_count(), 1U);
     ASSERT_EQ(response.column_description_size(), 0);
     ASSERT_EQ(response.message_size(), 0);
+    ASSERT_EQ(response.rest_status_code(), 200);
 
     // Read JSON
     const auto jsonPayload = siodb::io::readChunkedString(inputStream);

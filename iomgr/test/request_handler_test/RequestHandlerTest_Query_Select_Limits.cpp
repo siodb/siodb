@@ -18,9 +18,7 @@ namespace parser_ns = dbengine::parser;
 
 TEST(Query, SelectWithLimit)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -30,10 +28,12 @@ TEST(Query, SelectWithLimit)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_1",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_1 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
@@ -59,7 +59,7 @@ TEST(Query, SelectWithLimit)
         ASSERT_EQ(response.affected_row_count(), 10U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT A FROM SYS.SELECT_WITH_LIMIT_1 LIMIT 5");
         parser_ns::SqlParser parser(statement);
@@ -102,9 +102,7 @@ TEST(Query, SelectWithLimit)
 
 TEST(Query, SelectWithZeroLimit)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -114,10 +112,12 @@ TEST(Query, SelectWithZeroLimit)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_2",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
@@ -143,7 +143,7 @@ TEST(Query, SelectWithZeroLimit)
         ASSERT_EQ(response.affected_row_count(), 10U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT A FROM SYS.SELECT_WITH_LIMIT_2 LIMIT 0");
         parser_ns::SqlParser parser(statement);
@@ -176,9 +176,7 @@ TEST(Query, SelectWithZeroLimit)
 
 TEST(Query, SelectWithNegativeLimit)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -188,10 +186,12 @@ TEST(Query, SelectWithNegativeLimit)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_3",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_2 VALUES (0), (1), (2), (3), (4), (5), (6), (7), "
@@ -217,7 +217,7 @@ TEST(Query, SelectWithNegativeLimit)
         ASSERT_EQ(response.affected_row_count(), 10U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement("SELECT A FROM SYS.SELECT_WITH_LIMIT_3 LIMIT -1");
         parser_ns::SqlParser parser(statement);
@@ -239,9 +239,7 @@ TEST(Query, SelectWithNegativeLimit)
 
 TEST(Query, SelectWithLimitAndOffset)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -251,10 +249,12 @@ TEST(Query, SelectWithLimitAndOffset)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_1",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), (4), "
@@ -282,7 +282,7 @@ TEST(Query, SelectWithLimitAndOffset)
         ASSERT_EQ(response.affected_row_count(), 10U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT A FROM SYS.SELECT_WITH_LIMIT_AND_OFFSET_1 LIMIT 5 OFFSET 5");
@@ -326,9 +326,7 @@ TEST(Query, SelectWithLimitAndOffset)
 
 TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -338,10 +336,12 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_2",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_2 VALUES (0), (1), (2), (3), (4), "
@@ -369,7 +369,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
         ASSERT_EQ(response.affected_row_count(), 10U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT A FROM SYS.SELECT_WITH_LIMIT_AND_OFFSET_2 LIMIT 5 OFFSET 10");
@@ -403,9 +403,7 @@ TEST(Query, SelectWithLimitAndOffsetLargerThanRowCount)
 
 TEST(Query, SelectWithNegativeOffset)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -415,10 +413,12 @@ TEST(Query, SelectWithNegativeOffset)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_LIMIT_AND_OFFSET_3",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_LIMIT_AND_OFFSET_3 VALUES (0), (1), (2), (3), (4), "
@@ -446,7 +446,7 @@ TEST(Query, SelectWithNegativeOffset)
         ASSERT_EQ(response.affected_row_count(), 10U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT A FROM SYS.SELECT_WITH_LIMIT_AND_OFFSET_3 LIMIT 10 OFFSET -1");
@@ -469,9 +469,7 @@ TEST(Query, SelectWithNegativeOffset)
 
 TEST(Query, SelectWithWhere_LimitAndOffset)
 {
-    const auto instance = TestEnvironment::getInstance();
-    ASSERT_NE(instance, nullptr);
-    const auto requestHandler = TestEnvironment::makeRequestHandler();
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
 
     siodb::protobuf::StreamInputStream inputStream(
             TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
@@ -481,10 +479,12 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
             {"A", siodb::COLUMN_DATA_TYPE_INT32, true},
     };
 
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
     instance->findDatabase("SYS")->createUserTable("SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1",
             dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
 
-    /// ----------- INSERT -----------
+    // ----------- INSERT -----------
     {
         std::ostringstream oss;
         oss << "INSERT INTO SYS.SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1 VALUES (0), (1), (2), (3), "
@@ -512,7 +512,7 @@ TEST(Query, SelectWithWhere_LimitAndOffset)
         ASSERT_EQ(response.affected_row_count(), 10U);
     }
 
-    /// ----------- SELECT -----------
+    // ----------- SELECT -----------
     {
         const std::string statement(
                 "SELECT A FROM SYS.SELECT_WITH_WHERE_LIMIT_AND_OFFSET_1 WHERE A > 3 LIMIT 5 "

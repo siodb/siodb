@@ -28,6 +28,7 @@ _RunSqlScript "${SCRIPT_DIR}/create_objects.sql" 90
 TOKEN=$(openssl rand -hex 64)
 _RunSql "create user user1"
 _RunSql "alter user user1 add token token1 x'${TOKEN}'"
+_RunSql "grant all on db1.* to user1"
 
 # TODO: This test generated parse error and that's expected,
 # but we need to treat this error as expected

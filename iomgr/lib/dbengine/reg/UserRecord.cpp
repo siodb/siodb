@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -31,6 +31,9 @@ UserRecord::UserRecord(const User& user)
 
     for (const auto& token : user.getTokens())
         m_tokens.emplace(*token);
+
+    for (const auto& e : user.getGrantedPermissions())
+        m_permissions.emplace(m_id, e.first, e.second);
 }
 
 std::size_t UserRecord::getSerializedSize(unsigned version) const noexcept
@@ -45,6 +48,11 @@ std::size_t UserRecord::getSerializedSize(unsigned version) const noexcept
         result += ::getVarIntSize(static_cast<std::uint32_t>(m_tokens.size()));
         for (const auto& token : m_tokens.byId())
             result += token.getSerializedSize();
+    }
+    if (version >= 2) {
+        result += ::getVarIntSize(static_cast<std::uint32_t>(m_permissions.size()));
+        for (const auto& permission : m_permissions.byId())
+            result += permission.getSerializedSize();
     }
     return result;
 }
@@ -66,6 +74,11 @@ std::uint8_t* UserRecord::serializeUnchecked(std::uint8_t* buffer, unsigned vers
         buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_tokens.size()), buffer);
         for (const auto& token : m_tokens.byId())
             buffer = token.serializeUnchecked(buffer);
+    }
+    if (version >= 2) {
+        buffer = ::encodeVarInt(static_cast<std::uint32_t>(m_permissions.size()), buffer);
+        for (const auto& permission : m_permissions.byId())
+            buffer = permission.serializeUnchecked(buffer);
     }
     return buffer;
 }
@@ -118,9 +131,9 @@ std::size_t UserRecord::deserialize(const std::uint8_t* buffer, std::size_t leng
         helpers::reportInvalidOrNotEnoughData(kClassName, "accessKeys.size", accessKeyCount);
     totalConsumed += consumed;
 
+    m_accessKeys.clear();
     std::uint32_t index = 0;
     try {
-        m_accessKeys.clear();
         for (; index < accessKeyCount; ++index) {
             UserAccessKeyRecord r;
             totalConsumed += r.deserialize(buffer + totalConsumed, length - totalConsumed);
@@ -140,8 +153,8 @@ std::size_t UserRecord::deserialize(const std::uint8_t* buffer, std::size_t leng
         totalConsumed += consumed;
 
         index = 0;
+        m_tokens.clear();
         try {
-            m_tokens.clear();
             for (; index < tokenCount; ++index) {
                 UserTokenRecord r;
                 totalConsumed += r.deserialize(buffer + totalConsumed, length - totalConsumed);
@@ -150,6 +163,28 @@ std::size_t UserRecord::deserialize(const std::uint8_t* buffer, std::size_t leng
         } catch (std::exception& ex) {
             std::ostringstream err;
             err << "tokens[" << index << ']';
+            helpers::reportDeserializationFailure(kClassName, err.str().c_str(), ex.what());
+        }
+    }
+
+    if (classVersion >= 2) {
+        std::uint32_t permissionCount = 0;
+        consumed = ::decodeVarInt(buffer + totalConsumed, length - totalConsumed, permissionCount);
+        if (consumed < 1)
+            helpers::reportInvalidOrNotEnoughData(kClassName, "permissions.size", permissionCount);
+        totalConsumed += consumed;
+
+        m_permissions.clear();
+        index = 0;
+        try {
+            for (; index < permissionCount; ++index) {
+                UserPermissionRecord r;
+                totalConsumed += r.deserialize(buffer + totalConsumed, length - totalConsumed);
+                m_permissions.insert(std::move(r));
+            }
+        } catch (std::exception& ex) {
+            std::ostringstream err;
+            err << "permissions[" << index << ']';
             helpers::reportDeserializationFailure(kClassName, err.str().c_str(), ex.what());
         }
     }

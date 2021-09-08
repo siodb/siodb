@@ -7,6 +7,7 @@
 // Project headers
 #include "dbengine/DatabaseError.h"
 #include "dbengine/Table.h"
+#include "dbengine/User.h"
 #include "dbengine/handlers/RequestHandler.h"
 #include "dbengine/parser/DBEngineSqlRequestFactory.h"
 
@@ -14,7 +15,7 @@
 #include <siodb/common/io/FDStream.h>
 #include <siodb/common/log/Log.h>
 #include <siodb/common/options/SiodbOptions.h>
-#include <siodb/common/stl_ext/string_builder.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/stl_wrap/filesystem_wrapper.h>
 #include <siodb/common/utils/FSUtils.h>
 #include <siodb/common/utils/MessageCatalog.h>
@@ -27,15 +28,38 @@
 // System headers
 #include <unistd.h>
 
+// Boost
+#include <boost/algorithm/string/case_conv.hpp>
+
 // Google Test
 #include <gtest/gtest.h>
 
 TestEnvironment* TestEnvironment::m_env;
+std::string TestEnvironment::m_testDatabaseName;
+std::string TestEnvironment::m_testDatabaseNameLowerCase;
+std::array<std::string, TestEnvironment::kTestUserCount> TestEnvironment::m_testUserNames;
+std::array<std::uint32_t, TestEnvironment::kTestUserCount> TestEnvironment::m_testUserIds;
 
-std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandler()
+TestEnvironment::TestEnvironment(const char* argv0)
+    : m_argv0(argv0)
 {
-    return std::make_unique<dbengine::RequestHandler>(
-            *m_env->m_instance, *m_env->m_output, dbengine::User::kSuperUserId);
+    m_env = this;
+}
+
+std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForNormalUser(
+        std::size_t testUserIndex)
+{
+    return makeRequestHandler(m_testUserIds[testUserIndex]);
+}
+
+std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForSuperUser()
+{
+    return makeRequestHandler(dbengine::User::kSuperUserId);
+}
+
+std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandler(std::uint32_t userId)
+{
+    return std::make_unique<dbengine::RequestHandler>(*m_env->m_instance, *m_env->m_output, userId);
 }
 
 void TestEnvironment::SetUp()
@@ -53,8 +77,7 @@ void TestEnvironment::SetUp()
 
     // Fill general options
     const auto home = ::getenv("HOME");
-    const std::string baseDir = stdext::string_builder()
-                                << home << "/tmp/siodb_" << std::time(nullptr) << '_' << ::getpid();
+    const auto baseDir = stdext::concat(home, "/tmp/siodb_", std::time(nullptr), '_', ::getpid());
     std::cout << "Base directory: " << baseDir << std::endl;
 
     m_instanceFolder = baseDir;
@@ -131,6 +154,33 @@ void TestEnvironment::SetUp()
 
     m_input = std::make_unique<siodb::io::FDStream>(m_pipes[0], true);
     m_output = std::make_unique<siodb::io::FDStream>(m_pipes[1], true);
+
+    // User name must be in UPPERCASE
+    for (std::size_t i = 0; i < kTestUserCount; ++i) {
+        m_testUserNames[i] = stdext::concat("TEST_USER_", std::to_string(std::time(nullptr)), '_',
+                std::to_string(::getpid()), '_', i);
+        m_testUserIds[i] = m_instance->createUser(
+                m_testUserNames[i], {}, {}, true, dbengine::User::kSuperUserId);
+    }
+
+    // Database name must be in UPPERCASE
+    m_testDatabaseName =
+            "TEST_DB_" + std::to_string(std::time(nullptr)) + "_" + std::to_string(::getpid());
+    m_testDatabaseNameLowerCase = boost::to_upper_copy(m_testDatabaseName);
+    siodb::BinaryValue key(16, 0xAB);
+    const auto database = m_instance->createDatabase(stdext::copy(m_testDatabaseName),
+            std::string("aes128"), std::move(key), {},
+            std::numeric_limits<std::uint32_t>::max() / 2, {}, false, dbengine::User::kSuperUserId);
+    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], 0,
+            dbengine::DatabaseObjectType::kDatabase, database->getId(),
+            dbengine::kShowPermissionMask, false, dbengine::User::kSuperUserId);
+    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], database->getId(),
+            dbengine::DatabaseObjectType::kTable, 0, dbengine::kCreatePermissionMask, false,
+            dbengine::User::kSuperUserId);
+    const auto sysTables = database->findTableChecked(dbengine::kSysTablesTableName);
+    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], database->getId(),
+            dbengine::DatabaseObjectType::kTable, sysTables->getId(),
+            dbengine::kSelectSystemPermissionMask, false, dbengine::User::kSuperUserId);
 }
 
 void TestEnvironment::TearDown()

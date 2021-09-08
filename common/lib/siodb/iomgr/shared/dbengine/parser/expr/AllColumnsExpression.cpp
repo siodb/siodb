@@ -4,6 +4,9 @@
 
 #include "AllColumnsExpression.h"
 
+// Project headers
+#include "../CommonConstants.h"
+
 namespace siodb::iomgr::dbengine::requests {
 
 VariantType AllColumnsExpression::getResultValueType(
@@ -20,7 +23,7 @@ ColumnDataType AllColumnsExpression::getColumnDataType(
 
 MutableOrConstantString AllColumnsExpression::getExpressionText() const
 {
-    return "*";
+    return kAllColumnsName;
 }
 
 std::size_t AllColumnsExpression::getSerializedSize() const noexcept

@@ -129,9 +129,9 @@ done
 
 # Drop database that no exists
 _RunSqlAndValidateOutput "alter database noexists set description = 'noexists'"  \
-                         "^Status .*: Not implemented yet$"
+                         "^Status .*: Database 'NOEXISTS' doesn't exist$"
 _RunSqlAndValidateOutput "drop database noexists"  \
-                         "^Status .*: Database .* doesn't exist$"
+                         "^Status .*: Database 'NOEXISTS' doesn't exist$"
 _CheckLogFiles "Cipher .* is unknown|Database .* already exists|Database .* doesn't exist"
 
 ### Drop each database

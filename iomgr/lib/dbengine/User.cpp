@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -41,8 +41,14 @@ User::User(const UserRecord& userRecord)
 {
     for (const auto& accessKeyRecord : userRecord.m_accessKeys.byId())
         m_accessKeys.push_back(std::make_shared<UserAccessKey>(*this, accessKeyRecord));
+
     for (const auto& tokenRecord : userRecord.m_tokens.byId())
         m_tokens.push_back(std::make_shared<UserToken>(*this, tokenRecord));
+
+    for (const auto& permissionRecord : userRecord.m_permissions.byId()) {
+        m_grantedPermissions.emplace(
+                UserPermissionKey(permissionRecord), UserPermissionData(permissionRecord));
+    }
 }
 
 UserAccessKeyPtr User::findAccessKeyChecked(const std::string& name) const
@@ -154,6 +160,70 @@ std::size_t User::getActiveTokenCount() const noexcept
             [](const auto& token) noexcept { return !token->isExpired(); });
 }
 
+void User::checkHasPermissions(std::uint32_t databaseId, DatabaseObjectType objectType,
+        std::uint64_t objectId, std::uint64_t permissions, bool withGrantOption) const
+{
+    const UserPermissionKey permissionKey(databaseId, objectType, objectId);
+    if (!hasPermissions(permissionKey, permissions, withGrantOption))
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+}
+
+bool User::hasPermissions(std::uint32_t databaseId, DatabaseObjectType objectType,
+        std::uint64_t objectId, std::uint64_t permissions, bool withGrantOption) const noexcept
+{
+    const UserPermissionKey permissionKey(databaseId, objectType, objectId);
+    return hasPermissions(permissionKey, permissions, withGrantOption);
+}
+
+bool User::hasPermissions(const UserPermissionKey& permissionKey, std::uint64_t permissions,
+        bool withGrantOption) const noexcept
+{
+    if (isSuperUser()) return true;
+    const auto it = m_grantedPermissions.find(permissionKey);
+    return it != m_grantedPermissions.end()
+           && (it->second.getPermissions() & permissions) == permissions
+           && (!withGrantOption || (it->second.getGrantOptions() & permissions) == permissions);
+}
+
+UserPermissionDataEx User::grantPermissions(
+        const UserPermissionKey& permissionKey, std::uint64_t permissions, bool withGrantOption)
+{
+    const UserPermissionDataEx newData(0, permissions, withGrantOption ? permissions : 0);
+    auto result = m_grantedPermissions.emplace(permissionKey, newData);
+    if (result.second) return newData;
+    auto& existingData = result.first->second;
+    existingData.addPermissions(permissions, withGrantOption);
+    return existingData;
+}
+
+std::optional<std::pair<UserPermissionDataEx, bool>> User::revokePermissions(
+        const UserPermissionKey& permissisonKey, std::uint64_t permissions)
+{
+    const auto it = m_grantedPermissions.find(permissisonKey);
+    if (it != m_grantedPermissions.end()
+            && ((it->second.getPermissions() & permissions) != 0
+                    || (it->second.getGrantOptions() & permissions) != 0)) {
+        it->second.removePermissions(permissions);
+        if (it->second.getPermissions() == 0) {
+            const auto data = it->second;
+            m_grantedPermissions.erase(it);
+            return std::make_pair(data, true);
+        }
+        return std::make_pair(it->second, false);
+    }
+    return {};
+}
+
+std::pair<bool, bool> User::setPermissionRecordId(
+        const UserPermissionKey& permissionKey, std::uint64_t id)
+{
+    const auto it = m_grantedPermissions.find(permissionKey);
+    if (it == m_grantedPermissions.end()) return std::make_pair(false, false);
+    if (it->second.getId() != 0) return std::make_pair(true, false);
+    it->second.setId(id);
+    return std::make_pair(true, true);
+}
+
 bool User::authenticate(const std::string& signature, const std::string& challenge) const
 {
     if (!isActive()) return false;
@@ -175,8 +245,10 @@ bool User::authenticate(const std::string& tokenValue) const
 {
     // Validate and parse token value
     if (tokenValue.empty() || tokenValue.length() % 2 != 0
-            || tokenValue.length() > UserToken::kMaxSize * 2)
+            || tokenValue.length() > UserToken::kMaxSize * 2) {
         throwDatabaseError(IOManagerMessageId::kErrorInvalidUserTokenValue);
+    }
+
     BinaryValue bv(tokenValue.length() / 2);
     try {
         boost::algorithm::unhex(tokenValue.cbegin(), tokenValue.cend(), bv.begin());
@@ -201,7 +273,7 @@ bool User::checkToken(const BinaryValue& tokenValue, bool allowExpiredToken) con
     return false;
 }
 
-// ----- internals -----
+// --- internals ---
 
 std::string&& User::validateUserName(std::string&& userName)
 {

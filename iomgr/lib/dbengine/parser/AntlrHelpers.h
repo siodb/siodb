@@ -49,6 +49,13 @@ inline std::string&& unquoteString(std::string&& s)
 }
 
 /**
+ * Extracts object name from a given node.
+ * @param node A node.
+ * @return Capitalized object name.
+ */
+std::string extractObjectName(antlr4::tree::ParseTree* node);
+
+/**
  * Extracts object name from a child node.
  * @param node A node.
  * @param childNodeIndex Index of a child node containing name.

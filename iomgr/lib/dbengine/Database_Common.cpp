@@ -16,6 +16,7 @@
 #include "SystemDatabase.h"
 #include "Table.h"
 #include "ThrowDatabaseError.h"
+#include "User.h"
 #include "reg/CipherKeyRecord.h"
 
 // Common project headers
@@ -55,45 +56,45 @@ std::string Database::makeDisplayName() const
     return oss.str();
 }
 
-std::vector<std::string> Database::getTableNames(bool includeSystemTables) const
+std::vector<TableRecord> Database::getTableRecordsOrderedByName(std::uint32_t currentUserId) const
 {
     std::lock_guard lock(m_mutex);
-    std::vector<std::string> result;
-    result.reserve(m_tableRegistry.size());
-    const auto& index = m_tableRegistry.byName();
-    stdext::transform_if(
-            index.cbegin(), index.cend(), std::back_inserter(result),
-            [](const auto& tableRecord) { return tableRecord.m_name; },
-            [includeSystemTables](const auto& tableRecord) {
-                return isSystemTable(tableRecord.m_name) == includeSystemTables;
-            });
-    return result;
-}
-
-std::vector<TableRecord> Database::getTableRecordsOrderedByName(bool includeSystemTables) const
-{
-    std::lock_guard lock(m_mutex);
+    const auto currentUser = m_instance.findUserChecked(currentUserId);
+    const bool canListAllTables =
+            currentUser->hasPermissions(m_id, DatabaseObjectType::kTable, 0, kShowPermissionMask)
+            || currentUser->hasPermissions(0, DatabaseObjectType::kTable, 0, kShowPermissionMask);
+    const bool canListAllSystemTables =
+            currentUser->hasPermissions(m_id, DatabaseObjectType::kTable, 0, kShowPermissionMask)
+            || currentUser->hasPermissions(0, DatabaseObjectType::kTable, 0, kShowPermissionMask);
     std::vector<TableRecord> result;
     const auto& index = m_tableRegistry.byName();
-    const auto tableCount = includeSystemTables
-                                    ? m_tableRegistry.size()
-                                    : std::count_if(index.begin(), index.end(),
-                                            [](const auto& tableRecord) noexcept {
-                                                return !isSystemTable(tableRecord.m_name);
-                                            });
+    const auto tableCount = m_tableRegistry.size();
     if (tableCount > 0) {
-        result.reserve(tableCount);
-        if (includeSystemTables)
-            std::copy(index.begin(), index.end(), std::back_inserter(result));
-        else {
+        const auto databaseId = m_id;
+        const auto permittedTableCount = std::count_if(index.begin(), index.end(),
+                [currentUser, canListAllTables, canListAllSystemTables, databaseId](
+                        const auto& tableRecord) noexcept {
+                    return currentUser->hasPermissions(databaseId, DatabaseObjectType::kTable,
+                                   tableRecord.m_id, kShowPermissionMask)
+                           || (Database::isSystemTable(tableRecord.m_name) ? canListAllSystemTables
+                                                                           : canListAllTables);
+                });
+        if (permittedTableCount > 0) {
+            result.reserve(tableCount);
             std::copy_if(index.begin(), index.end(), std::back_inserter(result),
-                    [](const auto& tableRecord) noexcept {
-                        return !isSystemTable(tableRecord.m_name);
+                    [currentUser, canListAllTables, canListAllSystemTables, databaseId](
+                            const auto& tableRecord) noexcept {
+                        return currentUser->hasPermissions(databaseId, DatabaseObjectType::kTable,
+                                       tableRecord.m_id, kShowPermissionMask)
+                               || (Database::isSystemTable(tableRecord.m_name)
+                                               ? canListAllSystemTables
+                                               : canListAllTables);
+                    });
+            std::sort(
+                    result.begin(), result.end(), [](const auto& left, const auto& right) noexcept {
+                        return left.m_name < right.m_name;
                     });
         }
-        std::sort(result.begin(), result.end(), [](const auto& left, const auto& right) noexcept {
-            return left.m_name < right.m_name;
-        });
     }
     return result;
 }
@@ -519,6 +520,15 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
     if (isSystemDatabase() && !canContainUserTables())
         throwDatabaseError(IOManagerMessageId::kErrorCannotCreateUserTablesInSystemDatabase);
 
+    const auto currentUser = m_instance.findUserChecked(currentUserId);
+
+    // User should have permission to create table in this database or in the any database
+    if (!currentUser->hasPermissions(m_id, DatabaseObjectType::kTable, 0, kCreatePermissionMask)
+            && !currentUser->hasPermissions(
+                    0, DatabaseObjectType::kTable, 0, kCreatePermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     LOG_DEBUG << "Database " << m_name << ": Creating user table " << name;
 
     std::lock_guard lock(m_mutex);
@@ -626,6 +636,13 @@ TablePtr Database::createUserTable(std::string&& name, TableType type,
         }
     }
 
+    // Auto-grant permissions to table creator
+    const auto permissions = removeMultiplePermissionsFromMask<PermissionType::kCreate,
+            PermissionType::kShowSystem, PermissionType::kSelectSystem>(
+            *Instance::getAllObjectTypePermissions(DatabaseObjectType::kTable));
+    m_instance.grantObjectPermissionsToUser(*currentUser, m_id, DatabaseObjectType::kTable,
+            table->getId(), permissions, true, User::kSuperUserId);
+
     return table;
 }
 
@@ -639,7 +656,20 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
         throwDatabaseError(IOManagerMessageId::kErrorTableDoesNotExist, m_name, name);
     }
 
+    const auto currentUser = m_instance.findUserChecked(currentUserId);
+
     const auto tableId = table->getId();
+
+    // User should have permission to drop this table or drop any table in this database
+    // or drop any table in the any database
+    if (!currentUser->hasPermissions(m_id, DatabaseObjectType::kTable, tableId, kDropPermissionMask)
+            && !currentUser->hasPermissions(
+                    m_id, DatabaseObjectType::kTable, 0, kDropPermissionMask)
+            && !currentUser->hasPermissions(
+                    0, DatabaseObjectType::kTable, 0, kDropPermissionMask)) {
+        throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+    }
+
     const auto fullTableName = table->makeDisplayName();
     const auto tableDataDir = table->getDataDir();
 
@@ -650,7 +680,8 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
     // 4. Update indices of the affected system tables.
     // 5. Free in-memory data structures.
     // 6. Remove records from internal dictionaries.
-    // 7. Remove data directory of the table.
+    // 7. Remove table permissions.
+    // 8. Remove table data directory.
     //
     // Hierarchy of the affected system objects:
     //
@@ -998,6 +1029,9 @@ void Database::dropTable(const std::string& name, bool tableMustExists, std::uin
         constraintDefsById.erase(e.first);
     }
 
+    m_instance.revokeAllObjectPermissionsFromAllUsers(
+            m_id, DatabaseObjectType::kTable, tableId, User::kSuperUserId);
+
     // Finally, remove data directory
     system_error_code ec;
     fs::remove_all(tableDataDir, ec);
@@ -1039,7 +1073,7 @@ Uuid Database::computeDatabaseUuid(const char* databaseName, std::time_t createT
     return result;
 }
 
-// ---- internal ----
+// --- internals ---
 
 void Database::checkTableBelongsToThisDatabase(const Table& table, const char* operationName) const
 {

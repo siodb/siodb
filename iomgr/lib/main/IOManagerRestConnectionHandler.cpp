@@ -23,7 +23,7 @@
 
 namespace siodb::iomgr {
 
-// ----- internals -----
+// --- internals ---
 
 void IOManagerRestConnectionHandler::threadLogicImpl()
 {

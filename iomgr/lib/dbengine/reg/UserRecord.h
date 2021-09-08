@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -6,6 +6,7 @@
 
 // Project headers
 #include "UserAccessKeyRegistry.h"
+#include "UserPermissionRegistry.h"
 #include "UserTokenRegistry.h"
 
 namespace siodb::iomgr::dbengine {
@@ -21,7 +22,7 @@ struct UserRecord {
     {
     }
 
-    /** 
+    /**
      * Initializes object of class UserRecord.
      * @param id User ID.
      * @param name User name.
@@ -30,10 +31,12 @@ struct UserRecord {
      * @param active User state.
      * @param accessKeys Access keys.
      * @param tokens Tokens.
+     * @param permissions Permissions.
      */
     UserRecord(std::uint32_t id, std::string&& name, std::optional<std::string>&& realName,
             std::optional<std::string>&& description, bool active,
-            UserAccessKeyRegistry&& accessKeys, UserTokenRegistry&& tokens)
+            UserAccessKeyRegistry&& accessKeys, UserTokenRegistry&& tokens,
+            UserPermissionRegistry&& permissions)
         : m_id(id)
         , m_name(std::move(name))
         , m_realName(std::move(realName))
@@ -41,6 +44,7 @@ struct UserRecord {
         , m_active(active)
         , m_accessKeys(std::move(accessKeys))
         , m_tokens(std::move(tokens))
+        , m_permissions(std::move(permissions))
     {
     }
 
@@ -106,6 +110,9 @@ struct UserRecord {
     /** User tokens */
     UserTokenRegistry m_tokens;
 
+    /** User permission registry */
+    UserPermissionRegistry m_permissions;
+
     /** Structure UUID */
     static const Uuid s_classUuid;
 
@@ -113,7 +120,7 @@ struct UserRecord {
     static constexpr const char* kClassName = "UserRecord";
 
     /** Structure version */
-    static constexpr std::uint32_t kClassVersion = 1;
+    static constexpr std::uint32_t kClassVersion = 2;
 };
 
 }  // namespace siodb::iomgr::dbengine
