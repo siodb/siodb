@@ -36,6 +36,9 @@ else
   _RunSqlScript "${SCRIPT_DIR}/ddl_table.sql" 120
   _CheckLogFiles
 
+  _RunSqlScript "${SCRIPT_DIR}/ddl_table_huge.sql" 120
+  _CheckLogFiles
+
   _RunSqlScript "${SCRIPT_DIR}/ddl_user.sql" 120
   _CheckLogFiles
 
