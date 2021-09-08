@@ -89,7 +89,6 @@ drop table table_1;
 
 show tables;
 
-use database sys;
 
 -- Select dictionary
 select *
@@ -97,4 +96,5 @@ from sys_tables;
 select *
 from sys_columns;
 
+use database sys;
 drop database db_default;

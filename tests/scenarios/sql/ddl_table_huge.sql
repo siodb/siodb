@@ -728,12 +728,12 @@ create table table_100_cols_all_datatypes_7 (
 desc table table_100_cols_all_datatypes_1;
 show tables;
 
-use database sys;
-
--- Select dictionary
+-- Select dictionary from db_default
 select *
 from sys_tables;
 select *
 from sys_columns;
 
+-- Cleanup
+use database sys;
 drop database db_default;
