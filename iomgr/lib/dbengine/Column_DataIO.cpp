@@ -130,7 +130,7 @@ void Column::readRecord(
             break;
         }
         case COLUMN_DATA_TYPE_TIMESTAMP: {
-            std::uint8_t buffer[RawDateTime::kMaxSerializedSize];
+            std::uint8_t buffer[RawDateTime::kSerializedSize];
             block->readData(buffer, RawDateTime::kDatePartSerializedSize, addr.getOffset());
             RawDateTime v;
             v.deserializeDatePart(buffer);
@@ -172,7 +172,7 @@ void Column::readMasterColumnRecord(const ColumnDataAddress& addr, MasterColumnR
     record.deserialize(buffer.get(), recordSize);
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& value)
+Column::WriteRecordResult Column::writeRecord(Variant&& value)
 {
     std::lock_guard lock(m_mutex);
 
@@ -182,7 +182,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
             throwDatabaseError(IOManagerMessageId::kErrorCannotInsertNullValue, getDatabaseName(),
                     m_table.getName(), m_name);
         } else
-            return std::make_pair(kNullValueAddress, kNullValueAddress);
+            return WriteRecordResult();
     }
 
     Variant v;
@@ -437,7 +437,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
         }
 
         case COLUMN_DATA_TYPE_TIMESTAMP: {
-            std::uint8_t buffer[RawDateTime::kMaxSerializedSize];
+            std::uint8_t buffer[RawDateTime::kSerializedSize];
             block->writeData(&buffer, v.getDateTime().serialize(buffer) - buffer);
             block->incNextDataPos(requiredLength);
             break;
@@ -455,11 +455,11 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeRecord(Variant&& va
     //DBG_LOG_DEBUG("Column::writeRecord(): " << makeDisplayName() << " at "
     //                                       << ColumnDataAddress(block->getId(), pos));
 
-    return std::make_pair(ColumnDataAddress(block->getId(), pos),
+    return WriteRecordResult(ColumnDataAddress(block->getId(), pos),
             ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
+Column::WriteRecordResult Column::writeMasterColumnRecord(
         const MasterColumnRecord& record, bool updateMainIndex)
 {
     // Check that this is master column
@@ -533,13 +533,13 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeMasterColumnRecord(
                                                         << " at "
                                                         << ColumnDataAddress(block->getId(), pos));
 
-    return std::make_pair(ColumnDataAddress(block->getId(), pos),
+    return WriteRecordResult(ColumnDataAddress(block->getId(), pos),
             ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
 // --- internals ---
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
+Column::WriteRecordResult Column::writeBuffer(
         const void* src, std::uint32_t length, ColumnDataBlockPtr block)
 {
     // Remember initial address
@@ -599,11 +599,10 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeBuffer(
         ++chunkId;
     } while (length > 0);
 
-    return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
+    return WriteRecordResult(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
-std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeLob(
-        LobStream& lob, ColumnDataBlockPtr block)
+Column::WriteRecordResult Column::writeLob(LobStream& lob, ColumnDataBlockPtr block)
 {
     ColumnDataAddress result;
 
@@ -676,7 +675,7 @@ std::pair<ColumnDataAddress, ColumnDataAddress> Column::writeLob(
         ++chunkId;
     } while (lob.getRemainingSize() > 0);
 
-    return std::make_pair(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
+    return WriteRecordResult(result, ColumnDataAddress(block->getId(), block->getNextDataPos()));
 }
 
 void Column::loadText(const ColumnDataAddress& addr, Variant& value, bool lobStreamsMustHoldSource)

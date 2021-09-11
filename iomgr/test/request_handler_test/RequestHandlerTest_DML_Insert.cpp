@@ -12,7 +12,9 @@
 #include <siodb/common/protobuf/ExtendedCodedInputStream.h>
 #include <siodb/common/protobuf/ProtobufMessageIO.h>
 #include <siodb/common/protobuf/RawDateTimeIO.h>
+#include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/AllExpressions.h>
+#include <siodb/iomgr/shared/dbengine/util/RowDecoder.h>
 
 // Boost headers
 #include <boost/date_time.hpp>
@@ -20,6 +22,7 @@
 
 namespace requests = dbengine::requests;
 namespace parser_ns = dbengine::parser;
+namespace util_ns = dbengine::util;
 
 // INSERT INTO SYS.TEST_ITEMS values ('TEST', 123.0)
 // SELECT NAME, PRICE AS PRICE_ALIAS FROM SYS.TEST_ITEMS
@@ -1061,6 +1064,170 @@ TEST(DML_Insert, InsertWithColumn)
             FAIL() << "Column name wrongly accepted";
         } catch (std::exception& ex) {
             // Do not do anything
+        }
+    }
+}
+
+TEST(DML_Insert, InsertSingleRecordIntoBigTable)
+{
+    // #define DEBUG_InsertSingleRecordIntoBigTable
+    const auto instance = TestEnvironment::getInstance();
+    ASSERT_NE(instance, nullptr);
+
+    // Create table
+    constexpr const char* kTableName = "TEST_ITEMS_BIG";
+    const std::vector<siodb::ColumnDataType> dataTypes {
+            siodb::COLUMN_DATA_TYPE_INT8,
+            siodb::COLUMN_DATA_TYPE_UINT8,
+            siodb::COLUMN_DATA_TYPE_INT16,
+            siodb::COLUMN_DATA_TYPE_UINT16,
+            siodb::COLUMN_DATA_TYPE_INT32,
+            siodb::COLUMN_DATA_TYPE_UINT32,
+            siodb::COLUMN_DATA_TYPE_INT64,
+            siodb::COLUMN_DATA_TYPE_UINT64,
+            siodb::COLUMN_DATA_TYPE_FLOAT,
+            siodb::COLUMN_DATA_TYPE_DOUBLE,
+            siodb::COLUMN_DATA_TYPE_TEXT,
+            siodb::COLUMN_DATA_TYPE_BINARY,
+    };
+    ASSERT_EQ(dataTypes.size(), 12U);
+
+    const auto kDataTypeCount = dataTypes.size();
+    constexpr std::size_t kRepeatCount = 10;
+    const auto kColumnCount = kDataTypeCount * kRepeatCount + 1;
+    // Otherwise doesn't fit into all data types
+    ASSERT_LT(kColumnCount, 128U);
+
+    std::vector<dbengine::SimpleColumnSpecification> tableColumns;
+    for (std::size_t i = 1; i <= kColumnCount - 1; ++i) {
+        tableColumns.emplace_back(
+                "C" + std::to_string(i), dataTypes[(i - 1) % dataTypes.size()], true);
+    }
+    instance->findDatabase("SYS")->createUserTable(
+            kTableName, dbengine::TableType::kDisk, tableColumns, dbengine::User::kSuperUserId, {});
+
+    const auto requestHandler = TestEnvironment::makeRequestHandlerForSuperUser();
+
+    // ----------- INSERT -----------
+    std::string insertStatement;
+    {
+        std::ostringstream oss;
+        oss << "INSERT INTO SYS." << kTableName << " values (";
+        for (std::size_t i = 1; i <= kColumnCount - 1; ++i) {
+            if (i > 1) oss << ',';
+            const auto dataType = dataTypes[(i - 1) % dataTypes.size()];
+            switch (dataType) {
+                case siodb::COLUMN_DATA_TYPE_TEXT: {
+                    oss << '\'' << i << '\'';
+                    break;
+                }
+                case siodb::COLUMN_DATA_TYPE_BINARY: {
+                    std::ostringstream hexOss;
+                    hexOss << std::hex << i;
+                    const auto h = hexOss.str();
+                    oss << "x'";
+                    if (h.length() == 1) oss << '0';
+                    oss << h << '\'';
+                    break;
+                }
+                default: {
+                    oss << i;
+                    break;
+                }
+            }
+        }
+        oss << ')';
+        insertStatement = oss.str();
+    }
+
+#ifdef DEBUG_InsertSingleRecordIntoBigTable
+    LOG_INFO << "INSERT statement\n" << insertStatement << '\n';
+#endif
+
+    parser_ns::SqlParser parser(insertStatement);
+    parser.parse();
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto request = factory.createSqlRequest();
+
+    requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+    siodb::iomgr_protocol::DatabaseEngineResponse response;
+    siodb::protobuf::StreamInputStream inputStream(
+            TestEnvironment::getInputStream(), siodb::utils::DefaultErrorCodeChecker());
+    siodb::protobuf::readMessage(
+            siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse, response, inputStream);
+
+    EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+    ASSERT_EQ(response.message_size(), 0);
+    EXPECT_TRUE(response.has_affected_row_count());
+    ASSERT_EQ(response.affected_row_count(), 1U);
+
+    // ----------- SELECT -----------
+
+    {
+        const auto statement = stdext::concat("SELECT * FROM sys.", kTableName);
+        parser_ns::SqlParser parser(statement);
+        parser.parse();
+
+        parser_ns::DBEngineSqlRequestFactory factory(parser);
+        const auto request = factory.createSqlRequest();
+
+        requestHandler->executeRequest(*request, TestEnvironment::kTestRequestId, 0, 1);
+
+        siodb::protobuf::readMessage(siodb::protobuf::ProtocolMessageType::kDatabaseEngineResponse,
+                response, inputStream);
+
+        EXPECT_EQ(response.request_id(), TestEnvironment::kTestRequestId);
+        ASSERT_EQ(response.message_size(), 0);
+        EXPECT_FALSE(response.has_affected_row_count());
+        ASSERT_EQ(static_cast<std::size_t>(response.column_description_size()), kColumnCount);
+        ASSERT_EQ(response.column_description(0).name(), "TRID");
+        for (std::size_t i = 1; i <= kColumnCount - 1; ++i) {
+            const auto expectedName = "C" + std::to_string(i);
+            ASSERT_EQ(response.column_description(i).name(), expectedName);
+        }
+
+        siodb::protobuf::ExtendedCodedInputStream codedInput(&inputStream);
+        std::uint64_t rowLength = 0;
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        std::vector<std::uint8_t> rowData(rowLength);
+        ASSERT_TRUE(codedInput.ReadRaw(rowData.data(), rowLength));
+        ASSERT_TRUE(codedInput.ReadVarint64(&rowLength));
+        EXPECT_EQ(rowLength, 0U);
+
+        std::vector<siodb::ColumnDataType> dataTypesForDecoding;
+        dataTypesForDecoding.reserve(kColumnCount);
+        dataTypesForDecoding.push_back(siodb::COLUMN_DATA_TYPE_UINT64);
+        for (std::size_t i = 1; i <= kColumnCount; ++i) {
+            dataTypesForDecoding.push_back(dataTypes[(i - 1) % dataTypes.size()]);
+        }
+        const auto decoded = util_ns::decodeRow(rowData.data(), rowData.size(), kColumnCount,
+                kColumnCount, dataTypesForDecoding.data());
+        ASSERT_FALSE(decoded.empty());
+        ASSERT_EQ(decoded.at(0).getUInt64(), 1);
+        for (std::size_t j = 0; j < kRepeatCount; ++j) {
+            std::ostringstream oss;
+            for (std::size_t i = 1; i <= kDataTypeCount; ++i) {
+                const auto index = j * kDataTypeCount + i;
+                auto v = *decoded.at(index).asString();
+                if (i > 1) oss << ' ';
+                if (dataTypesForDecoding[index] == siodb::COLUMN_DATA_TYPE_BINARY) v = 'x' + v;
+                oss << std::setw(3) << v;
+            }
+#ifdef DEBUG_InsertSingleRecordIntoBigTable
+            LOG_INFO << j << " ==> " << oss.str();
+#endif
+        }
+        for (std::size_t i = 1; i <= kColumnCount - 1; ++i) {
+            const auto& v0 = decoded.at(i);
+#ifdef DEBUG_InsertSingleRecordIntoBigTable
+            LOG_INFO << "Checking C" << i << ": "
+                     << (dataTypesForDecoding[i] == siodb::COLUMN_DATA_TYPE_BINARY ? "0x" : "")
+                     << *v0.asString();
+#endif
+            const auto v = v0.asUInt32(true);
+            ASSERT_EQ(v, i);
         }
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -39,6 +39,30 @@ public:
     /** Master column NOT NULL constraint description */
     static constexpr const char* kMasterColumnNotNullConstraintDescription =
             "Restricts master column to non-null values";
+
+public:
+    /** Result of writing column data */
+    struct WriteRecordResult {
+        /** Initializes object of class WriteRecordResult. */
+        WriteRecordResult() noexcept = default;
+
+        /**
+         * Initializes object of class WriteRecordResult.
+         * @param dataAddress Written data address.
+         * @param nextAddress Next address to write data.
+         */
+        WriteRecordResult(ColumnDataAddress dataAddress, ColumnDataAddress nextAddress) noexcept
+            : m_dataAddress(dataAddress)
+            , m_nextAddress(nextAddress)
+        {
+        }
+
+        /** Written data address */
+        ColumnDataAddress m_dataAddress;
+
+        /** Next address to write data */
+        ColumnDataAddress m_nextAddress;
+    };
 
 public:
     /**
@@ -318,9 +342,9 @@ public:
     /**
      * Adds new data to a column.
      * @param value A value to put. May be altered by this function.
-     * @return Pair containing data address and next data address
+     * @return Pair containing data address and next data address.
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> writeRecord(Variant&& value);
+    WriteRecordResult writeRecord(Variant&& value);
 
     /**
      * Adds new data to a master column.
@@ -328,7 +352,7 @@ public:
      * @param updateMainIndex Flag which indocates whether update of the main index must be perfomed.
      * @return Pair containing data address and next data address
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> writeMasterColumnRecord(
+    WriteRecordResult writeMasterColumnRecord(
             const MasterColumnRecord& record, bool updateMainIndex = true);
 
     /**
@@ -608,20 +632,18 @@ private:
      * @param src Data buffer
      * @param length Data length
      * @param block Starting block.
-     * @return Pair containing data address and next data address
+     * @return Pair containing data address and next data address.
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> writeBuffer(
-            const void* src, std::uint32_t length, ColumnDataBlockPtr block);
+    WriteRecordResult writeBuffer(const void* src, std::uint32_t length, ColumnDataBlockPtr block);
 
     /**
      * Stores some LOB data.
      * Assumes column is already locked.
      * @param lob LOB data stream
      * @param block Starting block.
-     * @return Pair containing data address and next data address
+     * @return Pair containing data address and next data address.
      */
-    std::pair<ColumnDataAddress, ColumnDataAddress> writeLob(
-            LobStream& lob, ColumnDataBlockPtr block);
+    WriteRecordResult writeLob(LobStream& lob, ColumnDataBlockPtr block);
 
     /**
      * Loads TEXT data.

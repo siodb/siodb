@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -11,6 +11,10 @@
 // CRT headers
 #include <stdint.h>
 #include <string.h>
+
+// System headers
+#include <byteswap.h>
+#include <endian.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -352,6 +356,27 @@ SIODB_ALWAYS_INLINE static inline const uint8_t* pbeDecodeUInt32(
 }
 
 /**
+ * Decodes 32-bit unsigned integer from buffer in the LE order.
+ * @param buffer Source buffer.
+ * @param value Address of destination integer value.
+ * @return Address after last read byte.
+ */
+SIODB_ALWAYS_INLINE static inline const uint8_t* pbeDecodeUInt32LE(
+        const uint8_t* buffer, uint32_t* value)
+{
+#ifdef SIODB_PLATFORM_SUPPORTS_UNALIGNED_DATA_ACCESS
+#if __BYTE_ORDER == __BIG_ENDIAN
+    *value = __bswap_32(*(const uint32_t*) buffer);
+#else
+    *value = *(const uint32_t*) buffer;
+#endif
+#else
+    *value = (buffer[0]) | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+#endif  // SIODB_PLATFORM_SUPPORTS_UNALIGNED_DATA_ACCESS
+    return buffer + 4;
+}
+
+/**
  * Decodes 64-bit unsigned integer from buffer.
  * @param buffer Source buffer.
  * @param value Address of destination integer value.
@@ -362,6 +387,31 @@ SIODB_ALWAYS_INLINE static inline const uint8_t* pbeDecodeUInt64(
 {
 #ifdef SIODB_PLATFORM_SUPPORTS_UNALIGNED_DATA_ACCESS
     *value = *(const uint64_t*) buffer;
+#else
+    *((uint64_t*) value) =
+            (((uint64_t)((uint32_t)(
+                     buffer[4] | (buffer[5] << 8) | (buffer[6] << 16) | (buffer[7] << 24))))
+                    << 32)
+            | ((uint32_t)(buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24)));
+#endif  // SIODB_PLATFORM_SUPPORTS_UNALIGNED_DATA_ACCESS
+    return buffer + 8;
+}
+
+/**
+ * Decodes 64-bit unsigned integer from buffer in the LE order.
+ * @param buffer Source buffer.
+ * @param value Address of destination integer value.
+ * @return Address after last read byte.
+ */
+SIODB_ALWAYS_INLINE static inline const uint8_t* pbeDecodeUInt64LE(
+        const uint8_t* buffer, uint64_t* value)
+{
+#ifdef SIODB_PLATFORM_SUPPORTS_UNALIGNED_DATA_ACCESS
+#if __BYTE_ORDER == __BIG_ENDIAN
+    *value = __bswap_64(*(const uint64_t*) buffer);
+#else
+    *value = *(const uint64_t*) buffer;
+#endif
 #else
     *((uint64_t*) value) =
             (((uint64_t)((uint32_t)(

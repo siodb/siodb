@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -50,8 +50,8 @@ bool Variant::asBool() const
         case VariantType::kDouble: return m_value.m_double != 0.0;
         case VariantType::kString: return stringToBool(*m_value.m_string);
         case VariantType::kBinary: return binaryToBool(*m_value.m_binary);
-        case VariantType::kClob: return stringToBool(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToBool(readBlobAsBinary(kDestValueType));
+        case VariantType::kClob: return stringToBool(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob: return binaryToBool(readBlobAsBinaryForConversion(kDestValueType));
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
@@ -73,8 +73,8 @@ std::int8_t Variant::asInt8() const
         case VariantType::kDouble: return static_cast<std::int8_t>(m_value.m_double);
         case VariantType::kString: return stringToInt8(*m_value.m_string);
         case VariantType::kBinary: return binaryToInt8(*m_value.m_binary);
-        case VariantType::kClob: return stringToInt8(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToInt8(readBlobAsBinary(kDestValueType));
+        case VariantType::kClob: return stringToInt8(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob: return binaryToInt8(readBlobAsBinaryForConversion(kDestValueType));
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
@@ -96,13 +96,15 @@ std::int8_t Variant::asUInt8() const
         case VariantType::kDouble: return static_cast<std::uint8_t>(m_value.m_double);
         case VariantType::kString: return stringToUInt8(*m_value.m_string);
         case VariantType::kBinary: return binaryToUInt8(*m_value.m_binary);
-        case VariantType::kClob: return stringToUInt8(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToUInt8(readBlobAsBinary(kDestValueType));
+        case VariantType::kClob:
+            return stringToUInt8(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToUInt8(readBlobAsBinaryForConversion(kDestValueType));
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
 
-std::int16_t Variant::asInt16() const
+std::int16_t Variant::asInt16(bool autoExtendTooShortBinary) const
 {
     static constexpr VariantType kDestValueType = VariantType::kInt16;
     switch (m_valueType) {
@@ -118,14 +120,18 @@ std::int16_t Variant::asInt16() const
         case VariantType::kFloat: return static_cast<std::int16_t>(m_value.m_float);
         case VariantType::kDouble: return static_cast<std::int16_t>(m_value.m_double);
         case VariantType::kString: return stringToInt16(*m_value.m_string);
-        case VariantType::kBinary: return binaryToInt16(*m_value.m_binary);
-        case VariantType::kClob: return stringToInt16(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToInt16(readBlobAsBinary(kDestValueType));
+        case VariantType::kBinary:
+            return binaryToInt16(*m_value.m_binary, autoExtendTooShortBinary);
+        case VariantType::kClob:
+            return stringToInt16(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToInt16(
+                    readBlobAsBinaryForConversion(kDestValueType), autoExtendTooShortBinary);
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
 
-std::uint16_t Variant::asUInt16() const
+std::uint16_t Variant::asUInt16(bool autoExtendTooShortBinary) const
 {
     static constexpr VariantType kDestValueType = VariantType::kUInt16;
     switch (m_valueType) {
@@ -141,14 +147,18 @@ std::uint16_t Variant::asUInt16() const
         case VariantType::kFloat: return static_cast<std::uint16_t>(m_value.m_float);
         case VariantType::kDouble: return static_cast<std::uint16_t>(m_value.m_double);
         case VariantType::kString: return stringToUInt16(*m_value.m_string);
-        case VariantType::kBinary: return binaryToUInt16(*m_value.m_binary);
-        case VariantType::kClob: return stringToUInt16(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToUInt16(readBlobAsBinary(kDestValueType));
+        case VariantType::kBinary:
+            return binaryToUInt16(*m_value.m_binary, autoExtendTooShortBinary);
+        case VariantType::kClob:
+            return stringToUInt16(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToUInt16(
+                    readBlobAsBinaryForConversion(kDestValueType), autoExtendTooShortBinary);
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
 
-std::int32_t Variant::asInt32() const
+std::int32_t Variant::asInt32(bool autoExtendTooShortBinary) const
 {
     static constexpr VariantType kDestValueType = VariantType::kInt32;
     switch (m_valueType) {
@@ -164,14 +174,18 @@ std::int32_t Variant::asInt32() const
         case VariantType::kFloat: return static_cast<std::int32_t>(m_value.m_float);
         case VariantType::kDouble: return static_cast<std::int32_t>(m_value.m_double);
         case VariantType::kString: return stringToInt32(*m_value.m_string);
-        case VariantType::kBinary: return binaryToInt32(*m_value.m_binary);
-        case VariantType::kClob: return stringToInt32(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToInt32(readBlobAsBinary(kDestValueType));
+        case VariantType::kBinary:
+            return binaryToInt32(*m_value.m_binary, autoExtendTooShortBinary);
+        case VariantType::kClob:
+            return stringToInt32(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToInt32(
+                    readBlobAsBinaryForConversion(kDestValueType), autoExtendTooShortBinary);
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
 
-std::uint32_t Variant::asUInt32() const
+std::uint32_t Variant::asUInt32(bool autoExtendTooShortBinary) const
 {
     static constexpr VariantType kDestValueType = VariantType::kUInt32;
     switch (m_valueType) {
@@ -187,14 +201,18 @@ std::uint32_t Variant::asUInt32() const
         case VariantType::kFloat: return static_cast<std::uint32_t>(m_value.m_float);
         case VariantType::kDouble: return static_cast<std::uint32_t>(m_value.m_double);
         case VariantType::kString: return stringToUInt32(*m_value.m_string);
-        case VariantType::kBinary: return binaryToUInt32(*m_value.m_binary);
-        case VariantType::kClob: return stringToUInt32(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToUInt32(readBlobAsBinary(kDestValueType));
+        case VariantType::kBinary:
+            return binaryToUInt32(*m_value.m_binary, autoExtendTooShortBinary);
+        case VariantType::kClob:
+            return stringToUInt32(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToUInt32(
+                    readBlobAsBinaryForConversion(kDestValueType), autoExtendTooShortBinary);
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
 
-std::int64_t Variant::asInt64() const
+std::int64_t Variant::asInt64(bool autoExtendTooShortBinary) const
 {
     static constexpr VariantType kDestValueType = VariantType::kInt64;
     switch (m_valueType) {
@@ -210,14 +228,18 @@ std::int64_t Variant::asInt64() const
         case VariantType::kFloat: return static_cast<std::int64_t>(m_value.m_float);
         case VariantType::kDouble: return static_cast<std::int64_t>(m_value.m_double);
         case VariantType::kString: return stringToInt64(*m_value.m_string);
-        case VariantType::kBinary: return binaryToInt64(*m_value.m_binary);
-        case VariantType::kClob: return stringToInt64(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToInt64(readBlobAsBinary(kDestValueType));
+        case VariantType::kBinary:
+            return binaryToInt64(*m_value.m_binary, autoExtendTooShortBinary);
+        case VariantType::kClob:
+            return stringToInt64(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToInt64(
+                    readBlobAsBinaryForConversion(kDestValueType), autoExtendTooShortBinary);
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
 
-std::uint64_t Variant::asUInt64() const
+std::uint64_t Variant::asUInt64(bool autoExtendTooShortBinary) const
 {
     static constexpr VariantType kDestValueType = VariantType::kUInt64;
     switch (m_valueType) {
@@ -233,9 +255,13 @@ std::uint64_t Variant::asUInt64() const
         case VariantType::kFloat: return static_cast<std::uint64_t>(m_value.m_float);
         case VariantType::kDouble: return static_cast<std::uint64_t>(m_value.m_double);
         case VariantType::kString: return stringToUInt64(*m_value.m_string);
-        case VariantType::kBinary: return binaryToUInt64(*m_value.m_binary);
-        case VariantType::kClob: return stringToUInt64(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToUInt64(readBlobAsBinary(kDestValueType));
+        case VariantType::kBinary:
+            return binaryToUInt64(*m_value.m_binary, autoExtendTooShortBinary);
+        case VariantType::kClob:
+            return stringToUInt64(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToUInt64(
+                    readBlobAsBinaryForConversion(kDestValueType), autoExtendTooShortBinary);
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
@@ -257,8 +283,10 @@ float Variant::asFloat() const
         case VariantType::kDouble: return static_cast<float>(m_value.m_double);
         case VariantType::kString: return stringToFloat(*m_value.m_string);
         case VariantType::kBinary: return binaryToFloat(*m_value.m_binary);
-        case VariantType::kClob: return stringToFloat(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToFloat(readBlobAsBinary(kDestValueType));
+        case VariantType::kClob:
+            return stringToFloat(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToFloat(readBlobAsBinaryForConversion(kDestValueType));
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
@@ -280,8 +308,10 @@ double Variant::asDouble() const
         case VariantType::kDouble: return m_value.m_double;
         case VariantType::kString: return stringToDouble(*m_value.m_string);
         case VariantType::kBinary: return binaryToDouble(*m_value.m_binary);
-        case VariantType::kClob: return stringToDouble(readClobAsString(kDestValueType));
-        case VariantType::kBlob: return binaryToDouble(readBlobAsBinary(kDestValueType));
+        case VariantType::kClob:
+            return stringToDouble(readClobAsStringForConversion(kDestValueType));
+        case VariantType::kBlob:
+            return binaryToDouble(readBlobAsBinaryForConversion(kDestValueType));
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
 }
@@ -312,11 +342,11 @@ RawDateTime Variant::asDateTime(const char* format) const
         }
         case VariantType::kBinary: return binaryToDateTime(*m_value.m_binary);
         case VariantType::kClob: {
-            auto str = readClobAsString(kDestValueType);
+            auto str = readClobAsStringForConversion(kDestValueType);
             return stringToDateTime(str, format ? format : getDateTimeFormat(str));
         }
         case VariantType::kBlob: {
-            return binaryToDateTime(readBlobAsBinary(kDestValueType));
+            return binaryToDateTime(readBlobAsBinaryForConversion(kDestValueType));
         }
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
@@ -383,11 +413,12 @@ std::pair<const std::string*, bool> Variant::asStringInternal(const char* format
                     false);
         }
         case VariantType::kClob: {
-            return std::make_pair(new std::string(readClobAsString(kDestValueType)), false);
+            return std::make_pair(
+                    new std::string(readClobAsStringForConversion(kDestValueType)), false);
         }
         case VariantType::kBlob: {
-            return std::make_pair(binaryToString(readBlobAsBinary(kDestValueType), kDestValueType,
-                                          kMaxStringValueLength),
+            return std::make_pair(binaryToString(readBlobAsBinaryForConversion(kDestValueType),
+                                          kDestValueType, kMaxStringValueLength),
                     false);
         }
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
@@ -454,7 +485,7 @@ std::pair<const BinaryValue*, bool> Variant::asBinaryInternal() const
             return std::make_pair(binaryData, false);
         }
         case VariantType::kDateTime: {
-            std::uint8_t buffer[RawDateTime::kMaxSerializedSize];
+            std::uint8_t buffer[RawDateTime::kSerializedSize];
             const auto p = m_value.m_dt->serialize(buffer);
             auto binaryData = new BinaryValue(buffer, p);
             return std::make_pair(binaryData, false);
@@ -464,10 +495,12 @@ std::pair<const BinaryValue*, bool> Variant::asBinaryInternal() const
         }
         case VariantType::kBinary: return std::make_pair(m_value.m_binary, true);
         case VariantType::kClob: {
-            return std::make_pair(stringToBinary(readClobAsString(kDestValueType)), false);
+            return std::make_pair(
+                    stringToBinary(readClobAsStringForConversion(kDestValueType)), false);
         }
         case VariantType::kBlob: {
-            return std::make_pair(new BinaryValue(readBlobAsBinary(kDestValueType)), true);
+            return std::make_pair(
+                    new BinaryValue(readBlobAsBinaryForConversion(kDestValueType)), true);
         }
         default: throw VariantTypeCastError(m_valueType, kDestValueType);
     }
@@ -555,7 +588,7 @@ std::int8_t Variant::stringToInt8(const std::string& s) const
         const auto v = std::stoll(s, &pos, 0);
         if (pos != s.length()) throw std::invalid_argument(kInvalidStringValue);
         if (v < std::numeric_limits<std::int8_t>::min()
-                || v < std::numeric_limits<std::int8_t>::max()) {
+                || v > std::numeric_limits<std::int8_t>::max()) {
             throw std::out_of_range(kConvertedValueOutOfRange);
         }
         return static_cast<std::int8_t>(v);
@@ -573,7 +606,7 @@ std::uint8_t Variant::stringToUInt8(const std::string& s) const
         const auto v = std::stoull(s, &pos, 0);
         if (pos != s.length()) throw std::invalid_argument(kInvalidStringValue);
         if (v < std::numeric_limits<std::uint8_t>::min()
-                || v < std::numeric_limits<std::uint8_t>::max()) {
+                || v > std::numeric_limits<std::uint8_t>::max()) {
             throw std::out_of_range(kConvertedValueOutOfRange);
         }
         return static_cast<std::uint8_t>(v);
@@ -591,7 +624,7 @@ std::int16_t Variant::stringToInt16(const std::string& s) const
         const auto v = std::stoll(s, &pos, 0);
         if (pos != s.length()) throw std::invalid_argument(kInvalidStringValue);
         if (v < std::numeric_limits<std::int16_t>::min()
-                || v < std::numeric_limits<std::int16_t>::max()) {
+                || v > std::numeric_limits<std::int16_t>::max()) {
             throw std::out_of_range(kConvertedValueOutOfRange);
         }
         return static_cast<std::int16_t>(v);
@@ -609,7 +642,7 @@ std::uint16_t Variant::stringToUInt16(const std::string& s) const
         const auto v = std::stoull(s, &pos, 0);
         if (pos != s.length()) throw std::invalid_argument(kInvalidStringValue);
         if (v < std::numeric_limits<std::uint16_t>::min()
-                || v < std::numeric_limits<std::uint16_t>::max()) {
+                || v > std::numeric_limits<std::uint16_t>::max()) {
             throw std::out_of_range(kConvertedValueOutOfRange);
         }
         return static_cast<std::uint16_t>(v);
@@ -627,7 +660,7 @@ std::int32_t Variant::stringToInt32(const std::string& s) const
         const auto v = std::stoll(s, &pos, 0);
         if (pos != s.length()) throw std::invalid_argument(kInvalidStringValue);
         if (v < std::numeric_limits<std::int32_t>::min()
-                || v < std::numeric_limits<std::int32_t>::max()) {
+                || v > std::numeric_limits<std::int32_t>::max()) {
             throw std::out_of_range(kConvertedValueOutOfRange);
         }
         return static_cast<std::int32_t>(v);
@@ -642,10 +675,10 @@ std::uint32_t Variant::stringToUInt32(const std::string& s) const
 {
     try {
         std::size_t pos = 0;
-        if (pos != s.length()) throw std::invalid_argument(kInvalidStringValue);
         const auto v = std::stoull(s, &pos, 0);
+        if (pos != s.length()) throw std::invalid_argument(kInvalidStringValue);
         if (v < std::numeric_limits<std::uint32_t>::min()
-                || v < std::numeric_limits<std::uint32_t>::max()) {
+                || v > std::numeric_limits<std::uint32_t>::max()) {
             throw std::out_of_range(kConvertedValueOutOfRange);
         }
         return static_cast<std::uint32_t>(v);
@@ -727,108 +760,156 @@ RawDateTime Variant::stringToDateTime(const char* s, std::size_t len, const char
 
 bool Variant::binaryToBool(const BinaryValue& binaryValue) const
 {
-    if (binaryValue.size() < 1)
-        throw VariantTypeCastError(m_valueType, VariantType::kBool, kInvalidBinaryValue);
-    return binaryValue.front() != 0;
+    if (binaryValue.size() > 0) return binaryValue.front() != 0;
+    throw VariantTypeCastError(m_valueType, VariantType::kBool, kInvalidBinaryValue);
 }
 
 std::int8_t Variant::binaryToInt8(const BinaryValue& binaryValue) const
 {
-    if (binaryValue.size() < 1)
-        throw VariantTypeCastError(m_valueType, VariantType::kInt8, kInvalidBinaryValue);
-    return static_cast<std::int8_t>(binaryValue.front());
+    if (binaryValue.size() > 0) return static_cast<std::int8_t>(binaryValue.front());
+    throw VariantTypeCastError(m_valueType, VariantType::kInt8, kInvalidBinaryValue);
 }
 
 std::uint8_t Variant::binaryToUInt8(const BinaryValue& binaryValue) const
 {
-    if (binaryValue.size() < 1)
-        throw VariantTypeCastError(m_valueType, VariantType::kUInt8, kInvalidBinaryValue);
-    return binaryValue.front();
+    if (binaryValue.size() > 0) return binaryValue.front();
+    throw VariantTypeCastError(m_valueType, VariantType::kUInt8, kInvalidBinaryValue);
 }
 
-std::int16_t Variant::binaryToInt16(const BinaryValue& binaryValue) const
+std::int16_t Variant::binaryToInt16(const BinaryValue& binaryValue, bool autoExtend) const
 {
-    if (binaryValue.size() < 2)
-        throw VariantTypeCastError(m_valueType, VariantType::kInt16, kInvalidBinaryValue);
-    std::int16_t result = 0;
-    ::pbeDecodeInt16(binaryValue.data(), &result);
-    return result;
-}
-
-std::uint16_t Variant::binaryToUInt16(const BinaryValue& binaryValue) const
-{
-    if (binaryValue.size() < 2) {
-        throw VariantTypeCastError(m_valueType, VariantType::kUInt16, kInvalidBinaryValue);
+    if (binaryValue.size() > sizeof(std::int16_t) - 1) {
+        std::int16_t result = 0;
+        ::pbeDecodeInt16(binaryValue.data(), &result);
+        return result;
     }
-    std::uint16_t result = 0;
-    ::pbeDecodeUInt16(binaryValue.data(), &result);
-    return result;
-}
-
-std::int32_t Variant::binaryToInt32(const BinaryValue& binaryValue) const
-{
-    if (binaryValue.size() < 4)
-        throw VariantTypeCastError(m_valueType, VariantType::kInt32, kInvalidBinaryValue);
-    std::int32_t result = 0;
-    ::pbeDecodeInt32(binaryValue.data(), &result);
-    return result;
-}
-
-std::uint32_t Variant::binaryToUInt32(const BinaryValue& binaryValue) const
-{
-    if (binaryValue.size() < 4) {
-        throw VariantTypeCastError(m_valueType, VariantType::kUInt32, kInvalidBinaryValue);
+    if (!binaryValue.empty() && autoExtend) {
+        std::uint8_t data[sizeof(std::int16_t)];
+        data[0] = binaryValue[0];
+        data[1] = 0;
+        std::int16_t result = 0;
+        ::pbeDecodeInt16(data, &result);
+        return result;
     }
-    std::uint32_t result = 0;
-    ::pbeDecodeUInt32(binaryValue.data(), &result);
-    return result;
+    throw VariantTypeCastError(m_valueType, VariantType::kInt16, kInvalidBinaryValue);
 }
 
-std::int64_t Variant::binaryToInt64(const BinaryValue& binaryValue) const
+std::uint16_t Variant::binaryToUInt16(const BinaryValue& binaryValue, bool autoExtend) const
 {
-    if (binaryValue.size() < 8)
-        throw VariantTypeCastError(m_valueType, VariantType::kInt64, kInvalidBinaryValue);
-    std::int64_t result = 0;
-    ::pbeDecodeInt64(binaryValue.data(), &result);
-    return result;
-}
-
-std::uint64_t Variant::binaryToUInt64(const BinaryValue& binaryValue) const
-{
-    if (binaryValue.size() < 8) {
-        throw VariantTypeCastError(m_valueType, VariantType::kUInt64, kInvalidBinaryValue);
+    if (binaryValue.size() > sizeof(std::uint16_t) - 1) {
+        std::uint16_t result = 0;
+        ::pbeDecodeUInt16(binaryValue.data(), &result);
+        return result;
     }
-    std::uint64_t result = 0;
-    ::pbeDecodeUInt64(binaryValue.data(), &result);
-    return result;
+    if (!binaryValue.empty() && autoExtend) {
+        std::uint8_t data[sizeof(std::uint16_t)];
+        data[0] = binaryValue[0];
+        data[1] = 0;
+        std::uint16_t result = 0;
+        ::pbeDecodeUInt16(data, &result);
+        return result;
+    }
+    throw VariantTypeCastError(m_valueType, VariantType::kUInt16, kInvalidBinaryValue);
+}
+
+std::int32_t Variant::binaryToInt32(const BinaryValue& binaryValue, bool autoExtend) const
+{
+    if (binaryValue.size() > sizeof(std::int32_t) - 1) {
+        std::int32_t result = 0;
+        ::pbeDecodeInt32(binaryValue.data(), &result);
+        return result;
+    }
+    if (!binaryValue.empty() && autoExtend) {
+        std::uint8_t data[sizeof(std::int32_t)];
+        std::memcpy(data, binaryValue.data(), binaryValue.size());
+        std::memset(data + binaryValue.size(), 0, sizeof(data) - binaryValue.size());
+        std::int32_t result = 0;
+        ::pbeDecodeInt32(data, &result);
+        return result;
+    }
+    throw VariantTypeCastError(m_valueType, VariantType::kInt32, kInvalidBinaryValue);
+}
+
+std::uint32_t Variant::binaryToUInt32(const BinaryValue& binaryValue, bool autoExtend) const
+{
+    if (binaryValue.size() > sizeof(std::uint32_t) - 1) {
+        std::uint32_t result = 0;
+        ::pbeDecodeUInt32(binaryValue.data(), &result);
+        return result;
+    }
+    if (!binaryValue.empty() && autoExtend) {
+        std::uint8_t data[sizeof(std::uint32_t)];
+        std::memcpy(data, binaryValue.data(), binaryValue.size());
+        std::memset(data + binaryValue.size(), 0, sizeof(data) - binaryValue.size());
+        std::uint32_t result = 0;
+        ::pbeDecodeUInt32(data, &result);
+        return result;
+    }
+    throw VariantTypeCastError(m_valueType, VariantType::kUInt32, kInvalidBinaryValue);
+}
+
+std::int64_t Variant::binaryToInt64(const BinaryValue& binaryValue, bool autoExtend) const
+{
+    if (binaryValue.size() > sizeof(std::int64_t) - 1) {
+        std::int64_t result = 0;
+        ::pbeDecodeInt64(binaryValue.data(), &result);
+        return result;
+    }
+    if (!binaryValue.empty() && autoExtend) {
+        std::uint8_t data[sizeof(std::int64_t)];
+        std::memcpy(data, binaryValue.data(), binaryValue.size());
+        std::memset(data + binaryValue.size(), 0, sizeof(data) - binaryValue.size());
+        std::int64_t result = 0;
+        ::pbeDecodeInt64(data, &result);
+        return result;
+    }
+    throw VariantTypeCastError(m_valueType, VariantType::kInt64, kInvalidBinaryValue);
+}
+
+std::uint64_t Variant::binaryToUInt64(const BinaryValue& binaryValue, bool autoExtend) const
+{
+    if (binaryValue.size() > sizeof(std::uint64_t) - 1) {
+        std::uint64_t result = 0;
+        ::pbeDecodeUInt64(binaryValue.data(), &result);
+        return result;
+    }
+    if (!binaryValue.empty() && autoExtend) {
+        std::uint8_t data[sizeof(std::uint64_t)];
+        std::memcpy(data, binaryValue.data(), binaryValue.size());
+        std::memset(data + binaryValue.size(), 0, sizeof(data) - binaryValue.size());
+        std::uint64_t result = 0;
+        ::pbeDecodeUInt64(data, &result);
+        return result;
+    }
+    throw VariantTypeCastError(m_valueType, VariantType::kUInt64, kInvalidBinaryValue);
 }
 
 float Variant::binaryToFloat(const BinaryValue& binaryValue) const
 {
-    if (binaryValue.size() < 4)
-        throw VariantTypeCastError(m_valueType, VariantType::kFloat, kInvalidBinaryValue);
-    float result = 0.0f;
-    ::pbeDecodeFloat(binaryValue.data(), &result);
-    return result;
+    if (binaryValue.size() > sizeof(float) - 1) {
+        float result = 0.0f;
+        ::pbeDecodeFloat(binaryValue.data(), &result);
+        return result;
+    }
+    throw VariantTypeCastError(m_valueType, VariantType::kFloat, kInvalidBinaryValue);
 }
 
 double Variant::binaryToDouble(const BinaryValue& binaryValue) const
 {
-    if (binaryValue.size() < 8)
-        throw VariantTypeCastError(m_valueType, VariantType::kFloat, kInvalidBinaryValue);
-    double result = 0.0;
-    ::pbeDecodeDouble(binaryValue.data(), &result);
-    return result;
+    if (binaryValue.size() > sizeof(double) - 1) {
+        double result = 0.0;
+        ::pbeDecodeDouble(binaryValue.data(), &result);
+        return result;
+    }
+    throw VariantTypeCastError(m_valueType, VariantType::kFloat, kInvalidBinaryValue);
 }
 
 std::string* Variant::binaryToString(const BinaryValue& binaryValue, VariantType destValueType,
         std::size_t maxOutputLength) const
 {
     if (binaryValue.empty()) return new std::string();
-
     if (binaryValue.size() * 2 > maxOutputLength)
         throw VariantTypeCastError(m_valueType, destValueType, kBinaryValueIsTooLong);
-
     std::vector<char> buffer(binaryValue.size() * 2 + 1);
     boost::algorithm::hex_lower(binaryValue.begin(), binaryValue.end(), buffer.begin());
     *(--buffer.end()) = '\0';
@@ -837,16 +918,13 @@ std::string* Variant::binaryToString(const BinaryValue& binaryValue, VariantType
 
 RawDateTime Variant::binaryToDateTime(const BinaryValue& binaryValue) const
 {
-    if (binaryValue.size() < RawDateTime::kDatePartSerializedSize) {
+    if (binaryValue.size() < RawDateTime::kDatePartSerializedSize)
         throw VariantTypeCastError(m_valueType, VariantType::kDateTime, kInvalidBinaryValue);
-    }
-
     RawDateTime result;
     result.deserializeDatePart(binaryValue.data());
     if (result.m_datePart.m_hasTimePart) {
-        if (binaryValue.size() < RawDateTime::kMaxSerializedSize) {
+        if (binaryValue.size() < RawDateTime::kSerializedSize)
             throw VariantTypeCastError(m_valueType, VariantType::kDateTime, kInvalidBinaryValue);
-        }
         result.deserialize(binaryValue.data(), binaryValue.size());
     }
     return result;
@@ -855,18 +933,16 @@ RawDateTime Variant::binaryToDateTime(const BinaryValue& binaryValue) const
 RawDateTime Variant::timestampToDateTime(std::time_t timestamp) const
 {
     struct tm tm;
-    if (!gmtime_r(&timestamp, &tm)) {
+    if (!gmtime_r(&timestamp, &tm))
         throw VariantTypeCastError(m_valueType, VariantType::kDateTime, kInvalidTimestamp);
-    }
     return tmToDateTime(tm);
 }
 
 RawDateTime Variant::tmToDateTime(const std::tm& tm) const
 {
     const int year = tm.tm_year + 1900;
-    if (year < RawDate::kMinYear || year > RawDate::kMaxYear) {
+    if (year < RawDate::kMinYear || year > RawDate::kMaxYear)
         throw VariantTypeCastError(m_valueType, VariantType::kDateTime, kInvalidTimestamp);
-    }
     RawDateTime result;
     result.m_timePart.m_nanos = 0;
     result.m_timePart.m_seconds = tm.tm_sec;
@@ -879,12 +955,11 @@ RawDateTime Variant::tmToDateTime(const std::tm& tm) const
     return result;
 }
 
-std::string Variant::readClobAsString(VariantType destValueType) const
+std::string Variant::readClobAsStringForConversion(VariantType destValueType) const
 {
     const auto clobSize = m_value.m_clob->getRemainingSize();
     if (clobSize > kMaxStringValueLength)
         throw VariantTypeCastError(m_valueType, destValueType, kClobIsTooLong);
-
     try {
         return m_value.m_clob->readAsString(clobSize);
     } catch (std::exception& ex) {
@@ -892,7 +967,7 @@ std::string Variant::readClobAsString(VariantType destValueType) const
     }
 }
 
-BinaryValue Variant::readBlobAsBinary(VariantType destValueType) const
+BinaryValue Variant::readBlobAsBinaryForConversion(VariantType destValueType) const
 {
     const auto blobSize = m_value.m_blob->getRemainingSize();
     if (blobSize > kMaxBinaryValueLength)

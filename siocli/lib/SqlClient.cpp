@@ -211,7 +211,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
 
                 stdext::bitmask nullBitmask;
                 if (nullAllowed) {
-                    nullBitmask.resize(columnCount, false);
+                    nullBitmask.resize(columnCount);
                     if (!codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size())) {
                         std::ostringstream err;
                         err << "Can't read from server: " << std::strerror(input.GetErrno());
@@ -222,7 +222,6 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
 
                 for (int i = 0; i < columnCount; ++i) {
                     if (i > 0) os << ' ';  // one space
-
                     if (nullAllowed && nullBitmask.get(i))
                         detail::printNull(columnPrintInfo[i].width, os);
                     else if (!detail::receiveAndPrintColumnValue(codedInput,

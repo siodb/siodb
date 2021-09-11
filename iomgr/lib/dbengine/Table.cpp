@@ -333,7 +333,7 @@ DeleteRowResult Table::deleteRow(const MasterColumnRecord& mcr, const ColumnData
     auto writeResult =
             m_masterColumn->writeMasterColumnRecord(*newMcr, updateMasterColumnMainIndex);
     return DeleteRowResult(
-            true, std::move(newMcr), std::move(writeResult.first), std::move(writeResult.second));
+            true, std::move(newMcr), writeResult.m_dataAddress, writeResult.m_nextAddress);
 }
 
 UpdateRowResult Table::updateRow(std::uint64_t trid, const std::vector<std::string>& columnNames,
@@ -409,12 +409,12 @@ UpdateRowResult Table::updateRow(const MasterColumnRecord& mcr, const ColumnData
         for (const auto pos : columnPositions) {
             const auto& tableColumn = tableColumns.at(pos);
             if (tableColumn->isMasterColumn()) continue;
-            auto res = tableColumn->writeRecord(std::move(columnValues[valueIndex]));
+            const auto res = tableColumn->writeRecord(std::move(columnValues[valueIndex]));
             // Normal column positions start from 1, column at position 0 is master column.
             auto& record = columnRecords[pos - 1];
-            record.setAddress(res.first);
+            record.setAddress(res.m_dataAddress);
             record.setUpdateTimestamp(tp.m_timestamp);
-            nextBlockIds.push_back(res.second.getBlockId());
+            nextBlockIds.push_back(res.m_nextAddress.getBlockId());
             ++valueIndex;
         }
         newMcr->setColumnRecords(std::move(columnRecords));
@@ -730,9 +730,9 @@ InsertRowResult Table::doInsertRowUnlocked(std::vector<Variant>&& columnValues,
         std::size_t i = 0;
         for (const auto& tableColumnRecord : m_currentColumns.byPosition()) {
             if (tableColumnRecord.m_column->isMasterColumn()) continue;
-            auto res = tableColumnRecord.m_column->writeRecord(std::move(columnValues[i++]));
-            mcr->addColumnRecord(res.first, tp.m_timestamp, tp.m_timestamp);
-            nextBlockIds.push_back(res.second.getBlockId());
+            const auto res = tableColumnRecord.m_column->writeRecord(std::move(columnValues[i++]));
+            mcr->addColumnRecord(res.m_dataAddress, tp.m_timestamp, tp.m_timestamp);
+            nextBlockIds.push_back(res.m_nextAddress.getBlockId());
         }
         m_masterColumn->writeMasterColumnRecord(*mcr);
     } catch (...) {

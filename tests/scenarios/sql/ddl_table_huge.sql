@@ -728,11 +728,10 @@ create table table_100_cols_all_datatypes_7 (
 desc table table_100_cols_all_datatypes_1;
 show tables;
 
--- Select dictionary from db_default
-select *
-from sys_tables;
-select *
-from sys_columns;
+-- Select dictionary from db_defaulty
+-- (Added aliases to find it in the log faster)
+select st.* from sys_tables st;
+select sc.* from sys_columns sc;
 
 -- Cleanup
 use database sys;

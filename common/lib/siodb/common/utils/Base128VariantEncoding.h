@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -27,6 +27,7 @@ extern "C" {
 /**
  * Encodes 16-bit unsigned integer into Base128 variant.
  * Assumes destination buffer is long enough.
+ * @note Protobuf encodes 16-bit value differently (always 2 bytes).
  * @param value A value to encode.
  * @param dest Target buffer.
  * @return Address after last written byte.
@@ -36,6 +37,7 @@ uint8_t* encodeVarUInt16(uint16_t value, uint8_t* dest);
 /**
  * Encodes 16-bit signed integer into Base128 variant.
  * Assumes destination buffer is long enough.
+ * @note Protobuf encodes 16-bit value differently (always 2 bytes).
  * @param value A value to encode.
  * @param dest Target buffer.
  * @return Address after last written byte.
@@ -140,6 +142,7 @@ SIODB_ALWAYS_INLINE static inline uint32_t getVarInt64Size(int64_t value)
 
 /**
  * Decodes 16-bit unsigned integer from Base128 variant.
+ * @note Protobuf encodes 16-bit value differently (always 2 bytes).
  * @param src Buffer to decode.
  * @param size Data size in the buffer.
  * @param value Output value.
@@ -151,6 +154,7 @@ int decodeVarUInt16(const uint8_t* src, size_t size, uint16_t* value);
 
 /**
  * Decodes 16-bit signed integer from Base128 variant.
+ * @note Protobuf encodes 16-bit value differently (always 2 bytes).
  * @param src Source buffer.
  * @param size Data size in the buffer.
  * @param value Output value.
