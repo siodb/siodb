@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -113,7 +113,7 @@ void TableDataSet::resetCursor()
 
     m_hasCurrentRow = (maxTrid > 0);
     if (m_hasCurrentRow) {
-        readMasterColumnRecord();
+        readMasterColumnRecord(2);
         m_valueReadMask.fill(false);
     }
 }
@@ -123,7 +123,7 @@ bool TableDataSet::moveToNextRow()
     m_hasCurrentRow = m_masterColumnIndex->findNextKey(m_currentKey, m_nextKey);
     std::swap(m_currentKey, m_nextKey);
     if (m_hasCurrentRow) {
-        readMasterColumnRecord();
+        readMasterColumnRecord(3);
         m_valueReadMask.fill(false);
     }
     return m_hasCurrentRow;
@@ -146,7 +146,7 @@ void TableDataSet::updateCurrentRow(std::vector<Variant>&& values,
 
 // ---- internals ----
 
-void TableDataSet::readMasterColumnRecord()
+void TableDataSet::readMasterColumnRecord(int indexSearchFailureDefectCode)
 {
     IndexValue indexValue;
 
@@ -154,7 +154,7 @@ void TableDataSet::readMasterColumnRecord()
     if (m_masterColumnIndex->find(m_currentKey, indexValue.m_data, 1) != 1) {
         throwDatabaseError(IOManagerMessageId::kErrorMasterColumnRecordIndexCorrupted,
                 m_table->getDatabaseName(), m_table->getName(), m_table->getDatabaseUuid(),
-                m_table->getId(), 2);
+                m_table->getId(), indexSearchFailureDefectCode);
     }
 
     ColumnDataAddress mcrAddr;

@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -135,8 +135,11 @@ public:
             const std::vector<std::size_t>& columnPositions, std::uint32_t currentUserId);
 
 private:
-    /** Reads master column record of the current row. */
-    void readMasterColumnRecord();
+    /**
+     * Reads master column record of the current row.
+     * @param indexSearchFailureDefectCode Defect code used to report index search failure.
+     */
+    void readMasterColumnRecord(int indexSearchFailureDefectCode);
 
     /**
      * Reads value of the column.
