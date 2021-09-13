@@ -28,7 +28,7 @@ void RequestHandler::executeGrantPermissionsForTableRequest(
     if (databaseName != requests::kAllObjectsName && !isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    if (request.m_table != requests::kAllObjectsName || !isValidDatabaseObjectName(request.m_table))
+    if (request.m_table != requests::kAllObjectsName && !isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
     if (!isValidDatabaseObjectName(request.m_user))
@@ -52,7 +52,7 @@ void RequestHandler::executeRevokePermissionsForTableRequest(
     if (databaseName != requests::kAllObjectsName && !isValidDatabaseObjectName(databaseName))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidDatabaseName, request.m_database);
 
-    if (request.m_table != requests::kAllObjectsName || !isValidDatabaseObjectName(request.m_table))
+    if (request.m_table != requests::kAllObjectsName && !isValidDatabaseObjectName(request.m_table))
         throwDatabaseError(IOManagerMessageId::kErrorInvalidTableName, request.m_table);
 
     if (!isValidDatabaseObjectName(request.m_user))
