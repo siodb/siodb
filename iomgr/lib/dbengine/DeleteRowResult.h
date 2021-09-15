@@ -29,12 +29,12 @@ struct DeleteRowResult {
      * @param mcrAddress New master column record address.
      * @param nextAddress Next available address.
      */
-    DeleteRowResult(bool deleted, MasterColumnRecordPtr&& mcr, ColumnDataAddress&& mcrAddress,
-            ColumnDataAddress&& nextAddress) noexcept
+    DeleteRowResult(bool deleted, MasterColumnRecordPtr&& mcr, const ColumnDataAddress& mcrAddress,
+            const ColumnDataAddress& nextAddress) noexcept
         : m_deleted(deleted)
         , m_mcr(std::move(mcr))
-        , m_mcrAddress(std::move(mcrAddress))
-        , m_nextAddress(std::move(nextAddress))
+        , m_mcrAddress(mcrAddress)
+        , m_nextAddress(nextAddress)
     {
     }
 

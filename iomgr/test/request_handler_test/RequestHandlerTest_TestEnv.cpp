@@ -98,12 +98,12 @@ void TestEnvironment::SetUp()
     {
         siodb::config::LogChannelOptions channel;
 
-#if 0
+#if 1
         // Uncomment if required for debug
         channel.m_name = "console";
         channel.m_type = siodb::config::LogChannelType::kConsole;
         channel.m_destination = "stdout";
-        channel.m_severity = boost::log::trivial::debug;
+        channel.m_severity = boost::log::trivial::info;
         instanceOptions.m_logOptions.m_logChannels.push_back(channel);
 #endif
 

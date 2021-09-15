@@ -47,7 +47,7 @@ const std::array<std::uint32_t, ColumnDataType_MAX> Column::s_minRequiredBlockFr
         8,  // COLUMN_DATA_TYPE_DOUBLE
         10,  // COLUMN_DATA_TYPE_TEXT (LOB header size)
         10,  // COLUMN_DATA_TYPE_BINARY (LOB header size)
-        RawDateTime::kMaxSerializedSize  // COLUMN_DATA_TYPE_TIMESTAMP
+        RawDateTime::kSerializedSize  // COLUMN_DATA_TYPE_TIMESTAMP
         // TODO: Support more data types in this mapping
         // COLUMN_DATA_TYPE_DATE
         // COLUMN_DATA_TYPE_TIME

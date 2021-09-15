@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+# Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 # Use of this source code is governed by a license that can be found
 # in the LICENSE file.
 
@@ -6,6 +6,7 @@ include parser/antlr_wrappers/Files.mk
 
 CXX_SRC+= \
 	parser/AntlrHelpers.cpp \
+	parser/DBEngineRequestType.cpp \
 	parser/DBEngineRestRequestFactory.cpp \
 	parser/DBEngineSqlRequest.cpp \
 	parser/DBEngineSqlRequestFactory.cpp \

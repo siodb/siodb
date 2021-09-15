@@ -6,6 +6,7 @@ include dbengine/crypto/Files.mk
 include dbengine/io/Files.mk
 include dbengine/lob/Files.mk
 include dbengine/parser/Files.mk
+include dbengine/util/Files.mk
 
 CXX_SRC+= \
 	dbengine/ColumnDataType.cpp \

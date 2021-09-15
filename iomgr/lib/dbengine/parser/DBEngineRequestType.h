@@ -76,6 +76,16 @@ enum class DBEngineRequestType {
     kRestPostRows,
     kRestDeleteRow,
     kRestPatchRow,
+
+    // MAX constant
+    kMax
 };
+
+/**
+ * Returns request type name.
+ * @param requestType Request type.
+ * @return Request type name.
+ */
+const char* getDBEngineRequestTypeName(DBEngineRequestType requestType) noexcept;
 
 }  // namespace siodb::iomgr::dbengine::requests

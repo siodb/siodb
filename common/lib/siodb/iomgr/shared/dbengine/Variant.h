@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -764,50 +764,56 @@ public:
     /**
      * Returns 16-bit signed integer value. Attempts to cast current value type into required
      * value type.
+     * @param autoExtendTooShortBinary Automatically extend too short binary to required length.
      * @return 16-bit signed integer value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::int16_t asInt16() const;
+    std::int16_t asInt16(bool autoExtendTooShortBinary = false) const;
 
     /**
      * Returns 16-bit unsigned integer value. Attempts to cast current value type into required
      * value type.
+     * @param autoExtendTooShortBinary Automatically extend too short binary to required length.
      * @return 16-bit unsigned integer value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::uint16_t asUInt16() const;
+    std::uint16_t asUInt16(bool autoExtendTooShortBinary = false) const;
 
     /**
      * Returns 32-bit signed integer value. Attempts to cast current value type into required
      * value type.
+     * @param autoExtendTooShortBinary Automatically extend too short binary to required length.
      * @return 32-bit signed integer value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::int32_t asInt32() const;
+    std::int32_t asInt32(bool autoExtendTooShortBinary = false) const;
 
     /**
      * Returns 32-bit unsigned integer value. Attempts to cast current value type into required
      * value type.
+     * @param autoExtendTooShortBinary Automatically extend too short binary to required length.
      * @return 32-bit unsigned integer value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::uint32_t asUInt32() const;
+    std::uint32_t asUInt32(bool autoExtendTooShortBinary = false) const;
 
     /**
      * Returns 64-bit signed integer value. Attempts to cast current value type into required
      * value type.
+     * @param autoExtendTooShortBinary Automatically extend too short binary to required length.
      * @return 64-bit signed integer value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::int64_t asInt64() const;
+    std::int64_t asInt64(bool autoExtendTooShortBinary = false) const;
 
     /**
      * Returns 64-bit unsigned integer value. Attempts to cast current value type into required
      * value type.
+     * @param autoExtendTooShortBinary Automatically extend too short binary to required length.
      * @return 64-bit unsigned integer value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::uint64_t asUInt64() const;
+    std::uint64_t asUInt64(bool autoExtendTooShortBinary = false) const;
 
     /**
      * Returns 32-bit IEEE-754 floating point value. Attempts to cast current value type into
@@ -1849,55 +1855,61 @@ private:
      * Converts binary value to 16-bit signed integer value as part of public type conversion
      * function.
      * @param binaryValue A binary value.
+     * @param autoExtend Automatically extend to required number of bytes, except empty binary.
      * @return Converted value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::int16_t binaryToInt16(const BinaryValue& binaryValue) const;
+    std::int16_t binaryToInt16(const BinaryValue& binaryValue, bool autoExtend) const;
 
     /**
      * Converts binary value to 16-bit unsigned integer value as part of public type conversion
      * function.
      * @param binaryValue A binary value.
+     * @param autoExtend Automatically extend to required number of bytes, except empty binary.
      * @return Converted value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::uint16_t binaryToUInt16(const BinaryValue& binaryValue) const;
+    std::uint16_t binaryToUInt16(const BinaryValue& binaryValue, bool autoExtend) const;
 
     /**
      * Converts binary value to 32-bit signed integer value as part of public type conversion
      * function.
      * @param binaryValue A binary value.
+     * @param autoExtend Automatically extend to required number of bytes, except empty binary.
      * @return Converted value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::int32_t binaryToInt32(const BinaryValue& binaryValue) const;
+    std::int32_t binaryToInt32(const BinaryValue& binaryValue, bool autoExtend) const;
 
     /**
      * Converts binary value to 32-bit unsigned integer value as part of public type conversion
      * function.
      * @param binaryValue A binary value.
+     * @param autoExtend Automatically extend to required number of bytes, except empty binary.
      * @return Converted value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::uint32_t binaryToUInt32(const BinaryValue& binaryValue) const;
+    std::uint32_t binaryToUInt32(const BinaryValue& binaryValue, bool autoExtend) const;
 
     /**
      * Converts binary value to 64-bit signed integer value as part of public type conversion
      * function.
      * @param binaryValue A binary value.
+     * @param autoExtend Automatically extend to required number of bytes, except empty binary.
      * @return Converted value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::int64_t binaryToInt64(const BinaryValue& binaryValue) const;
+    std::int64_t binaryToInt64(const BinaryValue& binaryValue, bool autoExtend) const;
 
     /**
      * Converts binary value to 64-bit unsigned integer value as part of public type conversion
      * function.
      * @param binaryValue A binary value.
+     * @param autoExtend Automatically extend to required number of bytes, except empty binary.
      * @return Converted value.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::uint64_t binaryToUInt64(const BinaryValue& binaryValue) const;
+    std::uint64_t binaryToUInt64(const BinaryValue& binaryValue, bool autoExtend) const;
 
     /**
      * Converts binary value to 32-bit floating point value as part of public type conversion
@@ -1958,7 +1970,7 @@ private:
      * @return CLOB content as string.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    std::string readClobAsString(VariantType destValueType) const;
+    std::string readClobAsStringForConversion(VariantType destValueType) const;
 
     /**
      * Receives BLOB content as binary value during type conversion.
@@ -1966,7 +1978,7 @@ private:
      * @return BLOB content as binary data buffer.
      * @throw VariantTypeCastError if value type cast is not possible.
      */
-    BinaryValue readBlobAsBinary(VariantType destValueType) const;
+    BinaryValue readBlobAsBinaryForConversion(VariantType destValueType) const;
 
     /**
      * Get a default date format specifier string from passed string length

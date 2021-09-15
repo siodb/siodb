@@ -60,7 +60,7 @@ do
   fi
   if [[ "$1" == "-x" ]]; then
     doInstanceConfiguration=0
-    instanceStartupTimeout=15
+    instanceStartupTimeout=30
     shift 1
     continue
   fi

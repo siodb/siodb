@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -280,10 +280,14 @@ constexpr const RawTime kZeroRawTime = RawTime(0, 0, 0, 0);
 /** Date time value. */
 struct RawDateTime {
     /** Maximum serialized size of a RawDateTime object */
-    static constexpr std::size_t kMaxSerializedSize = 10;
+    static constexpr std::size_t kSerializedSize = 10;
 
     /** Serialized size of date part */
     static constexpr std::size_t kDatePartSerializedSize = 4;
+
+    /** Serialized size of time part */
+    static constexpr std::size_t kTimePartSerializedSize =
+            kSerializedSize - kDatePartSerializedSize;
 
     /**
      * Maximum string length for default datetime string

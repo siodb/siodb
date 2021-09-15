@@ -13,6 +13,7 @@
 // Boost header
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index_container.hpp>
 
 namespace siodb::iomgr::dbengine {
@@ -60,7 +61,8 @@ private:
                             boost::multi_index::member<value_type,
                                     decltype(value_type::m_columnSetColumnId),
                                     &value_type::m_columnSetColumnId>>,
-                    boost::multi_index::hashed_unique<boost::multi_index::tag<ByPositionTag>,
+                    // must be ordered_unique!!!
+                    boost::multi_index::ordered_unique<boost::multi_index::tag<ByPositionTag>,
                             boost::multi_index::member<value_type, decltype(value_type::m_position),
                                     &value_type::m_position>>,
                     boost::multi_index::hashed_unique<boost::multi_index::tag<ByColumnIdTag>,

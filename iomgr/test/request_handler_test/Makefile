@@ -16,6 +16,7 @@ CXX_SRC:= \
 	RequestHandlerTest_DML_Insert.cpp \
 	RequestHandlerTest_DML_Update.cpp \
 	RequestHandlerTest_Main.cpp \
+	RequestHandlerTest_Query_Describe.cpp \
 	RequestHandlerTest_Query_Select.cpp \
 	RequestHandlerTest_Query_Select_MutliTable.cpp \
 	RequestHandlerTest_Query_Select_Limits.cpp \

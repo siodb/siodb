@@ -46,16 +46,16 @@ CXX:=g++-10
 LD:=g++-10
 endif
 
+ifeq ($(TOOLCHAIN),gcc11)
+CC:=gcc-11
+CXX:=g++-11
+LD:=g++-11
+endif
+
 ifeq ($(TOOLCHAIN),clang)
 CC:=clang
 CXX:=clang++
 LD:=clang++
-endif
-
-ifeq ($(TOOLCHAIN),clang8)
-CC:=clang-8
-CXX:=clang++-8
-LD:=clang++-8
 endif
 
 ifeq ($(TOOLCHAIN),clang9)
@@ -82,8 +82,20 @@ CXX:=clang++-12
 LD:=clang++-12
 endif
 
+ifeq ($(TOOLCHAIN),clang13)
+CC:=clang-13
+CXX:=clang++-13
+LD:=clang++-13
+endif
+
+ifeq ($(TOOLCHAIN),clang14)
+CC:=clang-14
+CXX:=clang++-14
+LD:=clang++-14
+endif
+
 AR:=ar
 
 # Go
-GO_VERSION:=1.17
+GO_VERSION:=1.17.1
 GO:=/usr/local/go-$(GO_VERSION)/bin/go
