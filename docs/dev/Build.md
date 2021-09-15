@@ -328,7 +328,7 @@ sudo rm -f go
 sudo ln -s go-${SIODB_GO_VERSION} go
 
 # Get Protobuf for go
-/usr/local/go-${SIODB_GO_VERSION}/bin/go get -u github.com/golang/protobuf/protoc-gen-go
+/usr/local/go-${SIODB_GO_VERSION}/bin/go install github.com/golang/protobuf/protoc-gen-go@latest
 ```
 
 ### Install boost-pretty-printer GDB Extension
@@ -338,22 +338,22 @@ For better debugging experience, it is recommended to install
 
 1. Run following commands
 
-    ```shell
-    mkdir -p ~/.local/share
-    cd ~/.local/share
-    git clone git://github.com/ruediger/Boost-Pretty-Printer.git
-    ```
+```shell
+mkdir -p ~/.local/share
+cd ~/.local/share
+git clone git://github.com/ruediger/Boost-Pretty-Printer.git
+```
 
 2. Add following lines to the file `~/.gdbinit` (create it if it doesn't exist yet):
 
-    ```text
-    python
-    import sys
-    sys.path.insert(1, '~/.local/share/Boost-Pretty-Printer')
-    import boost
-    boost.register_printers(boost_version=(x,y,z))
-    end
-    ```
+```text
+python
+import sys
+sys.path.insert(1, '~/.local/share/Boost-Pretty-Printer')
+import boost
+boost.register_printers(boost_version=(x,y,z))
+end
+```
 
 Now, proceed to the section [Building Third-Party Libraries](#building-third-party-libraries).
 
