@@ -25,44 +25,58 @@ _StartSiodb
 ## =============================================
 
 ## Create test users
-
-## Database permissions
-_RunSqlAndValidateOutput \
-    "grant all on database XXX to user_name with grant option" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "revoke all on database XXX from user_name" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "grant create table on database XXX to user_name with grant option" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "revoke create table on database XXX from user_name" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "grant alter any table on database XXX to user_name with grant option" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "revoke alter any table on database XXX from user_name" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "grant drop any table on database XXX to user_name with grant option" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "revoke drop any table on database XXX from user_name" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "grant show any table on database XXX to user_name with grant option" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-_RunSqlAndValidateOutput \
-    "revoke show any table on database XXX from user_name" \
-    "^Status [0-9]*: Unsupported statement type [0-9]*$"
-
-_CheckLogFiles "SQL parse error: Unsupported statement type [0-9]*"
-
-## Table permissions
+_RunSql "create database TEST_DB1"
+_RunSql "create table TEST_DB1.TABLE_01 (COL1 TEXT)"
+_RunSql "create user TEST_USER1"
+_RunSql "create user TEST_USER2"
 
 ## Instance permissions
+instance_permissions="create-database drop-any-database alter-any-database attach-database detach-any-database create-user alter-user drop-user create-user-access-key alter-user-access-key drop-user-access-key create-user-access-token alter-user-access-token drop-user-access-token"
+for permission in ${instance_permissions}; do
+    permission="$(echo ${permission}|tr '-' ' ')"
+    _log "INFO" "Testing table permission '${permission}'"
+    _RunSqlAndValidateOutput "grant create database to TEST_USER1" \
+                             "^Status [0-9]*: Unsupported statement type [0-9]*$"
+    _RunSqlAndValidateOutput "grant create database to TEST_USER1 with grant option" \
+                             "^Status [0-9]*: Unsupported statement type [0-9]*$"
+    _RunSqlAndValidateOutput "revoke create database from TEST_USER1" \
+                             "^Status [0-9]*: Unsupported statement type [0-9]*$"
+    _CheckLogFiles "SQL parse error: Unsupported statement type [0-9]*"
+done
+
+## Database permissions
+database_permissions="all create-table alter-any-table drop-any-table show-any-table"
+for permission in ${database_permissions}; do
+    permission="$(echo ${permission}|tr '-' ' ')"
+    _log "INFO" "Testing table permission '${permission}'"
+    _RunSqlAndValidateOutput "grant all on database TEST_DB1 to TEST_USER1n" \
+                             "^Status [0-9]*: Unsupported statement type [0-9]*$"
+    _RunSqlAndValidateOutput "grant all on database TEST_DB1 to TEST_USER1 with grant option" \
+                             "^Status [0-9]*: Unsupported statement type [0-9]*$"
+    _RunSqlAndValidateOutput "revoke all on database TEST_DB1 from TEST_USER1" \
+                             "^Status [0-9]*: Unsupported statement type [0-9]*$"
+    _CheckLogFiles "SQL parse error: Unsupported statement type [0-9]*"
+done
+
+## Table permissions
+table_permissions="all read_only read_write select insert update delete drop alter show"
+for permission in ${table_permissions}; do
+    permission="$(echo ${permission}|tr '-' ' ')"
+    _log "INFO" "Testing table permission '${permission}'"
+    _RunSql "grant all on TEST_DB1.TABLE_01 to TEST_USER1"
+    _RunSql "use database TEST_DB1; grant all on TABLE_01 to TEST_USER1"
+    _RunSql "grant all on table TEST_DB1.TABLE_01 to TEST_USER1 with grant option"
+    _RunSql "use database TEST_DB1; grant all on table TABLE_01 to TEST_USER1 with grant option"
+    _RunSql "grant all on TEST_DB1.TABLE_01 to TEST_USER1"
+    _RunSql "use database TEST_DB1; grant all on TABLE_01 to TEST_USER1"
+    _RunSql "grant all on table TEST_DB1.TABLE_01 to TEST_USER1 with grant option"
+    _RunSql "use database TEST_DB1; grant all on table TABLE_01 to TEST_USER1 with grant option"
+    _RunSql "revoke all on TEST_DB1.TABLE_01 from TEST_USER1"
+    _RunSql "use database TEST_DB1; revoke all on TABLE_01 from TEST_USER1"
+    _RunSql "revoke all on table TEST_DB1.TABLE_01 from TEST_USER1"
+    _RunSql "use database TEST_DB1; revoke all on table TABLE_01 from TEST_USER1"
+    _CheckLogFiles
+done
 
 ## Grant 1000 times the same permission and check logs
 
