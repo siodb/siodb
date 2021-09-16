@@ -27,28 +27,40 @@ _StartSiodb
 ## Create test users
 
 ## Database permissions
-### 1. Create database
-#### Loop:
-#### 1. Grant user 1 to do X on database
-grant create table on database XXX to user_name
-grant drop any table on database XXX to user_name
-grant alter any table on database XXX to user_name
-grant show any table on database XXX to user_name
-grant all on database XXX to user_name
-#### 2. Test that user 1 can only do X and
-#### 3. Test that others operations are not allowed
-#### 4. Test that user 2 cannot do anything
-#### 5. Test that user ROOT can do everything
-#### 6. Revoke user 1 to do X on database
-#### 7. Test that user 2 cannot do anything
-#### 8. Test that user ROOT can do everything
-#### 9. Test that user 1 cannot do anymore
-### 2. Grant all to user 1 to do X on database
-### 8. Drop database and recreate it
-### 9. Test that 1 can do nothing
-### 10. Drop database
+_RunSqlAndValidateOutput \
+    "grant all on database XXX to user_name with grant option" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
+# _RunSqlAndValidateOutput \
+#     "revoke all on database XXX from user_name" \
+#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "grant create table on database XXX to user_name with grant option" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
+# _RunSqlAndValidateOutput \
+#     "revoke create table on database XXX from user_name" \
+#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "grant alter any table on database XXX to user_name with grant option" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
+# _RunSqlAndValidateOutput \
+#     "revoke alter any table on database XXX from user_name" \
+#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "grant drop any table on database XXX to user_name with grant option" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
+# _RunSqlAndValidateOutput \
+#     "revoke drop any table on database XXX from user_name" \
+#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "grant show any table on database XXX to user_name with grant option" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
+# _RunSqlAndValidateOutput \
+#     "revoke show any table on database XXX from user_name" \
+#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
 
 ## Table permissions
+
+## Instance permissions
 
 ## Grant 1000 times the same permission and check logs
 
