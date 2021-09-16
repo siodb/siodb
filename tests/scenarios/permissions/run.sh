@@ -30,33 +30,35 @@ _StartSiodb
 _RunSqlAndValidateOutput \
     "grant all on database XXX to user_name with grant option" \
     "^Status [0-9]*: Unsupported statement type [0-9]*$"
-# _RunSqlAndValidateOutput \
-#     "revoke all on database XXX from user_name" \
-#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "revoke all on database XXX from user_name" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
 _RunSqlAndValidateOutput \
     "grant create table on database XXX to user_name with grant option" \
     "^Status [0-9]*: Unsupported statement type [0-9]*$"
-# _RunSqlAndValidateOutput \
-#     "revoke create table on database XXX from user_name" \
-#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "revoke create table on database XXX from user_name" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
 _RunSqlAndValidateOutput \
     "grant alter any table on database XXX to user_name with grant option" \
     "^Status [0-9]*: Unsupported statement type [0-9]*$"
-# _RunSqlAndValidateOutput \
-#     "revoke alter any table on database XXX from user_name" \
-#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "revoke alter any table on database XXX from user_name" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
 _RunSqlAndValidateOutput \
     "grant drop any table on database XXX to user_name with grant option" \
     "^Status [0-9]*: Unsupported statement type [0-9]*$"
-# _RunSqlAndValidateOutput \
-#     "revoke drop any table on database XXX from user_name" \
-#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "revoke drop any table on database XXX from user_name" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
 _RunSqlAndValidateOutput \
     "grant show any table on database XXX to user_name with grant option" \
     "^Status [0-9]*: Unsupported statement type [0-9]*$"
-# _RunSqlAndValidateOutput \
-#     "revoke show any table on database XXX from user_name" \
-#     "^Status [0-9]*: Unsupported statement type [0-9]*$"
+_RunSqlAndValidateOutput \
+    "revoke show any table on database XXX from user_name" \
+    "^Status [0-9]*: Unsupported statement type [0-9]*$"
+
+_CheckLogFiles "SQL parse error: Unsupported statement type [0-9]*"
 
 ## Table permissions
 

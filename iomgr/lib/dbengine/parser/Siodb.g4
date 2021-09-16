@@ -362,7 +362,7 @@ grant_database_permissions_stmt:
 		grant_option_spec?;
 
 revoke_database_permissions_stmt:
-	K_GRANT database_permission_list K_ON K_DATABASE database_name_ex K_FROM user_name;
+	K_REVOKE database_permission_list K_ON K_DATABASE database_name_ex K_FROM user_name;
 
 database_permission_list:
 	database_permission (',' database_permission)*;
