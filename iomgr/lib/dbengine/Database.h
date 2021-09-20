@@ -236,6 +236,12 @@ public:
     }
 
     /**
+     * Counts total number of columns in system table.
+     * @return Total number of columns in the system tables.
+     */
+    std::size_t countColumnsInSystemTables() const;
+
+    /**
      * Returns list of table records permitted to be listed by a given user, ordered by name.
      * @param currentUserId Current user ID.
      * @return List of tables.

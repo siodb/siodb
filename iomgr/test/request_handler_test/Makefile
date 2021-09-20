@@ -11,6 +11,7 @@ TARGET_EXE:=request_handler_test
 
 CXX_SRC:= \
 	RequestHandlerTest_DDL.cpp \
+	RequestHandlerTest_DDL_176.cpp \
 	RequestHandlerTest_DML_Complex.cpp \
 	RequestHandlerTest_DML_Delete.cpp \
 	RequestHandlerTest_DML_Insert.cpp \

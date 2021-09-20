@@ -56,6 +56,15 @@ std::string Database::makeDisplayName() const
     return oss.str();
 }
 
+std::size_t Database::countColumnsInSystemTables() const
+{
+    std::lock_guard lock(m_mutex);
+    return std::accumulate(m_tables.cbegin(), m_tables.cend(), static_cast<std::size_t>(0),
+            [](auto c, const auto& e) {
+                return c + (e.second->isSystemTable() ? e.second->getColumnCount() : 0);
+            });
+}
+
 std::vector<TableRecord> Database::getTableRecordsOrderedByName(std::uint32_t currentUserId) const
 {
     std::lock_guard lock(m_mutex);

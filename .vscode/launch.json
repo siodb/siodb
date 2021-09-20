@@ -158,12 +158,54 @@
             ]
         },
         {
+            "name": "rh1_test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/debug/bin/rh1_test",
+            "args": [
+                "--gtest_filter=DDL.Create185ColumnsAndTryToSelectFromSysColumns"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/debug/bin",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "rh1_test_RELEASE",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/release/bin/rh1_test",
+            "args": [
+                "--gtest_filter=DDL.Create185ColumnsAndTryToSelectFromSysColumns"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/release/bin",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "request_handler_test",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=DML_Insert.InsertSingleRecordIntoBigTable"
+                "--gtest_filter=DDL.Create185ColumnsAndTryToSelectFromSysColumns"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

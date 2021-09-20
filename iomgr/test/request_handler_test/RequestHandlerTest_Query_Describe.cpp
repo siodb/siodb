@@ -70,10 +70,11 @@ TEST(Query, DescribeTable_SysTables)
 
 TEST(Query, DescribeTable_UserTable)
 {
-    // create table
+    // Create table
     std::vector<dbengine::SimpleColumnSpecification> tableColumns;
-    for (int i = 1; i <= 100; ++i)
+    for (int i = 1; i <= 100; ++i) {
         tableColumns.emplace_back("C" + std::to_string(i), siodb::COLUMN_DATA_TYPE_INT32, true);
+    }
 
     const auto instance = TestEnvironment::getInstance();
     ASSERT_NE(instance, nullptr);
