@@ -487,6 +487,14 @@ private:
     void executeRevokePermissionsForTableRequest(iomgr_protocol::DatabaseEngineResponse& response,
             const requests::RevokePermissionsForTableRequest& request);
 
+    /**
+     * Executes SHOW PERMISSIONS request.
+     * @param response Response object.
+     * @param request Request object.
+     */
+    void executeShowPermissionsRequest(iomgr_protocol::DatabaseEngineResponse& response,
+            const requests::ShowPermissionsRequest& request);
+
     // Helpers
 
     /**
@@ -524,6 +532,26 @@ private:
      */
     static void addColumnToResponse(iomgr_protocol::DatabaseEngineResponse& response,
             const Column& column, const std::string& alias = std::string());
+
+    /**
+     * Adds column description to the response.
+     * @param response Response object.
+     * @param name Column name.
+     * @param dataType Column data type.
+     * @param notNull Indicates that column can't have NULL values.
+     */
+    static void addColumnToResponse(iomgr_protocol::DatabaseEngineResponse& response,
+            const char* name, ColumnDataType dataType, bool notNull = true);
+
+    /**
+     * Adds column description to the response.
+     * @param response Response object.
+     * @param name Column name.
+     * @param dataType Column data type.
+     * @param notNull Indicates that column can't have NULL values.
+     */
+    static void addColumnToResponse(iomgr_protocol::DatabaseEngineResponse& response,
+            const std::string& name, ColumnDataType dataType, bool notNull = true);
 
     /**
      * Replies with 'Not implemented yet' error.

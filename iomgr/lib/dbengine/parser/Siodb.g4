@@ -92,6 +92,7 @@ sql_stmt: (K_EXPLAIN ( K_QUERY K_PLAN)?)? (
 		| select_stmt
 		| show_databases_stmt
 		| show_tables_stmt
+		| show_user_permissions_stmt
 		| update_stmt
 		| update_stmt_limited
 		| use_database_stmt1
@@ -502,6 +503,9 @@ select_or_values:
 show_databases_stmt: K_SHOW ( K_DATABASES | K_DBS);
 
 show_tables_stmt: K_SHOW K_TABLES;
+
+show_user_permissions_stmt:
+	K_SHOW K_PERMISSIONS (K_FOR user_name)?;
 
 update_stmt:
 	with_clause? K_UPDATE (
@@ -1013,6 +1017,8 @@ K_OPTION: O P T I O N;
 K_OR: O R;
 K_ORDER: O R D E R;
 K_OUTER: O U T E R;
+K_PERMISSION: P E R M I S S I O N;
+K_PERMISSIONS: P E R M I S S I O N S;
 K_PLAN: P L A N;
 K_PRIMARY: P R I M A R Y;
 K_QUERY: Q U E R Y;
@@ -1160,6 +1166,8 @@ keyword:
 	| K_OR
 	| K_ORDER
 	| K_OUTER
+	| K_PERMISSION
+	| K_PERMISSIONS
 	| K_PLAN
 	| K_PRIMARY
 	| K_QUERY

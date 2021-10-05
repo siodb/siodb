@@ -171,22 +171,28 @@ void TestEnvironment::SetUp()
     const auto database = m_instance->createDatabase(stdext::copy(m_testDatabaseName),
             std::string("aes128"), std::move(key), {},
             std::numeric_limits<std::uint32_t>::max() / 2, {}, false, dbengine::User::kSuperUserId);
-    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], 0,
-            dbengine::DatabaseObjectType::kDatabase, database->getId(),
-            dbengine::kShowPermissionMask, false, dbengine::User::kSuperUserId);
-    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], database->getId(),
-            dbengine::DatabaseObjectType::kTable, 0, dbengine::kCreatePermissionMask, false,
-            dbengine::User::kSuperUserId);
     const auto sysTables = database->findTableChecked(dbengine::kSysTablesTableName);
-    m_instance->grantObjectPermissionsToUser(m_testUserIds[0], database->getId(),
-            dbengine::DatabaseObjectType::kTable, sysTables->getId(),
-            dbengine::kSelectSystemPermissionMask, false, dbengine::User::kSuperUserId);
+
+    // Grant permissions to users
+    const int usersToGrantPermissionsTo[] = {0, 2};
+    for (const int userIndex : usersToGrantPermissionsTo) {
+        m_instance->grantObjectPermissionsToUser(m_testUserIds[userIndex], 0,
+                dbengine::DatabaseObjectType::kDatabase, database->getId(),
+                dbengine::kShowPermissionMask, false, dbengine::User::kSuperUserId);
+        m_instance->grantObjectPermissionsToUser(m_testUserIds[userIndex], database->getId(),
+                dbengine::DatabaseObjectType::kTable, 0, dbengine::kCreatePermissionMask, false,
+                dbengine::User::kSuperUserId);
+        m_instance->grantObjectPermissionsToUser(m_testUserIds[userIndex], database->getId(),
+                dbengine::DatabaseObjectType::kTable, sysTables->getId(),
+                dbengine::kSelectSystemPermissionMask, false, dbengine::User::kSuperUserId);
+    }
 }
 
 void TestEnvironment::TearDown()
 {
     ::close(m_pipes[0]);
     ::close(m_pipes[1]);
+
     // instance destructor prints data to the log
     m_instance.reset();
     siodb::log::shutdownLogging();

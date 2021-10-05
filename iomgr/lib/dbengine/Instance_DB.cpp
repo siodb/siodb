@@ -72,19 +72,22 @@ DatabasePtr Instance::findDatabaseChecked(const std::string& databaseName)
     throwDatabaseError(IOManagerMessageId::kErrorDatabaseDoesNotExist, databaseName);
 }
 
+DatabasePtr Instance::findDatabaseChecked(std::uint32_t databaseId)
+{
+    if (auto database = findDatabase(databaseId)) return database;
+    throwDatabaseError(IOManagerMessageId::kErrorDatabaseDoesNotExist, databaseId);
+}
+
 DatabasePtr Instance::findDatabase(const std::string& databaseName)
 {
     std::lock_guard lock(m_mutex);
-    const auto& index = m_databaseRegistry.byName();
-    const auto it = index.find(databaseName);
-    if (it == index.end()) return nullptr;
+    return findDatabaseUnlocked(databaseName);
+}
 
-    const auto itdb = m_databases.find(it->m_id);
-    if (itdb != m_databases.end()) return itdb->second;
-
-    auto database = std::make_shared<UserDatabase>(*this, *it);
-    m_databases.emplace(database->getId(), database);
-    return database;
+DatabasePtr Instance::findDatabase(const std::uint32_t databaseId)
+{
+    std::lock_guard lock(m_mutex);
+    return findDatabaseUnlocked(databaseId);
 }
 
 DatabasePtr Instance::createDatabase(std::string&& name, const std::string& cipherId,
@@ -205,9 +208,23 @@ std::uint32_t Instance::generateNextDatabaseId(bool system)
 
 DatabasePtr Instance::findDatabaseUnlocked(const std::string& databaseName)
 {
-    const auto& databasesByName = m_databaseRegistry.byName();
-    const auto it = databasesByName.find(databaseName);
-    if (it == databasesByName.end()) return nullptr;
+    const auto& index = m_databaseRegistry.byName();
+    const auto it = index.find(databaseName);
+    if (it == index.end()) return nullptr;
+
+    const auto itdb = m_databases.find(it->m_id);
+    if (itdb != m_databases.end()) return itdb->second;
+
+    auto database = std::make_shared<UserDatabase>(*this, *it);
+    m_databases.emplace(database->getId(), database);
+    return database;
+}
+
+DatabasePtr Instance::findDatabaseUnlocked(const std::uint32_t databaseId)
+{
+    const auto& index = m_databaseRegistry.byId();
+    const auto it = index.find(databaseId);
+    if (it == index.end()) return nullptr;
 
     const auto itdb = m_databases.find(it->m_id);
     if (itdb != m_databases.end()) return itdb->second;

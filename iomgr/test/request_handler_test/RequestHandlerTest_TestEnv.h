@@ -16,7 +16,13 @@ namespace dbengine = siodb::iomgr::dbengine;
 
 class TestEnvironment : public ::testing::Environment {
 public:
-    static constexpr std::size_t kTestUserCount = 2;
+    /**
+     * Test User 0 - General usage (user with permissions for test db)
+     * Test User 1 - General usage (user w/o permissions)
+     * Test User 2 - UserPermissions.ShowPermissions_NormalUser (user with permissions for test db)
+     */
+    static constexpr std::size_t kTestUserCount = 3;
+
     static constexpr std::uint64_t kTestRequestId = 256;
 
 public:
@@ -51,12 +57,12 @@ public:
 
     static const auto& getTestUserName(std::size_t index)
     {
-        return m_testUserNames[index];
+        return m_testUserNames.at(index);
     }
 
     static auto getTestUserId(std::size_t index)
     {
-        return m_testUserIds[index];
+        return m_testUserIds.at(index);
     }
 
     static const auto& getTestDatabaseName() noexcept

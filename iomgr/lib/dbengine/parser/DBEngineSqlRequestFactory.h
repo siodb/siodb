@@ -373,6 +373,13 @@ private:
             antlr4::tree::ParseTree* node);
 
     /**
+     * Creates SHOW PERMISSIONS request.
+     * @param node Parse tree node with SQL statement.
+     * @return SHOW PERMISSIONS request.
+     */
+    requests::DBEngineRequestPtr createShowUserPermissionsRequest(antlr4::tree::ParseTree* node);
+
+    /**
      * Parses permissions for table object.
      * @param node Permission list node.
      * @param failureErrorMessage Error message for the parse permission failure.

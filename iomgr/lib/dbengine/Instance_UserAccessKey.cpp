@@ -14,6 +14,20 @@
 
 namespace siodb::iomgr::dbengine {
 
+std::pair<UserPtr, UserAccessKeyPtr> Instance::findUserAccessKeyChecked(
+        const std::string& userName, const std::string& userAccessKeyName)
+{
+    std::lock_guard lock(m_mutex);
+    return findUserAccessKeyCheckedUnlocked(userName, userAccessKeyName);
+}
+
+std::pair<UserPtr, UserAccessKeyPtr> Instance::findUserAccessKeyChecked(
+        std::uint64_t userAccessKeyId)
+{
+    std::lock_guard lock(m_mutex);
+    return findUserAccessKeyCheckedUnlocked(userAccessKeyId);
+}
+
 std::uint64_t Instance::createUserAccessKey(const std::string& userName, const std::string& keyName,
         const std::string& text, const std::optional<std::string>& description, bool active,
         std::uint32_t currentUserId)
@@ -39,6 +53,7 @@ std::uint64_t Instance::createUserAccessKey(const std::string& userName, const s
     const auto id = m_systemDatabase->generateNextUserAccessKeyId();
     const auto accessKey = user->addAccessKey(id, std::string(keyName), std::string(text),
             std::optional<std::string>(description), active);
+    m_userAccessKeyIdToUserId.emplace(accessKey->getId(), user->getId());
 
     // NOTE: We don't index by UserRecord::m_accessKeys, that's why this works
     mutableUserRecord.m_accessKeys.emplace(*accessKey);
@@ -79,6 +94,7 @@ void Instance::dropUserAccessKey(const std::string& userName, const std::string&
     const auto user = findUserUnlocked(*itUser);
     const auto accessKeyId = itKey->m_id;
     accessKeyIndex.erase(itKey);
+    m_userAccessKeyIdToUserId.erase(accessKeyId);
     user->deleteAccessKey(keyName);
     m_systemDatabase->deleteUserAccessKey(accessKeyId, currentUserId);
 }
@@ -143,6 +159,28 @@ void Instance::updateUserAccessKey(const std::string& userName, const std::strin
     }
 
     m_systemDatabase->updateUserAccessKey(userAccessKey->getId(), params, currentUserId);
+}
+
+// --- internals ---
+
+std::pair<UserPtr, UserAccessKeyPtr> Instance::findUserAccessKeyCheckedUnlocked(
+        const std::string& userName, const std::string& userAccessKeyName)
+{
+    auto user = findUserCheckedUnlocked(userName);
+    auto accessKey = user->findAccessKeyChecked(userAccessKeyName);
+    return std::make_pair(std::move(user), std::move(accessKey));
+}
+
+std::pair<UserPtr, UserAccessKeyPtr> Instance::findUserAccessKeyCheckedUnlocked(
+        std::uint64_t userAccessKeyId)
+{
+    const auto it = m_userAccessKeyIdToUserId.find(userAccessKeyId);
+    if (it != m_userAccessKeyIdToUserId.end()) {
+        auto user = findUserCheckedUnlocked(it->second);
+        auto accessKey = user->findAccessKeyChecked(userAccessKeyId);
+        return std::make_pair(std::move(user), std::move(accessKey));
+    }
+    throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIdDoesNotExist, userAccessKeyId);
 }
 
 }  // namespace siodb::iomgr::dbengine

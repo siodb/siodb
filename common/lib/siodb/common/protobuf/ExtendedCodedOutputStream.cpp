@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -45,12 +45,26 @@ void ExtendedCodedOutputStream::Write(double value)
 
 void ExtendedCodedOutputStream::Write(const std::string& value)
 {
-    WriteVarint32(static_cast<std::uint32_t>(value.length()));
-    if (!HadError() && !value.empty()) WriteRaw(value.c_str(), value.length());
+    Write(value.c_str(), value.length());
+}
+
+void ExtendedCodedOutputStream::Write(const char* value)
+{
+    Write(value, std::strlen(value));
+}
+
+void ExtendedCodedOutputStream::Write(const char* value, std::size_t length)
+{
+    if (length > std::numeric_limits<std::uint32_t>::max())
+        throw std::invalid_argument("String is too long");
+    WriteVarint32(static_cast<std::uint32_t>(length));
+    if (!HadError() && length > 0) WriteRaw(value, length);
 }
 
 void ExtendedCodedOutputStream::Write(const BinaryValue& value)
 {
+    if (value.size() > std::numeric_limits<std::uint32_t>::max())
+        throw std::invalid_argument("Binary value is too long");
     WriteVarint32(static_cast<std::uint32_t>(value.size()));
     if (!HadError() && !value.empty()) WriteRaw(value.data(), value.size());
 }

@@ -465,7 +465,7 @@ private:
     /** Data of the TRID counters */
     struct TridCounters {
         /**
-         * Initializes obejct of class TridCounters.
+         * Initializes object of class TridCounters.
          * @param firstUserTrid First user range TRID.
          */
         explicit TridCounters(std::uint64_t firstUserTrid) noexcept

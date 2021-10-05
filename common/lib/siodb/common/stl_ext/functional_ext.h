@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -91,3 +91,74 @@ inline std::size_t hash_val(const Types&... args)
 }
 
 }  // namespace stdext
+
+namespace std {
+
+/**
+ * Generic std::hash specialization for std::pair.
+ * @tparam First Type of pair's first member.
+ * @tparam Second Type of pair's second member.
+ */
+template<class First, class Second>
+struct hash<pair<First, Second>> {
+    /**
+     * Computes hash value for the std::pair object.
+     * @param p Pair object.
+     * @return Hash value.
+     */
+    std::size_t operator()(const pair<First, Second>& p) const
+    {
+        return stdext::hash_val(p.first, p.first);
+    }
+};
+
+namespace detail {
+
+/**
+ * Recursive implementation of the tuple hash.
+ * @see https://stackoverflow.com/a/7115547/1540501
+ */
+template<class Tuple, std::size_t Index = std::tuple_size<Tuple>::value - 1>
+struct TupleHashImpl {
+    static void apply(std::size_t& seed, const Tuple& t)
+    {
+        TupleHashImpl<Tuple, Index - 1>::apply(seed, t);
+        stdext::hash_combine(seed, std::get<Index>(t));
+    }
+};
+
+/**
+ * Recursive implementation of the tuple hash for the first tuple member.
+ * @see https://stackoverflow.com/a/7115547/1540501
+ */
+template<class Tuple>
+struct TupleHashImpl<Tuple, 0> {
+    static void apply(std::size_t& seed, const Tuple& t)
+    {
+        stdext::hash_combine(seed, std::get<0>(t));
+    }
+};
+
+}  // namespace detail
+
+/**
+ * Generic std::hash specialization for std::tuple.
+ * @tparam Types List of std::tuple member types.
+ * @see https://stackoverflow.com/a/7115547/1540501
+ */
+template<class... Types>
+struct hash<tuple<Types...>> {
+    /**
+     * Computes hash value for the std::tuple object.
+     * @param t Tuple object.
+     * @return Hash value.
+     */
+    std::size_t operator()(const tuple<Types...>& t) const
+    {
+        std::size_t seed = 0;
+        detail::TupleHashImpl<std::tuple<Types...>>::apply(seed, t);
+        return seed;
+    }
+};
+
+}  // namespace std

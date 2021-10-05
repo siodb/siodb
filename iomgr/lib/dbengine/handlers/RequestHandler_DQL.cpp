@@ -389,7 +389,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
     addColumnToResponse(response, *nameColumn, "");
     addColumnToResponse(response, *uuidColumn, "");
 
-    const bool nullNotAllowed = nameColumn->isNotNull() && uuidColumn->isNotNull();
+    const bool nullsAllowed = nameColumn->isNotNull() || uuidColumn->isNotNull();
 
     const auto databaseRecords = m_instance.getDatabaseRecordsOrderedByName(m_currentUserId);
 
@@ -400,14 +400,14 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
 
     std::vector<Variant> values(2);
     stdext::bitmask nullMask;
-    if (!nullNotAllowed) nullMask.resize(values.size(), false);
+    if (nullsAllowed) nullMask.resize(values.size(), false);
 
     protobuf::ExtendedCodedOutputStream codedOutput(&rawOutput);
     for (const auto& dbRecord : databaseRecords) {
         values[0] = dbRecord.m_name;
         values[1] = boost::uuids::to_string(dbRecord.m_uuid);
 
-        if (!nullNotAllowed) {
+        if (nullsAllowed) {
             nullMask.set(0, values[0].isNull());
             nullMask.set(1, values[1].isNull());
         }
@@ -416,7 +416,7 @@ void RequestHandler::executeShowDatabasesRequest(iomgr_protocol::DatabaseEngineR
                 getSerializedSize(values[0]) + getSerializedSize(values[1]) + nullMask.size();
         codedOutput.WriteVarint64(rowSize);
 
-        if (!nullNotAllowed) {
+        if (nullsAllowed) {
             codedOutput.WriteRaw(nullMask.data(), nullMask.size());
             rawOutput.CheckNoError();
         }

@@ -12,6 +12,8 @@ CXX_SRC+= \
 	dbengine/ColumnDataType.cpp \
 	dbengine/ConstraintType.cpp \
 	dbengine/DatabaseObjectName.cpp \
+	dbengine/DatabaseObjectType.cpp \
+	dbengine/PermissionType.cpp \
 	dbengine/Variant_Arithmetics.cpp \
 	dbengine/Variant_Common.cpp \
 	dbengine/Variant_Error.cpp \

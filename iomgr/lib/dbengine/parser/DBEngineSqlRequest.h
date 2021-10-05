@@ -15,6 +15,7 @@
 #include <siodb/common/proto/ColumnDataType.pb.h>
 #include <siodb/common/utils/Uuid.h>
 #include <siodb/iomgr/shared/dbengine/ConstraintType.h>
+#include <siodb/iomgr/shared/dbengine/DatabaseObjectType.h>
 #include <siodb/iomgr/shared/dbengine/parser/expr/Expression.h>
 
 namespace siodb::iomgr::dbengine::requests {
@@ -1553,6 +1554,43 @@ struct ShowTablesRequest : public DBEngineRequest {
         : DBEngineRequest(DBEngineRequestType::kShowTables)
     {
     }
+};
+
+/** REVOKE permissions for the table request */
+struct ShowPermissionsRequest : public DBEngineRequest {
+    /** Initializes object of class DescribeTableRequest
+     * @param user User name.
+     * @param database Database name.
+     * @param objectType Object type
+     * @param object Object name.
+     * @param permissions Permission mask.
+     */
+    ShowPermissionsRequest(std::optional<std::string>&& user, std::optional<std::string>&& database,
+            std::optional<DatabaseObjectType>&& objectType, std::optional<std::string>&& object,
+            std::optional<std::uint64_t>&& permissions) noexcept
+        : DBEngineRequest(DBEngineRequestType::kShowPermissions)
+        , m_user(std::move(user))
+        , m_database(std::move(database))
+        , m_objectType(std::move(objectType))
+        , m_object(std::move(object))
+        , m_permissions(permissions)
+    {
+    }
+
+    /** User name */
+    const std::optional<std::string> m_user;
+
+    /** Database name */
+    const std::optional<std::string> m_database;
+
+    /** Object type */
+    const std::optional<DatabaseObjectType> m_objectType;
+
+    /** Object name */
+    const std::optional<std::string> m_object;
+
+    /** Permissions mask */
+    const std::optional<std::uint64_t> m_permissions;
 };
 
 /** DESCRIBE TABLE request */

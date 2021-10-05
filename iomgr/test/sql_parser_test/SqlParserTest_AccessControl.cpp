@@ -382,3 +382,48 @@ TEST(AccessControl, RevokePermissionForTable_AllTablesInCurrentDatabase)
             dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();
     EXPECT_EQ(request.m_permissions, expectedPermissions);
 }
+
+TEST(AccessControl, ShowUserPermissions_WithoutUser)
+{
+    // Parse statement and prepare request
+    const std::string statement("SHOW PERMISSIONS");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
+
+    // Check request type
+    EXPECT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kShowPermissions);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::ShowPermissionsRequest&>(*dbeRequest);
+    EXPECT_FALSE(request.m_user.has_value());
+    EXPECT_FALSE(request.m_database.has_value());
+    EXPECT_FALSE(request.m_objectType.has_value());
+    EXPECT_FALSE(request.m_object.has_value());
+    EXPECT_FALSE(request.m_permissions.has_value());
+}
+
+TEST(AccessControl, ShowUserPermissions_WithUser)
+{
+    // Parse statement and prepare request
+    const std::string statement("SHOW PERMISSIONS FOR user1");
+    parser_ns::SqlParser parser(statement);
+    parser.parse();
+
+    parser_ns::DBEngineSqlRequestFactory factory(parser);
+    const auto dbeRequest = factory.createSqlRequest();
+
+    // Check request type
+    EXPECT_EQ(dbeRequest->m_requestType, requests::DBEngineRequestType::kShowPermissions);
+
+    // Check request
+    const auto& request = dynamic_cast<const requests::ShowPermissionsRequest&>(*dbeRequest);
+    EXPECT_TRUE(request.m_user.has_value());
+    EXPECT_EQ(*request.m_user, "USER1");
+    EXPECT_FALSE(request.m_database.has_value());
+    EXPECT_FALSE(request.m_objectType.has_value());
+    EXPECT_FALSE(request.m_object.has_value());
+    EXPECT_FALSE(request.m_permissions.has_value());
+}

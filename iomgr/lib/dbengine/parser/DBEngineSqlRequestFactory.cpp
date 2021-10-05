@@ -145,6 +145,8 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createSqlRequest(
             return createGrantPermissionsForTableRequest(node);
         case SiodbParser::RuleRevoke_table_permissions_stmt:
             return createRevokePermissionsForTableRequest(node);
+        case SiodbParser::RuleShow_user_permissions_stmt:
+            return createShowUserPermissionsRequest(node);
         default: {
             throw DBEngineRequestFactoryError(
                     "Unsupported statement type " + std::to_string(statementType));
@@ -1813,6 +1815,16 @@ requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createRevokePermissionsF
 
     return std::make_unique<requests::RevokePermissionsForTableRequest>(
             std::move(user), std::move(database), std::move(table), permissions);
+}
+
+requests::DBEngineRequestPtr DBEngineSqlRequestFactory::createShowUserPermissionsRequest(
+        antlr4::tree::ParseTree* node)
+{
+    std::optional<std::string> user;
+    if (node->children.size() >= 4) user = helpers::extractObjectName(node->children.at(3));
+    return std::make_shared<requests::ShowPermissionsRequest>(std::move(user),
+            std::optional<std::string>(), std::optional<DatabaseObjectType>(),
+            std::optional<std::string>(), std::optional<std::uint64_t>());
 }
 
 std::uint64_t DBEngineSqlRequestFactory::parseTablePermissions(

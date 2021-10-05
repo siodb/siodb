@@ -180,6 +180,11 @@ UserPtr Instance::findUserUnlocked(const UserRecord& userRecord)
     if (it != m_users.end()) return it->second;
     auto user = std::make_shared<User>(userRecord);
     m_users.emplace(user->getId(), user);
+    const auto userId = user->getId();
+    for (const auto& accessKey : user->getAccessKeys())
+        m_userAccessKeyIdToUserId.emplace(accessKey->getId(), userId);
+    for (const auto& token : user->getTokens())
+        m_userAccessKeyIdToUserId.emplace(token->getId(), userId);
     return user;
 }
 

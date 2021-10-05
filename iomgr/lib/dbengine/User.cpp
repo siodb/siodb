@@ -53,8 +53,16 @@ User::User(const UserRecord& userRecord)
 
 UserAccessKeyPtr User::findAccessKeyChecked(const std::string& name) const
 {
-    if (auto userAccessKey = findAccessKeyUnlocked(name)) return userAccessKey;
+    auto accessKey = findAccessKeyUnlocked(name);
+    if (accessKey) return accessKey;
     throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyDoesNotExist, m_name, name);
+}
+
+UserAccessKeyPtr User::findAccessKeyChecked(std::uint64_t id) const
+{
+    auto accessKey = findAccessKeyUnlocked(id);
+    if (accessKey) return accessKey;
+    throwDatabaseError(IOManagerMessageId::kErrorUserAccessKeyIdDoesNotExist, id);
 }
 
 UserAccessKeyPtr User::addAccessKey(std::uint64_t id, std::string&& name, std::string&& text,
@@ -110,8 +118,16 @@ std::size_t User::getActiveAccessKeyCount() const noexcept
 
 UserTokenPtr User::findTokenChecked(const std::string& name) const
 {
-    if (auto token = findTokenUnlocked(name)) return token;
+    auto token = findTokenUnlocked(name);
+    if (token) return token;
     throwDatabaseError(IOManagerMessageId::kErrorUserTokenDoesNotExist, m_name, name);
+}
+
+UserTokenPtr User::findTokenChecked(std::uint64_t id) const
+{
+    auto token = findTokenUnlocked(id);
+    if (token) return token;
+    throwDatabaseError(IOManagerMessageId::kErrorUserTokenIdDoesNotExist, id);
 }
 
 UserTokenPtr User::addToken(std::uint64_t id, std::string&& name, const BinaryValue& value,
@@ -182,14 +198,15 @@ bool User::hasPermissions(const UserPermissionKey& permissionKey, std::uint64_t 
     const auto it = m_grantedPermissions.find(permissionKey);
     return it != m_grantedPermissions.end()
            && (it->second.getPermissions() & permissions) == permissions
-           && (!withGrantOption || (it->second.getGrantOptions() & permissions) == permissions);
+           && (!withGrantOption
+                   || (it->second.getEffectiveGrantOptions() & permissions) == permissions);
 }
 
 UserPermissionDataEx User::grantPermissions(
         const UserPermissionKey& permissionKey, std::uint64_t permissions, bool withGrantOption)
 {
     const UserPermissionDataEx newData(0, permissions, withGrantOption ? permissions : 0);
-    auto result = m_grantedPermissions.emplace(permissionKey, newData);
+    const auto result = m_grantedPermissions.emplace(permissionKey, newData);
     if (result.second) return newData;
     auto& existingData = result.first->second;
     existingData.addPermissions(permissions, withGrantOption);
@@ -201,8 +218,7 @@ std::optional<std::pair<UserPermissionDataEx, bool>> User::revokePermissions(
 {
     const auto it = m_grantedPermissions.find(permissisonKey);
     if (it != m_grantedPermissions.end()
-            && ((it->second.getPermissions() & permissions) != 0
-                    || (it->second.getGrantOptions() & permissions) != 0)) {
+            && (it->second.getEffectiveGrantOptions() & permissions) != 0) {
         it->second.removePermissions(permissions);
         if (it->second.getPermissions() == 0) {
             const auto data = it->second;
@@ -283,15 +299,29 @@ std::string&& User::validateUserName(std::string&& userName)
 
 UserAccessKeyPtr User::findAccessKeyUnlocked(const std::string& name) const noexcept
 {
-    auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
+    const auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
             [&name](const auto& accessKey) noexcept { return accessKey->getName() == name; });
+    return (it == m_accessKeys.end()) ? nullptr : *it;
+}
+
+UserAccessKeyPtr User::findAccessKeyUnlocked(std::uint64_t id) const noexcept
+{
+    const auto it = std::find_if(m_accessKeys.begin(), m_accessKeys.end(),
+            [id](const auto& accessKey) noexcept { return accessKey->getId() == id; });
     return (it == m_accessKeys.end()) ? nullptr : *it;
 }
 
 UserTokenPtr User::findTokenUnlocked(const std::string& name) const noexcept
 {
-    auto it = std::find_if(m_tokens.begin(), m_tokens.end(),
+    const auto it = std::find_if(m_tokens.begin(), m_tokens.end(),
             [&name](const auto& token) noexcept { return token->getName() == name; });
+    return (it == m_tokens.end()) ? nullptr : *it;
+}
+
+UserTokenPtr User::findTokenUnlocked(std::uint64_t id) const noexcept
+{
+    const auto it = std::find_if(m_tokens.begin(), m_tokens.end(),
+            [id](const auto& token) noexcept { return token->getId() == id; });
     return (it == m_tokens.end()) ? nullptr : *it;
 }
 

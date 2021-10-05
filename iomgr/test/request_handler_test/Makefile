@@ -29,7 +29,7 @@ CXX_SRC:= \
 	RequestHandlerTest_RestPost.cpp \
 	RequestHandlerTest_TestEnv.cpp \
 	RequestHandlerTest_UM.cpp \
-	RequestHandlerTest_UserPermissions.cpp
+	RequestHandlerTest_UP.cpp
 
 CXX_HDR:= \
 	RequestHandlerTest_TestEnv.h

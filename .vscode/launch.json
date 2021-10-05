@@ -205,7 +205,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=DDL.Create185ColumnsAndTryToSelectFromSysColumns"
+                "--gtest_filter=UserPermissions.ShowPermissions_NormalUser"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",
@@ -268,7 +268,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/sql_parser_test",
             "args": [
-                "--gtest_filter=AC.GrantPermissionForTable3"
+                "--gtest_filter=AccessControl.ShowUserPermissions_WithoutUser"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

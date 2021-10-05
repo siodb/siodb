@@ -84,6 +84,12 @@ void RequestHandler::executeRequest(const requests::DBEngineRequest& request,
                 break;
             }
 
+            case requests::DBEngineRequestType::kShowPermissions: {
+                executeShowPermissionsRequest(
+                        response, dynamic_cast<const requests::ShowPermissionsRequest&>(request));
+                break;
+            }
+
             case requests::DBEngineRequestType::kDescribeTable: {
                 executeDescribeTableRequest(
                         response, dynamic_cast<const requests::DescribeTableRequest&>(request));
@@ -461,6 +467,24 @@ void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse&
     columnDescription->set_name(alias.empty() ? column.getName() : alias);
     columnDescription->set_is_null(!column.isNotNull());
     columnDescription->set_type(column.getDataType());
+}
+
+void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse& response,
+        const char* name, ColumnDataType dataType, bool notNull)
+{
+    const auto columnDescription = response.add_column_description();
+    columnDescription->set_name(name);
+    columnDescription->set_is_null(!notNull);
+    columnDescription->set_type(dataType);
+}
+
+void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse& response,
+        const std::string& name, ColumnDataType dataType, bool notNull)
+{
+    const auto columnDescription = response.add_column_description();
+    columnDescription->set_name(name);
+    columnDescription->set_is_null(!notNull);
+    columnDescription->set_type(dataType);
 }
 
 void RequestHandler::sendNotImplementedYet(iomgr_protocol::DatabaseEngineResponse& response)

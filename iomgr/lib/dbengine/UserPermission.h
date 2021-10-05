@@ -163,12 +163,21 @@ public:
     }
 
     /**
-     * Returns grant options for the granted permissions.
+     * Returns raw grant options for the granted permissions.
      * @return Grant options bitmask.
      */
-    auto getGrantOptions() const noexcept
+    auto getRawGrantOptions() const noexcept
     {
         return m_grantOptions;
+    }
+
+    /**
+     * Returns effective grant options for the granted permissions.
+     * @return Grant options bitmask.
+     */
+    auto getEffectiveGrantOptions() const noexcept
+    {
+        return m_grantOptions & m_permissions;
     }
 
 private:

@@ -59,11 +59,11 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         const utils::DefaultErrorCodeChecker errorCodeChecker;
 
         client_protocol::ServerResponse response;
-        protobuf::StreamInputStream input(connection, errorCodeChecker);
+        protobuf::StreamInputStream rawInput(connection, errorCodeChecker);
 
         if (printDebugMessages) std::clog << "debug: Reading reponse from server" << std::endl;
 
-        protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, input);
+        protobuf::readMessage(protobuf::ProtocolMessageType::kServerResponse, response, rawInput);
 
         if (printDebugMessages) {
             std::clog << "\ndebug: "
@@ -145,7 +145,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
         if (columnCount > 0) {
             // Create CodedInputStream only if row data is available to read
             // otherwise codedInput constructor will be stucked on waiting on buffering data
-            protobuf::ExtendedCodedInputStream codedInput(&input);
+            protobuf::ExtendedCodedInputStream codedInput(&rawInput);
 
             struct ColumnPrintInfo {
                 ColumnDataType type;
@@ -202,8 +202,9 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                 std::uint64_t rowLength = 0;
                 if (!codedInput.ReadVarint64(&rowLength)) {
                     std::ostringstream err;
-                    err << "Can't read from server: " << std::strerror(input.GetErrno());
-                    throw std::system_error(input.GetErrno(), std::generic_category(), err.str());
+                    err << "Can't read from server: " << std::strerror(rawInput.GetErrno());
+                    throw std::system_error(
+                            rawInput.GetErrno(), std::generic_category(), err.str());
                 }
                 if (rowLength == 0) break;
 
@@ -214,9 +215,9 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                     nullBitmask.resize(columnCount);
                     if (!codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size())) {
                         std::ostringstream err;
-                        err << "Can't read from server: " << std::strerror(input.GetErrno());
+                        err << "Can't read from server: " << std::strerror(rawInput.GetErrno());
                         throw std::system_error(
-                                input.GetErrno(), std::generic_category(), err.str());
+                                rawInput.GetErrno(), std::generic_category(), err.str());
                     }
                 }
 
@@ -227,9 +228,9 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                     else if (!detail::receiveAndPrintColumnValue(codedInput,
                                      columnPrintInfo[i].type, columnPrintInfo[i].width, os)) {
                         std::ostringstream err;
-                        err << "Can't read from server: " << std::strerror(input.GetErrno());
+                        err << "Can't read from server: " << std::strerror(rawInput.GetErrno());
                         throw std::system_error(
-                                input.GetErrno(), std::generic_category(), err.str());
+                                rawInput.GetErrno(), std::generic_category(), err.str());
                     }
                 }
                 os << '\n';
@@ -369,19 +370,15 @@ std::size_t getColumnDataWidth(ColumnDataType type, std::size_t nameLength)
                    : nameLength;
 }
 
-bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDataType type,
+bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& codedInput, ColumnDataType type,
         std::size_t width, std::ostream& os)
 {
     io::StreamFormatGuard formatGuard(os);
-    switch (type) {
-        case COLUMN_DATA_TYPE_UNKNOWN: {
-            printNull(width, os);
-            return true;
-        }
 
+    switch (type) {
         case COLUMN_DATA_TYPE_BOOL: {
             bool value = false;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << std::boolalpha << value;
                 return true;
@@ -391,7 +388,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_INT8: {
             std::int8_t value = 0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << static_cast<int>(value);
                 return true;
@@ -401,7 +398,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_UINT8: {
             std::uint8_t value = 0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << static_cast<int>(value);
                 return true;
@@ -411,7 +408,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_INT16: {
             std::int16_t value = 0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << value;
                 return true;
@@ -421,7 +418,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_UINT16: {
             std::uint16_t value = 0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << value;
                 return true;
@@ -431,7 +428,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_INT32: {
             std::int32_t value = 0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << value;
                 return true;
@@ -441,7 +438,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_UINT32: {
             std::uint32_t value = 0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << value;
                 return true;
@@ -451,7 +448,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_INT64: {
             std::int64_t value = 0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << value;
                 return true;
@@ -461,7 +458,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_UINT64: {
             std::uint64_t value = 0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os << value;
                 return true;
@@ -471,7 +468,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_FLOAT: {
             float value = 0.0f;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os.precision(width);
                 os << value;
@@ -482,7 +479,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_DOUBLE: {
             double value = 0.0;
-            if (is.Read(&value)) {
+            if (codedInput.Read(&value)) {
                 os.width(width);
                 os.precision(width);
                 os << value;
@@ -494,12 +491,12 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
         case COLUMN_DATA_TYPE_TEXT: {
             std::uint32_t clobLength = 0;
             // Read length
-            if (!is.ReadVarint32(&clobLength)) return false;
+            if (!codedInput.ReadVarint32(&clobLength)) return false;
 
             // Read sample
             char buffer[kTextDefaultDataWidth * 4 + 1];
             const auto sampleLength = std::min(static_cast<size_t>(clobLength), sizeof(buffer) - 1);
-            if (!is.ReadRaw(buffer, sampleLength)) return false;
+            if (!codedInput.ReadRaw(buffer, sampleLength)) return false;
 
             // Count valid codepoints up to allowed limit
             // and convert control characters into escape sequences
@@ -669,7 +666,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
                 auto remaining = clobLength - sampleLength;
                 while (remaining > 0) {
                     const auto readSize = std::min(remaining, buffer2.size());
-                    if (!is.ReadRaw(buffer2.data(), readSize)) return false;
+                    if (!codedInput.ReadRaw(buffer2.data(), readSize)) return false;
                     remaining -= readSize;
                 }
             }
@@ -678,14 +675,14 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
 
         case COLUMN_DATA_TYPE_BINARY: {
             std::uint32_t blobLength = 0;
-            if (!is.ReadVarint32(&blobLength)) return false;
+            if (!codedInput.ReadVarint32(&blobLength)) return false;
 
             // Read sample
             std::uint8_t buffer[(kBinaryDefaultDataWidth - kBlobDisplayPrefixLength) / 2];
             const auto sampleLength =
                     std::min(static_cast<std::size_t>(blobLength), sizeof(buffer));
             if (sampleLength > 0) {
-                if (!is.ReadRaw(buffer, sampleLength)) return false;
+                if (!codedInput.ReadRaw(buffer, sampleLength)) return false;
             }
 
             // Determine printable length
@@ -724,7 +721,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
                 auto remaining = blobLength - sampleLength;
                 while (remaining > 0) {
                     const auto readSize = std::min(remaining, buffer2.size());
-                    if (!is.ReadRaw(buffer2.data(), readSize)) return false;
+                    if (!codedInput.ReadRaw(buffer2.data(), readSize)) return false;
                     remaining -= readSize;
                 }
             }
@@ -735,7 +732,7 @@ bool receiveAndPrintColumnValue(protobuf::ExtendedCodedInputStream& is, ColumnDa
         case COLUMN_DATA_TYPE_TIMESTAMP: {
             // Read value
             RawDateTime dateTime;
-            if (!protobuf::readRawDateTime(is, dateTime)) return false;
+            if (!protobuf::readRawDateTime(codedInput, dateTime)) return false;
 
             // Print value
             char buffer[kTimestampDefaultDataWidth * 2];
