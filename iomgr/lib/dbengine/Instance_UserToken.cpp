@@ -15,6 +15,19 @@
 
 namespace siodb::iomgr::dbengine {
 
+std::pair<UserPtr, UserTokenPtr> Instance::findUserTokenChecked(
+        const std::string& userName, const std::string& userTokenName)
+{
+    std::lock_guard lock(m_mutex);
+    return findUserTokenCheckedUnlocked(userName, userTokenName);
+}
+
+std::pair<UserPtr, UserTokenPtr> Instance::findUserTokenChecked(std::uint64_t userTokenId)
+{
+    std::lock_guard lock(m_mutex);
+    return findUserTokenCheckedUnlocked(userTokenId);
+}
+
 std::pair<std::uint64_t, BinaryValue> Instance::createUserToken(const std::string& userName,
         const std::string& tokenName, const std::optional<BinaryValue>& value,
         const std::optional<std::string>& description,
@@ -57,6 +70,7 @@ std::pair<std::uint64_t, BinaryValue> Instance::createUserToken(const std::strin
     const auto token = user->addToken(id, std::string(tokenName), v,
             std::optional<std::time_t>(expirationTimestamp),
             std::optional<std::string>(description));
+    m_userTokenIdToUserId.emplace(token->getId(), user->getId());
 
     // NOTE: We don't index by UserRecord::m_tokens, that's why this works.
     mutableUserRecord.m_tokens.emplace(*token);
@@ -95,6 +109,7 @@ void Instance::dropUserToken(const std::string& userName, const std::string& tok
 
     const auto tokenId = itToken->m_id;
     tokenIndex.erase(itToken);
+    m_userTokenIdToUserId.erase(tokenId);
     user->deleteToken(tokenName);
     m_systemDatabase->deleteUserToken(tokenId, currentUserId);
 }
@@ -162,6 +177,27 @@ void Instance::checkUserToken(const std::string& userName, const std::string& to
     const auto userToken = user->findTokenChecked(tokenName);
     if (!userToken->checkValue(tokenValue))
         throwDatabaseError(IOManagerMessageId::kErrorUserTokenCheckFailed, userName, tokenName);
+}
+
+// --- internals ---
+
+std::pair<UserPtr, UserTokenPtr> Instance::findUserTokenCheckedUnlocked(
+        const std::string& userName, const std::string& userTokenName)
+{
+    auto user = findUserCheckedUnlocked(userName);
+    auto token = user->findTokenChecked(userTokenName);
+    return std::make_pair(std::move(user), std::move(token));
+}
+
+std::pair<UserPtr, UserTokenPtr> Instance::findUserTokenCheckedUnlocked(std::uint64_t userTokenId)
+{
+    const auto it = m_userTokenIdToUserId.find(userTokenId);
+    if (it != m_userTokenIdToUserId.end()) {
+        auto user = findUserCheckedUnlocked(it->second);
+        auto token = user->findTokenChecked(userTokenId);
+        return std::make_pair(std::move(user), std::move(token));
+    }
+    throwDatabaseError(IOManagerMessageId::kErrorUserTokenIdDoesNotExist, userTokenId);
 }
 
 }  // namespace siodb::iomgr::dbengine

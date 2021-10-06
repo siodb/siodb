@@ -4,7 +4,6 @@
 
 CXX_SRC+= \
 	handlers/JsonOutput.cpp \
-	handlers/RequestHandler_AC.cpp \
 	handlers/RequestHandler_Common.cpp \
 	handlers/RequestHandler_DDL.cpp \
 	handlers/RequestHandler_DML.cpp \
@@ -12,6 +11,7 @@ CXX_SRC+= \
 	handlers/RequestHandler_Rest.cpp \
 	handlers/RequestHandler_TC.cpp \
 	handlers/RequestHandler_UM.cpp \
+	handlers/RequestHandler_UP.cpp \
 	handlers/RestProtocolRowsetWriter.cpp \
 	handlers/RestProtocolRowsetWriterFactory.cpp \
 	handlers/SqlClientProtocolRowsetWriter.cpp \

@@ -65,6 +65,7 @@ enum class DBEngineRequestType {
     kRevokePermissionsForTrigger,
     kShowDatabases,
     kShowTables,
+    kShowPermissions,
     kDescribeTable,
 
     // REST requests

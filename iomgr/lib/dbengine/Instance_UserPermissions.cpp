@@ -151,7 +151,7 @@ void Instance::grantObjectPermissionsToUserUnlocked(User& user, std::uint32_t da
         } else {
             auto& permissionRecord = stdext::as_mutable(*it2);
             permissionRecord.m_permissions = permissionData.getPermissions();
-            permissionRecord.m_grantOptions = permissionData.getGrantOptions();
+            permissionRecord.m_grantOptions = permissionData.getRawGrantOptions();
         }
     } else {
         const TransactionParameters tp(
@@ -200,7 +200,7 @@ void Instance::revokeObjectPermissionsFromUserUnlocked(User& user, std::uint32_t
             } else {
                 auto& permissionRecord = stdext::as_mutable(*it2);
                 permissionRecord.m_permissions = result->first.getPermissions();
-                permissionRecord.m_grantOptions = result->first.getGrantOptions();
+                permissionRecord.m_grantOptions = result->first.getRawGrantOptions();
             }
         }
     }

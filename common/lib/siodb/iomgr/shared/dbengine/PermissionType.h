@@ -25,8 +25,27 @@ enum class PermissionType {
     kDetach = 11,
     kEnable = 12,
     kDisable = 13,
-    kShutdown = 14
+    kShutdown = 14,
+    kShowPermissions = 15,
+    kMax
 };
+
+/**
+ * Returns permission type name.
+ * @param permissionType Permission type (as integer number).
+ * @return Permission type name.
+ */
+const char* getPermissionTypeName(int permissionType);
+
+/**
+ * Returns permission type name.
+ * @param permissionType Permission type.
+ * @return Permission type name.
+ */
+inline const char* getPermissionTypeName(PermissionType permissionType)
+{
+    return getPermissionTypeName(static_cast<int>(permissionType));
+}
 
 /**
  * Returns permission mask from a single permission type.
@@ -108,5 +127,18 @@ constexpr auto kAttachPermissionMask = getSinglePermissionMask(PermissionType::k
 
 /** DETACH permission bitmask */
 constexpr auto kDetachPermissionMask = getSinglePermissionMask(PermissionType::kDetach);
+
+/** ENABLE permission bitmask */
+constexpr auto kEnablePermissionMask = getSinglePermissionMask(PermissionType::kEnable);
+
+/** DISABLE permission bitmask */
+constexpr auto kDisablePermissionMask = getSinglePermissionMask(PermissionType::kDisable);
+
+/** SHUTDOWN permission bitmask */
+constexpr auto kShutdownPermissionMask = getSinglePermissionMask(PermissionType::kShutdown);
+
+/** SHOW PERMISSIONS permission bitmask */
+constexpr auto kShowPermissionsPermissionMask =
+        getSinglePermissionMask(PermissionType::kShowPermissions);
 
 }  // namespace siodb::iomgr::dbengine

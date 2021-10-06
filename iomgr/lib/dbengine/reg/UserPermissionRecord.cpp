@@ -27,7 +27,7 @@ UserPermissionRecord::UserPermissionRecord(std::uint32_t userId,
     , m_objectType(permissionKey.getObjectType())
     , m_objectId(permissionKey.getObjectId())
     , m_permissions(permissionData.getPermissions())
-    , m_grantOptions(permissionData.getGrantOptions())
+    , m_grantOptions(permissionData.getRawGrantOptions())
 {
 }
 

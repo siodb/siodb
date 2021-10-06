@@ -11,6 +11,7 @@ TARGET_EXE:=request_handler_test
 
 CXX_SRC:= \
 	RequestHandlerTest_DDL.cpp \
+	RequestHandlerTest_DDL_176.cpp \
 	RequestHandlerTest_DML_Complex.cpp \
 	RequestHandlerTest_DML_Delete.cpp \
 	RequestHandlerTest_DML_Insert.cpp \
@@ -28,7 +29,7 @@ CXX_SRC:= \
 	RequestHandlerTest_RestPost.cpp \
 	RequestHandlerTest_TestEnv.cpp \
 	RequestHandlerTest_UM.cpp \
-	RequestHandlerTest_UserPermissions.cpp
+	RequestHandlerTest_UP.cpp
 
 CXX_HDR:= \
 	RequestHandlerTest_TestEnv.h

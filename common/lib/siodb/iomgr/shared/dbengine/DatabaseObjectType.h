@@ -8,20 +8,36 @@ namespace siodb::iomgr::dbengine {
 
 /** Database object types used in the permission control. */
 enum class DatabaseObjectType {
-    kNoObject = 0,
-    kInstance = 1,
-    kDatabase = 2,
-    kTable = 3,
-    kColumn = 4,
-    kIndex = 5,
-    kConstraint = 6,
-    kTrigger = 7,
-    kProcedure = 8,
-    kFunction = 9,
-    kUser = 10,
-    kUserAccessKey = 11,
-    kUserToken = 12,
+    kInstance = 0,
+    kDatabase = 1,
+    kTable = 2,
+    kColumn = 3,
+    kIndex = 4,
+    kConstraint = 5,
+    kTrigger = 6,
+    kProcedure = 7,
+    kFunction = 8,
+    kUser = 9,
+    kUserAccessKey = 10,
+    kUserToken = 11,
     kMax
 };
+
+/**
+ * Returns database object type name.
+ * @param objectType Database object type (as integer number).
+ * @return Database object type name.
+ */
+const char* getDatabaseObjectTypeName(int objectType);
+
+/**
+ * Returns database object type name.
+ * @param objectType Database object type.
+ * @return Database object type name.
+ */
+inline const char* getDatabaseObjectTypeName(DatabaseObjectType objectType)
+{
+    return getDatabaseObjectTypeName(static_cast<int>(objectType));
+}
 
 }  // namespace siodb::iomgr::dbengine

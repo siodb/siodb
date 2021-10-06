@@ -147,6 +147,14 @@ public:
     UserAccessKeyPtr findAccessKeyChecked(const std::string& name) const;
 
     /**
+     * Finds existing access key.
+     * @param id Access key ID.
+     * @return Access key object.
+     * @throw DatabaseError if access key object doesn't exists.
+     */
+    UserAccessKeyPtr findAccessKeyChecked(std::uint64_t id) const;
+
+    /**
      * Creates new access key.
      * @param id Access key ID.
      * @param name Access key name.
@@ -187,6 +195,14 @@ public:
      * @throw DatabaseError if token object doesn't exists.
      */
     UserTokenPtr findTokenChecked(const std::string& name) const;
+
+    /**
+     * Finds existing token.
+     * @param id Token ID.
+     * @return Token object.
+     * @throw DatabaseError if token object doesn't exists.
+     */
+    UserTokenPtr findTokenChecked(std::uint64_t id) const;
 
     /**
      * Creates new token.
@@ -341,11 +357,25 @@ private:
     UserAccessKeyPtr findAccessKeyUnlocked(const std::string& name) const noexcept;
 
     /**
+     * Finds existing access key.
+     * @param id Access key ID.
+     * @return Access key object or nullptr if it doesn't exist.
+     */
+    UserAccessKeyPtr findAccessKeyUnlocked(std::uint64_t id) const noexcept;
+
+    /**
      * Finds existing token.
      * @param name Token name.
      * @return Token object or nullptr if it doesn't exist.
      */
     UserTokenPtr findTokenUnlocked(const std::string& name) const noexcept;
+
+    /**
+     * Finds existing token.
+     * @param id Token ID.
+     * @return Token object or nullptr if it doesn't exist.
+     */
+    UserTokenPtr findTokenUnlocked(std::uint64_t id) const noexcept;
 
 private:
     /** User name */

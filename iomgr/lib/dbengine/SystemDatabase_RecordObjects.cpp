@@ -89,7 +89,7 @@ std::uint64_t SystemDatabase::recordUserPermission(std::uint32_t userId,
     values.at(i++) = static_cast<std::uint8_t>(permissionKey.getObjectType());
     values.at(i++) = permissionKey.getObjectId();
     values.at(i++) = permissionData.getPermissions();
-    values.at(i++) = permissionData.getGrantOptions();
+    values.at(i++) = permissionData.getRawGrantOptions();
     const auto result = m_sysUserPermissionsTable->insertRow(std::move(values), tp);
     const auto trid = result.m_mcr->getTableRowId();
     LOG_DEBUG << "Database " << m_name << ": Recorded user permission record #" << trid
@@ -245,7 +245,7 @@ void SystemDatabase::updateUserPermission(
     constexpr std::size_t kNumberOfColumnsToUpdate = 2;
     columnValues.reserve(kNumberOfColumnsToUpdate);
     columnValues.push_back(permissionData.getPermissions());
-    columnValues.push_back(permissionData.getGrantOptions());
+    columnValues.push_back(permissionData.getRawGrantOptions());
     columnPositions.reserve(kNumberOfColumnsToUpdate);
     columnPositions.push_back(
             m_sysUserPermissionsTable->findColumnChecked(kSysUserPermissions_Permissions_ColumnName)

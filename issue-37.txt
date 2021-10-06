@@ -6,7 +6,8 @@ Plan for developing initial implementation of the "User Permissions" feature
 (+) 4. Handle grant and revoke permission requests.
 (+) 5. Auto-grant permissions during certain operations (CREATE DATABASE, CREATE TABLE).
 (+) 6. Auto-revoke permissions during certain operations (DROP DATABASE, DROP TABLE).
-(>) 7. Check permissions on each operation.
+(+) 7. Check permissions on each operation.
+(>) 8. SHOW PERMISSIONS
 
 LEGEND:
 not marked = pending
@@ -14,6 +15,7 @@ not marked = pending
 (+) = done
 
 - Permission tests:
+  - (+) SELECT
   - INSERT
   - UPDATE
   - DELETE

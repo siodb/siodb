@@ -71,7 +71,7 @@ TABLE_ID              UINT64 NOT NULL  Table ID to which this column belongs
 DATA_TYPE             UINT16 NOT NULL  Data type
 NAME                  TEXT   NOT NULL  Column name
 STATE                 UINT8  NOT NULL  Indicates column state (Creating/Active/Deleted)
-BLOCK_DATA_AREA_SIZE  UINT32 NOT NULL Block file data area size
+BLOCK_DATA_AREA_SIZE  UINT32 NOT NULL  Block file data area size
 DESCRIPTION           TEXT   NULL      Column description
 
 

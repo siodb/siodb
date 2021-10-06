@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -13,7 +13,7 @@
 
 namespace siodb::protobuf {
 
-/** 
+/**
  * Custom coded output stream to write protocol data types.
  * As long as this is extension of the Google Protobuf class,
  * it follows lots of Google's design and coding conventions.
@@ -124,6 +124,19 @@ public:
      * @param value A value to write.
      */
     void Write(const std::string& value);
+
+    /**
+     * Writes string value. Length is measured via std::strlen().
+     * @param value A value to write.
+     */
+    void Write(const char* value);
+
+    /**
+     * Writes string value.
+     * @param value A value to write.
+     * @param length Value length in characters.
+     */
+    void Write(const char* value, std::size_t length);
 
     /**
      * Writes binary value.

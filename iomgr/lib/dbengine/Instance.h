@@ -12,7 +12,9 @@
 #include "UpdateUserAccessKeyParameters.h"
 #include "UpdateUserParameters.h"
 #include "UpdateUserTokenParameters.h"
+#include "UserAccessKeyPtr.h"
 #include "UserPtr.h"
+#include "UserTokenPtr.h"
 #include "reg/DatabaseRegistry.h"
 #include "reg/UserRegistry.h"
 
@@ -142,7 +144,7 @@ public:
 
     /**
      * Returns existing database object.
-     * @param databaseName database name.
+     * @param databaseName Database name.
      * @return Corresponding database object.
      * @throw DatabaseError if database doesn't exist
      */
@@ -150,10 +152,25 @@ public:
 
     /**
      * Returns existing database object.
-     * @param databaseName database name.
+     * @param databaseId Database ID.
+     * @return Corresponding database object.
+     * @throw DatabaseError if database doesn't exist
+     */
+    DatabasePtr findDatabaseChecked(const std::uint32_t databaseId);
+
+    /**
+     * Returns existing database object.
+     * @param databaseName Database name.
      * @return Corresponding database object or nullptr if it doesn't exist.
      */
     DatabasePtr findDatabase(const std::string& databaseName);
+
+    /**
+     * Returns existing database object.
+     * @param databaseId Database ID.
+     * @return Corresponding database object or nullptr if it doesn't exist.
+     */
+    DatabasePtr findDatabase(const std::uint32_t databaseId);
 
     /**
      * Creates new database object and writes all necessary on-disk data structures.
@@ -330,6 +347,24 @@ public:
             std::uint32_t currentUserId);
 
     /**
+     * Returns existing user access key object.
+     * @param userName User name.
+     * @param userAccessKeyName User access key name.
+     * @return Pair of user access key object and corresponding user object.
+     * @throw DatabaseError if user access key doesn't exist
+     */
+    std::pair<UserPtr, UserAccessKeyPtr> findUserAccessKeyChecked(
+            const std::string& userName, const std::string& userAccessKeyName);
+
+    /**
+     * Returns existing user access key object.
+     * @param userAccessKeyId User access key ID.
+     * @return Pair of user access key object and corresponding user object.
+     * @throw DatabaseError if user access key doesn't exist
+     */
+    std::pair<UserPtr, UserAccessKeyPtr> findUserAccessKeyChecked(std::uint64_t userAccessKeyId);
+
+    /**
      * Creates new user access key.
      * @param userName User name.
      * @param keyName User access key name.
@@ -365,6 +400,24 @@ public:
      */
     void updateUserAccessKey(const std::string& userName, const std::string& keyName,
             const UpdateUserAccessKeyParameters& params, std::uint32_t currentUserId);
+
+    /**
+     * Returns existing user token object.
+     * @param userName User name.
+     * @param userTokenName User token name.
+     * @return Pair of user token object and corresponding user object.
+     * @throw DatabaseError if user token doesn't exist
+     */
+    std::pair<UserPtr, UserTokenPtr> findUserTokenChecked(
+            const std::string& userName, const std::string& userTokenName);
+
+    /**
+     * Returns existing user token object.
+     * @param userTokenId User token ID.
+     * @return Pair of user token object and corresponding user object.
+     * @throw DatabaseError if user token doesn't exist
+     */
+    std::pair<UserPtr, UserTokenPtr> findUserTokenChecked(std::uint64_t userTokenId);
 
     /**
      * Creates new user token.
@@ -523,10 +576,17 @@ private:
 
     /**
      * Returns existing database object. Does not acquire database cache access synchronization lock.
-     * @param databaseName database name.
+     * @param databaseName Database name.
      * @return Corresponding database object or nullptr if it doesn't exist.
      */
     DatabasePtr findDatabaseUnlocked(const std::string& databaseName);
+
+    /**
+     * Returns existing database object. Does not acquire database cache access synchronization lock.
+     * @param databaseId Database ID.
+     * @return Corresponding database object or nullptr if it doesn't exist.
+     */
+    DatabasePtr findDatabaseUnlocked(std::uint32_t databaseId);
 
     /** Checks instance data consistency */
     void checkDataConsistency();
@@ -576,7 +636,7 @@ private:
     void checkInitializationFlagFile() const;
 
     /**
-     * Returns existing user object.
+     * Returns existing user object. Assumes lock already acquired.
      * @param userName User name.
      * @return Corresponding user object.
      * @throw DatabaseError if user not found.
@@ -584,7 +644,7 @@ private:
     UserPtr findUserCheckedUnlocked(const std::string& userName);
 
     /**
-     * Returns existing user object.
+     * Returns existing user object. Assumes lock already acquired.
      * @param userId User ID.
      * @return Corresponding database object.
      * @throw DatabaseError if user not found.
@@ -592,25 +652,62 @@ private:
     UserPtr findUserCheckedUnlocked(std::uint32_t userId);
 
     /**
-     * Returns existing user object.
+     * Returns existing user object. Assumes lock already acquired.
      * @param userName User name.
      * @return Corresponding user object or nullptr if it doesn't exist.
      */
     UserPtr findUserUnlocked(const std::string& userName);
 
     /**
-     * Returns existing user object.
+     * Returns existing user object. Assumes lock already acquired.
      * @param userId User ID.
      * @return Corresponding database object or nullptr if it doesn't exist.
      */
     UserPtr findUserUnlocked(std::uint32_t userId);
 
     /**
-     * Returns cached user object or creates new one.
+     * Returns cached user object or creates new one.  Assumes lock already acquired.
      * @param userRecord User record.
      * @return Corresponding user object.
      */
     UserPtr findUserUnlocked(const UserRecord& userRecord);
+
+    /**
+     * Returns existing user access key object. Assumes lock already acquired.
+     * @param userName User name.
+     * @param userAccessKeyName User access key name.
+     * @return Pair of user access key object and corresponding user object.
+     * @throw DatabaseError if user access key doesn't exist.
+     */
+    std::pair<UserPtr, UserAccessKeyPtr> findUserAccessKeyCheckedUnlocked(
+            const std::string& userName, const std::string& userAccessKeyName);
+
+    /**
+     * Returns existing user access key object. Assumes lock already acquired.
+     * @param userAccessKeyId User access key ID.
+     * @return Pair of user access key object and corresponding user object.
+     * @throw DatabaseError if user access key doesn't exist.
+     */
+    std::pair<UserPtr, UserAccessKeyPtr> findUserAccessKeyCheckedUnlocked(
+            std::uint64_t userAccessKeyId);
+
+    /**
+     * Returns existing user token object. Assumes lock already acquired.
+     * @param userName User name.
+     * @param userTokenName User token name.
+     * @return Pair of user token object and corresponding user object.
+     * @throw DatabaseError if user access key doesn't exist.
+     */
+    std::pair<UserPtr, UserTokenPtr> findUserTokenCheckedUnlocked(
+            const std::string& userName, const std::string& userTokenName);
+
+    /**
+     * Returns existing user token object. Assumes lock already acquired.
+     * @param userTokenId User token ID.
+     * @return Pair of user token object and corresponding user object.
+     * @throw DatabaseError if user access key doesn't exist.
+     */
+    std::pair<UserPtr, UserTokenPtr> findUserTokenCheckedUnlocked(std::uint64_t userTokenId);
 
     /**
      * Performs actual changes in the permission registry in order to grant permissions.
@@ -720,6 +817,12 @@ private:
 
     /** User objects. */
     std::unordered_map<std::uint32_t, UserPtr> m_users;
+
+    /** Mapping from user access key IDs to user IDs. */
+    std::unordered_map<std::uint64_t, std::uint32_t> m_userAccessKeyIdToUserId;
+
+    /** Mapping from user token IDs to user IDs. */
+    std::unordered_map<std::uint64_t, std::uint32_t> m_userTokenIdToUserId;
 
     /** Database registry. Contains information about all known databases. */
     DatabaseRegistry m_databaseRegistry;

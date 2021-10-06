@@ -6,6 +6,7 @@
 
 // Common project headers
 #include <siodb/common/log/Log.h>
+#include <siodb/common/protobuf/RawDateTimeIO.h>
 #include <siodb/common/stl_ext/bitmask.h>
 #include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/common/utils/Base128VariantEncoding.h>
@@ -44,6 +45,29 @@ namespace {
 {
     throw std::invalid_argument(stdext::concat("Unsupported data type ", static_cast<int>(dataType),
             " at column index ", columnIndex));
+}
+
+[[noreturn]] void streamReadError(
+        const protobuf::StreamInputStream& rawInput, const char* errorMessageBegin)
+{
+    throw std::system_error(rawInput.GetErrno(), std::generic_category(),
+            stdext::concat(errorMessageBegin, ": ", std::strerror(rawInput.GetErrno())));
+}
+
+[[noreturn]] void streamReadError(
+        const protobuf::StreamInputStream& rawInput, const std::string& errorMessageBegin)
+{
+    throw std::system_error(rawInput.GetErrno(), std::generic_category(),
+            stdext::concat(errorMessageBegin, ": ", std::strerror(rawInput.GetErrno())));
+}
+
+[[noreturn]] void columnReadError(const protobuf::StreamInputStream& rawInput, std::size_t index,
+        ColumnDataType dataType, const char* moreDetails = nullptr)
+{
+    std::ostringstream err;
+    err << "Can't read column #" << index << " of type #" << static_cast<int>(dataType);
+    if (moreDetails) err << ": " << moreDetails;
+    streamReadError(rawInput, err.str());
 }
 
 }  // anonymous namespace
@@ -267,6 +291,195 @@ std::vector<Variant> decodeRow(const std::uint8_t* buffer, std::size_t length,
                  << "]: " << *result.back().asString();
 #endif
     }
+    return result;
+}
+
+std::vector<Variant> decodeRow(protobuf::StreamInputStream& rawInput,
+        protobuf::ExtendedCodedInputStream& codedInput, std::size_t totalColumnCount,
+        const ColumnDataType* dataTypes, bool hasNullableColumns)
+{
+    std::vector<Variant> result;
+
+    std::uint64_t rowLength = 0;
+    if (!codedInput.ReadVarint64(&rowLength))
+        streamReadError(rawInput, "Can't read row data length");
+    if (rowLength == 0) return result;
+
+    stdext::bitmask nullBitmask;
+    if (hasNullableColumns) {
+        nullBitmask.resize(totalColumnCount);
+        if (!codedInput.ReadRaw(nullBitmask.data(), nullBitmask.size()))
+            streamReadError(rawInput, "Can't read null bitmask");
+    }
+
+    result.reserve(totalColumnCount);
+
+    bool readError = false;
+
+    for (std::size_t i = 0; i < totalColumnCount; ++i, ++dataTypes) {
+        const auto dataType = *dataTypes;
+        if (dataType < 0 || dataType >= COLUMN_DATA_TYPE_MAX) {
+            throw std::invalid_argument(stdext::concat(
+                    "Invalid data type ", static_cast<int>(dataType), " at column index ", i));
+        }
+
+        if (hasNullableColumns && nullBitmask.get(i)) {
+            result.emplace_back();
+            continue;
+        }
+
+        switch (dataType) {
+            case COLUMN_DATA_TYPE_BOOL: {
+                bool value = false;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_INT8: {
+                std::int8_t value = 0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_UINT8: {
+                std::uint8_t value = 0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_INT16: {
+                std::int16_t value = 0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_UINT16: {
+                std::uint16_t value = 0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_INT32: {
+                std::int32_t value = 0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_UINT32: {
+                std::uint32_t value = 0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_INT64: {
+                std::int64_t value = 0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_UINT64: {
+                std::uint64_t value = 0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_FLOAT: {
+                float value = 0.0f;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_DOUBLE: {
+                double value = 0.0;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_TEXT: {
+                std::string value;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(std::move(value));
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_BINARY: {
+                BinaryValue value;
+                if (codedInput.Read(&value)) {
+                    result.emplace_back(std::move(value));
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            case COLUMN_DATA_TYPE_TIMESTAMP: {
+                RawDateTime value;
+                if (protobuf::readRawDateTime(codedInput, value)) {
+                    result.emplace_back(value);
+                    continue;
+                }
+                readError = true;
+                break;
+            }
+
+            default: unsupportedDataType(i, dataType);
+        }  // switch
+
+        if (readError) columnReadError(rawInput, i, dataType);
+
+#if 0
+        LOG_INFO << "decodeRow: column #" << i << " [" << static_cast<int>(dataType)
+                 << "]: " << *result.back().asString();
+#endif
+    }  // for columns
+
     return result;
 }
 

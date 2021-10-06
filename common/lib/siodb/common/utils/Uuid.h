@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -27,7 +27,7 @@ const Uuid& getZeroUuid() noexcept;
 
 namespace std {
 
-// Specialization of the std::hash for Uuid
+/** Specialization of the std::hash for Uuid */
 template<>
 struct hash<siodb::Uuid> {
     /**
