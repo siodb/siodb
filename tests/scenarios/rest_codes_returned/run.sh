@@ -159,7 +159,10 @@ executeRestRequest_POST \
     201 '[{"col_text": 3, "col_int": 2}]'
 executeRestRequest_POST \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
-    400 '[{"col_text":"value", "col_int": "2"}]'
+    201 '[{"col_text":"value", "col_int": "2"}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    400 '[{"col_text":"value", "col_int": "aaa"}]'
 executeRestRequest_POST \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows" \
     403 '[{"col_text":"value", "col_int": 1}]'
@@ -191,7 +194,10 @@ executeRestRequest_PUT \
     200 '[{"col_text": 3, "col_int": 2}]'
 executeRestRequest_PUT \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/1" \
-    400 '[{"col_text":"value", "col_int": "2"}]'
+    200 '[{"col_text":"value", "col_int": "2"}]'
+executeRestRequest_PUT \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows/1" \
+    400 '[{"col_text":"value", "col_int": "aaa"}]'
 executeRestRequest_PUT \
     "https://root:${TOKEN}@localhost:50443/databases/${database_name}/tables/sys_tables/rows/1" \
     403 '[{"col_text":"value", "col_int": 2}]'
