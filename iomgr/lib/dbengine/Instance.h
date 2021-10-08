@@ -224,10 +224,10 @@ public:
      * @param description User description.
      * @param active Initial state of user.
      * @param currentUserId Current user ID.
-     * @return User ID.
+     * @return User object.
      * @throw DatabaseError if some error has occurrred.
      */
-    std::uint32_t createUser(const std::string& name, const std::optional<std::string>& realName,
+    UserPtr createUser(const std::string& name, const std::optional<std::string>& realName,
             const std::optional<std::string>& description, bool active,
             std::uint32_t currentUserId);
 

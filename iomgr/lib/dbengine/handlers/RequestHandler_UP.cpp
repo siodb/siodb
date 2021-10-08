@@ -84,9 +84,13 @@ void RequestHandler::executeShowPermissionsRequest(iomgr_protocol::DatabaseEngin
             throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, *request.m_user);
         }
         inspectedUser = m_instance.findUserChecked(*request.m_user);
-        const UserPermissionKey permissionKey(0, DatabaseObjectType::kUser, inspectedUser->getId());
-        if (!currentUser->hasPermissions(permissionKey, kShowPermissionsPermissionMask, false)) {
-            throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+        if (inspectedUser->getId() != m_currentUserId) {
+            const UserPermissionKey permissionKey(
+                    0, DatabaseObjectType::kUser, inspectedUser->getId());
+            if (!currentUser->hasPermissions(
+                        permissionKey, kShowPermissionsPermissionMask, false)) {
+                throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+            }
         }
     } else {
         inspectedUser = currentUser;

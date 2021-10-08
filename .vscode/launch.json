@@ -205,7 +205,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/bin/request_handler_test",
             "args": [
-                "--gtest_filter=UserPermissions.ShowPermissions_NormalUser"
+                "--gtest_filter=UserPermissions.ShowPermissions_CheckAllSupportedPermissions"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/debug/bin",

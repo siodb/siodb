@@ -143,8 +143,9 @@ void CreateAndLoadInstance(const char* cipherId)
         LOG_INFO << "========================================";
         auto instance = std::make_unique<Instance>(instanceOptions);
         LOG_INFO << "Instance " << instance->getUuid() << " created." << std::endl;
-        userId = instance->createUser(
-                userName, std::nullopt, std::nullopt, true, User::kSuperUserId);
+        userId =
+                instance->createUser(userName, std::nullopt, std::nullopt, true, User::kSuperUserId)
+                        ->getId();
         LOG_INFO << "Created user #" << userId;
         const auto userToken = instance->createUserToken(
                 userName, tokenName, std::nullopt, std::nullopt, std::nullopt, User::kSuperUserId);

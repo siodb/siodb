@@ -27,8 +27,6 @@ const char* g_permissionTypeNames[] = {
         "Alter",
         "Attach",
         "Detach",
-        "Enable",
-        "Disable",
         "Shutdown",
         "ShowPermissions",
 };

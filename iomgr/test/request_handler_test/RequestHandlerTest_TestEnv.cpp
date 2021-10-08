@@ -52,6 +52,13 @@ std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerFor
     return makeRequestHandler(m_testUserIds[testUserIndex]);
 }
 
+std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForUser(
+        const std::string& userName)
+{
+    const auto user = getInstance()->findUserChecked(userName);
+    return makeRequestHandler(user->getId());
+}
+
 std::unique_ptr<dbengine::RequestHandler> TestEnvironment::makeRequestHandlerForSuperUser()
 {
     return makeRequestHandler(dbengine::User::kSuperUserId);
@@ -159,8 +166,10 @@ void TestEnvironment::SetUp()
     for (std::size_t i = 0; i < kTestUserCount; ++i) {
         m_testUserNames[i] = stdext::concat("TEST_USER_", std::to_string(std::time(nullptr)), '_',
                 std::to_string(::getpid()), '_', i);
-        m_testUserIds[i] = m_instance->createUser(
-                m_testUserNames[i], {}, {}, true, dbengine::User::kSuperUserId);
+        m_testUserIds[i] =
+                m_instance
+                        ->createUser(m_testUserNames[i], {}, {}, true, dbengine::User::kSuperUserId)
+                        ->getId();
     }
 
     // Database name must be in UPPERCASE

@@ -25,16 +25,16 @@ message StatusMessage {
 
 /** Structured column data type attribute description */
 message AttributeDescription {
-    /** Column name.*/
+    /** Attribute name.*/
     string name = 1;
 
-    /** Column type. */
+    /** Attribute type. */
     ColumnDataType type = 2;
 
-    /** Column can have null values. */
+    /** Attribute can have null values. */
     bool is_nullable = 3;
 
-    /** Attributes of a structured data type */
+    /** Attribute of a structured data type */
     repeated AttributeDescription attribute = 4;
 };
 
