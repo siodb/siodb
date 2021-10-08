@@ -20,7 +20,7 @@
 
 namespace siodb::iomgr::dbengine {
 
-std::size_t getSerializedSize(const Variant& value)
+std::uint64_t getVariantSerializedSize(const Variant& value)
 {
     switch (value.getValueType()) {
         case VariantType::kNull: return 0;
@@ -42,19 +42,19 @@ std::size_t getSerializedSize(const Variant& value)
         case VariantType::kDateTime: return value.getDateTime().getSerializedSize();
         case VariantType::kString: {
             return google::protobuf::io::CodedOutputStream::VarintSize32(value.getString().size())
-                   + value.getString().size();
+                   + static_cast<std::uint64_t>(value.getString().size());
         }
         case VariantType::kBinary: {
             return google::protobuf::io::CodedOutputStream::VarintSize32(value.getBinary().size())
-                   + value.getBinary().size();
+                   + static_cast<std::uint64_t>(value.getBinary().size());
         }
         case VariantType::kClob: {
             return google::protobuf::io::CodedOutputStream::VarintSize32(value.getClob().getSize())
-                   + value.getClob().getSize();
+                   + static_cast<std::uint64_t>(value.getClob().getSize());
         }
         case VariantType::kBlob: {
             return google::protobuf::io::CodedOutputStream::VarintSize32(value.getBlob().getSize())
-                   + value.getBlob().getSize();
+                   + static_cast<std::uint64_t>(value.getBlob().getSize());
         }
         default: {
             throwDatabaseError(IOManagerMessageId::kErrorInvalidValueType,

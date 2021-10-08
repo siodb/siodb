@@ -341,8 +341,10 @@ void RequestHandler::executeShowPermissionsRequest(iomgr_protocol::DatabaseEngin
         values.push_back("*");  // OBJECT_NAME
         values.push_back("*");  // PERMISSION
         values.push_back(true);  // GRANT_OPTION
-        const auto rowSize = std::accumulate(values.cbegin(), values.cend(), std::size_t(0),
-                [](std::size_t a, const Variant& b) noexcept { return a + getSerializedSize(b); });
+        const auto rowSize = std::accumulate(values.cbegin(), values.cend(), std::uint64_t(0),
+                [](std::uint64_t a, const Variant& b) noexcept {
+                    return a + getVariantSerializedSize(b);
+                });
         codedOutput.Write(rowSize);
         for (std::size_t i = 0; i < values.size(); ++i) {
             writeVariant(values[i], codedOutput);
@@ -364,8 +366,8 @@ void RequestHandler::executeShowPermissionsRequest(iomgr_protocol::DatabaseEngin
                     values.push_back(getPermissionTypeName(i));  // PERMISSION
                     values.push_back((effectiveGrantOptions & bitMask) != 0);  // GRANT_OPTION
                     const auto rowSize = std::accumulate(values.cbegin(), values.cend(),
-                            std::size_t(0), [](std::size_t a, const Variant& b) noexcept {
-                                return a + getSerializedSize(b);
+                            std::uint64_t(0), [](std::uint64_t a, const Variant& b) noexcept {
+                                return a + getVariantSerializedSize(b);
                             });
                     codedOutput.Write(rowSize);
                     for (std::size_t i = 0; i < values.size(); ++i) {

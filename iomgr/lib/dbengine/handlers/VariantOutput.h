@@ -17,7 +17,7 @@ namespace siodb::iomgr::dbengine {
  * @return Serialized variant size for the binary format.
  * @throw DatabaseError if there is unsupported variant type.
  */
-std::size_t getSerializedSize(const Variant& value);
+std::uint64_t getVariantSerializedSize(const Variant& value);
 
 /**
  * Writes variant value into coded output stream in the binary format.

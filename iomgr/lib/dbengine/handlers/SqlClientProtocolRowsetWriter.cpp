@@ -41,7 +41,7 @@ void SqlClientProtocolRowsetWriter::writeRow(
     const auto rowLength =
             std::accumulate(values.cbegin(), values.cend(), static_cast<std::uint64_t>(0),
                     [](std::uint64_t left, const Variant& right) {
-                        return left + getSerializedSize(right);
+                        return left + getVariantSerializedSize(right);
                     })
             + nullMask.size();
 
