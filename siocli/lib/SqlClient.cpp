@@ -162,7 +162,7 @@ void executeCommandOnServer(std::uint64_t requestId, std::string&& commandText,
                 const auto columnDataWidth =
                         detail::getColumnDataWidth(column.type(), column.name().length());
                 columnPrintInfo.push_back({column.type(), columnDataWidth});
-                nullAllowed |= column.is_null();
+                nullAllowed |= column.is_nullable();
             }
 
             if (printDebugMessages) {

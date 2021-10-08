@@ -57,12 +57,12 @@ TEST(UserPermissions, ShowPermissions_SuperUser)
         EXPECT_EQ(response.column_description(3).name(), "OBJECT_NAME");
         EXPECT_EQ(response.column_description(4).name(), "PERMISSION");
         EXPECT_EQ(response.column_description(5).name(), "GRANT_OPTION");
-        EXPECT_FALSE(response.column_description(0).is_null());
-        EXPECT_FALSE(response.column_description(1).is_null());
-        EXPECT_FALSE(response.column_description(2).is_null());
-        EXPECT_FALSE(response.column_description(3).is_null());
-        EXPECT_FALSE(response.column_description(4).is_null());
-        EXPECT_FALSE(response.column_description(5).is_null());
+        EXPECT_FALSE(response.column_description(0).is_nullable());
+        EXPECT_FALSE(response.column_description(1).is_nullable());
+        EXPECT_FALSE(response.column_description(2).is_nullable());
+        EXPECT_FALSE(response.column_description(3).is_nullable());
+        EXPECT_FALSE(response.column_description(4).is_nullable());
+        EXPECT_FALSE(response.column_description(5).is_nullable());
 
         std::vector<siodb::ColumnDataType> dataTypesForDecoding;
         for (const auto& columnDescription : response.column_description())
@@ -137,12 +137,12 @@ TEST(UserPermissions, ShowPermissions_NormalUser)
         EXPECT_EQ(response.column_description(3).name(), "OBJECT_NAME");
         EXPECT_EQ(response.column_description(4).name(), "PERMISSION");
         EXPECT_EQ(response.column_description(5).name(), "GRANT_OPTION");
-        EXPECT_FALSE(response.column_description(0).is_null());
-        EXPECT_FALSE(response.column_description(1).is_null());
-        EXPECT_FALSE(response.column_description(2).is_null());
-        EXPECT_FALSE(response.column_description(3).is_null());
-        EXPECT_FALSE(response.column_description(4).is_null());
-        EXPECT_FALSE(response.column_description(5).is_null());
+        EXPECT_FALSE(response.column_description(0).is_nullable());
+        EXPECT_FALSE(response.column_description(1).is_nullable());
+        EXPECT_FALSE(response.column_description(2).is_nullable());
+        EXPECT_FALSE(response.column_description(3).is_nullable());
+        EXPECT_FALSE(response.column_description(4).is_nullable());
+        EXPECT_FALSE(response.column_description(5).is_nullable());
 
         std::vector<siodb::ColumnDataType> dataTypesForDecoding;
         for (const auto& columnDescription : response.column_description())

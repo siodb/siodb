@@ -237,7 +237,7 @@ void RequestHandler::executeSelectRequest(iomgr_protocol::DatabaseEngineResponse
             const auto columnDescription = response.add_column_description();
             columnDescription->set_name(resultExpr.m_alias);
 
-            columnDescription->set_is_null(true);
+            columnDescription->set_is_nullable(true);
             columnDescription->set_type(dataType);
             hasNullableColumns = true;
             ++resultingColumnCount;
@@ -516,7 +516,7 @@ void RequestHandler::executeDescribeTableRequest(iomgr_protocol::DatabaseEngineR
     addColumnToResponse(response, *nameColumn, "");
     const auto columnDescription = response.add_column_description();
     columnDescription->set_name("DATA_TYPE");
-    columnDescription->set_is_null(false);
+    columnDescription->set_is_nullable(false);
     columnDescription->set_type(ColumnDataType::COLUMN_DATA_TYPE_TEXT);
 
     utils::DefaultErrorCodeChecker errorChecker;

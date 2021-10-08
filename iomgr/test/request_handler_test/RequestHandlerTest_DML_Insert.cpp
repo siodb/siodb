@@ -909,9 +909,9 @@ TEST(DML_Insert, InsertNullValue)
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_INT8);
         ASSERT_EQ(response.column_description(2).type(), siodb::COLUMN_DATA_TYPE_TEXT);
 
-        ASSERT_FALSE(response.column_description(0).is_null());
-        ASSERT_FALSE(response.column_description(1).is_null());
-        ASSERT_TRUE(response.column_description(2).is_null());
+        ASSERT_FALSE(response.column_description(0).is_nullable());
+        ASSERT_FALSE(response.column_description(1).is_nullable());
+        ASSERT_TRUE(response.column_description(2).is_nullable());
         EXPECT_EQ(response.column_description(0).name(), "TRID");
         EXPECT_EQ(response.column_description(1).name(), "I");
         EXPECT_EQ(response.column_description(2).name(), "T");
@@ -1003,8 +1003,8 @@ TEST(DML_Insert, InsertDefaultNullValue)
         ASSERT_EQ(response.column_description_size(), 2);  // + TRID
         ASSERT_EQ(response.column_description(0).type(), siodb::COLUMN_DATA_TYPE_UINT32);
         ASSERT_EQ(response.column_description(1).type(), siodb::COLUMN_DATA_TYPE_UINT32);
-        ASSERT_FALSE(response.column_description(0).is_null());
-        ASSERT_TRUE(response.column_description(1).is_null());
+        ASSERT_FALSE(response.column_description(0).is_nullable());
+        ASSERT_TRUE(response.column_description(1).is_nullable());
         EXPECT_EQ(response.column_description(0).name(), "U1");
         EXPECT_EQ(response.column_description(1).name(), "U2");
 

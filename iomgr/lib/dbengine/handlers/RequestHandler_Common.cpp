@@ -465,7 +465,7 @@ void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse&
 {
     const auto columnDescription = response.add_column_description();
     columnDescription->set_name(alias.empty() ? column.getName() : alias);
-    columnDescription->set_is_null(!column.isNotNull());
+    columnDescription->set_is_nullable(!column.isNotNull());
     columnDescription->set_type(column.getDataType());
 }
 
@@ -474,7 +474,7 @@ void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse&
 {
     const auto columnDescription = response.add_column_description();
     columnDescription->set_name(name);
-    columnDescription->set_is_null(!notNull);
+    columnDescription->set_is_nullable(!notNull);
     columnDescription->set_type(dataType);
 }
 
@@ -483,7 +483,7 @@ void RequestHandler::addColumnToResponse(iomgr_protocol::DatabaseEngineResponse&
 {
     const auto columnDescription = response.add_column_description();
     columnDescription->set_name(name);
-    columnDescription->set_is_null(!notNull);
+    columnDescription->set_is_nullable(!notNull);
     columnDescription->set_type(dataType);
 }
 
