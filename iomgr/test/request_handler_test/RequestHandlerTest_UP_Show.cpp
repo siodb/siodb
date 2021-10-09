@@ -13,10 +13,12 @@
 #include <siodb/common/protobuf/RawDateTimeIO.h>
 #include <siodb/common/stl_ext/sstream_ext.h>
 #include <siodb/iomgr/shared/dbengine/SystemObjectNames.h>
+#include <siodb/iomgr/shared/dbengine/parser/CommonConstants.h>
 #include <siodb/iomgr/shared/dbengine/util/RowDecoder.h>
 
 namespace parser_ns = dbengine::parser;
 namespace util_ns = dbengine::util;
+namespace req_ns = dbengine::requests;
 
 namespace {
 
@@ -101,7 +103,9 @@ TEST(UserPermissions, ShowPermissions_SuperUser)
 {
     // Prepare expected permissions
     const CollectedPermissions expectedPermissions {
-            {std::make_tuple("ROOT", "*", "*", "*", "*"), true},
+            {std::make_tuple("ROOT", req_ns::kAllObjectsName, req_ns::kAllObjectsName,
+                     req_ns::kAllObjectsName, req_ns::kAllObjectsName),
+                    true},
     };
 
     // Read and compare permissions
@@ -127,8 +131,8 @@ TEST(UserPermissions, ShowPermissions_NormalUser)
     const auto userName = TestEnvironment::getTestUserName(2);
     const auto dbName = database->getName();
     const CollectedPermissions expectedPermissions {
-            {std::make_tuple(userName, "*", "Database", dbName, "Show"), false},
-            {std::make_tuple(userName, dbName, "Table", "*", "Create"), false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Database", dbName, "Show"), false},
+            {std::make_tuple(userName, dbName, "Table", req_ns::kAllObjectsName, "Create"), false},
             {std::make_tuple(userName, dbName, "Table", kTableName, "Select"), true},
             {std::make_tuple(userName, dbName, "Table", kTableName, "Insert"), true},
             {std::make_tuple(userName, dbName, "Table", kTableName, "Delete"), true},
@@ -156,12 +160,102 @@ TEST(UserPermissions, ShowPermissions_CheckAllSupportedPermissions)
     // Grant permissions
     instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kInstance, 0,
             dbengine::kShutdownPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kDatabase, 0,
+            dbengine::kAttachPermissionMask | dbengine::kDetachPermissionMask
+                    | dbengine::kCreatePermissionMask | dbengine::kDropPermissionMask
+                    | dbengine::kAlterPermissionMask | dbengine::kShowPermissionMask,
+            false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kTable, 0,
+            dbengine::kSelectPermissionMask | dbengine::kShowSystemPermissionMask
+                    | dbengine::kSelectSystemPermissionMask | dbengine::kInsertPermissionMask
+                    | dbengine::kUpdatePermissionMask | dbengine::kDeletePermissionMask,
+            false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kColumn, 0,
+            dbengine::kAlterPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kIndex, 0,
+            dbengine::kDropPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kConstraint, 0,
+            dbengine::kDropPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kTrigger, 0,
+            dbengine::kDropPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kProcedure, 0,
+            dbengine::kDropPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kFunction, 0,
+            dbengine::kDropPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kUser, 0,
+            dbengine::kShowPermissionsPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kUserAccessKey,
+            0, dbengine::kDropPermissionMask, false, dbengine::User::kSuperUserId);
+    instance->grantObjectPermissionsToUser(*user, 0, dbengine::DatabaseObjectType::kUserToken, 0,
+            dbengine::kDropPermissionMask, false, dbengine::User::kSuperUserId);
 
     // Prepare expected permissions
-    constexpr const auto db = "*";
     const CollectedPermissions expectedPermissions {
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Instance",
+                     "00000000-0000-0000-0000-000000000000", "Shutdown"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Database", req_ns::kAllObjectsName,
+                     "Attach"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Database", req_ns::kAllObjectsName,
+                     "Detach"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Database", req_ns::kAllObjectsName,
+                     "Create"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Database", req_ns::kAllObjectsName,
+                     "Drop"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Database", req_ns::kAllObjectsName,
+                     "Alter"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Database", req_ns::kAllObjectsName,
+                     "Show"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Table", req_ns::kAllObjectsName,
+                     "ShowSystem"),
+                    false},
             {std::make_tuple(
-                     userName, db, "Instance", "00000000-0000-0000-0000-000000000000", "Shutdown"),
+                     userName, req_ns::kAllObjectsName, "Table", req_ns::kAllObjectsName, "Select"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Table", req_ns::kAllObjectsName,
+                     "SelectSystem"),
+                    false},
+            {std::make_tuple(
+                     userName, req_ns::kAllObjectsName, "Table", req_ns::kAllObjectsName, "Insert"),
+                    false},
+            {std::make_tuple(
+                     userName, req_ns::kAllObjectsName, "Table", req_ns::kAllObjectsName, "Update"),
+                    false},
+            {std::make_tuple(
+                     userName, req_ns::kAllObjectsName, "Table", req_ns::kAllObjectsName, "Delete"),
+                    false},
+            {std::make_tuple(
+                     userName, req_ns::kAllObjectsName, "Column", req_ns::kAllObjectsName, "Alter"),
+                    false},
+            {std::make_tuple(
+                     userName, req_ns::kAllObjectsName, "Index", req_ns::kAllObjectsName, "Drop"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Constraint",
+                     req_ns::kAllObjectsName, "Drop"),
+                    false},
+            {std::make_tuple(
+                     userName, req_ns::kAllObjectsName, "Trigger", req_ns::kAllObjectsName, "Drop"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Procedure",
+                     req_ns::kAllObjectsName, "Drop"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "Function", req_ns::kAllObjectsName,
+                     "Drop"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "User", req_ns::kAllObjectsName,
+                     "ShowPermissions"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "UserAccessKey",
+                     req_ns::kAllObjectsName, "Drop"),
+                    false},
+            {std::make_tuple(userName, req_ns::kAllObjectsName, "UserToken",
+                     req_ns::kAllObjectsName, "Drop"),
                     false},
     };
 

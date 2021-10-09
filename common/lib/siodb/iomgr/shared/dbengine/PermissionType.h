@@ -137,6 +137,15 @@ constexpr inline std::uint64_t buildMultiPermissionMask()
 }
 
 /**
+ * Builds permission mask for the empty permission list.
+ */
+template<>
+constexpr inline std::uint64_t buildMultiPermissionMask()
+{
+    return 0;
+}
+
+/**
  * Removes one permissions from the permission mask.
  * @param permissions Permission bitmask to modify.
  * @param permissions A permission type to remove.
