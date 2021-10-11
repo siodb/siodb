@@ -26,7 +26,6 @@ function test_value_from_siocli () {
     _log "INFO" "SIOCLI(SUCCESS) | Expected: >"${test_value_out_rest}"< and got >"${returned}"<"
 }
 
-
 function test_value_from_rest () {
     data_type_to_test="${1^^}"
     test_value_in_rest="${2}"
