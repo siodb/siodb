@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2020 Siodb GmbH. All rights reserved.
+// Copyright (C) 2019-2021 Siodb GmbH. All rights reserved.
 // Use of this source code is governed by a license that can be found
 // in the LICENSE file.
 
@@ -119,7 +119,7 @@ void dumpTable(io::InputOutputStream& connection, protobuf::StreamInputStream& i
     const auto columnCount = response.column_description_size();
     for (int i = 0; i < columnCount; ++i) {
         const auto& column = response.column_description(i);
-        nullsExpected |= column.is_null();
+        nullsExpected |= column.is_nullable();
     }
 
     protobuf::ExtendedCodedInputStream codedInput(&input);

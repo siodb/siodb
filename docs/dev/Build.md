@@ -314,7 +314,7 @@ Run following commands:
 
 ```bash
 # Install go
-export SIODB_GO_VERSION=1.17.1
+export SIODB_GO_VERSION=1.17.2
 cd /tmp
 wget "https://golang.org/dl/go${SIODB_GO_VERSION}.linux-amd64.tar.gz"
 tar xaf go${SIODB_GO_VERSION}.linux-amd64.tar.gz
@@ -336,7 +336,7 @@ sudo ln -s go-${SIODB_GO_VERSION} go
 For better debugging experience, it is recommended to install
 [Boost Pretty Printers](https://github.com/ruediger/Boost-Pretty-Printer):
 
-1. Run following commands
+1. Run following commands:
 
 ```shell
 mkdir -p ~/.local/share

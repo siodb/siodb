@@ -11,22 +11,90 @@ namespace siodb::iomgr::dbengine {
 
 /** Permission types and respective bitmask bit numbers. */
 enum class PermissionType {
+    /**
+     * SELECT permission.
+     * Applicable to: Table, View
+     */
     kSelect = 0,
+
+    /**
+     * SELECT FROM SYSTEM OBJECT permission.
+     * Applicable to: Table, View
+     */
     kSelectSystem = 1,
+
+    /**
+     * INSERT permission.
+     * Applicable to: Table
+     */
     kInsert = 2,
+
+    /**
+     * DELETE permission.
+     * Applicable to: Table
+     */
     kDelete = 3,
+
+    /**
+     * UPDATE permission.
+     * Applicable to: Table
+     */
     kUpdate = 4,
+
+    /**
+     * SHOW permission.
+     * Applicable to: Database, Table, View, Index, Trigger, Procedure, Function, User
+     */
     kShow = 5,
+
+    /**
+     * SHOW system object permission.
+     * Applicable to: Database, Table, View, Index
+     */
     kShowSystem = 6,
+
+    /**
+     * CREATE permission.
+     * Applicable to: Database, Table, View, Index, Trigger, Procedure, Function, User
+     */
     kCreate = 7,
+
+    /**
+     * DROP permission.
+     * Applicable to: Database, Table, View, Index, Trigger, Procedure, Function, User
+     */
     kDrop = 8,
+
+    /**
+     * ALTER permission.
+     * Applicable to: Database, Table, View, Index, Trigger, Procedure, Function, User
+     */
     kAlter = 9,
+
+    /**
+     * ATTACH permission.
+     * Applicable to: Database
+     */
     kAttach = 10,
+
+    /**
+     * DETACH permission.
+     * Applicable to: Database
+     */
     kDetach = 11,
-    kEnable = 12,
-    kDisable = 13,
-    kShutdown = 14,
-    kShowPermissions = 15,
+
+    /**
+     * DETACH permission.
+     * Applicable to: Instance
+     */
+    kShutdown = 12,
+
+    /**
+     * SHOW PERMISSIONS permission.
+     * Applicable to: User
+     */
+    kShowPermissions = 13,
+
     kMax
 };
 
@@ -66,6 +134,15 @@ template<PermissionType... permissionTypes>
 constexpr inline std::uint64_t buildMultiPermissionMask()
 {
     return (... | getSinglePermissionMask(permissionTypes));
+}
+
+/**
+ * Builds permission mask for the empty permission list.
+ */
+template<>
+constexpr inline std::uint64_t buildMultiPermissionMask()
+{
+    return 0;
 }
 
 /**
@@ -127,12 +204,6 @@ constexpr auto kAttachPermissionMask = getSinglePermissionMask(PermissionType::k
 
 /** DETACH permission bitmask */
 constexpr auto kDetachPermissionMask = getSinglePermissionMask(PermissionType::kDetach);
-
-/** ENABLE permission bitmask */
-constexpr auto kEnablePermissionMask = getSinglePermissionMask(PermissionType::kEnable);
-
-/** DISABLE permission bitmask */
-constexpr auto kDisablePermissionMask = getSinglePermissionMask(PermissionType::kDisable);
 
 /** SHUTDOWN permission bitmask */
 constexpr auto kShutdownPermissionMask = getSinglePermissionMask(PermissionType::kShutdown);

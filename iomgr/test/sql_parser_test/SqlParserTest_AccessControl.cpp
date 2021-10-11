@@ -11,12 +11,14 @@
 // Common project headers
 #include <siodb/common/config/SiodbDataFileDefs.h>
 #include <siodb/iomgr/shared/dbengine/PermissionType.h>
+#include <siodb/iomgr/shared/dbengine/parser/CommonConstants.h>
 
 // Google Test
 #include <gtest/gtest.h>
 
 namespace dbengine = siodb::iomgr::dbengine;
 namespace parser_ns = dbengine::parser;
+namespace req_ns = dbengine::requests;
 
 TEST(AccessControl, GrantPermissionForTable_Generic)
 {
@@ -146,7 +148,7 @@ TEST(AccessControl, GrantPermissionForTable_AllTables)
     const auto& request =
             dynamic_cast<const requests::GrantPermissionsForTableRequest&>(*dbeRequest);
     EXPECT_EQ(request.m_database, "DATABASE1");
-    EXPECT_EQ(request.m_table, "*");
+    EXPECT_EQ(request.m_table, req_ns::kAllObjectsName);
     EXPECT_EQ(request.m_user, "USER1");
     const auto expectedPermissions =
             dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();
@@ -170,8 +172,8 @@ TEST(AccessControl, GrantPermissionForTable_AddDatabases_AllTables)
     // Check request
     const auto& request =
             dynamic_cast<const requests::GrantPermissionsForTableRequest&>(*dbeRequest);
-    EXPECT_EQ(request.m_database, "*");
-    EXPECT_EQ(request.m_table, "*");
+    EXPECT_EQ(request.m_database, req_ns::kAllObjectsName);
+    EXPECT_EQ(request.m_table, req_ns::kAllObjectsName);
     EXPECT_EQ(request.m_user, "USER1");
     const auto expectedPermissions =
             dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();
@@ -196,7 +198,7 @@ TEST(AccessControl, GrantPermissionForTable_AllTablesInCurrentDatabase)
     const auto& request =
             dynamic_cast<const requests::GrantPermissionsForTableRequest&>(*dbeRequest);
     EXPECT_TRUE(request.m_database.empty());
-    EXPECT_EQ(request.m_table, "*");
+    EXPECT_EQ(request.m_table, req_ns::kAllObjectsName);
     EXPECT_EQ(request.m_user, "USER1");
     const auto expectedPermissions =
             dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();
@@ -328,7 +330,7 @@ TEST(AccessControl, RevokePermissionForTable_AllTables)
     const auto& request =
             dynamic_cast<const requests::RevokePermissionsForTableRequest&>(*dbeRequest);
     EXPECT_EQ(request.m_database, "DATABASE1");
-    EXPECT_EQ(request.m_table, "*");
+    EXPECT_EQ(request.m_table, req_ns::kAllObjectsName);
     EXPECT_EQ(request.m_user, "USER1");
     const auto expectedPermissions =
             dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();
@@ -351,8 +353,8 @@ TEST(AccessControl, RevokePermissionForTable_AllDatabases_AllTables)
     // Check request
     const auto& request =
             dynamic_cast<const requests::RevokePermissionsForTableRequest&>(*dbeRequest);
-    EXPECT_EQ(request.m_database, "*");
-    EXPECT_EQ(request.m_table, "*");
+    EXPECT_EQ(request.m_database, req_ns::kAllObjectsName);
+    EXPECT_EQ(request.m_table, req_ns::kAllObjectsName);
     EXPECT_EQ(request.m_user, "USER1");
     const auto expectedPermissions =
             dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();
@@ -376,7 +378,7 @@ TEST(AccessControl, RevokePermissionForTable_AllTablesInCurrentDatabase)
     const auto& request =
             dynamic_cast<const requests::RevokePermissionsForTableRequest&>(*dbeRequest);
     EXPECT_TRUE(request.m_database.empty());
-    EXPECT_EQ(request.m_table, "*");
+    EXPECT_EQ(request.m_table, req_ns::kAllObjectsName);
     EXPECT_EQ(request.m_user, "USER1");
     const auto expectedPermissions =
             dbengine::buildMultiPermissionMask<dbengine::PermissionType::kSelect>();

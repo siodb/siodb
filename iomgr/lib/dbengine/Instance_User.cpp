@@ -29,9 +29,8 @@ UserPtr Instance::findUserChecked(std::uint32_t userId)
     return findUserCheckedUnlocked(userId);
 }
 
-std::uint32_t Instance::createUser(const std::string& name,
-        const std::optional<std::string>& realName, const std::optional<std::string>& description,
-        bool active, std::uint32_t currentUserId)
+UserPtr Instance::createUser(const std::string& name, const std::optional<std::string>& realName,
+        const std::optional<std::string>& description, bool active, std::uint32_t currentUserId)
 {
     std::lock_guard lock(m_cacheMutex);
 
@@ -53,7 +52,7 @@ std::uint32_t Instance::createUser(const std::string& name,
     const TransactionParameters tp(currentUserId, m_systemDatabase->generateNextTransactionId());
     m_systemDatabase->recordUser(*user, tp);
     m_users.emplace(user->getId(), user);
-    return user->getId();
+    return user;
 }
 
 void Instance::dropUser(const std::string& name, bool userMustExist, std::uint32_t currentUserId)

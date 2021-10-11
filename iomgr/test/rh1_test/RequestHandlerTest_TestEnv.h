@@ -30,6 +30,9 @@ public:
     static std::unique_ptr<dbengine::RequestHandler> makeRequestHandlerForNormalUser(
             std::size_t testUserIndex = 0);
 
+    static std::unique_ptr<dbengine::RequestHandler> makeRequestHandlerForUser(
+            const std::string& userName);
+
     static std::unique_ptr<dbengine::RequestHandler> makeRequestHandlerForSuperUser();
 
     typedef int Pipes[2];

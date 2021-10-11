@@ -84,9 +84,13 @@ void RequestHandler::executeShowPermissionsRequest(iomgr_protocol::DatabaseEngin
             throwDatabaseError(IOManagerMessageId::kErrorInvalidUserName, *request.m_user);
         }
         inspectedUser = m_instance.findUserChecked(*request.m_user);
-        const UserPermissionKey permissionKey(0, DatabaseObjectType::kUser, inspectedUser->getId());
-        if (!currentUser->hasPermissions(permissionKey, kShowPermissionsPermissionMask, false)) {
-            throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+        if (inspectedUser->getId() != m_currentUserId) {
+            const UserPermissionKey permissionKey(
+                    0, DatabaseObjectType::kUser, inspectedUser->getId());
+            if (!currentUser->hasPermissions(
+                        permissionKey, kShowPermissionsPermissionMask, false)) {
+                throwDatabaseError(IOManagerMessageId::kErrorPermissionDenied);
+            }
         }
     } else {
         inspectedUser = currentUser;
@@ -336,13 +340,15 @@ void RequestHandler::executeShowPermissionsRequest(iomgr_protocol::DatabaseEngin
     if (inspectedUser->isSuperUser()) {
         // Special stuff comes for super user
         values.push_back(inspectedUser->getName());  // USER
-        values.push_back("*");  // DATABASE
-        values.push_back("*");  // OBJECT_TYPE
-        values.push_back("*");  // OBJECT_NAME
-        values.push_back("*");  // PERMISSION
+        values.push_back(requests::kAllObjectsName);  // DATABASE
+        values.push_back(requests::kAllObjectsName);  // OBJECT_TYPE
+        values.push_back(requests::kAllObjectsName);  // OBJECT_NAME
+        values.push_back(requests::kAllObjectsName);  // PERMISSION
         values.push_back(true);  // GRANT_OPTION
-        const auto rowSize = std::accumulate(values.cbegin(), values.cend(), std::size_t(0),
-                [](std::size_t a, const Variant& b) noexcept { return a + getSerializedSize(b); });
+        const auto rowSize = std::accumulate(values.cbegin(), values.cend(), std::uint64_t(0),
+                [](std::uint64_t a, const Variant& b) noexcept {
+                    return a + getVariantSerializedSize(b);
+                });
         codedOutput.Write(rowSize);
         for (std::size_t i = 0; i < values.size(); ++i) {
             writeVariant(values[i], codedOutput);
@@ -364,8 +370,8 @@ void RequestHandler::executeShowPermissionsRequest(iomgr_protocol::DatabaseEngin
                     values.push_back(getPermissionTypeName(i));  // PERMISSION
                     values.push_back((effectiveGrantOptions & bitMask) != 0);  // GRANT_OPTION
                     const auto rowSize = std::accumulate(values.cbegin(), values.cend(),
-                            std::size_t(0), [](std::size_t a, const Variant& b) noexcept {
-                                return a + getSerializedSize(b);
+                            std::uint64_t(0), [](std::uint64_t a, const Variant& b) noexcept {
+                                return a + getVariantSerializedSize(b);
                             });
                     codedOutput.Write(rowSize);
                     for (std::size_t i = 0; i < values.size(); ++i) {
