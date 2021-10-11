@@ -6,5 +6,7 @@ CREATE DATABASE db1;
 
 CREATE TABLE db1.table1
 (
-    cTEXT TEXT
+    col_text TEXT,
+    col_float FLOAT,
+    col_double DOUBLE
 );
