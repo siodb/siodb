@@ -26,7 +26,6 @@ function test_value_from_siocli () {
     _log "INFO" "SIOCLI(SUCCESS) | Expected: >"${test_value_out_rest}"< and got >"${returned}"<"
 }
 
-
 function test_value_from_rest () {
     data_type_to_test="${1^^}"
     test_value_in_rest="${2}"
@@ -66,54 +65,54 @@ _RunSql "grant all on db1.* to user1"
 # Post initial chars
 _RunSql "insert into db1.table1 (col_text, col_float, col_double) values (' ', 0, 0)"
 
-# # test value
-# test_value_from_rest text '' ''
-# test_value_from_siocli text '' ''
-# test_value_from_rest text ' ' ' '
-# test_value_from_siocli text ' ' ' '
+# test value
+test_value_from_rest text '' ''
+test_value_from_siocli text '' ''
+test_value_from_rest text ' ' ' '
+test_value_from_siocli text ' ' ' '
 
-# # Back Slash
-# test_value_from_siocli text '\' '\\'
-# test_value_from_rest text '\\' '\\'
-# test_value_from_siocli text '-\-' '-\\-'
-# test_value_from_rest text '-\\-' '-\\-'
-# test_value_from_siocli text '\-' '\\-'
-# test_value_from_rest text '\\-' '\\-'
-# test_value_from_siocli text '-\' '-\\'
-# test_value_from_rest text '-\\' '-\\'
-
-
-# # Double Quote
-# test_value_from_siocli text '"' '\"'
-# test_value_from_rest text '\"' '\"'
-# test_value_from_siocli text '\"' '\\\"'
-# test_value_from_rest text '\\\"' '\\\"'
-# test_value_from_siocli text '""""""""""' '\"\"\"\"\"\"\"\"\"\"'
-# test_value_from_rest text '\"\"\"\"\"\"\"\"\"\"' '\"\"\"\"\"\"\"\"\"\"'
+# Back Slash
+test_value_from_siocli text '\' '\\'
+test_value_from_rest text '\\' '\\'
+test_value_from_siocli text '-\-' '-\\-'
+test_value_from_rest text '-\\-' '-\\-'
+test_value_from_siocli text '\-' '\\-'
+test_value_from_rest text '\\-' '\\-'
+test_value_from_siocli text '-\' '-\\'
+test_value_from_rest text '-\\' '-\\'
 
 
-# # # Escaped chars
-# test_value_from_siocli text '
-# ' '\n'
-# test_value_from_rest text '\n' '\n'
-# test_value_from_siocli text '\b' '\\b'
-# test_value_from_rest text '\b' '\b'
-# test_value_from_siocli text '\f' '\\f'
-# test_value_from_rest text '\f' '\f'
-# test_value_from_siocli text '\r' '\\r'
-# test_value_from_rest text '\r' '\r'
-# test_value_from_siocli text '\t' '\\t'
-# test_value_from_rest text '\t' '\t'
-# test_value_from_rest text '\u000B' '\u000B'
+# Double Quote
+test_value_from_siocli text '"' '\"'
+test_value_from_rest text '\"' '\"'
+test_value_from_siocli text '\"' '\\\"'
+test_value_from_rest text '\\\"' '\\\"'
+test_value_from_siocli text '""""""""""' '\"\"\"\"\"\"\"\"\"\"'
+test_value_from_rest text '\"\"\"\"\"\"\"\"\"\"' '\"\"\"\"\"\"\"\"\"\"'
 
-# # Mix
-# test_value_from_siocli text '\t\\""\\\"
-# "\' '\\t\\\\\"\"\\\\\\\"\n\"\\'
-# test_value_from_rest text '\\t\\\\\"\"\\\\\\\"\n\"\\' '\\t\\\\\"\"\\\\\\\"\n\"\\'
 
-# # http://www.unicode.org/emoji/charts/full-emoji-list.html
-# test_value_from_siocli text '😀🤣' '😀🤣'
-# test_value_from_rest text '😀🤣' '😀🤣'
+# # Escaped chars
+test_value_from_siocli text '
+' '\n'
+test_value_from_rest text '\n' '\n'
+test_value_from_siocli text '\b' '\\b'
+test_value_from_rest text '\b' '\b'
+test_value_from_siocli text '\f' '\\f'
+test_value_from_rest text '\f' '\f'
+test_value_from_siocli text '\r' '\\r'
+test_value_from_rest text '\r' '\r'
+test_value_from_siocli text '\t' '\\t'
+test_value_from_rest text '\t' '\t'
+test_value_from_rest text '\u000B' '\u000B'
+
+# Mix
+test_value_from_siocli text '\t\\""\\\"
+"\' '\\t\\\\\"\"\\\\\\\"\n\"\\'
+test_value_from_rest text '\\t\\\\\"\"\\\\\\\"\n\"\\' '\\t\\\\\"\"\\\\\\\"\n\"\\'
+
+# http://www.unicode.org/emoji/charts/full-emoji-list.html
+test_value_from_siocli text '😀🤣' '😀🤣'
+test_value_from_rest text '😀🤣' '😀🤣'
 
 ## Float
 test_value_from_siocli float '1.175494351E-38' '1.175494351E-38'
