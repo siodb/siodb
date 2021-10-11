@@ -79,7 +79,7 @@ QUERY_WITH_ERROR="select * from not_exists"
 
 ## Data model
 _RunSql "create database ${database_name}"
-_RunSql "create table ${database_name}.${table_name} ( col_text text, col_int int )"
+_RunSql "create table ${database_name}.${table_name} ( col_text text, col_int int, col_float float, col_double double )"
 _RunSql "create user user1"
 _RunSql "alter user user1 add token test_token x'${TOKEN}'"
 _RunSql "alter user root add token test_token x'${TOKEN}'"
@@ -160,6 +160,24 @@ executeRestRequest_POST \
 executeRestRequest_POST \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
     201 '[{"col_text":"value", "col_int": "2"}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    201 '[{"col_text": 3, "col_float": 1.175494351E-38}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    201 '[{"col_text": 3, "col_float": 3.402823466E+38}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    201 '[{"col_text": 3, "col_float": "3.402823466E+38"}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    201 '[{"col_text": 3, "col_double": 2.2250738585072014E-308}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    201 '[{"col_text": 3, "col_double": 1.7976931348623158E+308}]'
+executeRestRequest_POST \
+    "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
+    201 '[{"col_text": 3, "col_double": "1.7976931348623158E+308"}]'
 executeRestRequest_POST \
     "https://user1:${TOKEN}@localhost:50443/databases/${database_name}/tables/${table_name}/rows" \
     400 '[{"col_text":"value", "col_int": "aaa"}]'
