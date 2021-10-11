@@ -121,13 +121,14 @@ test_value_from_rest float '1.175494351E-38' '1.175494351E-38'
 test_value_from_siocli float '3.402823466E+38' '3.402823466E+38'
 test_value_from_rest float '3.402823466E+38' '3.402823466E+38'
 test_value_from_rest float '"1.175494351E-38"' '1.175494351E-38'
+
+## Double
 test_value_from_siocli double '2.2250738585072014E-308' '2.2250738585072014E-308'
 test_value_from_rest double '2.2250738585072014E-308' '2.2250738585072014E-308'
 test_value_from_siocli double '1.7976931348623158E+308' '1.7976931348623158E+308'
 test_value_from_rest double '1.7976931348623158E+308' '1.7976931348623158E+308'
 test_value_from_rest double '"1.7976931348623158E+308"' '1.7976931348623158E+308'
 
-## Doube
 
 ## =============================================
 ## TEST FOOTER
