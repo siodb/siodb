@@ -3,7 +3,7 @@ module github.com/siodb/siodb/rest_server
 go 1.17
 
 require (
-	github.com/gin-gonic/gin v1.7.4
+	github.com/gin-gonic/gin v1.7.7
 	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac
 	google.golang.org/protobuf v1.27.1
 	siodb.io/siodb/siodbproto v0.0.0
